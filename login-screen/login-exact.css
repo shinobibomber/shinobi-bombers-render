@@ -1,0 +1,146 @@
+/* Keep the supplied 1536 × 1024 artwork intact. Controls share its coordinate space. */
+#loginScreen.reference-login-exact {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #020b1d;
+}
+
+#loginScreen.reference-login-exact::before,
+#loginScreen.reference-login-exact::after,
+#loginScreen.reference-login-exact .login-gate {
+  display: none;
+}
+
+#loginScreen.reference-login-exact .login-content {
+  display: block;
+  position: relative;
+  width: min(100vw, 150vh);
+  width: min(100vw, 150dvh);
+  max-width: none;
+  aspect-ratio: 3 / 2;
+  padding: 0;
+  margin: 0;
+}
+
+#loginScreen.reference-login-exact .login-reference-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+#loginScreen.reference-login-exact .login-controls,
+#loginScreen.reference-login-exact .login-controls .community-links {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+#loginScreen.reference-login-exact .login-kicker,
+#loginScreen.reference-login-exact .login-subtitle,
+#loginScreen.reference-login-exact .login-shinobi,
+#loginScreen.reference-login-exact .exact-login-heading,
+#loginScreen.reference-login-exact .login-documents,
+#loginScreen.reference-login-exact .login-disclaimer {
+  display: none;
+}
+
+/* Retain the accessible heading without painting duplicate lettering over the art. */
+#loginScreen.reference-login-exact #loginTitle {
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+#loginScreen.reference-login-exact :where(#loginPhantom, #loginSolflare, .community-link) {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  color: transparent;
+  font-size: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#loginScreen.reference-login-exact :where(#loginPhantom, #loginSolflare, .community-link) > * {
+  visibility: hidden;
+}
+
+#loginScreen.reference-login-exact :is(#loginPhantom, #loginSolflare) {
+  /* x: 550, width: 437, height: 66 */
+  left: 35.8072916667%;
+  width: 28.4505208333%;
+  height: 6.4453125%;
+  border-radius: 6px;
+}
+
+#loginScreen.reference-login-exact #loginPhantom { top: 52.5390625%; }
+#loginScreen.reference-login-exact #loginSolflare { top: 60.546875%; }
+
+#loginScreen.reference-login-exact .community-link {
+  /* y: 729, width: 148, height: 47 */
+  top: 71.19140625%;
+  width: 9.6354166667%;
+  height: 4.58984375%;
+  border-radius: 4px;
+}
+
+#loginScreen.reference-login-exact [data-community="discord"] { left: 34.7005208333%; }
+#loginScreen.reference-login-exact [data-community="x"] { left: 45.1822916667%; }
+#loginScreen.reference-login-exact [data-community="pumpfun"] {
+  left: 55.6640625%;
+  width: 9.7005208333%;
+}
+
+#loginScreen.reference-login-exact.login-keyboard-navigation :where(#loginPhantom, #loginSolflare, .community-link):focus-visible {
+  outline: 3px solid #ffda6c;
+  outline-offset: 3px;
+}
+
+#loginScreen.reference-login-exact :is(#loginPhantom, #loginSolflare):disabled { cursor: wait; }
+#loginScreen.reference-login-exact .community-link:disabled { cursor: default; }
+
+/* Status and errors are the only extra visible UI, and appear only after interaction. */
+#loginScreen.reference-login-exact #loginMessage {
+  position: absolute;
+  left: 31%;
+  bottom: 17.5%;
+  width: 38%;
+  box-sizing: border-box;
+  min-height: 0;
+  margin: 0;
+  padding: 8px 12px;
+  color: #ffe096;
+  background: #030c18;
+  border: 1px solid #dca948;
+  border-radius: 4px;
+  font: 13px/1.4 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+}
+
+#loginScreen.reference-login-exact #loginMessage:empty { display: none; }
