@@ -1,0 +1,15 @@
+{
+  "name": "shinobi-render-upload",
+  "version": "2.0.0",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "node unpack.cjs && npm --prefix app ci --omit=dev && npm --prefix app run db:init",
+    "start": "node app/server/render-server.cjs"
+  },
+  "dependencies": {
+    "extract-zip": "2.0.1"
+  }
+}

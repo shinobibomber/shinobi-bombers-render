@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: shinobi-bombers-beta
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: RYO_TREASURY_SECRET
+        sync: false
+      - key: RYO_TOKEN_MINT
+        sync: false
+      - key: RYO_STUDIO_WALLET
+        sync: false
+      - key: RYO_REVENUE_WALLET
+        sync: false
