@@ -1,0 +1,71 @@
+body.exact-dojo-active{overflow:hidden;background:#020b1d}
+body.exact-dojo-active main{visibility:hidden}
+body.exact-dojo-active .sakura-ambience{display:none}
+#exactDojoScreen{position:fixed;inset:0;z-index:50;background:#020b1d}
+#exactDojoScreen[hidden]{display:none!important}
+#exactDojoScene{position:fixed;left:0;top:0;transform:scale(var(--dojo-scale,1));transform-origin:top left;isolation:isolate;color:#e4edf9;font-family:Arial,sans-serif}
+#exactDojoScene .dojo-reference-art{display:block;position:absolute;inset:0;width:100%;height:100%;max-width:none;pointer-events:none;user-select:none}
+#exactDojoScene .dojo-live-content{all:unset;display:contents}
+#exactDojoScene .dojo-hotspot,#exactDojoScene .dojo-wallet-target{all:unset;display:block;position:absolute;box-sizing:border-box;cursor:pointer;color:transparent;font-size:0}
+#exactDojoScene .dojo-hotspot:disabled{cursor:default}
+#exactDojoScene .dojo-hotspot:focus-visible,#exactDojoScene .dojo-wallet-target:focus-visible{outline:3px solid #fff0af;outline-offset:-3px}
+#exactDojoScene .dojo-data-mask{position:absolute;pointer-events:none;box-sizing:border-box;background:#081021}
+#exactDojoScene .dojo-selection-background{background:linear-gradient(110deg,#0b0f23,#0c0921)}
+#exactDojoScene .dojo-kicker,#exactDojoScene .dojo-selected-name,#exactDojoScene .dojo-metric-value,#exactDojoScene .dojo-row-status,#exactDojoScene .dojo-row-price,#exactDojoScene .sensei-fact-value,#exactDojoScene .sensei-purchase-title,#exactDojoScene .sensei-purchase-copy{all:unset;position:absolute;box-sizing:border-box;pointer-events:none;display:flex;align-items:center}
+#exactDojoScene .dojo-kicker{font:14px/1 Arial,sans-serif;letter-spacing:2px;color:#ffcb42}
+#exactDojoScene .dojo-selected-name{font:900 29px/1 Arial,sans-serif;letter-spacing:1px;color:#ffe7a2}
+#exactDojoScene .dojo-metric-mask{background:#13182a}
+#exactDojoScene .dojo-metric-value{font:700 26px/1 Arial,sans-serif;color:#ffda6a}
+#exactDojoScene .dojo-live-button{font:700 20px/1.2 Arial,sans-serif;color:#201301;display:flex;align-items:center;justify-content:center;text-align:center;background:linear-gradient(#ffbf33,#ff850b);border:1px solid #ffdf76;border-radius:3px;box-shadow:0 0 12px #ffb22133}
+#exactDojoScene .dojo-live-button:disabled{color:#b4b8bd;background:linear-gradient(#263143,#151d2c);border-color:#536079;box-shadow:none}
+#exactDojoScene .dojo-upgrade-action{font-weight:800;letter-spacing:.6px}
+#exactDojoScene .dojo-live-row{border:1px solid transparent;border-radius:3px}
+#exactDojoScene .dojo-live-row.selected{border:2px solid #ffce65;box-shadow:inset 0 0 15px #ffad2522,0 0 12px #ff9d2777}
+#exactDojoScene .dojo-live-row:hover{outline:1px solid #ffdd83;outline-offset:-4px}
+#exactDojoScene .dojo-row-status-mask{background:#0c1220}
+#exactDojoScene .dojo-row-status{justify-content:center;font:16px/1 Arial,sans-serif;color:#e2e8f4}
+#exactDojoScene .dojo-row-status.active{color:#30ffad;border:1px solid #086c52;background:#082924;border-radius:3px}
+#exactDojoScene .dojo-row-price-mask{background:#0e1322}
+#exactDojoScene .dojo-row-price{justify-content:flex-end;color:#ffcc59;font:700 18px/1 Arial,sans-serif}
+#exactDojoScene .dojo-live-row .dojo-row-roman{position:absolute;left:13px;top:13px;width:60px;height:60px;box-sizing:border-box;display:grid;place-items:center;background:linear-gradient(#25253a,#151c2e);border:1px solid #a58fcd;border-radius:3px;color:#f3f0fc;font:700 28px/1 Arial,sans-serif}
+#exactDojoScene .dojo-live-row .dojo-row-thumbnail{position:absolute;left:89px;top:11px;width:87px;height:65px;background-position:center;background-size:contain;background-repeat:no-repeat}
+#exactDojoScene .dojo-live-row .dojo-row-name{position:absolute;left:191px;top:20px;color:#f3f1fa;font:700 19px/1 Arial,sans-serif}
+#exactDojoScene .dojo-live-row .dojo-row-description{position:absolute;left:191px;top:48px;color:#a7b2c9;font:14px/1 Arial,sans-serif}
+#exactDojoScene .dojo-live-row .dojo-row-all{position:absolute;left:439px;top:36px;color:#f3f1fa;font:16px/1 Arial,sans-serif}
+#exactDojoScene .dojo-live-row .dojo-row-rate{position:absolute;left:559px;top:36px;color:#f3f1fa;font:16px/1 Arial,sans-serif}
+#exactDojoScene .sensei-fact-mask{background:linear-gradient(110deg,#0a152a,#0b1425)}
+#exactDojoScene .sensei-fact-value{justify-content:flex-end;color:#e4edf9;font:700 18px/1 Arial,sans-serif}
+#exactDojoScene .sensei-dojo-action{justify-content:flex-end;padding-right:8px;background:transparent;border:0;box-shadow:none;color:#edf2ff;font:700 17px/1 Arial,sans-serif}
+#exactDojoScene .sensei-rotation-action{border:0;border-radius:22px;color:#dbe5f1;background:#374152;font:700 17px/1 Arial,sans-serif;box-shadow:none}
+#exactDojoScene .sensei-rotation-action.on{color:#42ff81;background:#008b35}
+#exactDojoScene .sensei-rotation-action::after{content:'';display:inline-block;flex:none;width:26px;height:26px;margin-left:13px;border-radius:50%;background:#f3ffff}
+#exactDojoScene .sensei-purchase-mask{background:linear-gradient(105deg,#0b101b,#0b0b14)}
+#exactDojoScene .sensei-purchase-title{font:900 35px/1 Arial,sans-serif;color:#ffe7a1;letter-spacing:.5px}
+#exactDojoScene .sensei-purchase-copy{color:#dee7f5;font:15px/1.45 Arial,sans-serif;align-items:flex-start}
+#exactDojoScene .sensei-primary-action{font:800 24px/1 Arial,sans-serif}
+#exactDojoScene .sensei-rental-action{font:700 13px/1 Arial,sans-serif;background:linear-gradient(#223a53,#13253a);border-color:#a1bbd9;box-shadow:none;color:#eaf4ff}
+#exactDojoScene .sensei-permanent-action{font:12px/1 Arial,sans-serif;background:none;border:0;box-shadow:none;color:#ffd269;justify-content:flex-start}
+
+#exactDojoScene .menu-topbar{all:unset;display:contents}
+#exactDojoScene .menu-context,#exactDojoScene #walletMenuButton{display:none!important}
+#exactDojoScene .menu-currency,#exactDojoScene .village-info,#exactDojoScene .community-links{all:unset;display:contents}
+#exactDojoScene .menu-back{all:unset;position:absolute;left:var(--back-x);top:var(--back-y);width:var(--back-w);height:var(--back-h);cursor:pointer;color:transparent;font-size:0}
+#exactDojoScene .dojo-wallet-target{left:var(--balance-x);top:var(--balance-y);width:var(--balance-w);height:49px}
+#exactDojoScene .ry{all:unset;position:absolute;left:calc(var(--balance-x) + 38px);top:calc(var(--balance-y) + 12px);width:calc(var(--balance-w) - 38px);height:var(--balance-h);display:flex;align-items:center;gap:4px;color:#ffe4a1;background:#030b16;font:14px Arial,sans-serif;pointer-events:none}
+#exactDojoScene #ry{font:700 19px Arial,sans-serif}
+#exactDojoScene #mu{all:unset;position:absolute;left:calc(var(--sound-x) - var(--balance-x) - 38px);top:-1px;width:26px;height:28px;color:transparent;font-size:0;cursor:pointer;pointer-events:auto}
+#exactDojoScene #mu[aria-pressed="true"]::after{content:'🔇';position:absolute;inset:0;display:grid;place-items:center;background:#030b16;color:#fff;font:15px Arial,sans-serif}
+#exactDojoScene #onlinePlayers{all:unset;position:absolute;left:var(--online-x);top:var(--online-y);width:var(--online-w);height:var(--online-h);display:flex;align-items:center;color:#39ff80;background:#03111b;font:12px Arial,sans-serif;white-space:nowrap}
+#exactDojoScene .community-link{all:unset;position:absolute;top:var(--balance-y);width:43px;height:48px;color:transparent;font-size:0;cursor:pointer}
+#exactDojoScene .community-link>*{visibility:hidden}
+#exactDojoScene [data-community="discord"]{left:var(--discord-x)}
+#exactDojoScene [data-community="x"]{left:var(--x-x)}
+#exactDojoScene [data-community="pumpfun"]{left:var(--pumpfun-x)}
+#exactDojoScene .community-link:disabled{cursor:default}
+#exactDojoScene .chest-trigger{all:unset;position:absolute;left:var(--chest-x);top:var(--chest-y);width:var(--chest-w);height:var(--chest-h);box-sizing:border-box;display:grid;place-items:center;color:#251400;font:700 16px Arial,sans-serif;background:linear-gradient(#ffc34d,#f79418);border:1px solid #ffda86;border-radius:3px;cursor:pointer}
+#exactDojoScene :where(button,a):focus-visible{outline:3px solid #fff1ad;outline-offset:-3px}
+body.exact-dojo-active #toast{z-index:60}
+#exactDojoScene .ry{left:calc(var(--balance-x) + 28px);top:calc(var(--balance-y) + 3px);width:calc(var(--sound-x) - var(--balance-x) - 30px);height:39px;gap:3px;font-size:12px;white-space:nowrap}
+#exactDojoScene #ry{font-size:16px}
+#exactDojoScene #mu{left:calc(var(--sound-x) - var(--balance-x) - 28px);top:0;height:39px}
+#exactDojoScene #onlinePlayers{top:calc(var(--balance-y) + 2px);height:42px;justify-content:center;font-size:12px}

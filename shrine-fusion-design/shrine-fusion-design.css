@@ -1,0 +1,105 @@
+body.exact-crafting-active{overflow:hidden;background:#020b1d}body.exact-crafting-active main{visibility:hidden}body.exact-crafting-active .sakura-ambience{display:none}
+.exact-crafting-screen{position:fixed;inset:0;z-index:50;background:#020b1d}.exact-crafting-screen[hidden]{display:none!important}
+.exact-crafting-screen .exact-crafting-scene{position:fixed;width:1536px;height:1024px;transform:scale(var(--crafting-scale,1));transform-origin:top left;isolation:isolate;color:#edf5ff;font-family:Arial,sans-serif;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+.exact-crafting-scene .crafting-reference-art{position:absolute;inset:0;width:100%;height:100%;max-width:none;display:block;pointer-events:none;user-select:none}
+.exact-crafting-scene :where(#p2,#p6,.shrine-layout,.shrine-layout>div:first-child,.shrine-controls,.fusion-layout,.fusion-list,.fusion-summary){all:unset;display:contents}
+.exact-crafting-scene :where(.shrine-header,.fusion-heading,.design-page-heading,.shrine-info,.summon-result,.fusion-result){display:none!important}
+.exact-crafting-scene .menu-topbar{all:unset;display:block;position:absolute;inset:0;height:74px;pointer-events:none}
+.exact-crafting-scene :where(.menu-context){display:none!important}
+.exact-crafting-scene :where(.menu-currency,.village-info,.community-links){all:unset;display:contents}
+.exact-crafting-scene .menu-back{all:unset;position:absolute;left:24px;top:12px;width:109px;height:50px;color:transparent;font-size:0;cursor:pointer;pointer-events:auto}
+.exact-crafting-scene .ry{all:unset;position:absolute;left:880px;top:26px;width:124px;height:26px;display:flex;gap:4px;align-items:center;justify-content:center;background:#040b12;color:#ffe3a1;font:16px/1 Arial,sans-serif;white-space:nowrap}
+.exact-crafting-scene #ry{font:700 23px/1 Arial,sans-serif;max-width:94px;overflow:hidden;text-overflow:ellipsis}
+.exact-crafting-scene #mu{all:unset;position:absolute;left:124px;top:0;width:37px;height:26px;color:transparent;font-size:0;cursor:pointer;pointer-events:auto}
+.exact-crafting-scene #mu[aria-pressed=true]::after{content:'🔇';position:absolute;inset:0;display:grid;place-items:center;background:#040b12;color:white;font:16px Arial,sans-serif}
+.exact-crafting-scene #onlinePlayers{all:unset;position:absolute;left:1061px;top:28px;width:115px;height:24px;display:flex;align-items:center;background:#02100b;color:#58ff91;font:11px Arial,sans-serif;white-space:nowrap}
+.exact-crafting-scene .community-link{all:unset;position:absolute;top:14px;width:42px;height:48px;color:transparent;font-size:0;cursor:pointer;pointer-events:auto}.exact-crafting-scene .community-link>*{visibility:hidden}
+.exact-crafting-scene [data-community=discord]{left:1187px}.exact-crafting-scene [data-community=x]{left:1237px}.exact-crafting-scene [data-community=pumpfun]{left:1285px}.exact-crafting-scene .community-link:disabled{cursor:default}
+.exact-crafting-scene .chest-trigger{all:unset;position:absolute;left:1339px;top:13px;width:174px;height:49px;display:grid;place-items:center;box-sizing:border-box;background:linear-gradient(#ffbd4d,#f48a16);border:1px solid #ffe09b;border-radius:3px;color:#1b1000;font:700 18px Arial,sans-serif;cursor:pointer;pointer-events:auto}
+.exact-crafting-scene .crafting-wallet-target{all:unset;position:absolute;left:862px;top:13px;width:139px;height:49px;cursor:pointer}
+.exact-crafting-scene :where(button,input,select):focus-visible{outline:3px solid #fff2a3!important;outline-offset:3px}.exact-crafting-scene button:disabled{cursor:not-allowed}
+
+/* Shrine: source composition stays in place while quantity, totals and ownership are live. */
+#exactShrineScene .shrine-controls>h3,#exactShrineScene .shrine-controls>table{display:none!important}
+#exactShrineScene .summon-art{all:unset;position:absolute;left:411px;top:304px;width:224px;height:284px;background:radial-gradient(ellipse,#916222 0,#bc8c3c 48%,#d4ab51 75%,#dfa936);border-radius:2px;overflow:hidden}
+#exactShrineScene .scroll-card{all:unset;display:contents}#exactShrineScene .back-left,#exactShrineScene .back-right{display:none}
+#exactShrineScene #exactShrinePortrait{all:unset;display:block;width:224px;height:284px;image-rendering:pixelated}
+#exactShrineScene .summon-quantities{all:unset;display:contents}
+#exactShrineScene .summon-quantities button{all:unset;position:absolute;left:calc(928px + var(--quantity-index,0)*131px);top:317px;width:123px;height:61px;box-sizing:border-box;display:grid;place-items:center;background:linear-gradient(#111c30,#071120);border:1px solid #445573;color:#b4cce5;font:700 27px Arial,sans-serif;cursor:pointer}
+#exactShrineScene .summon-quantities button:nth-child(2){--quantity-index:1}#exactShrineScene .summon-quantities button:nth-child(3){--quantity-index:2}#exactShrineScene .summon-quantities button:nth-child(4){--quantity-index:3}
+#exactShrineScene .summon-quantities button.selected{color:#fff;background:linear-gradient(#520481,#32045b);border:2px solid #c858ff;box-shadow:0 0 9px #b338ff6b}
+#exactShrineScene .summon-price{all:unset;position:absolute;left:927px;top:398px;width:517px;height:33px;display:flex;align-items:center;background:#020a12;color:#ffe3a1}
+#exactShrineScene .summon-price b{font:700 23px Arial,sans-serif}
+#exactShrineScene .summon-main{all:unset;position:absolute;left:927px;top:440px;width:519px;height:80px;box-sizing:border-box;display:grid;place-items:center;padding-left:75px;color:#281200;font:700 30px Arial,sans-serif;cursor:pointer;background:linear-gradient(#ffbd43,#ffa222);border:2px solid #ffd77e;border-radius:3px;box-shadow:0 0 17px #ffae343d}
+#exactShrineScene .summon-main::before{content:'';position:absolute;left:calc(50% - 150px);top:11px;width:60px;height:56px;background:url(summoning-shrine.png) -1062px -452px/1536px 1024px no-repeat}
+#exactShrineScene .summon-main:disabled{opacity:1;color:#573d19;filter:saturate(.8)}
+#exactShrineScene .shrine-controls>p.mut{all:unset;position:absolute;left:928px;top:851px;width:505px;height:41px;display:flex;align-items:center;background:#020a12;color:#edbf7a;font:22px Arial,sans-serif}
+#exactShrineScene .exact-summon-fee{position:absolute;left:928px;top:892px;width:505px;color:#cbd3df;background:#020a12;font:13px/18px Arial,sans-serif}
+
+/* Fusion: live reserve inventory, selections and next-rank bands occupy source rows. */
+#exactFusionScene .menu-back{left:31px;top:12px;width:99px;height:48px}
+#exactFusionScene .ry{left:956px;top:25px;width:103px;height:25px;font-size:14px}#exactFusionScene #ry{font-size:18px}#exactFusionScene #mu{left:104px;width:27px}
+#exactFusionScene #onlinePlayers{left:1104px;top:24px;width:115px;height:25px;font-size:10px}
+#exactFusionScene .community-link{top:14px;width:39px;height:42px}#exactFusionScene [data-community=discord]{left:1225px}#exactFusionScene [data-community=x]{left:1267px}#exactFusionScene [data-community=pumpfun]{left:1308px}
+#exactFusionScene .chest-trigger{left:1357px;top:12px;width:148px;height:46px;font-size:16px}
+#exactFusionScene .crafting-wallet-target{left:920px;top:13px;width:139px;height:43px}
+#exactFusionScene .fusion-tabs{all:unset;display:contents}
+#exactFusionScene .fusion-tabs button{all:unset;position:absolute;left:80px;top:207px;width:129px;height:45px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:14px;color:#b6d3f3;background:linear-gradient(#111e34,#071122);border:1px solid #435679;font:700 14px Arial,sans-serif;cursor:pointer}
+#exactFusionScene .fusion-tabs button:nth-child(2){left:223px;width:148px}#exactFusionScene .fusion-tabs button:nth-child(3){left:384px;width:136px}#exactFusionScene .fusion-tabs button:nth-child(4){left:534px;width:121px}
+#exactFusionScene .fusion-tabs button.active{border:2px solid #ffc94d;box-shadow:0 0 8px #ffa91e;background:linear-gradient(#3d2d0e,#13110e);color:#fff}#exactFusionScene .fusion-tabs small{font:14px Arial,sans-serif;color:#f9d568}
+#exactFusionScene .fusion-toolbar{all:unset;display:contents}#exactFusionScene .fusion-toolbar>span{position:absolute;left:81px;top:276px;width:470px;height:32px;display:flex;align-items:center;background:#020b19;color:#d1e4ff;font:16px Arial,sans-serif}
+#exactFusionScene .fusion-toolbar>div{all:unset;display:contents}
+#exactFusionScene .fusion-toolbar button{all:unset;position:absolute;left:584px;top:268px;width:164px;height:40px;box-sizing:border-box;display:grid;place-items:center;border:1px solid #6f83ac;border-radius:3px;background:linear-gradient(#12203a,#071124);color:#c4d8ff;font:700 13px Arial,sans-serif;text-transform:uppercase;cursor:pointer}
+#exactFusionScene .fusion-toolbar button+button{left:762px;width:85px}#exactFusionScene .fusion-toolbar button:disabled{color:#78859b;border-color:#374258}
+#exactFusionScene .batch-fusion{all:unset;display:contents}#exactFusionScene .batch-fusion>div:first-child>b{display:none}
+#exactFusionScene .batch-fusion p{position:absolute;left:105px;top:371px;width:561px;height:24px;display:flex;align-items:center;margin:0;background:#15052a;color:#e5e0ef;font:13px Arial,sans-serif;white-space:nowrap}
+#exactFusionScene .batch-fusion-actions{all:unset;display:contents}#exactFusionScene .batch-fusion-actions button{all:unset;position:absolute;left:100px;top:403px;width:117px;height:50px;box-sizing:border-box;display:grid;place-items:center;border:1px solid #ffd770;border-radius:3px;background:linear-gradient(#ffb327,#f99504);color:#251200;font:700 16px Arial,sans-serif;cursor:pointer}
+#exactFusionScene .batch-fusion-actions button:nth-child(2){left:228px;width:122px}#exactFusionScene .batch-fusion-actions button:nth-child(3){left:362px;width:122px}#exactFusionScene .batch-fusion-actions button:nth-child(4){left:494px;width:150px}
+#exactFusionScene .batch-fusion-actions button:disabled{color:#6e4a12;filter:saturate(.65)}
+#exactFusionScene .batch-fusion>small{position:absolute;left:104px;top:467px;width:562px;height:20px;display:flex;align-items:center;background:#15052a;color:#c9c8df;font:12px Arial,sans-serif}
+#exactFusionScene .fusion-table-wrap{all:unset;position:absolute;left:79px;top:524px;width:770px;height:429px;display:block;overflow:auto;background:#020c1b;scrollbar-color:#697790 #071324;scrollbar-width:thin}
+#exactFusionScene .fusion-table{all:unset;display:table;width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed;color:#e5eefc;font-family:Arial,sans-serif}
+#exactFusionScene .fusion-table th{border:0;padding:0 6px 8px;font:11px Arial,sans-serif;color:#bfd8f6;text-align:center;background:#020c1b}
+#exactFusionScene .fusion-table th:first-child{width:45%;text-align:left;padding-left:73px}
+#exactFusionScene .fusion-table th:nth-child(2),#exactFusionScene .fusion-table th:nth-child(3),#exactFusionScene .fusion-table th:nth-child(4){width:11%}
+#exactFusionScene .fusion-table th:last-child{width:22%}
+#exactFusionScene .fusion-table td{height:87px;box-sizing:border-box;padding:3px 6px;border-block:1px solid #375373;background:#08172b;color:#eef5ff;text-align:center;font:700 14px Arial,sans-serif}
+#exactFusionScene .fusion-table td:first-child{border-left:1px solid #375373}#exactFusionScene .fusion-table td:last-child{border-right:1px solid #375373;font:13px/1.4 Arial,sans-serif}
+#exactFusionScene .fusion-table tr.picked td{background:#152b42;border-block-color:#bd87ed}
+#exactFusionScene .fusion-table label{all:unset;display:flex;align-items:center;gap:18px;min-width:0;cursor:pointer}
+#exactFusionScene .fusion-table input{width:22px;height:22px;accent-color:#d980ff;margin:0 14px 0 10px;flex:none}
+#exactFusionScene .fusion-table canvas{width:72px;height:78px;flex:none;image-rendering:pixelated;border:1px solid #536d94;background:#020b1a;border-radius:3px}
+#exactFusionScene .fusion-table label>span{display:block;min-width:0;text-align:left}#exactFusionScene .fusion-table label b{display:block;font:700 14px/1.4 Arial,sans-serif;overflow:hidden;text-overflow:ellipsis}#exactFusionScene .fusion-table label small{display:block;margin-top:5px;font:12px/1.3 Arial,sans-serif}
+#exactFusionScene .fusion-empty{font:15px/1.6 Arial,sans-serif;color:#b9cae1;padding:24px}
+#exactFusionScene .fusion-summary>h3{display:none}
+#exactFusionScene .fusion-summary>h4{all:unset;position:absolute;left:920px;top:265px;width:258px;height:27px;display:flex;align-items:center;gap:8px;background:#030c1c;font:700 17px Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;color:#b5c9ed}
+#exactFusionScene .fusion-preview{all:unset;position:absolute;left:932px;top:302px;width:154px;height:278px;display:block;background:#030e1ce8}
+#exactFusionScene .fusion-preview-card{display:none}#exactFusionScene .exact-fusion-models{position:absolute;inset:0;display:grid;grid-template-rows:repeat(3,1fr)}#exactFusionScene .exact-fusion-models canvas{width:112px;height:91px;object-fit:contain;justify-self:center;image-rendering:pixelated}
+#exactFusionScene .fusion-caption{all:unset;position:absolute;left:924px;top:603px;width:420px;height:27px;display:flex;align-items:center;background:#060c20;color:#e6f0ff;font:700 15px Arial,sans-serif;letter-spacing:1px}
+#exactFusionScene .fusion-stats{all:unset;position:absolute;left:932px;top:636px;width:490px;height:112px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:56px 48px;column-gap:10px;row-gap:9px}
+#exactFusionScene .fusion-stats>div{all:unset;position:relative;display:flex;flex-direction:column;gap:5px;justify-content:center;padding:0 7px 0 51px;background:linear-gradient(#0b1730,#040d20);border:1px solid #4b638e;border-radius:2px;color:#eef4ff}
+#exactFusionScene .fusion-stats>div::before{content:'';position:absolute;left:8px;top:8px;width:28px;height:29px;background:var(--fusion-stat-icon) center/contain no-repeat}
+#exactFusionScene .fusion-stats>div:nth-child(1)::before{content:'⚔';font:26px Arial;color:#bfdcff}#exactFusionScene .fusion-stats>div:nth-child(2)::before{content:'↗';font:26px Arial;color:#bfdcff}#exactFusionScene .fusion-stats>div:nth-child(3)::before{content:'♥';font:26px Arial;color:#bfdcff}#exactFusionScene .fusion-stats>div:nth-child(4)::before{content:'✦';font:26px Arial;color:#bfdcff}#exactFusionScene .fusion-stats>div:nth-child(5)::before{content:'◎';font:26px Arial;color:#bfdcff}#exactFusionScene .fusion-stats>div:nth-child(6)::before{content:'✥';font:26px Arial;color:#bfdcff}
+#exactFusionScene .fusion-stats small{font:9px Arial,sans-serif;color:#bdd8fa;letter-spacing:1px}#exactFusionScene .fusion-stats b{font:700 14px Arial,sans-serif}
+#exactFusionScene .fusion-bonus{display:none}
+#exactFusionScene .fusion-cost{display:none}
+#exactFusionScene #fuseButton{all:unset;position:absolute;left:1210px;top:851px;width:227px;height:69px;box-sizing:border-box;display:grid;place-items:center;padding-left:35px;background:linear-gradient(#ffb82b,#ff9908);border:2px solid #ffda6f;box-shadow:0 0 12px #ffb13066;border-radius:3px;color:#1d1000;font:700 24px Arial,sans-serif;cursor:pointer}
+#exactFusionScene #fuseButton::before{content:'◉';position:absolute;left:28px;top:18px;font:30px Arial,sans-serif}#exactFusionScene #fuseButton:disabled{color:#6f4a0d;filter:saturate(.6)}
+#exactFusionScene .fusion-warning{position:absolute;left:916px;top:930px;width:519px;height:20px;overflow:hidden;margin:0;background:#030b17;color:#a8bfdc;font:10px/18px Arial,sans-serif;white-space:nowrap;text-overflow:ellipsis}
+@media(prefers-reduced-motion:reduce){.exact-crafting-scene *{scroll-behavior:auto!important}}
+#exactFusionScene .fusion-stats>div::before{content:""!important;background:var(--fusion-stat-icon) center/contain no-repeat}
+/* Override earlier reference-preview rules so the original scene is never
+   painted again inside the working portrait. Keep its scroll/frame untouched. */
+#exactShrineScene #p2 .summon-art{position:absolute!important;left:414px!important;top:268px!important;width:242px!important;height:356px!important;display:block!important;background:radial-gradient(ellipse at 50% 55%,#bd8d3577,#624518 75%,#d5a94a)!important;border:0!important;box-shadow:none!important;overflow:hidden!important;animation:none!important;transform:none!important}
+#exactShrineScene #p2 .scroll-card.front{display:contents!important;animation:none!important;transform:none!important;background:none!important}
+#exactShrineScene #p2 #exactShrinePortrait{display:block!important;width:242px!important;height:356px!important;background:none!important;image-rendering:auto!important;transform:none!important}
+.exact-crafting-scene .ry{left:884px;top:17px;width:154px;height:42px;font:14px/1 Arial,sans-serif;gap:3px;background:#030b15;justify-content:flex-start;box-sizing:border-box;padding-left:4px}
+.exact-crafting-scene #ry{font:700 18px/1 Arial,sans-serif;max-width:none;overflow:visible;text-overflow:clip}
+.exact-crafting-scene #mu{left:154px;top:0;height:42px;width:22px}
+.exact-crafting-scene #onlinePlayers{left:1060px;top:19px;width:118px;height:40px;justify-content:center;font-size:12px}
+#exactFusionScene .ry{left:944px;top:17px;width:132px;height:37px;font-size:12px}
+#exactFusionScene #ry{font-size:15px;max-width:none}
+#exactFusionScene #mu{left:132px;width:26px;height:37px}
+#exactFusionScene #onlinePlayers{left:1104px;top:17px;width:116px;height:37px;font-size:11px;justify-content:center}
+#exactFusionScene .fusion-table canvas{image-rendering:auto}
+#exactShrineScene #p2 .summon-art{background:radial-gradient(ellipse at 50% 55%,#b78a33,#51380e 80%,#d5a94a)!important}

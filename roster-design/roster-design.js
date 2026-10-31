@@ -44,15 +44,20 @@
       scene.style.top = Math.round((innerHeight - height * scale)/2) + 'px';
     }
     function portrait(canvas, hero) {
-      if (canvas.width !== 156) canvas.width = 156;
-      if (canvas.height !== 178) canvas.height = 178;
+      const density = Math.min(2, Math.max(1, devicePixelRatio || 1));
+      const width = Math.round(156 * density), height = Math.round(178 * density);
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
+      canvas.setAttribute('data-exact-roster', '');
       const context = canvas.getContext('2d');
+      context.setTransform(density,0,0,density,0,0);
       context.clearRect(0,0,156,178);
+      context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
       // This is an opaque patch over the printed example model. Its nighttime
       // village background is sampled from the same supplied artwork.
       context.drawImage(image,1000,0,300,110,0,0,156,178);
       context.fillStyle='#020d1be8'; context.fillRect(0,0,156,178);
-      if (hero) sprites.blit(context,sprites.heroFrame(hero,sprites.idleName(performance.now(),hero.id)),78,155,3.85,false);
+      if (hero) sprites.blit(context,PlayerModels.portraitFrame(hero,performance.now()),78,155,3.85,false);
     }
     function refresh() {
       if (tab !== 0) return;

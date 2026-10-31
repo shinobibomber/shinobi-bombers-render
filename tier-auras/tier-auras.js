@@ -48,7 +48,10 @@
     context.putImageData(pixels, 0, 0);
     const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 400; canvas.designSprite = true;
     const painter = canvas.getContext('2d'); painter.imageSmoothingEnabled = true; painter.imageSmoothingQuality = 'high';
-    const scale = tier.scale;
+    // The old effect occupied only the lower half of the shared frame and was
+    // mostly hidden by the body. Widen the same original effect around its foot
+    // anchor; retain its colors, outlines and native source design.
+    const scale = Math.min(310 / width, tier.scale * 1.22);
     painter.drawImage(texture, 160 - tier.pivot[0] * scale, 352 - tier.pivot[1] * scale, width * scale, height * scale);
     canvas.tierAura = { rank, name: tier.name, source: manifest.file };
     auraFrames.set(rank, canvas);
@@ -73,7 +76,7 @@
       const distance = Math.min(Math.abs(hue - tier.hue), 360 - Math.abs(hue - tier.hue));
       const colored = saturation > .3 && distance <= tier.hueTolerance;
       const highlight = high > .76 && saturation < .24;
-      const strength = Math.max(0, Math.min(1, (high - .18) / .31));
+      const strength = Math.max(0, Math.min(1, (high - .14) / .29));
       data[i + 3] = colored || highlight ? Math.round(255 * strength) : 0;
     }
   }
@@ -92,6 +95,12 @@
     canvas.designSprite = base.designSprite;
     const context = canvas.getContext('2d'); context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
     context.drawImage(frame(rank), 0, 0, canvas.width, canvas.height);
+    // A second low-opacity screen pass lifts the supplied luminous artwork on
+    // bright map tiles without adding a synthetic halo over the hero's face.
+    context.save(); context.globalCompositeOperation = 'screen';
+    context.globalAlpha = .28 + rank * .035;
+    context.drawImage(frame(rank), 0, 0, canvas.width, canvas.height);
+    context.restore();
     context.drawImage(base, 0, 0);
     // Keep the shared model/animation identity metadata used by every menu.
     if (base.playerModel) canvas.playerModel = base.playerModel;

@@ -5,7 +5,7 @@
   const sourceUrl = new URL('.', document.currentScript.src);
   const textures = new Map();
   const frames = new Map();
-  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, frameInfo, clearExterior };
+  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, portraitFrame, frameInfo, clearExterior };
 
   const image = new Image();
   const imageReady = new Promise((resolve, reject) => {
@@ -91,6 +91,14 @@
     canvas.playerModel = { key: info.key, model: info.index, direction: info.direction, phase: info.phase };
     frames.set(info.key, canvas);
     return canvas;
+  }
+
+  // Menus use the larger original base cells. The action atlas is optimized for
+  // small moving actors and contains substantially fewer native face pixels.
+  // Keep the model identity, original pose artwork and supplied tier effect.
+  function portraitFrame(hero, now = 0) {
+    const base = heroFrame(hero, hero.z ? 's0' : sprites.idleName(now, hero.id));
+    return window.TierAuras?.loaded ? TierAuras.compose(hero, base) : base;
   }
 
   function cut(cell) {

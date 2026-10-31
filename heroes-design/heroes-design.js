@@ -36,7 +36,9 @@
         card.dataset.rankMatch = card.hidden ? '0' : '1';
         card.classList.add('reference-hero-card'); card.style.setProperty('--tier-color', TierAuras.tiers[hero.r].color);
         card.style.setProperty('--hero-backdrop', backdrop);
-        canvas.width = 640; canvas.height = 384; canvas.setAttribute('data-exact-hero', '');
+        if (canvas.width !== 640) canvas.width = 640;
+        if (canvas.height !== 384) canvas.height = 384;
+        canvas.setAttribute('data-exact-hero', '');
         canvas.setAttribute('aria-label', PlayerModels.modelFor(hero).label + ' · ' + R[hero.r][0]);
         const badge = card.querySelector('.hero-portrait > span'); badge.style.setProperty('--tier-icon', tierIcons[hero.r]);
         const state = card.querySelector('.hero-status');
@@ -99,7 +101,8 @@
         if (card.hidden) continue;
         const hero = heroOf(card), canvas = card.querySelector('[data-hero]'), context = canvas.getContext('2d');
         context.clearRect(0, 0, canvas.width, canvas.height);
-        ShinobiSprites.blit(context, ShinobiSprites.heroFrame(hero, hero.z ? 's0' : ShinobiSprites.idleName(now, hero.id)), canvas.width / 2, canvas.height - 45, 7.1, false);
+        context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
+        ShinobiSprites.blit(context, PlayerModels.portraitFrame(hero, now), canvas.width / 2, canvas.height - 45, 7.1, false);
         const value = card.querySelector('.hero-energy b'); if (value) value.textContent = Math.floor(hero.en) + ' / ' + Math.floor(hero.st * 50);
         const fill = card.querySelector('.hero-energy .bar i'); if (fill) fill.style.width = Math.min(100, hero.en / (hero.st * 50) * 100) + '%';
         if (!card.classList.contains('hero-reserve')) card.querySelector('.hero-status').textContent = hero.on ? 'DEPLOYED' : 'RESTING';
