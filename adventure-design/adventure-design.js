@@ -149,9 +149,8 @@
     // Reuse the supplied ornamental banner itself. Only its printed example
     // values are replaced; live data never sits over the old sample text.
     const source = images['status-reference.webp'];
-    const backdrop = document.createElement('canvas'); backdrop.className = 'adventure-status-backdrop';
-    backdrop.width = 2170; backdrop.height = 100; backdrop.setAttribute('aria-hidden', 'true');
-    backdrop.getContext('2d').drawImage(source, 0, 208, 2170, 100, 0, 0, 2170, 100); scene.append(backdrop);
+    // Only the gold status frame is used. The reference's surrounding scenery
+    // must never cover the separate original battlefield underneath it.
     const banner = document.createElement('canvas'); banner.className = 'adventure-status-art';
     banner.width = 2070; banner.height = 168; banner.setAttribute('aria-hidden', 'true');
     const bannerContext = banner.getContext('2d');

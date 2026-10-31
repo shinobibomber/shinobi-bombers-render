@@ -8,7 +8,10 @@
   function setup(){
     const scene=document.getElementById('exactAdventureScene'),strip=document.getElementById('strip');if(!scene||!strip)throw Error('The Adventure scene is unavailable.');scene.classList.add('roster-design-active');
     const band=document.createElement('div');band.className='roster-design-band';band.setAttribute('aria-hidden','true');
-    const panel=document.createElement('canvas');panel.width=1672;panel.height=363;panel.getContext('2d').drawImage(image,20,120,2088,563,0,0,1672,363);band.append(panel);scene.append(band);
+    const panel=document.createElement('canvas');panel.width=1672;panel.height=363;const panelContext=panel.getContext('2d');panelContext.drawImage(image,20,120,2088,563,0,0,1672,363);
+    // Replace the entire printed command group, including its baked View: 3D
+    // button. Live controls occupy this one continuous clean toolbar surface.
+    const toolbarFill=panelContext.createLinearGradient(790,14,1660,64);toolbarFill.addColorStop(0,'#060c19');toolbarFill.addColorStop(1,'#050b13');panelContext.fillStyle=toolbarFill;panelContext.fillRect(790,11,870,60);band.append(panel);scene.append(band);
     const count=document.createElement('p');count.id='adventureTeamCount';count.setAttribute('aria-live','off');scene.append(count);
     const mobileHeading=document.createElement('header');mobileHeading.className='adventure-mobile-team-heading';
     const mobileTitle=document.createElement('h2');mobileTitle.textContent='Adventure Team';

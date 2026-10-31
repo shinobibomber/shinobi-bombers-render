@@ -1,7 +1,7 @@
 /* The source battlefield retains its aspect ratio and its original scenery. */
 #exactAdventureScene.original-maps-active { height:1156px; }
 #exactAdventureScene.original-maps-active #cv { left:0;top:151px;width:1672px;height:625.91px;image-rendering:auto; }
-#exactAdventureScene.original-maps-active > .exact-adventure-art { clip-path:inset(0 0 calc(100% - 151px) 0); }
+#exactAdventureScene.original-maps-active > .exact-adventure-art { clip-path:inset(0 0 calc(100% - 75px) 0); }
 #exactAdventureScene.original-maps-active .roster-design-band,
 #exactAdventureScene.original-maps-active #strip,
 #exactAdventureScene.original-maps-active .exact-adventure-manage,
