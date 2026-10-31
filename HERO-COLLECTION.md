@@ -17,8 +17,8 @@ listing close details before opening the existing purchase/listing flow.
 Closing details returns keyboard focus to the collection. Deployment counts
 and quick-action availability update as the team changes.
 
-Expanded perks have a bounded scrolling panel above the action buttons, so
-all five perks remain accessible without covering deployment or roster controls.
+Cards show only their perk count. Activating the count opens hero details,
+where every jutsu and description remains available without expanding the card.
 
 On small screens the collection reflows into readable, scrollable cards with
 compact wrapping filters instead of shrinking the entire reference sheet.

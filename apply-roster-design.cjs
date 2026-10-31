@@ -6,7 +6,7 @@ function applyRosterDesign(appDir=path.join(__dirname,'app')){
  const file=path.join(appDir,'public/index.html');let html=fs.readFileSync(file,'utf8');
  const count=html.split(marker).length-1;
  if(count>1||html.split('</head>').length!==2||html.split(style).length-1!==count||html.split(script).length-1!==count)throw Error('Cannot apply roster design: invalid HTML or inconsistent script marker.');
- const files=['source.png','roster-design.js','roster-design.css'];
+ const files=['source.webp','roster-design.js','roster-design.css'];
  for(const name of files)if(!fs.statSync(path.join(__dirname,'roster-design',name)).isFile())throw Error('Missing roster design asset '+name);
  const dest=path.join(appDir,'public/assets/roster-design');fs.mkdirSync(dest,{recursive:true});
  for(const name of files)fs.copyFileSync(path.join(__dirname,'roster-design',name),path.join(dest,name));

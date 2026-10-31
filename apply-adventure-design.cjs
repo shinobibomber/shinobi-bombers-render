@@ -50,13 +50,19 @@ function applyAdventureDesign(appDir = path.join(__dirname, 'app')) {
   const index = path.join(publicDir, 'index.html');
   const html = fs.readFileSync(index, 'utf8');
   const patched = patchHtml(html);
-  const files = ['adventure-design.js', 'adventure-design.css', 'map-crops.json', 'adventure-mode.png', 'map.png'];
+  const files = ['adventure-design.js', 'adventure-design.css', 'map-crops.json', 'adventure-mode.png', 'map.png', 'status-reference.webp'];
   for (const file of files) {
     if (!fs.statSync(path.join(__dirname, 'adventure-design', file)).isFile()) throw new Error('Missing Adventure asset ' + file);
   }
   const assets = path.join(publicDir, 'assets', 'adventure-design');
   fs.mkdirSync(assets, { recursive: true });
   for (const file of files) fs.copyFileSync(path.join(__dirname, 'adventure-design', file), path.join(assets, file));
+  const serverFile = path.join(appDir, 'server/render-server.cjs');
+  const server = fs.readFileSync(serverFile, 'utf8');
+  if (!server.includes("'.webp':'image/webp'")) {
+    if (count(server, "'.png':'image/png'" ) !== 1) throw new Error('Cannot apply Adventure image serving: static MIME table changed.');
+    fs.writeFileSync(serverFile, server.replace("'.png':'image/png'", "'.png':'image/png','.webp':'image/webp'"));
+  }
   if (patched !== html) fs.writeFileSync(index, patched);
   console.log('Exact Adventure layout and source map terrain applied to the live grid.');
 }

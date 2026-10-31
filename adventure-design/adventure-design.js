@@ -6,7 +6,7 @@
   const images = {};
   const textures = [];
   const api = window.AdventureDesign = { loaded: false, ready: null, source: null, themes: [], geometry, tile, drawFloor, drawWall, themeFor };
-  const imageReady = Promise.all(['adventure-mode.png', 'map.png'].map(name => new Promise((resolve, reject) => {
+  const imageReady = Promise.all(['adventure-mode.png', 'map.png', 'status-reference.webp'].map(name => new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => { images[name] = image; resolve(); };
     image.onerror = () => reject(new Error('Original Adventure artwork could not be loaded: ' + name));
@@ -20,7 +20,8 @@
   api.ready = Promise.all([previousReady, imageReady, manifestReady]).then(([, , manifest]) => {
     if (manifest.version !== 1 || manifest.themes.length !== 8 ||
         images['map.png'].naturalWidth !== 1536 || images['map.png'].naturalHeight !== 1024 ||
-        images['adventure-mode.png'].naturalWidth !== 1672 || images['adventure-mode.png'].naturalHeight !== 941) {
+        images['adventure-mode.png'].naturalWidth !== 1672 || images['adventure-mode.png'].naturalHeight !== 941 ||
+        images['status-reference.webp'].naturalWidth !== 2170 || images['status-reference.webp'].naturalHeight !== 725) {
       throw new Error('The Adventure source images and crop manifest do not match.');
     }
     api.source = manifest;
@@ -145,6 +146,41 @@
     const scene = document.createElement('div'); scene.id = 'exactAdventureScene'; screen.append(scene);
     const art = new Image(1672, 941); art.className = 'exact-adventure-art'; art.alt = ''; art.setAttribute('aria-hidden', 'true');
     art.draggable = false; art.src = images['adventure-mode.png'].src; scene.append(art);
+    // Reuse the supplied ornamental banner itself. Only its printed example
+    // values are replaced; live data never sits over the old sample text.
+    const source = images['status-reference.webp'];
+    const backdrop = document.createElement('canvas'); backdrop.className = 'adventure-status-backdrop';
+    backdrop.width = 2170; backdrop.height = 100; backdrop.setAttribute('aria-hidden', 'true');
+    backdrop.getContext('2d').drawImage(source, 0, 208, 2170, 100, 0, 0, 2170, 100); scene.append(backdrop);
+    const banner = document.createElement('canvas'); banner.className = 'adventure-status-art';
+    banner.width = 2070; banner.height = 168; banner.setAttribute('aria-hidden', 'true');
+    const bannerContext = banner.getContext('2d');
+    bannerContext.drawImage(source, 50, 307, 2070, 168, 0, 0, 2070, 168);
+    function blankValue(x, y, width, height, from, to) {
+      const fill = bannerContext.createLinearGradient(x, y, x + width, y + height);
+      fill.addColorStop(0, from); fill.addColorStop(1, to); bannerContext.fillStyle = fill;
+      bannerContext.fillRect(x, y, width, height);
+    }
+    blankValue(209, 64, 625, 67, '#04111f', '#06192a');
+    blankValue(1150, 73, 270, 60, '#190b13', '#1b0c14');
+    blankValue(1618, 75, 392, 64, '#02160e', '#032519');
+    scene.append(banner);
+    const stageNumber = document.createElement('span'); stageNumber.className = 'adventure-stage-number';
+    const stageName = document.createElement('span'); stageName.className = 'adventure-stage-name';
+    const separator = document.createElement('span'); separator.className = 'adventure-stage-separator'; separator.textContent = '|'; separator.setAttribute('aria-hidden', 'true');
+    const enemyCount = document.createElement('span'); enemyCount.className = 'adventure-enemy-count';
+    enemyCount.setAttribute('aria-live', 'off');
+    const enemyCurrent = document.createElement('b'), enemyMaximum = document.createElement('span');
+    enemyCount.append(enemyCurrent, enemyMaximum);
+    scene.append(stageNumber, separator, stageName, enemyCount);
+    const mobileStatus = document.createElement('div'); mobileStatus.className = 'adventure-mobile-status';
+    mobileStatus.setAttribute('aria-label', 'Adventure status');
+    mobileStatus.innerHTML = '<div class="adventure-mobile-stage"><span>STAGE</span><strong class="adventure-mobile-stage-number"></strong><b class="adventure-mobile-stage-name"></b></div><div class="adventure-mobile-enemy"><span>ENEMIES</span><strong class="adventure-mobile-enemy-value"></strong><small>remaining</small></div><div class="adventure-mobile-session"><span>SESSION GAINED</span><strong class="adventure-mobile-session-value"></strong><small>Ryo</small></div>';
+    scene.append(mobileStatus);
+    const mobileStageNumber = mobileStatus.querySelector('.adventure-mobile-stage-number');
+    const mobileStageName = mobileStatus.querySelector('.adventure-mobile-stage-name');
+    const mobileEnemies = mobileStatus.querySelector('.adventure-mobile-enemy-value');
+    const mobileSession = mobileStatus.querySelector('.adventure-mobile-session-value');
     document.body.append(screen);
 
     const manage = [...adventure.querySelectorAll('.bulk-actions button')].find(button => /heroes/i.test(button.textContent));
@@ -154,14 +190,45 @@
     manage.classList.add('exact-adventure-manage'); work.classList.add('exact-adventure-work'); rest.classList.add('exact-adventure-rest');
     for (const [button, label] of [[manage, 'Manage heroes'], [work, 'Work All'], [rest, 'Rest All']]) button.setAttribute('aria-label', label);
     document.getElementById('sessionRyo').removeAttribute('style');
+    const session = document.getElementById('sessionRyo');
+    function refreshSession() {
+      const amount = Math.floor(Number(window.SessionRyo?.gained) || 0);
+      const value = '+' + amount.toLocaleString() + ' Ryo';
+      if (session.textContent !== value) session.textContent = value;
+      session.setAttribute('aria-label', 'Session gained: ' + value); session.dataset.ryo = String(amount);
+      session.classList.toggle('long-session-value', value.length > 14);
+      mobileSession.textContent = '+' + amount.toLocaleString();
+      mobileSession.setAttribute('aria-label', 'Session gained: ' + value);
+    }
+    new MutationObserver(refreshSession).observe(session, { childList: true, characterData: true, subtree: true });
 
     const wallet = document.createElement('button'); wallet.type = 'button'; wallet.className = 'exact-adventure-wallet';
     wallet.setAttribute('aria-label', 'Open Ryo wallet'); wallet.onclick = () => ShinobiBetaUI.open(); scene.append(wallet);
     const strip = document.getElementById('strip');
     const slots = [[37, 703, 322], [369, 703, 308], [688, 703, 304], [1002, 703, 311], [1325, 703, 316],
       [37, 811, 322], [369, 811, 308], [688, 811, 304], [1002, 811, 311], [1325, 811, 316]];
+    let countedGrid = null, countedMap = null, enemyTotal = 0, renderedBalance = null;
     function refreshRoster() {
       if (tab !== 0) return;
+      const balance = document.getElementById('ry').textContent;
+      if (balance !== renderedBalance) {
+        let font = 20;
+        while (font > 9) { bannerContext.font = '700 ' + font + 'px Arial'; if (bannerContext.measureText(balance).width <= 76) break; font--; }
+        scene.style.setProperty('--adventure-ryo-font', font + 'px'); scene.dataset.ryoBalance = balance; renderedBalance = balance;
+      }
+      const remaining = left();
+      if (countedGrid !== G || countedMap !== S.map) { countedGrid = G; countedMap = S.map; enemyTotal = remaining; }
+      enemyTotal = Math.max(enemyTotal, remaining);
+      stageNumber.textContent = 'Stage ' + S.map;
+      stageName.textContent = ArenaThemes[themeFor(S.map)][0]; stageName.title = stageName.textContent;
+      stageName.classList.toggle('long-name', stageName.textContent.length > 18);
+      mobileStageNumber.textContent = stageNumber.textContent; mobileStageName.textContent = stageName.textContent;
+      if (enemyCurrent.textContent !== String(remaining)) enemyCurrent.textContent = remaining;
+      if (enemyMaximum.textContent !== ' / ' + enemyTotal) enemyMaximum.textContent = ' / ' + enemyTotal;
+      enemyCount.dataset.remaining = String(remaining); enemyCount.dataset.total = String(enemyTotal);
+      enemyCount.setAttribute('aria-label', remaining + ' enemies remaining of ' + enemyTotal + ' at map start');
+      mobileEnemies.textContent = remaining + ' / ' + enemyTotal;
+      refreshSession();
       strip.querySelectorAll('.exact-adventure-empty-slot').forEach(card => card.remove());
       const real = [...strip.querySelectorAll('.map-hero')];
       for (let i = real.length; i < 10; i++) {

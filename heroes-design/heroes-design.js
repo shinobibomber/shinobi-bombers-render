@@ -30,7 +30,7 @@
     const badgeIcons = [crop(image, [48, 325, 36, 36]), crop(image, [738, 325, 36, 36])];
     const badgeNames = ['GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND'];
     const rankColors = ['#dbe5ef', '#4be986', '#39bfff', '#d95cff', '#ffd45d'];
-    const columns = 5, pageSize = 10, cardHeight = 650, rowGap = 20;
+    const columns = 5, pageSize = 10, cardHeight = 570, rowGap = 20;
     let contentHeight = 311 + 2 * cardHeight + rowGap + 16;
     let query = '', sorting = 'rarity', page = 0, rank = '', cards = [], search, select, pager, status;
     let detailId = null, detailOrigin = null, detailSignature = '';
@@ -82,8 +82,13 @@
         damage.textContent = Number(GameBalance.damage(hero)).toLocaleString(undefined,{maximumFractionDigits:2}) + ' damage / hit · ' + hero.bm + ' projectiles · ' + hero.rg + ' range';
         card.querySelectorAll('.hero-stats > div').forEach((stat, i) => stat.style.setProperty('--stat-icon', icons[i]));
         const actions = card.querySelector('.hero-actions');
-        const perks = card.querySelector('.compact-perks');
-        if (perks) { perks.tabIndex = 0; perks.setAttribute('aria-label', hero.name + ' perks'); }
+        const perks = card.querySelector('.hero-jutsu');
+        if (perks) {
+          const count = document.createElement('button'); count.type = 'button'; count.className = 'hero-perk-count';
+          count.textContent = 'Perks · ' + hero.pk.length + '  ›';
+          count.setAttribute('aria-label', 'View ' + hero.name + ' perks (' + hero.pk.length + ')');
+          count.onclick = () => openDetail(hero.id, count); perks.replaceChildren(count);
+        }
         const buttons = [...actions.children];
         buttons[0]?.classList.add('hero-deploy-action'); buttons[1]?.classList.add('hero-train-action');
         buttons[0]?.addEventListener('click', () => { save(); hud(); });

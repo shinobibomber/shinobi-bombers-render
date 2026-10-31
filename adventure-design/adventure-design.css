@@ -24,7 +24,7 @@ body.exact-adventure-active .sakura-ambience { display: none; }
 #exactAdventureScene #sessionRyo { position: absolute; left: 306px; top: 97px; width: 217px; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 0 5px; border: 1px solid #12a46e; border-radius: 3px; white-space: nowrap; color: #d8f888; background: #061c15; font: 12px Arial, sans-serif; }
 #exactAdventureScene #st { position: absolute; left: 1375px; top: 103px; width: 254px; height: 26px; display: grid; place-items: center; margin: 0; color: #f1f5ff; background: #06101b; font: 700 14px Arial, sans-serif; white-space: nowrap; }
 #exactAdventureScene .ry { all: unset; position: absolute; left: 1084px; top: 26px; width: 105px; height: 28px; display: flex; align-items: center; gap: 4px; color: #ffe0a0; background: #030a10; font: 16px Arial, sans-serif; white-space: nowrap; }
-#exactAdventureScene #ry { font: 700 20px Arial, sans-serif; overflow: hidden; text-overflow: ellipsis; }
+#exactAdventureScene #ry { font: 700 var(--adventure-ryo-font,20px) Arial, sans-serif; overflow: visible; text-overflow: clip; }
 #exactAdventureScene .ry { pointer-events: none; }
 #exactAdventureScene #mu { pointer-events: auto; }
 #exactAdventureScene :where(#mu) { all: unset; position: absolute; left: 112px; top: 0; width: 27px; height: 28px; color: transparent; font-size: 0; cursor: pointer; }
@@ -48,3 +48,56 @@ body.exact-adventure-active .sakura-ambience { display: none; }
 #exactAdventureScene :where(.exact-adventure-slot-plus) { all: unset; position: absolute; left: 14px; top: 14px; width: 72px; height: 74px; cursor: pointer; }
 #exactAdventureScene .exact-adventure-slot-rest:disabled { cursor: default; }
 #exactAdventureScene :where(button, .community-link):focus-visible { outline: 3px solid #ffda6c; outline-offset: -3px; }
+
+/* Exact reference strip, with its original frame/icons and live text values. */
+#exactAdventureScene .adventure-status-backdrop { position:absolute;left:0;top:78px;width:1672px;height:90px;z-index:2;pointer-events:none; }
+#exactAdventureScene .adventure-status-art { position:absolute;left:45px;top:91px;width:1040px;height:84.41px;z-index:4;pointer-events:none; }
+#exactAdventureScene :is(.adventure-stage-number,.adventure-stage-name,.adventure-stage-separator,.adventure-enemy-count) { position:absolute;z-index:5;box-sizing:border-box;display:flex;align-items:center;height:33px;margin:0;padding:0;white-space:nowrap;pointer-events:none;font-family:Arial,sans-serif; }
+#exactAdventureScene .adventure-stage-number { left:155px;top:124px;width:128px;color:#ffe1a0;font-size:27px;font-weight:800;font-style:italic;text-shadow:0 1px 4px #b45916; }
+#exactAdventureScene .adventure-stage-separator { left:281px;top:124px;width:14px;color:#efdba7;font-size:25px; }
+#exactAdventureScene .adventure-stage-name { left:300px;top:124px;width:253px;color:#7edcff;font-size:25px;font-weight:800;font-style:italic;text-shadow:0 0 5px #008ce2;overflow:hidden;text-overflow:ellipsis; }
+#exactAdventureScene .adventure-stage-name.long-name { font-size:21px; }
+#exactAdventureScene .adventure-enemy-count { left:623px;top:126px;width:139px;justify-content:center;font-size:27px;font-weight:800;font-style:italic;line-height:1; }
+#exactAdventureScene .adventure-enemy-count b { color:#ff8c7a;font-size:inherit;text-shadow:0 0 6px #ee171b;font-weight:800; }
+#exactAdventureScene .adventure-enemy-count span { color:#f8eceb;font-size:inherit; }
+#exactAdventureScene #mp,#exactAdventureScene #st { display:none!important; }
+#exactAdventureScene #sessionRyo { left:860px;top:127px;width:195px;height:31px;z-index:5;justify-content:flex-start;padding:0;border:0;border-radius:0;color:#95ff9a;background:none;font:italic 800 25px/1 Arial,sans-serif;text-shadow:0 0 6px #2cda3f;white-space:nowrap; }
+#exactAdventureScene #sessionRyo.long-session-value { font-size:20px; }
+#exactAdventureScene .adventure-mobile-status { display:none; }
+/* Preserve the exact desktop scene. Phones use readable controls and status
+   panels, followed by the full-width battlefield and responsive team roster. */
+@media(max-width:760px) {
+  #exactAdventureScreen { overflow:auto;overscroll-behavior:contain; }
+  #exactAdventureScene,#exactAdventureScene.roster-design-active { position:relative!important;left:0!important;top:0!important;width:100%!important;height:auto!important;min-height:100dvh;transform:none!important;display:flex;flex-direction:column;background:linear-gradient(#020b1dd9,#061322ed),url('../design-v3/village.png') center top/cover no-repeat; }
+  #exactAdventureScene :is(.exact-adventure-art,.adventure-status-backdrop,.adventure-status-art,.adventure-stage-number,.adventure-stage-name,.adventure-stage-separator,.adventure-enemy-count,.exact-adventure-wallet) { display:none!important; }
+  #exactAdventureScene #sessionRyo { display:none!important;font-size:16px!important; }
+  #exactAdventureScene .menu-topbar { display:flex;order:-3;position:relative;flex-wrap:wrap;align-items:center;gap:8px;margin:0;padding:10px;box-sizing:border-box;background:#010914ed;border-bottom:1px solid #735528; }
+  #exactAdventureScene .menu-back { position:relative;left:auto;top:auto;display:flex;align-items:center;justify-content:center;min-width:80px;width:auto;height:42px;padding:0 12px;color:#291500;background:linear-gradient(#ffc75a,#ed8b14);border:1px solid #ffda8c;border-radius:4px;font:700 14px Arial,sans-serif; }
+  #exactAdventureScene .menu-context { display:inline!important;color:#f5d99a;font:800 15px Arial,sans-serif;letter-spacing:1px; }
+  #exactAdventureScene .menu-currency { display:flex;flex:1 1 100%;flex-wrap:wrap;align-items:center;gap:8px;margin:0; }
+  #exactAdventureScene .ry { position:relative;left:auto;top:auto;display:flex;align-items:center;width:auto;height:36px;min-width:125px;margin:0;padding:0 7px;box-sizing:border-box;border:1px solid #987137;border-radius:4px;font-size:11px;pointer-events:auto; }
+  #exactAdventureScene #ry { font-size:15px; }
+  #exactAdventureScene #mu { position:relative;left:auto;top:auto;flex:none;width:24px;height:30px;margin-left:3px;color:#cfe9ff;font:16px Arial,sans-serif; }
+  #exactAdventureScene .village-info { display:flex;align-items:center;gap:6px;flex:1 1 auto; }
+  #exactAdventureScene #onlinePlayers { position:relative;left:auto;top:auto;width:auto;height:auto;background:none;font-size:10px;white-space:nowrap; }
+  #exactAdventureScene .community-links { display:flex;align-items:center;gap:4px; }
+  #exactAdventureScene .community-link { position:relative;left:auto;top:auto;display:grid;place-items:center;width:27px;height:29px;background:#102030;border:1px solid #32495a;border-radius:3px; }
+  #exactAdventureScene .community-link > svg { visibility:visible;width:16px;height:16px;fill:currentColor;color:#c8d9e9; }
+  #exactAdventureScene .community-link > span { display:none; }
+  #exactAdventureScene .chest-trigger { position:relative;left:auto;top:auto;width:auto;min-width:112px;height:38px;margin-left:auto;padding:0 10px;font-size:13px; }
+  #exactAdventureScene .adventure-mobile-status { display:grid;order:-2;grid-template-columns:1.35fr .85fr 1.2fr;gap:6px;margin:10px 8px;min-width:0; }
+  #exactAdventureScene .adventure-mobile-status > div { display:flex;flex-direction:column;justify-content:center;min-width:0;min-height:90px;padding:9px 8px;box-sizing:border-box;border:1px solid #ba8a3b;border-radius:6px;background:linear-gradient(145deg,#102338,#06111f);box-shadow:inset 0 0 12px #0005,0 0 6px #dfa82c18; }
+  #exactAdventureScene .adventure-mobile-status span { color:#e5c181;font:700 9px/1.3 Arial,sans-serif;letter-spacing:.7px; }
+  #exactAdventureScene .adventure-mobile-status strong { display:block;margin-top:4px;font:800 17px/1.2 Arial,sans-serif;overflow-wrap:anywhere; }
+  #exactAdventureScene .adventure-mobile-status small { margin-top:4px;color:#9db3c6;font:10px/1.3 Arial,sans-serif; }
+  #exactAdventureScene .adventure-mobile-stage-number { color:#ffe2a3; }
+  #exactAdventureScene .adventure-mobile-stage-name { margin-top:4px;color:#87dcff;font:700 12px/1.25 Arial,sans-serif;overflow-wrap:anywhere; }
+  #exactAdventureScene .adventure-mobile-status .adventure-mobile-enemy { border-color:#b84c48;background:linear-gradient(145deg,#31141b,#100d19); }
+  #exactAdventureScene .adventure-mobile-enemy-value { color:#ff9a8d; }
+  #exactAdventureScene .adventure-mobile-status .adventure-mobile-session { border-color:#4d9a60;background:linear-gradient(145deg,#123421,#061b13); }
+  #exactAdventureScene .adventure-mobile-session-value { color:#a1ffab;font-size:16px!important; }
+  #exactAdventureScene #cv { position:relative;order:0;left:auto;top:auto;display:block;width:calc(100% - 16px);height:auto;aspect-ratio:1507 / 538;margin:0 8px 12px;box-sizing:border-box;border:1px solid #8a6634;border-radius:5px;box-shadow:0 3px 14px #0008;background:#071622; }
+}
+@media(prefers-reduced-motion:reduce) {
+  #exactAdventureScene .adventure-status-art { animation:none!important; }
+}

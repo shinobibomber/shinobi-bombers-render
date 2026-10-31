@@ -1,127 +1,60 @@
-/* Supplied roster art, actual deployed heroes, and the same model/aura renderer as the other menus. */
+/* Supplied Adventure Team artwork, real roster data and animated native portraits. */
 (() => {
-  const sprites = ShinobiSprites, previousReady = sprites.ready;
-  const root = new URL('.', document.currentScript.src);
-  const image = new Image();
-  const imageReady = new Promise((resolve, reject) => {
-    image.onload = resolve;
-    image.onerror = () => reject(new Error('The original Adventure roster design could not be loaded.'));
-    image.src = new URL('source.png', root).href;
-  });
-  const api = window.RosterDesign = { loaded: false, ready: null, refresh: () => {} };
-  api.ready = sprites.ready = Promise.all([previousReady, imageReady]).then(() => {
-    if (image.naturalWidth !== 2170 || image.naturalHeight !== 725) throw new Error('Adventure roster source dimensions changed.');
-    setup(); api.loaded = true; return true;
-  });
-  api.ready.catch(error => console.error('Adventure roster design could not be applied:', error));
-
-  function setup() {
-    const scene = document.getElementById('exactAdventureScene');
-    const strip = document.getElementById('strip');
-    if (!scene || !strip) throw new Error('The live Adventure scene is unavailable.');
-    if (scene.classList.contains('roster-design-active')) return;
-    scene.classList.add('roster-design-active');
-    const band = document.createElement('div'); band.className = 'roster-design-band'; band.setAttribute('aria-hidden', 'true');
-    const background = document.createElement('img'); background.src = image.src; background.alt = ''; background.draggable = false; band.append(background); scene.append(band);
-    const cardRects = [
-      [35,148,414,190], [472,148,408,190], [902,148,392,190], [1316,148,399,190], [1737,148,400,190],
-      [35,365,414,196], [472,365,408,196], [902,365,392,196], [1316,365,399,196], [1737,365,400,196]
-    ];
-    // Choose original card art by the shared base-model index, not by hero name.
-    const modelTemplates = [8,7,4,0,5,6,1,3];
-    const frameUrls = cardRects.map(([x,y,w,h]) => {
-      const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-      const context=canvas.getContext('2d');context.drawImage(image,x,y,w,h,0,0,w,h);
-      // Retain the original ornamental border and class emblem. One complete
-      // interior replaces the printed sample, rather than patches behind text.
-      const fill=context.createLinearGradient(0,0,w,h);fill.addColorStop(0,'#10283a');fill.addColorStop(.55,'#071823');fill.addColorStop(1,'#101329');
-      context.fillStyle=fill;context.fillRect(9,9,w-18,h-18);
-      context.drawImage(image,x+w-62,y+10,48,45,w-62,10,48,45);
-      return canvas.toDataURL();
-    });
-    const infoLeft = [176,166,162,156,162,176,166,162,162,162];
-    const iconUrls = cardRects.map(([x,y,w,h],i) => {const cv=document.createElement('canvas');cv.width=22;cv.height=24;cv.getContext('2d').drawImage(image,x+infoLeft[i]+2,y+(i<5?76:81),22,24,0,0,22,24);return cv.toDataURL();});
-    const colors = ['#ff534a','#d45cff','#25ccff','#39ffbb','#65ddff','#52fa74','#ffd34f','#c463ff'];
-    const factor = 1672 / 2170, top = 697, height = 1060;
-    function resize() {
-      const scale = Math.min(innerWidth / 1672, innerHeight / height);
-      scene.style.setProperty('--adventure-scale', scale);
-      scene.style.left = Math.round((innerWidth - 1672 * scale)/2) + 'px';
-      scene.style.top = Math.round((innerHeight - height * scale)/2) + 'px';
+  const sprites=ShinobiSprites,previousReady=sprites.ready,root=new URL('.',document.currentScript.src),image=new Image();
+  const imageReady=new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('Adventure Team artwork could not load.'));image.src=new URL('source.webp',root).href;});
+  const api=window.RosterDesign={loaded:false,ready:null,refresh:()=>{}};
+  api.ready=sprites.ready=Promise.all([previousReady,imageReady]).then(()=>{if(image.naturalWidth!==2126||image.naturalHeight!==740)throw Error('Adventure Team source dimensions changed.');setup();api.loaded=true;return true;});
+  api.ready.catch(error=>console.error('Adventure Team design could not be applied:',error));
+  function setup(){
+    const scene=document.getElementById('exactAdventureScene'),strip=document.getElementById('strip');if(!scene||!strip)throw Error('The Adventure scene is unavailable.');scene.classList.add('roster-design-active');
+    const band=document.createElement('div');band.className='roster-design-band';band.setAttribute('aria-hidden','true');
+    const panel=document.createElement('canvas');panel.width=1672;panel.height=363;panel.getContext('2d').drawImage(image,20,120,2088,563,0,0,1672,363);band.append(panel);scene.append(band);
+    const count=document.createElement('p');count.id='adventureTeamCount';count.setAttribute('aria-live','off');scene.append(count);
+    const mobileHeading=document.createElement('header');mobileHeading.className='adventure-mobile-team-heading';
+    const mobileTitle=document.createElement('h2');mobileTitle.textContent='Adventure Team';
+    const mobileCopy=document.createElement('p');mobileCopy.textContent='Deploy your shinobi and start bombing!';
+    mobileHeading.append(mobileTitle,mobileCopy);scene.append(mobileHeading);
+    const rects=[[40,238,412,205],[465,238,394,205],[873,238,380,205],[1266,238,399,205],[1677,238,411,205],[40,455,412,207],[465,455,394,207],[873,455,380,207],[1266,455,399,207],[1677,455,411,207]];
+    const sx=1672/2088,sy=363/563,templates=[0,2,4,8,7,5,1,3],colors=['#ff4541','#cf45ff','#25caff','#ff6b3d','#3dd7ff','#35f397','#ffd23a','#d750ff'],rankColors=['#d8e3ee','#36ec9b','#25bdff','#db5cff','#ffd646'];
+    // Preserve only original frame/emblem artwork; replace the entire printed
+    // sample interior so example names, levels and portraits cannot ghost.
+    const frames=rects.map(([x,y,w,h])=>{const cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d');c.drawImage(image,x,y,w,h,0,0,w,h);const fill=c.createLinearGradient(0,0,w,h);fill.addColorStop(0,'#020a12');fill.addColorStop(.65,'#020b13');fill.addColorStop(1,'#07111d');c.fillStyle=fill;c.fillRect(8,8,w-16,h-16);c.drawImage(image,x+w-58,y+10,46,46,w-58,10,46,46);return 'url("'+cv.toDataURL()+'")';});
+    const cache=new Map(),empty=[],selected=[],reduced=matchMedia('(prefers-reduced-motion: reduce)');let heroes=[],paintedFrame=-1;
+    function resize(){const scale=Math.min(innerWidth/1672,innerHeight/1060);scene.style.setProperty('--adventure-scale',scale);scene.style.left=Math.round((innerWidth-1672*scale)/2)+'px';scene.style.top=Math.round((innerHeight-1060*scale)/2)+'px';}
+    function create(hero){
+      const card=document.createElement('article');card.className='map-hero roster-design-card';card.dataset.maphero=hero.id;
+      const canvas=document.createElement('canvas');canvas.setAttribute('data-exact-roster','');canvas.dataset.mapPortrait=hero.id;canvas.dataset.painted='1';canvas.setAttribute('aria-label',hero.name+' portrait');
+      const name=document.createElement('b');name.className='roster-hero-name';const rank=document.createElement('span');rank.className='roster-hero-rank';const meta=document.createElement('small');meta.className='roster-hero-meta';const bar=document.createElement('div');bar.className='bar';bar.append(document.createElement('i'));
+      const action=document.createElement('button');action.type='button';action.className='roster-team-action';action.onclick=()=>{const i=S.h.findIndex(h=>h.id===Number(card.dataset.maphero)),h=S.h[i];if(!h)return;if(!h.on&&!BattleRoster.eligible(h))return toast('Move this hero to Battle-ready before deploying.');if(!h.on&&h.en<1)return toast('This hero needs chakra before deploying.');tog(i);save();hud();refresh();};
+      card.append(canvas,name,rank,meta,bar,action);return card;
     }
-    const painted=new WeakMap();
-    function portrait(canvas, hero) {
-      const density = Math.min(2, Math.max(1, devicePixelRatio || 1));
-      const width = Math.round(156 * density), height = Math.round(178 * density);
-      const now=performance.now(),key=[hero?.id,hero?.r,hero?.z,sprites.idleName(now,hero?.id||0),width,height].join(':');
-      if(painted.get(canvas)===key)return;
-      if (canvas.width !== width) canvas.width = width;
-      if (canvas.height !== height) canvas.height = height;
-      canvas.setAttribute('data-exact-roster', '');
-      const context = canvas.getContext('2d');
-      context.setTransform(density,0,0,density,0,0);
-      context.clearRect(0,0,156,178);
-      context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
-      if(hero){if(PlayerModels.drawPortrait)PlayerModels.drawPortrait(context,hero,78,155,3.85,now);else sprites.blit(context,PlayerModels.portraitFrame(hero,now),78,155,3.85,false)}
-      painted.set(canvas,key);
+    function emptyCard(i){if(empty[i])return empty[i];const card=document.createElement('article');card.className='roster-design-empty roster-design-card';const plus=document.createElement('button');plus.type='button';plus.className='exact-adventure-slot-plus';plus.textContent='+';plus.setAttribute('aria-label','Manage hero slot '+(i+1));plus.onclick=()=>go(1);const name=document.createElement('b');name.className='roster-empty-name';const copy=document.createElement('small');copy.className='roster-empty-chakra';copy.textContent='Deploy a battle-ready hero';card.append(plus,name,copy);empty[i]=card;return card;}
+    function choose(){
+      const ready=BattleRoster.list(),allowed=new Map(ready.map(h=>[h.id,h]));for(let i=selected.length-1;i>=0;i--)if(!allowed.has(selected[i]))selected.splice(i,1);
+      if(!selected.length)selected.push(...[...ready.filter(h=>h.on),...ready.filter(h=>!h.on)].slice(0,10).map(h=>h.id));
+      // Existing slots stay stable. A Sensei replacement outside the displayed
+      // ten takes a resting slot, without reordering all other controls.
+      for(const h of ready.filter(h=>h.on)){if(selected.includes(h.id))continue;const resting=selected.findLastIndex(id=>!allowed.get(id)?.on);if(selected.length<10)selected.push(h.id);else if(resting>=0)selected[resting]=h.id;}
+      for(const h of ready)if(selected.length<10&&!selected.includes(h.id))selected.push(h.id);return selected.slice(0,10).map(id=>allowed.get(id)).filter(Boolean);
     }
-    function refresh() {
-      if (tab !== 0) return;
-      const real = [...strip.children].filter(card => card.matches('.map-hero')).slice(0,10);
-      const needed = 10 - real.length;
-      const empty = [...strip.children].filter(card => card.matches('.roster-design-empty'));
-      // The older layout recreates empty placeholders on each HUD tick. Adopt
-      // them once and retain their identities so keyboard/pointer focus is stable.
-      for (const card of [...strip.querySelectorAll('.exact-adventure-empty-slot')]) {
-        if (empty.length < needed) { card.classList.remove('exact-adventure-empty-slot'); card.classList.add('roster-design-empty'); empty.push(card); }
-        else card.remove();
+    function refresh(){
+      if(tab!==0)return;const focused=strip.contains(document.activeElement)?document.activeElement:null;heroes=choose();const deployed=S.h.filter(h=>h.on).length,nodes=[];
+      for(let i=0;i<10;i++){
+        const h=heroes[i],model=h?Math.abs(Math.trunc(Number(h.id)||0))%8:i%8;let card=h?cache.get(h.id):emptyCard(i);if(!card){card=create(h);cache.set(h.id,card);}const[x,y,w,ht]=rects[i];card.dataset.adventureSlot=i+1;card.dataset.rosterModel=h?model:'empty';card.style.setProperty('--roster-x',(x-20)*sx+'px');card.style.setProperty('--roster-y',697+(y-120)*sy+'px');card.style.setProperty('--roster-width',w*sx+'px');card.style.setProperty('--roster-height',ht*sy+'px');card.style.setProperty('--roster-color',colors[model]);card.style.setProperty('--roster-frame',frames[templates[model]]);
+        if(h){card.dataset.deployed=!!h.on;card.style.setProperty('--roster-rank',rankColors[h.r]);const name=card.querySelector('.roster-hero-name');name.textContent=h.name.split(' ')[0];name.title=h.name;card.querySelector('.roster-hero-rank').textContent='✦ '+R[h.r][0];card.querySelector('.roster-hero-meta').textContent='Lv. '+h.lv+'   '+Math.floor(h.en)+' / '+Math.floor(h.st*50)+' chakra';card.querySelector('.bar i').style.width=Math.max(0,Math.min(100,h.en/(h.st*50)*100))+'%';const b=card.querySelector('.roster-team-action');b.textContent=h.on?'✓ Deployed':'Deploy';b.setAttribute('aria-label',(h.on?'Rest ':'Deploy ')+h.name);b.setAttribute('aria-pressed',!!h.on);b.disabled=!h.on&&(h.en<1||deployed>=10);b.title=h.on?'Click to rest this deployed hero':h.en<1?'Resting until chakra recovers':deployed>=10?'All ten battle slots are occupied':'Deploy this battle-ready hero';}else card.querySelector('.roster-empty-name').textContent='Empty slot '+(i+1);nodes.push(card);
       }
-      empty.slice(needed).forEach(card => card.remove());
-      const cards = [...real, ...empty.slice(0,needed)];
-      cards.forEach((card,index) => {
-        const hero = card.matches('.map-hero') ? S.h.find(h => h.id === Number(card.dataset.maphero)) : null;
-        const model = hero ? Math.abs(Math.trunc(Number(hero.id)||0))%8 : index%8;
-        const source = modelTemplates[model];
-        const [x,y,w,h] = cardRects[index];
-        card.classList.add('roster-design-card');
-        card.dataset.adventureSlot = String(index+1);
-        card.dataset.rosterModel = hero ? String(model) : 'empty';
-        card.style.setProperty('--roster-x',x*factor+'px');
-        card.style.setProperty('--roster-y',top+(y-123)*factor+'px');
-        card.style.setProperty('--roster-width',w+'px'); card.style.setProperty('--roster-height',h+'px');
-        card.style.setProperty('--roster-info-left',Math.round(infoLeft[source]*w/cardRects[source][2])+'px');
-        card.style.setProperty('--roster-bar-top',(source<5?111:116)*h/cardRects[source][3]+'px');
-        card.style.setProperty('--roster-rest-top',(h-52)+'px');
-        card.style.setProperty('--roster-color',colors[model]);
-        card.style.setProperty('--roster-frame',`url("${frameUrls[source]}")`);
-        card.querySelector('.roster-portrait-mask')?.remove();
-        let icon=card.querySelector('.roster-chakra-icon');if(!icon){icon=document.createElement('img');icon.className='roster-chakra-icon';icon.alt='';icon.setAttribute('aria-hidden','true');card.append(icon);}icon.src=iconUrls[source];
-        let canvas = card.querySelector('canvas');
-        if (!canvas) { canvas=document.createElement('canvas'); canvas.className='roster-design-empty-portrait'; card.prepend(canvas); }
-        portrait(canvas,hero);
-        if (!hero) {
-          let name=card.querySelector('.roster-empty-name'), chakra=card.querySelector('.roster-empty-chakra'), bar=card.querySelector('.roster-empty-bar');
-          if (!name) {name=document.createElement('b');name.className='roster-empty-name';card.append(name);}
-          if (!chakra) {chakra=document.createElement('small');chakra.className='roster-empty-chakra';card.append(chakra);}
-          if (!bar) {bar=document.createElement('div');bar.className='roster-empty-bar';card.append(bar);}
-          name.textContent='Empty slot '+(index+1); chakra.textContent='Deploy a battle-ready hero';
-          const plus=card.querySelector('.exact-adventure-slot-plus'); if (plus) plus.textContent='+';
-        } else {
-          const name=card.querySelector('b'); if(name){name.textContent=hero.name.split(' ')[0];name.title=hero.name;}
-          const chakra=card.querySelector('small');if(chakra)chakra.textContent=Math.floor(hero.en)+' / '+Math.floor(hero.st*50)+' chakra';
-          const bar=card.querySelector('.bar i');if(bar)bar.style.width=Math.max(0,Math.min(100,hero.en/(hero.st*50)*100))+'%';
-        }
-      });
-      resize();
+      if(nodes.some((node,i)=>strip.children[i]!==node)||strip.children.length!==10)strip.replaceChildren(...nodes);if(focused?.isConnected&&document.activeElement!==focused)focused.focus({preventScroll:true});count.textContent=deployed+' / 10';count.setAttribute('aria-label',deployed+' of 10 heroes deployed');document.getElementById('camToggle')?.setAttribute('data-team-view','View: '+(Arena3D.cfg.tilt?'3D':'2D'));const kept=new Set(heroes.map(h=>h.id));for(const[id,card]of cache)if(!kept.has(id)){card.remove();cache.delete(id);}paint(performance.now(),true);resize();
+    }
+    function paint(now,force=false){
+      const frame=reduced.matches?0:Math.floor(now/80);if(!force&&frame===paintedFrame)return;paintedFrame=frame;
+      for(const h of heroes){const card=cache.get(h.id);if(!card?.isConnected)continue;const cv=card.querySelector('canvas'),d=Math.min(2,Math.max(1,devicePixelRatio||1)),size=Math.round(126*d);if(cv.width!==size||cv.height!==size){cv.width=size;cv.height=size;}const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);c.clearRect(0,0,126,126);c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';const time=reduced.matches?0:now,phase=reduced.matches?0:Math.sin(now/520+h.id);
+        // Pulse the same source aura beneath the original native source model.
+        // The model itself is never stretched, recolored or re-drawn.
+        if(window.TierAuras?.loaded){c.save();c.globalAlpha=.32+(phase+1)*.12;sprites.blit(c,TierAuras.frame(h.r),63,119,2.9+phase*.09,false);c.restore();}PlayerModels.drawPortrait(c,h,63,119,2.85,time);cv.dataset.animationFrame=frame;cv.dataset.portraitVisible='true';
+      }
     }
     api.refresh=refresh;
-    const previousHud=hud;hud=function(...args){const focused=strip.contains(document.activeElement)?document.activeElement:null;const result=previousHud(...args);refresh();if(focused?.isConnected&&document.activeElement!==focused)focused.focus({preventScroll:true});return result;};
-    const previousGo=go;go=function(...args){const result=previousGo(...args);if(tab===0)refresh();return result;};
-    const previousRefresh=AdventureDesign.refresh;
-    AdventureDesign.refresh=function(...args){const result=previousRefresh?.(...args);refresh();return result;};
-    addEventListener('resize',resize);
-    addEventListener('shinobi-ryo-ledger',refresh);
-    new MutationObserver(()=>{if(tab===0)refresh();}).observe(document.body,{attributes:true,attributeFilter:['class']});
-    refresh();
+    const oldHud=hud;hud=function(...args){const focused=strip.contains(document.activeElement)?document.activeElement:null,id=focused?.closest('[data-maphero]')?.dataset.maphero;const result=oldHud(...args);refresh();if(id&&document.activeElement!==focused)cache.get(Number(id))?.querySelector('.roster-team-action')?.focus({preventScroll:true});return result;};
+    const oldGo=go;go=function(...args){const result=oldGo(...args);if(tab===0)refresh();return result;};const oldRefresh=AdventureDesign.refresh;AdventureDesign.refresh=function(...args){const result=oldRefresh?.(...args);refresh();return result;};addEventListener('resize',resize);addEventListener('shinobi-ryo-ledger',refresh);new MutationObserver(()=>{if(tab===0)refresh();}).observe(document.body,{attributes:true,attributeFilter:['class']});let last=0;function animate(now){requestAnimationFrame(animate);if(tab!==0||document.hidden||now-last<80)return;last=now;paint(now);}requestAnimationFrame(animate);refresh();
   }
 })();
