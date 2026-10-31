@@ -11,5 +11,4 @@
 #fusionOutcomeDialog h2{color:#ffd478;font:800 25px Arial,sans-serif}
 #fusionOutcomeDialog p{font:16px/1.7 Arial,sans-serif}
 #fusionOutcomeDialog button{width:100%;margin-top:12px}
-#summonReveal .reveal-header{flex-wrap:wrap}
-#summonReveal .fusion-outcome-summary{flex:1 0 100%;margin:4px 0 0;color:#f3d89d;font:13px/1.5 Arial,sans-serif}
+#summonReveal .fusion-outcome-summary{flex:none;margin:0;padding:8px 12px;border:1px solid #886c36;border-radius:3px;background:#071321b8;color:#f3d89d;font:13px/1.5 Arial,sans-serif}

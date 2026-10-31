@@ -8,7 +8,7 @@
  function summary(result){return result.succeeded+' / '+result.attempts+' successful · '+result.failed+' failed · '+Number(result.totalCharged).toLocaleString()+' Ryo charged. All '+result.attempts*3+' input heroes were consumed.'}
  function presentFusionOutcome(){
   const result=S.v2.fusionOutcome;if(!result||result.seen||result.owner!==RyoPayments.state.account||!RyoPayments.state.authenticated)return;
-  if(result.succeeded>0){const reveal=document.getElementById('summonReveal');if(S.v2.revealSource!=='fusion'||!reveal?.open)return;let line=reveal.querySelector('.fusion-outcome-summary');if(!line){line=document.createElement('p');line.className='fusion-outcome-summary';reveal.querySelector('.reveal-header')?.append(line)}line.textContent=summary(result);return;}
+  if(result.succeeded>0){const reveal=document.getElementById('summonReveal');if(S.v2.revealSource!=='fusion'||!reveal?.open)return;let line=reveal.querySelector('.fusion-outcome-summary');if(!line){line=document.createElement('p');line.className='fusion-outcome-summary';reveal.querySelector('.reveal-header')?.after(line)}line.textContent=summary(result);return;}
   outcomeDialog.querySelector('h2').textContent='Fusion unsuccessful';outcomeDialog.querySelector('p').textContent=summary(result)+' No new hero was created.';
   if(!outcomeDialog.open&&!LoginScreen.active&&!GameLoading.active)outcomeDialog.showModal();
  }
