@@ -6,6 +6,9 @@
   const api = window.RevealDesign = {loaded:false,ready:null,refresh,paint};
   const pages = new WeakMap(), celebrated = new WeakSet(), painted = new WeakMap();
   const frameArt = new Map();
+  const portraitQueue = new Map();
+  let portraitTick=0,observedGrid=null;
+  const resizeObserver=typeof ResizeObserver==='function'?new ResizeObserver(()=>layout()):null;
   let dialog, scene, currentPage=0, pageSize=15, celebrationUntil=0, queuedClose=false;
   const original = new Promise((resolve,reject)=>{source.onload=resolve;source.onerror=()=>reject(Error('The original reveal frame artwork is unavailable.'));source.src=new URL('reveal-design.png',root).href});
   api.ready=sprites.ready=Promise.all([previousReady,original]).then(()=>{
@@ -19,6 +22,7 @@
     }
     dialog.addEventListener('click',event=>{if(event.target.closest('#revealContinue'))finishAfterFlash(event)},true);
     dialog.addEventListener('cancel',finishAfterFlash,true);
+    dialog.addEventListener('transitionend',event=>{const card=event.target.closest?.('[data-reveal]');if(!card)return;const item=batch()[Number(card.dataset.reveal)];if(item?.revealed)queuePortrait(card,item.hero)},true);
     addEventListener('resize',layout);api.loaded=true;refresh();return true;
   });
   api.ready.catch(error=>console.error('Reveal gallery could not be applied:',error));
@@ -31,6 +35,7 @@
     scene.querySelector('.eyebrow')?.removeAttribute('aria-hidden');
     scene.dataset.revealSource=S.v2.revealSource||'summon';
     const grid=scene.querySelector('.reveal-grid');grid.setAttribute('aria-label','Shinobi reveal cards');grid.removeAttribute('tabindex');
+    if(grid!==observedGrid){resizeObserver?.disconnect();resizeObserver?.observe(grid);observedGrid=grid}
     let pager=scene.querySelector('.clean-reveal-pages');
     if(!pager){pager=document.createElement('nav');pager.className='clean-reveal-pages';pager.setAttribute('aria-label','Reveal result pages');pager.innerHTML='<button type="button" data-reveal-page="-1" aria-label="Previous result page">‹</button><span></span><button type="button" data-reveal-page="1" aria-label="Next result page">›</button>';scene.querySelector('.reveal-footer').append(pager);pager.addEventListener('click',event=>{const button=event.target.closest('[data-reveal-page]');if(!button)return;currentPage+=Number(button.dataset.revealPage);pages.set(batch(),currentPage);layout()})}
     currentPage=pages.get(batch())||0;
@@ -49,12 +54,16 @@
     dialog.style.setProperty('--clean-card-width',cardWidth+'px');dialog.style.setProperty('--clean-card-height',cardHeight+'px');dialog.style.setProperty('--clean-reveal-columns',cols);dialog.style.setProperty('--clean-reveal-gap',gap+'px');
     scene.dataset.revealQuantity=String(count);scene.dataset.visibleQuantity=String(shown);scene.dataset.cardRows=String(rows);
     grid.style.setProperty('--clean-grid-height',(rows*cardHeight+(rows-1)*gap)+'px');
-    [...grid.querySelectorAll('[data-reveal]')].forEach((card,index)=>{card.hidden=index<currentPage*pageSize||index>=(currentPage+1)*pageSize;card.setAttribute('aria-posinset',index+1);card.setAttribute('aria-setsize',count);if(!card.hidden)paintPortrait(card,batch()[index].hero)});
+    [...grid.querySelectorAll('[data-reveal]')].forEach((card,index)=>{card.hidden=index<currentPage*pageSize||index>=(currentPage+1)*pageSize;card.setAttribute('aria-posinset',index+1);card.setAttribute('aria-setsize',count);if(!card.hidden){paintPortrait(card,batch()[index].hero);queuePortrait(card,batch()[index].hero)}});
     pager.querySelector('span').textContent=`${currentPage+1} / ${total}`;pager.querySelector('[data-reveal-page="-1"]').disabled=currentPage===0;pager.querySelector('[data-reveal-page="1"]').disabled=currentPage===total-1;
   }
   function paint(index){
     if(!api.loaded)return;const item=batch()[index],card=dialog.querySelector('[data-reveal="'+index+'"]');if(!item||!card)return;
     const hero=item.hero,rank=Math.max(0,Math.min(4,Number(hero.r)||0)),model=PlayerModels.modelFor(hero).index;
+    // The persisted reveal record is authoritative. Synchronize the visible
+    // face before measuring it, even when called by an older paint hook.
+    card.classList.toggle('is-revealed',item.revealed===true);
+    card.setAttribute('aria-label',item.revealed?R[rank][0]+' '+hero.name:'Reveal card '+(index+1));
     card.style.setProperty('--clean-rank-color',item.revealed||rank>=3?R[rank][1]:'#ad8c51');card.dataset.cleanRank=rank;
     if(!frameArt.has(model)){const frame=document.createElement('canvas');frame.width=166;frame.height=359;const c=frame.getContext('2d');c.drawImage(source,slots[model],249,widths[model],359,0,0,166,359);c.clearRect(5,0,156,354);frameArt.set(model,'url("'+frame.toDataURL()+'")')}
     card.style.setProperty('--clean-frame-art',frameArt.get(model));
@@ -74,18 +83,28 @@
       if(banner){banner.textContent='Congratulations! '+R[rank][0]+' · '+hero.name;banner.style.setProperty('--glow',R[rank][1]);banner.hidden=false;layout()}
     }
     paintPortrait(card,hero);
+    queuePortrait(card,hero);
     if(item.revealed&&!wasRevealed&&batch().every(record=>record.revealed))celebrate();
   }
   function paintPortrait(card,hero){
-    if(!card.classList.contains('is-revealed')||card.hidden)return;
+    if(!dialog.open||!card.isConnected||!card.classList.contains('is-revealed')||card.hidden)return;
     const canvas=card.querySelector('.clean-reveal-portrait canvas');if(!canvas)return;
-    const bounds=canvas.getBoundingClientRect();if(bounds.width<1||bounds.height<1)return;
-    const density=Math.min(2,Math.max(1,devicePixelRatio||1)),width=Math.round(bounds.width*density),height=Math.round(bounds.height*density);
+    // getBoundingClientRect is transformed by the flip's rotateY(90deg). At
+    // the instant a sealed card opens it reports zero width, leaving the canvas
+    // blank forever. Layout dimensions stay valid throughout the transition.
+    const logicalWidth=canvas.clientWidth,logicalHeight=canvas.clientHeight;
+    if(logicalWidth<1||logicalHeight<1)return;
+    const density=Math.min(2,Math.max(1,devicePixelRatio||1)),width=Math.round(logicalWidth*density),height=Math.round(logicalHeight*density);
     if(canvas.width!==width)canvas.width=width;if(canvas.height!==height)canvas.height=height;
-    const context=canvas.getContext('2d');context.setTransform(density,0,0,density,0,0);context.clearRect(0,0,bounds.width,bounds.height);context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';
-    const scale=Math.min(bounds.width/40,bounds.height/50)*.96;
-    if(PlayerModels.drawPortrait)PlayerModels.drawPortrait(context,hero,bounds.width/2,bounds.height*.94,scale,0);
-    else sprites.blit(context,PlayerModels.portraitFrame(hero,0),bounds.width/2,bounds.height*.94,scale,false);
+    const context=canvas.getContext('2d');context.setTransform(density,0,0,density,0,0);context.clearRect(0,0,logicalWidth,logicalHeight);context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';
+    const scale=Math.min(logicalWidth/40,logicalHeight/50)*.96;
+    if(PlayerModels.drawPortrait)PlayerModels.drawPortrait(context,hero,logicalWidth/2,logicalHeight*.94,scale,0);
+    else sprites.blit(context,PlayerModels.portraitFrame(hero,0),logicalWidth/2,logicalHeight*.94,scale,false);
+  }
+  function queuePortrait(card,hero){
+    if(card.hidden||!card.classList.contains('is-revealed'))return;
+    portraitQueue.set(card,hero);if(portraitTick)return;
+    portraitTick=requestAnimationFrame(()=>{portraitTick=0;for(const [node,model]of portraitQueue)paintPortrait(node,model);portraitQueue.clear()});
   }
   function celebrate(){
     const record=batch(),winners=record.filter(item=>item.hero.r>=3);if(winners.length<2||celebrated.has(record))return;celebrated.add(record);

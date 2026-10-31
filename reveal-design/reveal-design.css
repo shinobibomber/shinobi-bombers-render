@@ -22,6 +22,11 @@
 #summonReveal.exact-reveal .clean-reveal-name{display:block;overflow:hidden;min-height:16px;max-height:34px;color:#f8edce;text-align:center;font:700 clamp(10px,.95vw,13px)/1.25 Arial,sans-serif;white-space:normal;text-wrap:balance;overflow-wrap:normal}
 #summonReveal.exact-reveal .clean-reveal-stars{display:block;color:#ffc952;text-shadow:0 1px 2px #000;text-align:center;font:17px/1.15 Arial,sans-serif;letter-spacing:1px}
 #summonReveal.exact-reveal .clean-reveal-rank{display:block;justify-self:center;width:min(88%,145px);box-sizing:border-box;padding:5px 8px;color:var(--clean-rank-color);border:1px solid color-mix(in srgb,var(--clean-rank-color) 55%,transparent);border-radius:4px;background:linear-gradient(#0c2338,#071421);text-align:center;font:700 14px/1 Arial,sans-serif}
+/* Bulk results show only the actual hero and its rarity. Keep the full name in
+   the card's accessible label/title without spending vertical portrait space. */
+#summonReveal.exact-reveal .exact-reveal-scene:not([data-reveal-quantity="1"]) .clean-reveal-face{grid-template-rows:minmax(0,1fr) auto;gap:6px}
+#summonReveal.exact-reveal .exact-reveal-scene:not([data-reveal-quantity="1"]) :is(.clean-reveal-class,.clean-reveal-name,.clean-reveal-stars){display:none}
+#summonReveal.exact-reveal .exact-reveal-scene:not([data-reveal-quantity="1"]) .clean-reveal-rank{font-size:clamp(12px,1vw,16px);padding:6px 8px}
 #summonReveal.exact-reveal .clean-reveal-seal{position:absolute;inset:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:#e7c486;text-align:center;pointer-events:none;border:1px solid #ac8d535c;border-radius:3px;background:radial-gradient(ellipse,#5b3c1244,transparent 70%);transition:opacity .25s,transform .4s}
 #summonReveal.exact-reveal .clean-seal-symbol{font:72px/1 serif;text-shadow:0 0 20px #f3b52844}
 #summonReveal.exact-reveal .clean-reveal-seal b{font:700 11px/1.2 Arial,sans-serif;letter-spacing:1px}

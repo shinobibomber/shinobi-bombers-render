@@ -1,10 +1,10 @@
 /* Original Heroes frame, existing collection/actions, and the shared player/aura renderer. */
 (() => {
   const previousReady = ShinobiSprites.ready, base = new URL('.', document.currentScript.src);
-  const image = new Image(1774, 887), aura = new Image();
-  const sourceReady = Promise.all([[image, new URL('heroes-menu.png', base)], [aura, new URL('../tier-auras/auras.png', base)]].map(([image, url]) => new Promise((resolve, reject) => {
-    image.onload = resolve; image.onerror = () => reject(Error('Original Heroes artwork could not be loaded.')); image.src = url.href;
-  })));
+  const image = new Image(1774, 887);
+  const sourceReady = new Promise((resolve, reject) => {
+    image.onload = resolve; image.onerror = () => reject(Error('Original Heroes artwork could not be loaded.')); image.src = new URL('heroes-menu.png', base).href;
+  });
   const api = window.HeroesDesign = { loaded: false, ready: null };
   api.ready = ShinobiSprites.ready = Promise.all([previousReady, sourceReady]).then(setup);
   api.ready.catch(error => console.error('Heroes design could not be applied:', error));
@@ -23,7 +23,10 @@
     const cardArt = sourceCards.map(box => crop(image, box));
     const backdrop = crop(image, [478, 8, 325, 187]);
     const icons = [[54, 616, 28, 28], [159, 616, 28, 28], [264, 616, 28, 28], [54, 656, 28, 28], [159, 656, 28, 28], [264, 656, 28, 28]].map(box => crop(image, box));
-    const tierIcons = [[27, 46, 56, 53], [335, 45, 55, 53], [640, 45, 55, 53], [946, 45, 55, 53], [1232, 43, 61, 54]].map(box => crop(aura, box));
+    // Use the original card's medallion/crystal, rather than the unrelated
+    // crown icons in the aura-sheet headings. Keep one image and one live label.
+    const badgeIcons = [crop(image, [48, 325, 36, 36]), crop(image, [738, 325, 36, 36])];
+    const badgeNames = ['GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND'];
     let query = '', sorting = 'rarity', page = 0, rank = '', cards = [], search, select, pager, status;
 
     function decorate() {
@@ -38,7 +41,12 @@
         card.style.setProperty('--hero-backdrop', backdrop);
         canvas.setAttribute('data-exact-hero', '');
         canvas.setAttribute('aria-label', PlayerModels.modelFor(hero).label + ' · ' + R[hero.r][0]);
-        const badge = card.querySelector('.hero-portrait > span'); badge.style.setProperty('--tier-icon', tierIcons[hero.r]);
+        const badge = card.querySelector('.hero-portrait > span');
+        badge.classList.add('reference-rarity-badge');badge.dataset.badgeRank=String(hero.r);badge.setAttribute('aria-label',badgeNames[hero.r]+' rarity');
+        badge.style.removeProperty('--tier-icon');badge.style.setProperty('--badge-original-icon',badgeIcons[hero.r===3?1:0]);
+        badge.replaceChildren();
+        const emblem=document.createElement('span');emblem.className='rarity-badge-emblem';emblem.setAttribute('aria-hidden','true');
+        const label=document.createElement('b');label.className='rarity-badge-label';label.textContent=badgeNames[hero.r];badge.append(emblem,label);
         const state = card.querySelector('.hero-status');
         if (card.classList.contains('hero-reserve')) {
           state.title = state.textContent; state.setAttribute('aria-label', state.textContent);

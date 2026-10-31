@@ -125,3 +125,16 @@ body.exact-heroes-active #toast { z-index: 60; }
 #exactHeroesScene #ry { font-size:15px; }
 #exactHeroesScene #mu { left:111px;top:0;height:33px;width:24px;background:#030a10; }
 #exactHeroesScene #mu::before { content:'';position:absolute;inset:8px 3px;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23eaf3ff' d='M3 8h5l5-4v16l-5-4H3z'/%3E%3Cpath fill='none' stroke='%23b9dcff' stroke-width='2' stroke-linecap='round' d='M16 8a6 6 0 010 8m3-11a10 10 0 010 14'/%3E%3C/svg%3E"); }
+/* Exact card-badge motif: original medallion/crystal plus one aligned rank label.
+   Suppress inherited pseudo-icons so no crown can overlap the original art. */
+#exactHeroesScene #p1 .hero-portrait > .reference-rarity-badge{all:unset;position:absolute;z-index:4;left:6px;top:4px;width:118px;height:32px;box-sizing:border-box;display:flex;align-items:center;border:1px solid color-mix(in srgb,var(--tier-color) 65%,#173041);border-radius:5px;background:linear-gradient(#07101be8,#020811f5);color:var(--tier-color);font:700 15px/1 Arial,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;pointer-events:none;isolation:isolate}
+#exactHeroesScene #p1 .hero-portrait > .reference-rarity-badge::before,#exactHeroesScene #p1 .hero-portrait > .reference-rarity-badge::after{content:none!important;display:none!important;background:none!important}
+#exactHeroesScene #p1 .reference-rarity-badge .rarity-badge-emblem{all:unset;position:absolute;display:block;left:-2px;top:-3px;width:36px;height:36px;background:var(--badge-original-icon) center/36px 36px no-repeat;pointer-events:none}
+#exactHeroesScene #p1 .reference-rarity-badge .rarity-badge-label{all:unset;display:block;margin-left:39px;padding-right:9px;font:700 15px/1 Arial,sans-serif;letter-spacing:0;color:var(--tier-color);white-space:nowrap}
+#exactHeroesScene #p1 .reference-rarity-badge[data-badge-rank="0"]{width:105px}
+#exactHeroesScene #p1 .reference-rarity-badge[data-badge-rank="1"]{width:116px}
+#exactHeroesScene #p1 .reference-rarity-badge[data-badge-rank="2"]{width:105px}
+#exactHeroesScene #p1 .reference-rarity-badge[data-badge-rank="3"]{width:103px}
+#exactHeroesScene #p1 .reference-rarity-badge[data-badge-rank="0"] .rarity-badge-emblem{filter:grayscale(1) brightness(1.35)}
+#exactHeroesScene #p1 .reference-rarity-badge[data-badge-rank="1"] .rarity-badge-emblem{filter:hue-rotate(75deg)}
+#exactHeroesScene #p1 .reference-rarity-badge[data-badge-rank="2"] .rarity-badge-emblem{filter:hue-rotate(150deg)}

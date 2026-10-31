@@ -36,18 +36,27 @@
   function fusion(){
    const section=scenes.get(6).section;
    section.querySelectorAll('[data-fusionhero]').forEach(canvas=>{canvas.dataset.exactFusionhero=canvas.dataset.fusionhero;canvas.removeAttribute('data-fusionhero');canvas.width=160;canvas.height=176});
-   const selected=[...section.querySelectorAll('.fusion-table tr.picked')].map(row=>S.h.find(h=>h.id===Number(row.querySelector('canvas')?.dataset.exactFusionhero))).filter(Boolean);
-   let models=section.querySelector('.exact-fusion-models');if(!models){models=document.createElement('div');models.className='exact-fusion-models';for(let i=0;i<3;i++){const c=document.createElement('canvas');c.width=192;c.height=192;c.setAttribute('aria-label','Selected fusion hero '+(i+1));models.append(c)}section.querySelector('.fusion-preview')?.append(models)}
-   models.querySelectorAll('canvas').forEach((c,i)=>{c.dataset.selectedHero=selected[i]?.id??''});
-   const next=section.querySelector('.fusion-summary h4 b')?.textContent||'Chunin';
+   const selected=[...section.querySelectorAll('.fusion-table input:checked')].map(input=>{const row=input.closest('tr'),portrait=row?.querySelector('canvas');return S.h.find(h=>h.id===Number(portrait?.dataset.exactFusionhero))}).filter(Boolean).slice(0,3);
+   let models=section.querySelector('.exact-fusion-models');if(!models){models=document.createElement('div');models.className='exact-fusion-models';for(let i=0;i<3;i++){const slot=document.createElement('div');slot.className='fusion-input-slot';const c=document.createElement('canvas');c.setAttribute('aria-label','Selected fusion hero '+(i+1));const label=document.createElement('span');label.className='fusion-input-name';slot.append(c,label);models.append(slot)}section.querySelector('.fusion-preview')?.append(models)}
+   models.querySelectorAll('canvas').forEach((c,i)=>{const hero=selected[i];c.dataset.selectedHero=hero?.id??'';c.parentNode.classList.toggle('has-hero',!!hero);c.nextElementSibling.textContent=hero?hero.name.split(' ')[0]:'Select hero '+(i+1);c.nextElementSibling.title=hero?.name||'Choose a Reserve hero from the list';c.setAttribute('aria-label',hero?hero.name:'Empty fusion input '+(i+1))});
+   const next=(section.querySelector('.fusion-summary h4 b')?.textContent||'Chunin').replace(/^\s*1\s*/, '').trim();
    const caption=section.querySelector('.fusion-caption');if(caption)caption.textContent='NEW HERO · LEVEL 1 ('+next.toUpperCase()+')';
    const button=section.querySelector('#fuseButton');if(button)button.textContent='FUSE NOW';
    section.querySelectorAll('.fusion-stats>div').forEach((el,i)=>el.style.setProperty('--fusion-stat-icon',fusionIcons[i]));
    paint(performance.now());
   }
-  function draw(canvas,hero,now,scale){const context=canvas.getContext('2d');context.clearRect(0,0,canvas.width,canvas.height);context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';if(hero)ShinobiSprites.blit(context,PlayerModels.portraitFrame(hero,now),canvas.width/2,canvas.height-10,scale,false)}
+  function draw(canvas,hero,now){
+   const w=canvas.clientWidth||112,h=canvas.clientHeight||78,density=Math.min(2,Math.max(1,devicePixelRatio||1));
+   if(canvas.width!==Math.round(w*density))canvas.width=Math.round(w*density);if(canvas.height!==Math.round(h*density))canvas.height=Math.round(h*density);
+   const context=canvas.getContext('2d');context.setTransform(density,0,0,density,0,0);context.clearRect(0,0,w,h);context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';
+   if(hero){const scale=Math.min((w-8)/40,(h-8)/50)*.94;if(PlayerModels.drawPortrait)PlayerModels.drawPortrait(context,hero,w/2,h-9,scale,now);else ShinobiSprites.blit(context,PlayerModels.portraitFrame(hero,now),w/2,h-9,scale,false)}
+   else if(canvas.closest('.fusion-input-slot')){context.fillStyle='#a5bdd1';context.font='300 25px Arial';context.textAlign='center';context.textBaseline='middle';context.fillText('+',w/2,h/2)}
+   canvas.dataset.portraitVisible=String(!!hero);context.setTransform(1,0,0,1,0,0);
+  }
   function shrinePortrait(canvas,hero,now){
-   const density=Math.min(2,Math.max(1,devicePixelRatio||1)),w=242,h=356;
+   // Layout dimensions are stable while the scene is uniformly transformed.
+   // getBoundingClientRect would include that transform and cause double scaling.
+   const density=Math.min(2,Math.max(1,devicePixelRatio||1)),w=canvas.clientWidth||222,h=canvas.clientHeight||331;
    if(canvas.width!==Math.round(w*density))canvas.width=Math.round(w*density);
    if(canvas.height!==Math.round(h*density))canvas.height=Math.round(h*density);
    const context=canvas.getContext('2d');context.setTransform(density,0,0,density,0,0);context.clearRect(0,0,w,h);
@@ -59,8 +68,11 @@
    else{context.fillStyle='#081425';context.fillRect(0,0,w,h);}
    const shade=context.createLinearGradient(0,0,0,h);shade.addColorStop(0,'#02091a44');shade.addColorStop(.62,'#02091a88');shade.addColorStop(1,'#030b14dd');context.fillStyle=shade;context.fillRect(0,0,w,h);
    const glow=context.createRadialGradient(w/2,h*.68,10,w/2,h*.68,150);glow.addColorStop(0,'#e5b04c30');glow.addColorStop(1,'#e5b04c00');context.fillStyle=glow;context.fillRect(0,0,w,h);
-   if(PlayerModels.drawPortrait)PlayerModels.drawPortrait(context,hero,w/2,h-25,5.8,now);
-   else ShinobiSprites.blit(context,PlayerModels.portraitFrame(hero,now),w/2,h-25,5.8,false);
+   const scale=Math.min((w-24)/40,(h-40)/50)*.96;
+   context.save();context.beginPath();context.rect(6,6,w-12,h-12);context.clip();
+   if(PlayerModels.drawPortrait)PlayerModels.drawPortrait(context,hero,w/2,h-33,scale,now);
+   else ShinobiSprites.blit(context,PlayerModels.portraitFrame(hero,now),w/2,h-33,scale,false);
+   context.restore();
    context.setTransform(1,0,0,1,0,0);
   }
   function paint(now){
