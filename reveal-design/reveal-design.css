@@ -1,0 +1,24 @@
+#summonReveal.exact-reveal:not([open]) { display: none !important; }
+#summonReveal.exact-reveal[open] { display: block; position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; box-sizing: border-box; padding: 0; margin: 0; overflow: hidden; border: 0; border-radius: 0; background: #020913; box-shadow: none; color: #fff3db; }
+#summonReveal.exact-reveal::backdrop { background: #020913; backdrop-filter: none; }
+#summonReveal.exact-reveal .exact-reveal-scene { position: absolute; left: 0; top: 0; width: 1926px; height: 817px; transform: scale(var(--exact-reveal-scale, 1)); transform-origin: top left; font-family: Arial, sans-serif; }
+#summonReveal.exact-reveal .exact-reveal-backdrop { position: absolute; inset: 0; width: 1926px; height: 817px; pointer-events: none; image-rendering: auto; }
+#summonReveal.exact-reveal .reveal-header, #summonReveal.exact-reveal .reveal-footer { all: unset; display: contents; }
+#summonReveal.exact-reveal .reveal-header .eyebrow, #summonReveal.exact-reveal #revealTitle, #summonReveal.exact-reveal .reveal-footer p { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#summonReveal.exact-reveal .exact-reveal-other-source .reveal-header > div { position: absolute; left: 78px; top: 92px; width: 1130px; height: 82px; background: #06101d; }
+#summonReveal.exact-reveal .exact-reveal-other-source .eyebrow, #summonReveal.exact-reveal .exact-reveal-other-source #revealTitle { position: static; display: block; width: auto; height: auto; margin: 0 0 10px; overflow: visible; clip-path: none; white-space: normal; }
+#summonReveal.exact-reveal .exact-reveal-other-source .eyebrow { color: #ffad5e; font: 700 17px Arial, sans-serif; letter-spacing: 3px; }
+#summonReveal.exact-reveal .exact-reveal-other-source #revealTitle { font: 700 33px Arial, sans-serif; color: #fff1d6; }
+#summonReveal.exact-reveal #revealProgress { position: absolute; left: 79px; top: 183px; box-sizing: border-box; width: 442px; height: 28px; margin: 0; padding: 0; background: #06101a; font: 20px/28px Arial, sans-serif; color: #f7f5ed; }
+#summonReveal.exact-reveal :where(#revealAll, #revealContinue) { all: unset; position: absolute; display: block; box-sizing: border-box; color: transparent; font-size: 0; cursor: pointer; }
+#summonReveal.exact-reveal #revealAll { left: 1716px; top: 108px; width: 128px; height: 52px; }
+#summonReveal.exact-reveal #revealContinue { left: 1678px; top: 649px; width: 166px; height: 70px; }
+#summonReveal.exact-reveal :where(#revealAll, #revealContinue):disabled { cursor: default; }
+#summonReveal.exact-reveal .reveal-grid { all: unset; position: absolute; display: block; left: 79px; top: 225px; width: 1774px; height: 395px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #a48753 #07101b; }
+#summonReveal.exact-reveal .exact-reveal-scroll-width { display: block; height: 1px; pointer-events: none; }
+#summonReveal.exact-reveal .reveal-grid .reveal-card { all: unset; position: absolute; display: block; left: var(--exact-card-x); top: var(--exact-card-y); width: 166px; height: 359px; max-width: none; padding: 0; border: 0; background: none; color: transparent; font-size: 0; cursor: pointer; perspective: none; animation: none !important; }
+#summonReveal.exact-reveal .reveal-card > .flip-inner { display: none; }
+#summonReveal.exact-reveal .exact-reveal-card-art { all: unset; display: block; width: 166px; height: 359px; image-rendering: auto; pointer-events: none; }
+#summonReveal.exact-reveal .exact-reveal-new { position: absolute; top: -18px; left: 49px; color: #fff4cb; font: italic 900 28px Impact, Arial, sans-serif; text-shadow: 0 0 7px #ffdb69, 0 0 15px #ff961d; pointer-events: none; }
+#summonReveal.exact-reveal :where(button, .reveal-grid):focus-visible { outline: 3px solid #ffe29a; outline-offset: 4px; }
+#summonReveal.exact-reveal .rare-spotlight, #summonReveal.exact-reveal .rare-group-celebration, #summonReveal.exact-reveal .rare-winner-banner { display: none !important; }

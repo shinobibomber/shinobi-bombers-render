@@ -1,0 +1,86 @@
+body.exact-heroes-active { overflow: hidden; background: #020b1d; }
+body.exact-heroes-active main { visibility: hidden; }
+body.exact-heroes-active .sakura-ambience { display: none; }
+#exactHeroesScreen { position: fixed; inset: 0; z-index: 50; background: #020b1d; }
+#exactHeroesScreen[hidden] { display: none !important; }
+#exactHeroesScene { position: fixed; left: 0; top: 0; width: 1774px; height: 887px; transform: scale(var(--heroes-scale, 1)); transform-origin: top left; isolation: isolate; color: #edf5ff; font-family: Arial, sans-serif; }
+#exactHeroesScene .heroes-reference-art { display: block; position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; pointer-events: none; user-select: none; }
+#exactHeroesScene #p1, #exactHeroesScene #p1 .hero-grid, #exactHeroesScene #p1 .hero-filters, #exactHeroesScene #p1 .hero-top, #exactHeroesScene #p1 .hero-identity, #exactHeroesScene #p1 .hero-actions, #exactHeroesScene #p1 .heroes-collection-tools { all: unset; display: contents; }
+#exactHeroesScene #p1[hidden], #exactHeroesScene #p1 .hero-grid > [hidden] { display: none !important; }
+#exactHeroesScene #p1 .hero-filter-empty, #exactHeroesScene #p1 .roster-heading > div, #exactHeroesScene #p1 .hero-identity .attack-label { display: none !important; }
+#exactHeroesScene #p1 .roster-heading { all: unset; display: contents; }
+#exactHeroesScene #p1 .roster-heading > p { all: unset; position: absolute; left: 1488px; top: 179px; width: 255px; height: 26px; display: flex; align-items: center; justify-content: flex-end; gap: 4px; background: #04101b; color: #edf5ff; font: 16px Arial, sans-serif; }
+#exactHeroesScene #p1 .hero-filters button { all: unset; position: absolute; height: 48px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 15px; color: #c5e4ff; background: linear-gradient(#102139,#071020); border: 1px solid #506a91; border-radius: 2px; font: 700 14px Arial, sans-serif; text-transform: uppercase; cursor: pointer; }
+#exactHeroesScene #p1 .hero-filters button span { color: #e4f3ff; font: 14px Arial, sans-serif; }
+#exactHeroesScene #p1 .hero-filters:has(button.active:not(:first-child))::before { content: ''; position: absolute; left: 25px; top: 212px; width: 133px; height: 66px; background: #030c1b; }
+#exactHeroesScene #p1 .hero-filters button.active { border-color: #ffcd53; box-shadow: inset 0 0 14px #ff9f1533,0 0 6px #ffb131; background: linear-gradient(#513b16,#231b0d); color: #fff; }
+#exactHeroesScene #p1 .hero-filter-status { all: unset; position: absolute; left: 35px; top: 282px; width: 1370px; height: 22px; display: flex; align-items: center; background: #020d1b; color: #edf6ff; font: 14px Arial, sans-serif; }
+#exactHeroesScene #p1 :where(.heroes-search,.heroes-sort) { all: unset; position: absolute; box-sizing: border-box; color: #edf6ff; background: #071325; font: 14px Arial, sans-serif; }
+#exactHeroesScene #p1 .heroes-search { left: 1354px; top: 232px; width: 174px; height: 30px; }
+#exactHeroesScene #p1 .heroes-search::placeholder { color: #9fb0c9; opacity: 1; }
+#exactHeroesScene #p1 .heroes-sort { left: 1601px; top: 239px; width: 135px; height: 27px; appearance: none; cursor: pointer; background: var(--sort-arrow) right 5px center/16px 20px no-repeat #071325; }
+#exactHeroesScene #p1 .heroes-sort option { color: #edf6ff; background: #071325; }
+#exactHeroesScene #p1 .heroes-reset-filter { all: unset; position: absolute; left: 1550px; top: 229px; width: 41px; height: 39px; cursor: pointer; }
+#exactHeroesScene #p1 .heroes-pagination { position: absolute; left: 1480px; top: 282px; width: 255px; height: 24px; display: flex; justify-content: flex-end; align-items: center; gap: 9px; font: 13px Arial, sans-serif; }
+#exactHeroesScene #p1 .heroes-pagination[hidden] { display: none; }
+#exactHeroesScene #p1 .heroes-pagination button { all: unset; width: 27px; height: 23px; text-align: center; background: #102139; border: 1px solid #647da2; border-radius: 2px; color: #eaf5ff; font: 700 20px/1 Arial, sans-serif; cursor: pointer; }
+#exactHeroesScene #p1 .heroes-pagination button:disabled { opacity: .4; cursor: default; }
+
+#exactHeroesScene #p1 .reference-hero-card, #exactHeroesScene #p1 .heroes-empty-card { all: unset; display: block; position: absolute; box-sizing: border-box; background: var(--card-source) 0 0/100% 100% no-repeat; }
+#exactHeroesScene #p1 .reference-hero-card::before, #exactHeroesScene #p1 .heroes-empty-card::before { content: ''; position: absolute; left: 8px; right: 8px; top: 195px; bottom: 8px; background: #06111b; }
+#exactHeroesScene #p1 .reference-hero-card[hidden] { display: none !important; }
+#exactHeroesScene #p1 .hero-portrait { all: unset; display: block; position: absolute; left: 9px; right: 9px; top: 9px; height: 186px; }
+#exactHeroesScene #p1 .hero-portrait::before { content: ''; position: absolute; inset: 0; background: var(--hero-backdrop) center/100% 100% no-repeat; clip-path: polygon(24px 0,calc(100% - 24px) 0,100% 24px,100% 100%,0 100%,0 24px); }
+#exactHeroesScene #p1 .hero-portrait canvas { all: unset; position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+#exactHeroesScene #p1 .hero-portrait > span { all: unset; position: absolute; left: 7px; top: 4px; height: 31px; min-width: 105px; padding: 0 8px 0 35px; box-sizing: border-box; display: flex; align-items: center; color: var(--tier-color); background: #020b13ef; border: 1px solid var(--tier-color); border-radius: 3px; font: 700 16px Arial, sans-serif; text-transform: uppercase; }
+#exactHeroesScene #p1 .hero-portrait > span::before { content: ''; position: absolute; left: 1px; top: 0; width: 31px; height: 30px; background: var(--tier-icon) center/contain no-repeat; }
+#exactHeroesScene #p1 .hero-status { all: unset; position: absolute; right: 16px; top: 13px; width: 82px; height: 25px; box-sizing: border-box; display: grid; place-items: center; color: #edf6ff; background: #0a1427; border: 1px solid #536883; border-radius: 3px; font: 700 10px Arial, sans-serif; }
+#exactHeroesScene #p1 .hero-identity h3 { all: unset; position: absolute; left: 14px; top: 201px; width: calc(100% - 28px); height: 22px; display: block; color: #fff3d2; font: 700 17px/22px Arial, sans-serif; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#exactHeroesScene #p1 .hero-identity > p:not(.attack-label) { all: unset; position: absolute; left: 14px; top: 228px; width: calc(100% - 28px); height: 21px; display: flex; gap: 8px; align-items: center; justify-content: space-between; font: 11px Arial, sans-serif; color: #ffe6ad; }
+#exactHeroesScene #p1 .hero-identity > p > span:not(:first-child) { border: 1px solid #5c4b2d; border-radius: 3px; padding: 3px 5px; background: #191b24; color: var(--tier-color); font-size: 10px; white-space: nowrap; }
+#exactHeroesScene #p1 .heroes-live-damage { all: unset; position: absolute; left: 14px; top: 256px; width: calc(100% - 28px); height: 20px; color: #dbeaf7; font: 12px/20px Arial, sans-serif; white-space: nowrap; }
+#exactHeroesScene #p1 .token-collection-badge { all: unset; position: absolute; left: 14px; top: 278px; width: calc(100% - 28px); height: 20px; color: #8ceef0; font: 11px/20px Arial, sans-serif; white-space: nowrap; }
+#exactHeroesScene #p1 .hero-stats { all: unset; position: absolute; left: 24px; top: 302px; width: calc(100% - 38px); height: 82px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: repeat(2,41px); }
+#exactHeroesScene #p1 .hero-stats > div { all: unset; position: relative; }
+#exactHeroesScene #p1 .hero-stats > div::before { content: ''; position: absolute; left: 0; top: 5px; width: 28px; height: 28px; background: var(--stat-icon) center/contain no-repeat; }
+#exactHeroesScene #p1 .hero-stats dt { all: unset; position: absolute; left: 31px; top: 4px; color: #b6def3; font: 9px Arial, sans-serif; text-transform: uppercase; }
+#exactHeroesScene #p1 .hero-stats dd { all: unset; position: absolute; left: 31px; top: 18px; color: #fff7e6; font: 700 14px Arial, sans-serif; }
+#exactHeroesScene #p1 .hero-energy { all: unset; position: absolute; left: 14px; top: 386px; width: calc(100% - 28px); height: 34px; }
+#exactHeroesScene #p1 .hero-energy > div:first-child { display: flex; justify-content: space-between; color: #f1f5f8; font: 11px/16px Arial, sans-serif; }
+#exactHeroesScene #p1 .hero-energy .bar { height: 12px; box-sizing: border-box; border: 1px solid #4b647c; border-radius: 4px; background: #02111d; margin-top: 3px; overflow: hidden; }
+#exactHeroesScene #p1 .hero-energy .bar i { display: block; height: 100%; background: var(--tier-color); }
+#exactHeroesScene #p1 .hero-jutsu { all: unset; position: absolute; left: 14px; top: 423px; width: calc(100% - 28px); z-index: 2; }
+#exactHeroesScene #p1 .compact-perks { margin: 0; border: 1px solid #455b80; border-radius: 2px; background: #111b33; }
+#exactHeroesScene #p1 .compact-perks summary { padding: 7px 9px; color: #f4e9ff; font: 11px Arial, sans-serif; cursor: pointer; }
+#exactHeroesScene #p1 .compact-perks[open] { position: absolute; inset: 0 0 auto; z-index: 30; max-height: 220px; overflow: auto; background: #0b1427; box-shadow: 0 5px 16px #000c; }
+#exactHeroesScene #p1 .compact-perks p { padding: 6px 9px; color: #cddcf1; font: 11px/1.4 Arial, sans-serif; }
+#exactHeroesScene #p1 .hero-actions button { all: unset; position: absolute; box-sizing: border-box; height: 36px; text-align: center; font: 12px/1.2 Arial, sans-serif; color: #fff; background: linear-gradient(#21445b,#0d293b); border: 1px solid #8cb5ce; border-radius: 2px; cursor: pointer; }
+#exactHeroesScene #p1 .hero-actions .hero-deploy-action { left: 14px; top: 456px; width: 145px; }
+#exactHeroesScene #p1 .hero-actions .hero-train-action { right: 14px; top: 456px; width: 145px; background: linear-gradient(#f99c32,#cb5b0e); border-color: #ffcd6a; }
+#exactHeroesScene #p1 .hero-actions .list-hero-button { left: 14px; right: 14px; top: 497px; height: 26px; color: #ffd66a; border-color: #e4b744; background: linear-gradient(#182d37,#071824); }
+#exactHeroesScene #p1 .hero-actions .hero-mode-button { left: 14px; right: 14px; top: 527px; height: 29px; background: linear-gradient(#cb5b0e,#873909); border-color: #fbbf4f; }
+#exactHeroesScene #p1 .hero-actions button:disabled { opacity: .55; cursor: default; }
+#exactHeroesScene #p1 .heroes-empty-card::after { content: ''; position: absolute; left: 9px; right: 9px; top: 9px; height: 188px; background: #071325; }
+#exactHeroesScene #p1 .heroes-empty-card p { position: absolute; left: 25px; right: 25px; top: 250px; color: #a5b7cd; text-align: center; font: 16px/1.5 Arial, sans-serif; }
+
+#exactHeroesScene .menu-topbar { all: unset; display: contents; }
+#exactHeroesScene .menu-context, #exactHeroesScene #walletMenuButton { display: none !important; }
+#exactHeroesScene .menu-currency, #exactHeroesScene .village-info, #exactHeroesScene .community-links { all: unset; display: contents; }
+#exactHeroesScene .menu-back, #exactHeroesScene .heroes-wallet-target { all: unset; position: absolute; cursor: pointer; color: transparent; font-size: 0; }
+#exactHeroesScene .menu-back { left: 34px; top: 12px; width: 89px; height: 42px; }
+#exactHeroesScene .heroes-wallet-target { left: 1132px; top: 7px; width: 139px; height: 44px; }
+#exactHeroesScene .ry { all: unset; position: absolute; left: 1171px; top: 18px; width: 98px; height: 25px; display: flex; align-items: center; gap: 4px; color: #ffe4a1; background: #030a10; font: 14px Arial, sans-serif; pointer-events: none; }
+#exactHeroesScene #ry { font: 700 18px Arial, sans-serif; }
+#exactHeroesScene #mu { all: unset; position: absolute; left: 102px; top: -1px; width: 25px; height: 26px; color: transparent; font-size: 0; cursor: pointer; pointer-events: auto; }
+#exactHeroesScene #mu[aria-pressed="true"]::after { content: '🔇'; position: absolute; inset: 0; display: grid; place-items: center; background: #030a10; color: #fff; font: 15px Arial, sans-serif; }
+#exactHeroesScene #onlinePlayers { all: unset; position: absolute; left: 1321px; top: 16px; width: 111px; height: 25px; display: flex; align-items: center; color: #d9ffa8; background: #061018; font: 11px Arial, sans-serif; white-space: nowrap; }
+#exactHeroesScene .community-link { all: unset; position: absolute; top: 11px; width: 35px; height: 35px; color: transparent; font-size: 0; cursor: pointer; }
+#exactHeroesScene .community-link > * { visibility: hidden; }
+#exactHeroesScene [data-community="discord"] { left: 1440px; }
+#exactHeroesScene [data-community="x"] { left: 1483px; }
+#exactHeroesScene [data-community="pumpfun"] { left: 1525px; }
+#exactHeroesScene .community-link:disabled { cursor: default; }
+#exactHeroesScene .chest-trigger { all: unset; position: absolute; left: 1574px; top: 8px; width: 159px; height: 43px; box-sizing: border-box; display: grid; place-items: center; color: #251400; font: 700 16px Arial, sans-serif; background: linear-gradient(#ffc34d,#f79418); border: 1px solid #ffda86; border-radius: 3px; cursor: pointer; }
+#exactHeroesScene :where(button,input,select,summary):focus-visible { outline: 3px solid #fff1ad; outline-offset: -3px; }
+
+body.exact-heroes-active #toast { z-index: 60; }

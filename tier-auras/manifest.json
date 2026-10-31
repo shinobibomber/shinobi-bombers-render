@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "file": "auras.png",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "4ad01d5abcb7c2efe7233c5481d9421c62ca8961e0d77bd9943f0e6069431972",
+  "tiers": [
+    {
+      "rank": 0,
+      "name": "Genin",
+      "color": "#46bcff",
+      "rect": [
+        8,
+        754,
+        305,
+        263
+      ],
+      "pivot": [
+        150,
+        176
+      ],
+      "hue": 210,
+      "hueTolerance": 45,
+      "scale": 0.84
+    },
+    {
+      "rank": 1,
+      "name": "Chunin",
+      "color": "#63f331",
+      "rect": [
+        327,
+        754,
+        287,
+        263
+      ],
+      "pivot": [
+        142,
+        176
+      ],
+      "hue": 110,
+      "hueTolerance": 45,
+      "scale": 0.84
+    },
+    {
+      "rank": 2,
+      "name": "Jonin",
+      "color": "#21baff",
+      "rect": [
+        622,
+        754,
+        291,
+        263
+      ],
+      "pivot": [
+        148,
+        176
+      ],
+      "hue": 215,
+      "hueTolerance": 45,
+      "scale": 0.84
+    },
+    {
+      "rank": 3,
+      "name": "Elite",
+      "color": "#d342ff",
+      "rect": [
+        925,
+        754,
+        283,
+        263
+      ],
+      "pivot": [
+        142,
+        176
+      ],
+      "hue": 290,
+      "hueTolerance": 45,
+      "scale": 0.84
+    },
+    {
+      "rank": 4,
+      "name": "Legend",
+      "color": "#ffb717",
+      "rect": [
+        1222,
+        754,
+        305,
+        263
+      ],
+      "pivot": [
+        154,
+        176
+      ],
+      "hue": 40,
+      "hueTolerance": 45,
+      "scale": 0.84
+    }
+  ]
+}
