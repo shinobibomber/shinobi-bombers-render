@@ -5,7 +5,7 @@
   const sourceUrl = new URL('.', document.currentScript.src);
   const textures = new Map();
   const frames = new Map();
-  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, frameInfo };
+  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, frameInfo, clearExterior };
 
   const image = new Image();
   const imageReady = new Promise((resolve, reject) => {

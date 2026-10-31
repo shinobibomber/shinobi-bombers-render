@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "mapSource": {
+    "file": "map.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "70aed04ee1e2881c014a3dafd81bb5ae33f466e777fc8264cfa55bafca4a9c03"
+  },
+  "adventureSource": {
+    "file": "adventure-mode.png",
+    "width": 1672,
+    "height": 941,
+    "sha256": "a9aa592e46f59baa565dfb909891039d78e8ae9c9e24028a8018cbda28f4a275"
+  },
+  "themes": [
+    {
+      "key": 0,
+      "name": "Shinobi Village",
+      "ground": [
+        36,
+        517,
+        30,
+        30
+      ],
+      "wall": [
+        96,
+        516,
+        30,
+        34
+      ],
+      "accent": [
+        197,
+        512,
+        45,
+        42
+      ],
+      "accentKind": "torii"
+    },
+    {
+      "key": 1,
+      "name": "Cherry Blossom Temple",
+      "ground": [
+        413,
+        517,
+        29,
+        30
+      ],
+      "wall": [
+        515,
+        516,
+        29,
+        34
+      ],
+      "accent": [
+        616,
+        505,
+        30,
+        50
+      ],
+      "accentKind": "statue",
+      "groundVariant": [
+        463,
+        517,
+        30,
+        30
+      ]
+    },
+    {
+      "key": 2,
+      "name": "Bamboo Forest",
+      "ground": [
+        804,
+        517,
+        30,
+        30
+      ],
+      "wall": [
+        923,
+        516,
+        29,
+        34
+      ],
+      "accent": [
+        858,
+        507,
+        38,
+        47
+      ],
+      "accentKind": "bamboo"
+    },
+    {
+      "key": 3,
+      "name": "Lava Caves",
+      "ground": [
+        1179,
+        517,
+        30,
+        30
+      ],
+      "wall": [
+        1287,
+        516,
+        30,
+        34
+      ],
+      "accent": [
+        1471,
+        507,
+        30,
+        49
+      ],
+      "accentKind": "torch"
+    },
+    {
+      "key": 4,
+      "name": "Snow Mountain",
+      "ground": [
+        36,
+        936,
+        30,
+        30
+      ],
+      "wall": [
+        150,
+        934,
+        30,
+        35
+      ],
+      "accent": [
+        255,
+        925,
+        48,
+        49
+      ],
+      "accentKind": "tree",
+      "groundVariant": [
+        95,
+        936,
+        30,
+        30
+      ]
+    },
+    {
+      "key": 5,
+      "name": "Night City",
+      "ground": [
+        413,
+        936,
+        31,
+        30
+      ],
+      "wall": [
+        530,
+        934,
+        30,
+        35
+      ],
+      "accent": [
+        636,
+        930,
+        48,
+        44
+      ],
+      "accentKind": "torii",
+      "groundVariant": [
+        471,
+        936,
+        31,
+        30
+      ]
+    },
+    {
+      "key": 6,
+      "name": "Desert Ruins",
+      "ground": [
+        799,
+        936,
+        30,
+        30
+      ],
+      "wall": [
+        859,
+        934,
+        30,
+        35
+      ],
+      "accent": [
+        973,
+        926,
+        32,
+        49
+      ],
+      "accentKind": "pillar"
+    },
+    {
+      "key": 7,
+      "name": "Spirit Realm",
+      "ground": [
+        1180,
+        936,
+        30,
+        30
+      ],
+      "wall": [
+        1259,
+        690,
+        25,
+        27
+      ],
+      "accent": [
+        1301,
+        927,
+        30,
+        48
+      ],
+      "accentKind": "crystal",
+      "groundVariant": [
+        1231,
+        936,
+        30,
+        30
+      ]
+    }
+  ],
+  "villageArena": {
+    "ground": [
+      586,
+      222,
+      30,
+      30
+    ],
+    "wall": [
+      333,
+      210,
+      47,
+      53
+    ],
+    "wallTop": [
+      338,
+      213,
+      41,
+      29
+    ],
+    "wallFront": [
+      335,
+      241,
+      42,
+      21
+    ],
+    "crate": [
+      476,
+      277,
+      46,
+      45
+    ]
+  }
+}
