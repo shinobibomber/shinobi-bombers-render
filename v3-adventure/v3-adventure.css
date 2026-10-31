@@ -1,0 +1,4 @@
+/* The playable layer is rendered from G. Scenic reference art stays in the HUD. */
+#exactAdventureScene.v3-native-environments #cv{background:#0b1927;border:1px solid #a67c3d;box-sizing:border-box;image-rendering:auto}
+#exactAdventureScene.v3-native-environments .adventure-stage-name{overflow:hidden;text-overflow:ellipsis}
+@media(max-width:760px){#exactAdventureScene.v3-native-environments #cv{aspect-ratio:1240/465;touch-action:pan-y}}

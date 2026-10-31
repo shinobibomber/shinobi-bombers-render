@@ -1,0 +1,818 @@
+{
+  "schemaVersion": 1,
+  "classification": "runtime-compatibility-inventory",
+  "gameplayMutable": false,
+  "identityPolicy": "Preserve the existing abs(hero.id) % 8 mapping; no canonical identity migration is inferred from concept posters.",
+  "canvas": [
+    320,
+    400
+  ],
+  "anchor": [
+    160,
+    352
+  ],
+  "nativeModels": [
+    {
+      "index": 0,
+      "key": "fire",
+      "label": "Fire Shinobi",
+      "element": "fire",
+      "source": "../player-models/playermodel.png",
+      "nativeRows": {
+        "front": 3,
+        "side": 3,
+        "back": 3,
+        "idle": 3
+      },
+      "clips": {
+        "idle": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "walk": {
+          "frames": 10,
+          "status": "legacy-masked-example-sequence"
+        },
+        "run": {
+          "frames": 8,
+          "status": "legacy-masked-example-sequence"
+        },
+        "melee": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        },
+        "ranged": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 2,
+          "status": "legacy-masked-example-sequence"
+        },
+        "hurt": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "die": {
+          "frames": 5,
+          "status": "legacy-masked-example-sequence"
+        },
+        "bomb": {
+          "frames": 3,
+          "status": "legacy-masked-example-sequence"
+        },
+        "victory": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        }
+      },
+      "limitations": [
+        "Opaque source sheet with runtime alpha cleanup, not a production atlas.",
+        "Side poses are mirrored for left; directional action/back sequences are incomplete."
+      ]
+    },
+    {
+      "index": 1,
+      "key": "shadow",
+      "label": "Shadow Shinobi",
+      "element": "shadow",
+      "source": "../player-models/playermodel.png",
+      "nativeRows": {
+        "front": 3,
+        "side": 3,
+        "back": 3,
+        "idle": 3
+      },
+      "clips": {
+        "idle": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "walk": {
+          "frames": 11,
+          "status": "legacy-masked-example-sequence"
+        },
+        "run": {
+          "frames": 8,
+          "status": "legacy-masked-example-sequence"
+        },
+        "melee": {
+          "frames": 7,
+          "status": "legacy-masked-example-sequence"
+        },
+        "ranged": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "hurt": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "die": {
+          "frames": 5,
+          "status": "legacy-masked-example-sequence"
+        },
+        "bomb": {
+          "frames": 0,
+          "status": "missing-body-frames"
+        },
+        "victory": {
+          "frames": 7,
+          "status": "legacy-masked-example-sequence"
+        }
+      },
+      "limitations": [
+        "Opaque source sheet with runtime alpha cleanup, not a production atlas.",
+        "Side poses are mirrored for left; directional action/back sequences are incomplete."
+      ]
+    },
+    {
+      "index": 2,
+      "key": "storm",
+      "label": "Storm Shinobi",
+      "element": "storm",
+      "source": "../player-models/playermodel.png",
+      "nativeRows": {
+        "front": 3,
+        "side": 3,
+        "back": 3,
+        "idle": 3
+      },
+      "clips": {
+        "idle": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "walk": {
+          "frames": 9,
+          "status": "legacy-masked-example-sequence"
+        },
+        "run": {
+          "frames": 8,
+          "status": "legacy-masked-example-sequence"
+        },
+        "melee": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        },
+        "ranged": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 3,
+          "status": "legacy-masked-example-sequence"
+        },
+        "hurt": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "die": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "bomb": {
+          "frames": 3,
+          "status": "legacy-masked-example-sequence"
+        },
+        "victory": {
+          "frames": 8,
+          "status": "legacy-masked-example-sequence"
+        }
+      },
+      "limitations": [
+        "Opaque source sheet with runtime alpha cleanup, not a production atlas.",
+        "Side poses are mirrored for left; directional action/back sequences are incomplete."
+      ]
+    },
+    {
+      "index": 3,
+      "key": "earth",
+      "label": "Earth Shinobi",
+      "element": "earth",
+      "source": "../player-models/playermodel.png",
+      "nativeRows": {
+        "front": 3,
+        "side": 3,
+        "back": 3,
+        "idle": 3
+      },
+      "clips": {
+        "idle": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "walk": {
+          "frames": 9,
+          "status": "legacy-masked-example-sequence"
+        },
+        "run": {
+          "frames": 8,
+          "status": "legacy-masked-example-sequence"
+        },
+        "melee": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        },
+        "ranged": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "hurt": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "die": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "bomb": {
+          "frames": 2,
+          "status": "legacy-masked-example-sequence"
+        },
+        "victory": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        }
+      },
+      "limitations": [
+        "Opaque source sheet with runtime alpha cleanup, not a production atlas.",
+        "Side poses are mirrored for left; directional action/back sequences are incomplete."
+      ]
+    },
+    {
+      "index": 4,
+      "key": "ice",
+      "label": "Ice Shinobi",
+      "element": "ice",
+      "source": "../player-models/playermodel.png",
+      "nativeRows": {
+        "front": 3,
+        "side": 3,
+        "back": 3,
+        "idle": 3
+      },
+      "clips": {
+        "idle": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "walk": {
+          "frames": 9,
+          "status": "legacy-masked-example-sequence"
+        },
+        "run": {
+          "frames": 7,
+          "status": "legacy-masked-example-sequence"
+        },
+        "melee": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        },
+        "ranged": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 3,
+          "status": "legacy-masked-example-sequence"
+        },
+        "hurt": {
+          "frames": 3,
+          "status": "legacy-masked-example-sequence"
+        },
+        "die": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "bomb": {
+          "frames": 3,
+          "status": "legacy-masked-example-sequence"
+        },
+        "victory": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        }
+      },
+      "limitations": [
+        "Opaque source sheet with runtime alpha cleanup, not a production atlas.",
+        "Side poses are mirrored for left; directional action/back sequences are incomplete."
+      ]
+    },
+    {
+      "index": 5,
+      "key": "poison",
+      "label": "Poison Shinobi",
+      "element": "poison",
+      "source": "../player-models/playermodel.png",
+      "nativeRows": {
+        "front": 3,
+        "side": 3,
+        "back": 3,
+        "idle": 3
+      },
+      "clips": {
+        "idle": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "walk": {
+          "frames": 9,
+          "status": "legacy-masked-example-sequence"
+        },
+        "run": {
+          "frames": 7,
+          "status": "legacy-masked-example-sequence"
+        },
+        "melee": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        },
+        "ranged": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 3,
+          "status": "legacy-masked-example-sequence"
+        },
+        "hurt": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "die": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "bomb": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "victory": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        }
+      },
+      "limitations": [
+        "Opaque source sheet with runtime alpha cleanup, not a production atlas.",
+        "Side poses are mirrored for left; directional action/back sequences are incomplete."
+      ]
+    },
+    {
+      "index": 6,
+      "key": "lightning",
+      "label": "Lightning Kunoichi",
+      "element": "lightning",
+      "source": "../player-models/playermodel.png",
+      "nativeRows": {
+        "front": 3,
+        "side": 3,
+        "back": 3,
+        "idle": 3
+      },
+      "clips": {
+        "idle": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "walk": {
+          "frames": 9,
+          "status": "legacy-masked-example-sequence"
+        },
+        "run": {
+          "frames": 7,
+          "status": "legacy-masked-example-sequence"
+        },
+        "melee": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        },
+        "ranged": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 2,
+          "status": "legacy-masked-example-sequence"
+        },
+        "hurt": {
+          "frames": 3,
+          "status": "legacy-masked-example-sequence"
+        },
+        "die": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "bomb": {
+          "frames": 2,
+          "status": "legacy-masked-example-sequence"
+        },
+        "victory": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        }
+      },
+      "limitations": [
+        "Opaque source sheet with runtime alpha cleanup, not a production atlas.",
+        "Side poses are mirrored for left; directional action/back sequences are incomplete."
+      ]
+    },
+    {
+      "index": 7,
+      "key": "spirit",
+      "label": "Spirit Shinobi",
+      "element": "spirit",
+      "source": "../player-models/playermodel.png",
+      "nativeRows": {
+        "front": 3,
+        "side": 3,
+        "back": 3,
+        "idle": 3
+      },
+      "clips": {
+        "idle": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "walk": {
+          "frames": 9,
+          "status": "legacy-masked-example-sequence"
+        },
+        "run": {
+          "frames": 7,
+          "status": "legacy-masked-example-sequence"
+        },
+        "melee": {
+          "frames": 6,
+          "status": "legacy-masked-example-sequence"
+        },
+        "ranged": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 5,
+          "status": "legacy-masked-example-sequence"
+        },
+        "hurt": {
+          "frames": 4,
+          "status": "legacy-masked-example-sequence"
+        },
+        "die": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "bomb": {
+          "frames": 2,
+          "status": "legacy-masked-example-sequence"
+        },
+        "victory": {
+          "frames": 5,
+          "status": "legacy-masked-example-sequence"
+        }
+      },
+      "limitations": [
+        "Opaque source sheet with runtime alpha cleanup, not a production atlas.",
+        "Side poses are mirrored for left; directional action/back sequences are incomplete."
+      ]
+    }
+  ],
+  "bosses": [
+    {
+      "index": 0,
+      "key": "akuma",
+      "label": "Akuma the Fallen Shinobi",
+      "source": "../combat-models/BossModel.png",
+      "clips": {
+        "idle": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "walk": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "attack": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "hurt": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "defeat": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        }
+      }
+    },
+    {
+      "index": 1,
+      "key": "yuki-onna",
+      "label": "Yuki Onna",
+      "source": "../combat-models/BossModel.png",
+      "clips": {
+        "idle": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "walk": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "attack": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "hurt": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "defeat": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        }
+      }
+    },
+    {
+      "index": 2,
+      "key": "raijin",
+      "label": "Raijin",
+      "source": "../combat-models/BossModel.png",
+      "clips": {
+        "idle": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "walk": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "attack": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "hurt": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "defeat": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        }
+      }
+    },
+    {
+      "index": 3,
+      "key": "daichi-golem",
+      "label": "Daichi Golem",
+      "source": "../combat-models/BossModel.png",
+      "clips": {
+        "idle": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "walk": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "attack": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "hurt": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "defeat": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        }
+      }
+    },
+    {
+      "index": 4,
+      "key": "orochi",
+      "label": "Orochi",
+      "source": "../combat-models/BossModel.png",
+      "clips": {
+        "idle": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "walk": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "attack": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "hurt": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "defeat": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        }
+      }
+    },
+    {
+      "index": 5,
+      "key": "shadow-emperor",
+      "label": "Shadow Emperor",
+      "source": "../combat-models/BossModel.png",
+      "clips": {
+        "idle": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "walk": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "attack": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "skill": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "hurt": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        },
+        "defeat": {
+          "frames": 1,
+          "status": "legacy-single-pose"
+        }
+      }
+    }
+  ],
+  "rarities": [
+    {
+      "rank": 0,
+      "name": "Genin",
+      "color": "#eef7ff",
+      "source": "legacy-static-effect",
+      "animationStatus": "Static masked artwork with optional draw-only pulse; authored production frame loops missing."
+    },
+    {
+      "rank": 1,
+      "name": "Chunin",
+      "color": "#3cec8b",
+      "source": "legacy-static-effect",
+      "animationStatus": "Static masked artwork with optional draw-only pulse; authored production frame loops missing."
+    },
+    {
+      "rank": 2,
+      "name": "Jonin",
+      "color": "#2bbcff",
+      "source": "legacy-static-effect",
+      "animationStatus": "Static masked artwork with optional draw-only pulse; authored production frame loops missing."
+    },
+    {
+      "rank": 3,
+      "name": "Elite",
+      "color": "#cd54ff",
+      "source": "legacy-static-effect",
+      "animationStatus": "Static masked artwork with optional draw-only pulse; authored production frame loops missing."
+    },
+    {
+      "rank": 4,
+      "name": "Legend",
+      "color": "#ffcb45",
+      "source": "legacy-static-effect",
+      "animationStatus": "Static masked artwork with optional draw-only pulse; authored production frame loops missing."
+    }
+  ],
+  "canonicalV3Models": [
+    {
+      "key": "hayate",
+      "label": "Hayate",
+      "element": "fire",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "kaze",
+      "label": "Kaze",
+      "element": "wind",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "raizen",
+      "label": "Raizen",
+      "element": "lightning",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "kurenai",
+      "label": "Kurenai",
+      "element": "fire",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "yuki",
+      "label": "Yuki",
+      "element": "ice",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "shinju",
+      "label": "Shinju",
+      "element": "nature",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "kuro",
+      "label": "Kuro",
+      "element": "shadow",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "mizuki",
+      "label": "Mizuki",
+      "element": "water",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "daichi",
+      "label": "Daichi",
+      "element": "earth",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "tsubaki",
+      "label": "Tsubaki",
+      "element": "blood",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "rei",
+      "label": "Rei",
+      "element": "light",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    },
+    {
+      "key": "orochi",
+      "label": "Orochi",
+      "element": "poison",
+      "status": "production-frames-missing",
+      "mappedRuntimeIndex": null
+    }
+  ],
+  "requiredProductionDirections": [
+    "down",
+    "left",
+    "right",
+    "up"
+  ],
+  "missingArtwork": [
+    "Canonical twelve-model production-alpha frame sequences and approved persistent identity mapping.",
+    "Independent four-direction actions and asymmetric left/right poses.",
+    "Boss multi-frame production actions, telegraphs, rage, hurt and defeat sequences.",
+    "Five separate-layer authored rarity aura loops and canonical elemental effect sequences."
+  ],
+  "referencePack": "Shinobi_Bombers_V3_REVISED_Complete_Birthday_Codex_Pack.zip"
+}

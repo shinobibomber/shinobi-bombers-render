@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "classification": "production-frames",
+  "kind": "hero",
+  "modelId": "hayate",
+  "status": "example-only-files-not-supplied",
+  "visualOnly": true,
+  "canvas": [256, 256],
+  "anchor": [0.5, 0.88],
+  "textures": ["hayate/idle/down/000.png"],
+  "clips": [{
+    "action": "idle",
+    "direction": "down",
+    "fps": 8,
+    "loop": true,
+    "frames": [{"texture": "hayate/idle/down/000.png", "rect": [0, 0, 256, 256]}]
+  }]
+}
