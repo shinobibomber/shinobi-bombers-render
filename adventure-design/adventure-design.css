@@ -50,26 +50,30 @@ body.exact-adventure-active .sakura-ambience { display: none; }
 #exactAdventureScene :where(button, .community-link):focus-visible { outline: 3px solid #ffda6c; outline-offset: -3px; }
 
 /* Exact reference strip, with its original frame/icons and live text values. */
-#exactAdventureScene .adventure-status-backdrop { position:absolute;left:0;top:78px;width:1672px;height:90px;z-index:2;pointer-events:none; }
-#exactAdventureScene .adventure-status-art { position:absolute;left:45px;top:91px;width:1040px;height:84.41px;z-index:4;pointer-events:none; }
-#exactAdventureScene :is(.adventure-stage-number,.adventure-stage-name,.adventure-stage-separator,.adventure-enemy-count) { position:absolute;z-index:5;box-sizing:border-box;display:flex;align-items:center;height:33px;margin:0;padding:0;white-space:nowrap;pointer-events:none;font-family:Arial,sans-serif; }
-#exactAdventureScene .adventure-stage-number { left:155px;top:124px;width:128px;color:#ffe1a0;font-size:27px;font-weight:800;font-style:italic;text-shadow:0 1px 4px #b45916; }
-#exactAdventureScene .adventure-stage-separator { left:281px;top:124px;width:14px;color:#efdba7;font-size:25px; }
-#exactAdventureScene .adventure-stage-name { left:300px;top:124px;width:253px;color:#7edcff;font-size:25px;font-weight:800;font-style:italic;text-shadow:0 0 5px #008ce2;overflow:hidden;text-overflow:ellipsis; }
-#exactAdventureScene .adventure-stage-name.long-name { font-size:21px; }
-#exactAdventureScene .adventure-enemy-count { left:623px;top:126px;width:139px;justify-content:center;font-size:27px;font-weight:800;font-style:italic;line-height:1; }
+#exactAdventureScene .adventure-status-backdrop { position:absolute;left:0;top:75px;width:1672px;height:76px;z-index:2;pointer-events:none; }
+#exactAdventureScene .adventure-status-art { position:absolute;left:45px;top:77px;width:862.5px;height:70px;z-index:4;pointer-events:none; }
+#exactAdventureScene :is(.adventure-stage-number,.adventure-stage-name,.adventure-stage-separator,.adventure-enemy-count,.adventure-status-label) { position:absolute;z-index:5;box-sizing:border-box;display:flex;align-items:center;height:28px;margin:0;padding:0;white-space:nowrap;pointer-events:none;font-family:Arial,sans-serif; }
+#exactAdventureScene .adventure-status-label { top:88px;height:16px;color:#fff0c5;font:700 13px/16px Arial,sans-serif;letter-spacing:.6px;text-shadow:none; }
+#exactAdventureScene .adventure-stage-label { left:132px;width:102px; }
+#exactAdventureScene .adventure-enemy-label { left:524px;width:112px; }
+#exactAdventureScene .adventure-session-label { left:716px;width:166px;letter-spacing:.15px;text-transform:none; }
+#exactAdventureScene .adventure-stage-number { left:132px;top:106px;width:107px;color:#ffe1a0;font-size:22px;font-weight:800;font-style:italic;text-shadow:0 1px 3px #b45916; }
+#exactAdventureScene .adventure-stage-separator { left:245px;top:106px;width:11px;color:#efdba7;font-size:20px; }
+#exactAdventureScene .adventure-stage-name { left:258px;top:106px;width:215px;color:#9be3ff;font-size:20px;font-weight:800;font-style:italic;text-shadow:0 0 3px #008ce2;overflow:hidden;text-overflow:ellipsis; }
+#exactAdventureScene .adventure-stage-name.long-name { font-size:17px; }
+#exactAdventureScene .adventure-enemy-count { left:524px;top:107px;width:112px;height:27px;justify-content:flex-start;gap:3px;font-size:23px;font-weight:800;font-style:italic;line-height:1; }
 #exactAdventureScene .adventure-enemy-count b { color:#ff8c7a;font-size:inherit;text-shadow:0 0 6px #ee171b;font-weight:800; }
 #exactAdventureScene .adventure-enemy-count span { color:#f8eceb;font-size:inherit; }
 #exactAdventureScene #mp,#exactAdventureScene #st { display:none!important; }
-#exactAdventureScene #sessionRyo { left:860px;top:127px;width:195px;height:31px;z-index:5;justify-content:flex-start;padding:0;border:0;border-radius:0;color:#95ff9a;background:none;font:italic 800 25px/1 Arial,sans-serif;text-shadow:0 0 6px #2cda3f;white-space:nowrap; }
-#exactAdventureScene #sessionRyo.long-session-value { font-size:20px; }
+#exactAdventureScene #sessionRyo { left:716px;top:107px;width:166px;height:27px;z-index:5;justify-content:flex-start;padding:0;border:0;border-radius:0;color:#a1ffac;background:none;font:italic 800 21px/1 Arial,sans-serif;text-shadow:0 0 3px #2cda3f;white-space:nowrap; }
+#exactAdventureScene #sessionRyo.long-session-value { font-size:18px; }
 #exactAdventureScene .adventure-mobile-status { display:none; }
 /* Preserve the exact desktop scene. Phones use readable controls and status
    panels, followed by the full-width battlefield and responsive team roster. */
 @media(max-width:760px) {
   #exactAdventureScreen { overflow:auto;overscroll-behavior:contain; }
   #exactAdventureScene,#exactAdventureScene.roster-design-active { position:relative!important;left:0!important;top:0!important;width:100%!important;height:auto!important;min-height:100dvh;transform:none!important;display:flex;flex-direction:column;background:linear-gradient(#020b1dd9,#061322ed),url('../design-v3/village.png') center top/cover no-repeat; }
-  #exactAdventureScene :is(.exact-adventure-art,.adventure-status-backdrop,.adventure-status-art,.adventure-stage-number,.adventure-stage-name,.adventure-stage-separator,.adventure-enemy-count,.exact-adventure-wallet) { display:none!important; }
+  #exactAdventureScene :is(.exact-adventure-art,.adventure-status-backdrop,.adventure-status-art,.adventure-stage-number,.adventure-stage-name,.adventure-stage-separator,.adventure-enemy-count,.adventure-status-label,.exact-adventure-wallet) { display:none!important; }
   #exactAdventureScene #sessionRyo { display:none!important;font-size:16px!important; }
   #exactAdventureScene .menu-topbar { display:flex;order:-3;position:relative;flex-wrap:wrap;align-items:center;gap:8px;margin:0;padding:10px;box-sizing:border-box;background:#010914ed;border-bottom:1px solid #735528; }
   #exactAdventureScene .menu-back { position:relative;left:auto;top:auto;display:flex;align-items:center;justify-content:center;min-width:80px;width:auto;height:42px;padding:0 12px;color:#291500;background:linear-gradient(#ffc75a,#ed8b14);border:1px solid #ffda8c;border-radius:4px;font:700 14px Arial,sans-serif; }

@@ -71,12 +71,12 @@ body.exact-home-active .sakura-ambience { display: none; }
 #exactHomeScene .menu-currency, #exactHomeScene .village-info, #exactHomeScene .community-links { all: unset; display: contents; }
 #exactHomeScene .ry {
   all: unset; position: absolute; display: flex; align-items: center; gap: 4px;
-  left: 904px; top: 25px; width: 109px; height: 29px; min-width: 0;
-  color: #ffe0a0; background: #030a10; font: 17px/1 Arial, sans-serif; white-space: nowrap;
+  left: 904px; top: 25px; width: 116px; height: 29px; min-width: 0;
+  color: #ffe0a0; background: #030a10; font: 13px/1 Arial, sans-serif; white-space: nowrap;
 }
-#exactHomeScene #ry { font: 700 21px/1 Arial, sans-serif; overflow: hidden; text-overflow: ellipsis; }
+#exactHomeScene #ry { flex:0 0 auto;font:700 var(--home-amount-font-size,21px)/1 Arial,sans-serif;white-space:nowrap;overflow:visible;text-overflow:clip; }
 #exactHomeScene :where(#mu) {
-  all: unset; position: absolute; left: 115px; top: 0; width: 27px; height: 29px;
+  all: unset; position: absolute; left: 120px; top: 0; width: 27px; height: 29px;
   color: transparent; font-size: 0; cursor: pointer; pointer-events: auto;
 }
 #exactHomeScene #mu[aria-pressed="true"]::after { content: '🔇'; position: absolute; inset: 0; display: grid; place-items: center; background: #030a10; font: 16px Arial, sans-serif; color: #fff; }

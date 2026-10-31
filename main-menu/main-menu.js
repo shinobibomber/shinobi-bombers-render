@@ -125,9 +125,26 @@
       dialog.append(heading, form); dialog.showModal();
     }
 
+    const balanceMeasure = document.createElement('canvas').getContext('2d');
+    let balanceText = '';
+    function fitBalance() {
+      const amount = document.getElementById('ry'), currency = amount?.closest('.ry');
+      if (!amount || !currency) return;
+      const text = amount.textContent.trim();
+      currency.title = text + ' Ryo'; amount.setAttribute('aria-label', text + ' Ryo');
+      if (text === balanceText) return;
+      balanceText = text;
+      // Fit the entire number inside the original wallet artwork. The audio
+      // control has its own reserved box, so it never covers trailing digits.
+      balanceMeasure.font = '700 21px Arial';
+      const measured = balanceMeasure.measureText(text).width;
+      scene.style.setProperty('--home-amount-font-size', Math.min(21, 21 * 84 / Math.max(1, measured)) + 'px');
+    }
+    new MutationObserver(() => { if (tab === 5) fitBalance(); }).observe(document.getElementById('ry'), { childList: true, characterData: true, subtree: true });
     let fingerprint = '';
     function refreshProfile() {
       if (tab !== 5) return;
+      fitBalance();
       const next = JSON.stringify([S.nick, S.h.map(h => [h.id, h.r, h.on])]);
       if (next === fingerprint) return;
       fingerprint = next;
@@ -153,7 +170,7 @@
     addEventListener('shinobi-ryo-ledger', refreshProfile);
     GameLoading.ready.then(sync);
     sync();
-    window.ExactMainMenu = { refresh: refreshProfile };
+    window.ExactMainMenu = { refresh: refreshProfile, fitBalance };
   }
   setup().catch(error => console.error('Main menu artwork could not be applied:', error));
 })();

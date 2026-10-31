@@ -1,0 +1,21 @@
+/* The source battlefield retains its aspect ratio and its original scenery. */
+#exactAdventureScene.original-maps-active { height:1156px; }
+#exactAdventureScene.original-maps-active #cv { left:0;top:151px;width:1672px;height:625.91px;image-rendering:auto; }
+#exactAdventureScene.original-maps-active > .exact-adventure-art { clip-path:inset(0 0 calc(100% - 151px) 0); }
+#exactAdventureScene.original-maps-active .roster-design-band,
+#exactAdventureScene.original-maps-active #strip,
+#exactAdventureScene.original-maps-active .exact-adventure-manage,
+#exactAdventureScene.original-maps-active .exact-adventure-work,
+#exactAdventureScene.original-maps-active .exact-adventure-rest,
+#exactAdventureScene.original-maps-active #camToggle,
+#exactAdventureScene.original-maps-active #adventureTeamCount { translate:0 96px; }
+/* The strip is display:contents on desktop; translate its actual cards. */
+#exactAdventureScene.original-maps-active #strip > .roster-design-card { translate:0 96px; }
+#exactAdventureScene.original-maps-active :is(#camToggle,#camToggle[aria-pressed="false"]) { translate:0 96px; }
+@media(max-width:760px) {
+  #exactAdventureScene.original-maps-active { height:auto!important; }
+  #exactAdventureScene.original-maps-active #cv { left:auto;top:auto;width:calc(100% - 16px);height:auto;aspect-ratio:1536 / 575; }
+  #exactAdventureScene.original-maps-active :is(.roster-design-band,#strip,.exact-adventure-manage,.exact-adventure-work,.exact-adventure-rest,#camToggle,#adventureTeamCount),
+  #exactAdventureScene.original-maps-active #strip > .roster-design-card { translate:none; }
+  #exactAdventureScene.original-maps-active :is(#camToggle,#camToggle[aria-pressed="false"]) { translate:none; }
+}

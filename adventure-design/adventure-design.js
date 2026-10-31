@@ -161,9 +161,9 @@
       fill.addColorStop(0, from); fill.addColorStop(1, to); bannerContext.fillStyle = fill;
       bannerContext.fillRect(x, y, width, height);
     }
-    blankValue(209, 64, 625, 67, '#04111f', '#06192a');
-    blankValue(1150, 73, 270, 60, '#190b13', '#1b0c14');
-    blankValue(1618, 75, 392, 64, '#02160e', '#032519');
+    blankValue(205, 16, 813, 128, '#04111f', '#06192a');
+    blankValue(1144, 27, 288, 108, '#150a12', '#210b15');
+    blankValue(1610, 27, 392, 108, '#03180f', '#07291a');
     scene.append(banner);
     const stageNumber = document.createElement('span'); stageNumber.className = 'adventure-stage-number';
     const stageName = document.createElement('span'); stageName.className = 'adventure-stage-name';
@@ -172,7 +172,9 @@
     enemyCount.setAttribute('aria-live', 'off');
     const enemyCurrent = document.createElement('b'), enemyMaximum = document.createElement('span');
     enemyCount.append(enemyCurrent, enemyMaximum);
-    scene.append(stageNumber, separator, stageName, enemyCount);
+    const stageLabel = document.createElement('span'), enemyLabel = document.createElement('span'), sessionLabel = document.createElement('span');
+    for (const [node, kind, text] of [[stageLabel, 'stage', 'STAGE'], [enemyLabel, 'enemy', 'ENEMIES'], [sessionLabel, 'session', 'Session gained:']]) { node.className = 'adventure-status-label adventure-' + kind + '-label'; node.textContent = text; node.setAttribute('aria-hidden', 'true'); }
+    scene.append(stageLabel, enemyLabel, sessionLabel, stageNumber, separator, stageName, enemyCount);
     const mobileStatus = document.createElement('div'); mobileStatus.className = 'adventure-mobile-status';
     mobileStatus.setAttribute('aria-label', 'Adventure status');
     mobileStatus.innerHTML = '<div class="adventure-mobile-stage"><span>STAGE</span><strong class="adventure-mobile-stage-number"></strong><b class="adventure-mobile-stage-name"></b></div><div class="adventure-mobile-enemy"><span>ENEMIES</span><strong class="adventure-mobile-enemy-value"></strong><small>remaining</small></div><div class="adventure-mobile-session"><span>SESSION GAINED</span><strong class="adventure-mobile-session-value"></strong><small>Ryo</small></div>';
