@@ -1,4 +1,14 @@
 node_modules/
 app/
 .env*
+!.env.example
 *.log
+
+verified-game.zip
+v3-ui/dist/
+vendor/game-base.zip
+
+
+previews/
+tmp/
+qa/node_modules/
