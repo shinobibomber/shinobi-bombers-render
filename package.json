@@ -6,10 +6,16 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "node unpack.cjs && npm --prefix app ci --omit=dev && npm --prefix app run db:init",
-    "start": "node app/server/render-server.cjs"
+    "build": "npm run build:local && npm --prefix app run db:init",
+    "start": "node app/server/render-server.cjs",
+    "typecheck": "npm --prefix v3-ui run typecheck",
+    "lint": "npm --prefix v3-ui run lint",
+    "build:ui": "npm --prefix v3-ui ci --include=dev && npm --prefix v3-ui run build",
+    "build:local": "npm run build:ui && node unpack.cjs && npm --prefix app ci --omit=dev",
+    "test": "node qa/safe-extract.test.cjs && node v3-animation/contract.test.cjs && node qa/server-smoke.cjs",
+    "test:browser": "node qa/run.cjs"
   },
   "dependencies": {
-    "extract-zip": "2.0.1"
+    "yauzl": "3.4.0"
   }
 }

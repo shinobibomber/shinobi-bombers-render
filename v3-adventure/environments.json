@@ -1,0 +1,17 @@
+{
+  "version":1,
+  "source":"V3 Revised Birthday Pack — approved environment boards are visual references only",
+  "gridAuthority":"Existing newMap()/G,31 columns,17 rows,40 world units per tile",
+  "productionTileAtlas":"Not supplied; this slice uses code-native tile artwork without imported screenshot floors",
+  "collisionAndHazards":"Native G only; no new terrain effects or hazards",
+  "environments":[
+    {"key":0,"id":"shinobi-village","name":"Shinobi Village","reference":"map_01_user_approved.png","material":"grass","floor":["#658a48","#6f944c","#c6d591"],"wall":["#a9aa8c","#808670","#505b50"],"accent":"#7caa54","rim":"#172b32","seam":"#3b67352e","border":"#b59c66","particle":"#ffc4e0","weather":"petals"},
+    {"key":1,"id":"fallen-temple","name":"Fallen Temple Ruins","reference":"map_02_user_approved.png","material":"ruins","floor":["#777c79","#83837a","#c9b89c"],"wall":["#9a9e91","#747b73","#495950"],"accent":"#a3aa65","rim":"#172530","seam":"#3c464775","border":"#a88d61","particle":"#f8ab7e","weather":"petals"},
+    {"key":2,"id":"bamboo-shadow","name":"Bamboo Shadow Forest","reference":"map_03_user_approved.png","material":"bamboo","floor":["#426d47","#4e7850","#b8d078"],"wall":["#8b9e7d","#667c63","#344c3f"],"accent":"#89b65b","rim":"#0e2c2b","seam":"#193f2c55","border":"#8f9e68","particle":"#b9e59d","weather":"petals"},
+    {"key":3,"id":"frozen-pass","name":"Frozen Mountain Pass","reference":"map_04_user_approved.png","material":"snow","floor":["#abcddd","#b9d7e1","#f2fbff"],"wall":["#b3c7d1","#8ca8bb","#576f85"],"accent":"#89e0ff","rim":"#1f3b54","seam":"#6591ad5a","border":"#b4deed","particle":"#f4fdff","weather":"snow"},
+    {"key":4,"id":"volcanic-fortress","name":"Volcanic Shadow Fortress","reference":"map_05_user_approved.png","material":"volcanic","floor":["#4d4957","#575162","#ae9693"],"wall":["#817784","#63566a","#342c40"],"accent":"#ffb454","rim":"#241b2c","seam":"#211a306b","border":"#c68a5d","particle":"#ffb06a","weather":"embers"},
+    {"key":5,"id":"thunder-temple","name":"Thunderstorm Sky Temple","reference":"map_06_user_approved.png","material":"temple","floor":["#52647f","#5d6e87","#a3bad4"],"wall":["#9a9eac","#727f96","#3b4b64"],"accent":"#d7bd6f","rim":"#132e4d","seam":"#243d625f","border":"#c8b47c","particle":"#a7dfff","weather":"wisps"},
+    {"key":6,"id":"spirit-graveyard","name":"Cursed Spirit Graveyard","reference":"map_07_user_approved.png","material":"spirit","floor":["#53506b","#605971","#b0a5c3"],"wall":["#8b829e","#695f83","#39334e"],"accent":"#b494e5","rim":"#1d1833","seam":"#2b234b63","border":"#b194cc","particle":"#c9a0ff","weather":"wisps"},
+    {"key":7,"id":"shadow-citadel","name":"Shadow Emperor’s Citadel","reference":"map_08_user_approved.png","material":"citadel","floor":["#3f4a67","#4c5571","#9c9fc8"],"wall":["#797c97","#59627f","#303c5c"],"accent":"#ae7fff","rim":"#101d38","seam":"#1724416e","border":"#b49bcb","particle":"#bd9cff","weather":"wisps"}
+  ]
+}

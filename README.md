@@ -1,5 +1,9 @@
-# Shinobi Bombers — Render beta
+# Shinobi Bombers — integrated V3 beta
 
-This repository contains the tested game as a verified archive and a reproducible Node build adapter. No private credentials are included.
+An incremental React/TypeScript/Tailwind interface extends the existing JavaScript/Canvas game and its Solana Devnet services. The complete V3 redesign is still in progress. [Status by design section](V3-STATUS.md), [setup and rollback](V3-SETUP.md), [verification](V3-VERIFICATION.md), [changelog](V3-CHANGELOG.md).
 
-Render: Node 22, Free web service, build `npm ci && npm run build`, start `npm start`, health `/healthz`. The build unpacks the game, installs locked dependencies, and initializes the existing Neon schema additively. Server environment: DATABASE_URL, RYO_TREASURY_SECRET, RYO_TOKEN_MINT, RYO_STUDIO_WALLET, RYO_REVENUE_WALLET. Never commit these values. RYO_SITE_ORIGIN is automatically derived from Render.
+Use Node 22. Run `npm ci` then `npm run build:local` to assemble the game without database access. It verifies the pinned base archive, applies the ordered maintained integration helpers and installs application dependencies. React source lives in `v3-ui/src`; generated `app/` is ignored. The release ZIP bundles the verified base, while a Git checkout downloads it.
+
+`npm test`, `npm run typecheck`, `npm run lint` and `npm run test:browser` provide the checks documented in [qa/README.md](qa/README.md). Browser tests use a simulated wallet/API; live Devnet settlement remains a separate acceptance check.
+
+Render retains build `npm ci && npm run build`, start `npm start`, and health `/healthz`. The full build also initializes the existing PostgreSQL schema additively. Keep server credentials outside GitHub/public files. `RYO_SITE_ORIGIN` is derived from Render when unset. This V3 slice is on its review branch and has not replaced the live beta.
