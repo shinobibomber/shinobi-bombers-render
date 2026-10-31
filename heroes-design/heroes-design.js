@@ -15,7 +15,8 @@
     const sectionHome = document.createComment('Heroes page'), barHome = document.createComment('Heroes shared toolbar');
     section.before(sectionHome); bar.before(barHome);
     const screen = document.createElement('section'); screen.id = 'exactHeroesScreen'; screen.hidden = true; screen.setAttribute('aria-label', 'Heroes collection');
-    const scene = document.createElement('div'); scene.id = 'exactHeroesScene'; screen.append(scene);
+    const stage = document.createElement('div'); stage.className = 'heroes-scroll-stage'; screen.append(stage);
+    const scene = document.createElement('div'); scene.id = 'exactHeroesScene'; stage.append(scene);
     image.className = 'heroes-reference-art'; image.alt = ''; image.setAttribute('aria-hidden', 'true'); image.draggable = false; scene.append(image); document.body.append(screen);
     const wallet = document.createElement('button'); wallet.type = 'button'; wallet.className = 'heroes-wallet-target'; wallet.setAttribute('aria-label', 'Open Ryo wallet'); wallet.onclick = () => ShinobiBetaUI.open(); scene.append(wallet);
 
@@ -29,7 +30,8 @@
     const badgeIcons = [crop(image, [48, 325, 36, 36]), crop(image, [738, 325, 36, 36])];
     const badgeNames = ['GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND'];
     const rankColors = ['#dbe5ef', '#4be986', '#39bfff', '#d95cff', '#ffd45d'];
-    const pageSize = 5;
+    const columns = 5, pageSize = 10, cardHeight = 650, rowGap = 20;
+    let contentHeight = 311 + 2 * cardHeight + rowGap + 16;
     let query = '', sorting = 'rarity', page = 0, rank = '', cards = [], search, select, pager, status;
     let detailId = null, detailOrigin = null, detailSignature = '';
     const detail = document.createElement('dialog'); detail.id = 'heroDetailDialog';
@@ -80,6 +82,8 @@
         damage.textContent = Number(GameBalance.damage(hero)).toLocaleString(undefined,{maximumFractionDigits:2}) + ' damage / hit · ' + hero.bm + ' projectiles · ' + hero.rg + ' range';
         card.querySelectorAll('.hero-stats > div').forEach((stat, i) => stat.style.setProperty('--stat-icon', icons[i]));
         const actions = card.querySelector('.hero-actions');
+        const perks = card.querySelector('.compact-perks');
+        if (perks) { perks.tabIndex = 0; perks.setAttribute('aria-label', hero.name + ' perks'); }
         const buttons = [...actions.children];
         buttons[0]?.classList.add('hero-deploy-action'); buttons[1]?.classList.add('hero-train-action');
         buttons[0]?.addEventListener('click', () => { save(); hud(); });
@@ -112,11 +116,16 @@
         return sorting === 'name' ? x.name.localeCompare(y.name) : (sorting === 'level' ? y.lv - x.lv : sorting === 'power' ? y.pw - x.pw : sorting === 'chakra' ? y.en - x.en : y.r - x.r) || x.id - y.id;
       });
       const pages = Math.max(1, Math.ceil(matches.length / pageSize)); page = Math.min(page, pages - 1);
+      scene.dataset.pageSize = String(pageSize);
+      const rows = Math.max(1, Math.ceil(Math.min(pageSize, matches.length - page * pageSize) / columns));
+      contentHeight = 311 + rows * cardHeight + (rows - 1) * rowGap + 16;
+      scene.dataset.visibleRows = String(rows);
       // Keep only the current page mounted; the full collection remains searchable.
       for (const card of cards) { card.hidden = true; card.remove(); }
       section.querySelectorAll('.heroes-empty-card').forEach(card => card.remove());
-      for (let slot = 0; slot < pageSize; slot++) {
-        const card = matches[page * pageSize + slot]; const box = sourceCards[slot];
+      for (let slot = 0; slot < rows * columns; slot++) {
+        const card = matches[page * pageSize + slot], source = sourceCards[slot % columns];
+        const box = [source[0], source[1] + Math.floor(slot / columns) * (cardHeight + rowGap), source[2], cardHeight];
         const item = card || document.createElement('article');
         if (!card) { item.className = 'heroes-empty-card'; const text = document.createElement('p'); text.textContent = matches.length ? 'No hero in this slot' : 'No heroes match this selection'; item.append(text); section.append(item); }
         item.hidden = false;
@@ -147,6 +156,7 @@
         const controls = [...pager.querySelectorAll('button,select')];
         (controls.find(control => control.getAttribute('aria-label') === pagerFocus && !control.disabled) || pager.querySelector('select') || search)?.focus({ preventScroll: true });
       }
+      resize();
     }
     function paint(now) {
       for (const card of cards) {
@@ -218,7 +228,12 @@
       context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
       PlayerModels.drawPortrait(context, hero, width / 2, height - 30 * density, 6.2 * density, now);
     }
-    function resize() { const scale = Math.min(innerWidth / 1774, innerHeight / 887); scene.style.setProperty('--heroes-scale', scale); scene.style.left = Math.round((innerWidth - 1774 * scale) / 2) + 'px'; scene.style.top = Math.round((innerHeight - 887 * scale) / 2) + 'px'; }
+    function resize() {
+      const scale = Math.min(1, innerWidth / 1774);
+      scene.style.setProperty('--heroes-scale', scale); scene.style.height = contentHeight + 'px';
+      stage.style.height = Math.ceil(contentHeight * scale) + 'px';
+      scene.style.left = Math.round((innerWidth - 1774 * scale) / 2) + 'px'; scene.style.top = '0px';
+    }
     function sync() {
       const active = tab === 1 && !LoginScreen.active && !GameLoading.active;
       document.body.classList.toggle('exact-heroes-active', active); screen.hidden = !active; screen.inert = !active;
