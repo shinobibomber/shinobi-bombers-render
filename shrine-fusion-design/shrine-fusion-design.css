@@ -103,3 +103,59 @@ body.exact-crafting-active{overflow:hidden;background:#020b1d}body.exact-craftin
 #exactFusionScene #onlinePlayers{left:1104px;top:17px;width:116px;height:37px;font-size:11px;justify-content:center}
 #exactFusionScene .fusion-table canvas{image-rendering:auto}
 #exactShrineScene #p2 .summon-art{background:radial-gradient(ellipse at 50% 55%,#b78a33,#51380e 80%,#d5a94a)!important}
+
+/* Shrine cleanup: one original scene, one live portrait and one set of text. */
+#exactShrineScene #p2 .summon-art{background:#071323!important;border-radius:2px;isolation:isolate}
+#exactShrineScene #p2 #exactShrinePortrait{width:242px!important;height:356px!important;image-rendering:auto!important}
+#exactShrineScene .ry{left:862px;top:14px;width:190px;height:47px;padding:0 29px;justify-content:center;gap:4px;background:#030b15;border:1px solid #9e783c;border-radius:3px;color:#ffdf93;font:13px/1 Arial,sans-serif;font-variant-numeric:tabular-nums}
+#exactShrineScene .ry::before{content:'◉';position:absolute;left:10px;top:12px;color:#ffc53e;font:24px/1 Arial,sans-serif;text-shadow:0 0 5px #ffb22e55}
+#exactShrineScene #ry{display:block;min-width:0;flex:none;color:#ffe5a2;font-family:Arial,sans-serif;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0}
+#exactShrineScene #mu{left:158px;top:1px;width:29px;height:43px;font-size:17px;color:#eaf5ff;display:grid;place-items:center;pointer-events:auto}
+#exactShrineScene #mu[aria-pressed=true]::after{font-size:17px}
+#exactShrineScene .crafting-wallet-target{left:862px;top:14px;width:155px;height:47px}
+#exactShrineScene #p2 .summon-price{left:927px;top:392px;width:519px;height:39px;padding:0 2px;box-sizing:border-box;background:#030d19}
+#exactShrineScene #p2 .summon-price b{font:700 23px/1.3 Arial,sans-serif;letter-spacing:0;color:#ffe2a0;font-variant-numeric:tabular-nums}
+#exactShrineScene #p2 .summon-main{top:440px;display:flex;align-items:center;justify-content:center;line-height:1;white-space:nowrap;font-family:Arial,sans-serif}
+#exactShrineScene #p2 .shrine-controls>table{all:unset!important;position:absolute!important;left:928px!important;top:545px!important;width:516px!important;height:286px!important;display:table!important;table-layout:fixed!important;border-collapse:collapse!important;background:#030d19!important;color:#e7f0fa!important;font-family:Arial,sans-serif!important}
+#exactShrineScene #p2 .shrine-controls>table :is(th,td){box-sizing:border-box;text-align:left;vertical-align:middle;padding:0 8px!important;border:0;border-bottom:1px solid #8d734c55;background:transparent!important;font:16px/1.25 Arial,sans-serif!important;letter-spacing:0!important;text-shadow:none}
+#exactShrineScene #p2 .shrine-controls>table th{height:37px;color:#ffe5ab;font-weight:700!important;font-size:15px!important}
+#exactShrineScene #p2 .shrine-controls>table th:nth-child(1){width:25%}
+#exactShrineScene #p2 .shrine-controls>table th:nth-child(2){width:21%}
+#exactShrineScene #p2 .shrine-controls>table th:nth-child(3){width:54%}
+#exactShrineScene #p2 .shrine-controls>table td{height:49px;font-weight:500!important}
+#exactShrineScene #p2 .shrine-controls>table tbody tr:last-child td{border:0}
+#exactShrineScene #p2 .shrine-controls>p.mut{left:928px;top:848px;width:516px;height:38px;padding:0 8px;box-sizing:border-box;background:#030d19;font:18px/1.35 Arial,sans-serif;color:#edc78d}
+#exactShrineScene #p2 .exact-summon-fee{left:936px;top:891px;width:500px;margin:0;background:#030d19;font:13px/1.4 Arial,sans-serif;color:#a9bad1}
+#exactShrineScene .summon-quantities button{font-family:Arial,sans-serif;line-height:1;letter-spacing:0}
+#exactShrineScene #p2 :is(.shrine-controls,.summon-art)::before,#exactShrineScene #p2 :is(.shrine-controls,.summon-art)::after{display:none!important}
+@media(max-width:699px){
+ #exactShrineScreen{overflow-x:hidden;overflow-y:auto;background:#020b1d}
+ #exactShrineScene.shrine-mobile{position:relative!important;inset:auto!important;width:100%!important;min-height:1115px;height:1115px!important;transform:none!important;overflow:hidden;background:linear-gradient(#030b16b8,#030b16ed),url(../design-v3/village.png) center/cover}
+ #exactShrineScene.shrine-mobile .crafting-reference-art{display:none}
+ #exactShrineScene.shrine-mobile .menu-topbar{height:112px}
+ #exactShrineScene.shrine-mobile .menu-back{left:12px;top:12px;width:84px;height:42px;display:grid;place-items:center;border:1px solid #ffcb61;border-radius:3px;background:linear-gradient(#ffbb3e,#f38c13);color:#1d1000;font:700 15px/1 Arial,sans-serif}
+ #exactShrineScene.shrine-mobile .ry{left:108px;top:12px;width:calc(100% - 120px);height:42px;max-width:none}
+ #exactShrineScene.shrine-mobile #mu{left:auto;right:0;top:0;height:40px}
+ #exactShrineScene.shrine-mobile .crafting-wallet-target{left:108px;top:12px;width:calc(100% - 150px);height:42px}
+ #exactShrineScene.shrine-mobile .ry::before{top:9px}
+ #exactShrineScene.shrine-mobile #onlinePlayers{left:12px;top:66px;width:124px;height:32px;justify-content:flex-start;background:transparent;font-size:11px}
+ #exactShrineScene.shrine-mobile .community-link{top:63px;width:30px;height:35px;border:1px solid #52647d;background:#09182b;border-radius:3px;display:grid;place-items:center;color:#e4edf7;font:14px Arial,sans-serif}
+ #exactShrineScene.shrine-mobile .community-link>*{visibility:visible;width:17px;height:17px}
+ #exactShrineScene.shrine-mobile .community-link span{display:none}
+ #exactShrineScene.shrine-mobile [data-community=discord]{left:143px}
+ #exactShrineScene.shrine-mobile [data-community=x]{left:179px}
+ #exactShrineScene.shrine-mobile [data-community=pumpfun]{left:215px}
+ #exactShrineScene.shrine-mobile .chest-trigger{left:254px;top:63px;width:calc(100% - 266px);min-width:78px;height:35px;font-size:12px}
+ #exactShrineScene.shrine-mobile #p2 .summon-art{left:calc(50% - 121px)!important;top:124px!important;width:242px!important;height:356px!important;border:2px solid #efbc56!important;box-shadow:0 0 20px #f7ad3544!important}
+ #exactShrineScene.shrine-mobile #p2 .shrine-controls>h3{all:unset;position:absolute;display:block!important;left:16px;top:498px;width:calc(100% - 32px);text-align:center;font:800 25px/1.3 Arial,sans-serif;color:#ffdd98}
+ #exactShrineScene.shrine-mobile #p2 .summon-quantities button{left:calc(16px + var(--quantity-index,0)*(100% - 25px)/4);top:544px;width:calc((100% - 53px)/4);height:49px;font-size:22px}
+ #exactShrineScene.shrine-mobile #p2 .summon-price{left:16px;top:610px;width:calc(100% - 32px);height:35px;background:none}
+ #exactShrineScene.shrine-mobile #p2 .summon-price b{font-size:20px}
+ #exactShrineScene.shrine-mobile #p2 .summon-main{left:16px;top:656px;width:calc(100% - 32px);height:64px;padding-left:35px;font-size:24px}
+ #exactShrineScene.shrine-mobile #p2 .summon-main::before{left:calc(50% - 111px);top:3px;transform:scale(.75)}
+ #exactShrineScene.shrine-mobile #p2 .shrine-controls>table{left:16px!important;top:742px!important;width:calc(100% - 32px)!important;height:270px!important;background:#071526dd!important}
+ #exactShrineScene.shrine-mobile #p2 .shrine-controls>table :is(th,td){font-size:12px!important;padding:0 7px!important}
+ #exactShrineScene.shrine-mobile #p2 .shrine-controls>table th{font-size:12px!important}
+ #exactShrineScene.shrine-mobile #p2 .shrine-controls>p.mut{left:16px;top:1028px;width:calc(100% - 32px);height:34px;font-size:15px;background:transparent}
+ #exactShrineScene.shrine-mobile #p2 .exact-summon-fee{left:24px;top:1070px;width:calc(100% - 48px);font-size:12px;background:transparent}
+}

@@ -1,24 +1,47 @@
-#summonReveal.exact-reveal:not([open]) { display: none !important; }
-#summonReveal.exact-reveal[open] { display: block; position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; box-sizing: border-box; padding: 0; margin: 0; overflow: hidden; border: 0; border-radius: 0; background: #020913; box-shadow: none; color: #fff3db; }
-#summonReveal.exact-reveal::backdrop { background: #020913; backdrop-filter: none; }
-#summonReveal.exact-reveal .exact-reveal-scene { position: absolute; left: 0; top: 0; width: 1926px; height: 817px; transform: scale(var(--exact-reveal-scale, 1)); transform-origin: top left; font-family: Arial, sans-serif; }
-#summonReveal.exact-reveal .exact-reveal-backdrop { position: absolute; inset: 0; width: 1926px; height: 817px; pointer-events: none; image-rendering: auto; }
-#summonReveal.exact-reveal .reveal-header, #summonReveal.exact-reveal .reveal-footer { all: unset; display: contents; }
-#summonReveal.exact-reveal .reveal-header .eyebrow, #summonReveal.exact-reveal #revealTitle, #summonReveal.exact-reveal .reveal-footer p { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-#summonReveal.exact-reveal .exact-reveal-other-source .reveal-header > div { position: absolute; left: 78px; top: 92px; width: 1130px; height: 82px; background: #06101d; }
-#summonReveal.exact-reveal .exact-reveal-other-source .eyebrow, #summonReveal.exact-reveal .exact-reveal-other-source #revealTitle { position: static; display: block; width: auto; height: auto; margin: 0 0 10px; overflow: visible; clip-path: none; white-space: normal; }
-#summonReveal.exact-reveal .exact-reveal-other-source .eyebrow { color: #ffad5e; font: 700 17px Arial, sans-serif; letter-spacing: 3px; }
-#summonReveal.exact-reveal .exact-reveal-other-source #revealTitle { font: 700 33px Arial, sans-serif; color: #fff1d6; }
-#summonReveal.exact-reveal #revealProgress { position: absolute; left: 79px; top: 183px; box-sizing: border-box; width: 442px; height: 28px; margin: 0; padding: 0; background: #06101a; font: 20px/28px Arial, sans-serif; color: #f7f5ed; }
-#summonReveal.exact-reveal :where(#revealAll, #revealContinue) { all: unset; position: absolute; display: block; box-sizing: border-box; color: transparent; font-size: 0; cursor: pointer; }
-#summonReveal.exact-reveal #revealAll { left: 1716px; top: 108px; width: 128px; height: 52px; }
-#summonReveal.exact-reveal #revealContinue { left: 1678px; top: 649px; width: 166px; height: 70px; }
-#summonReveal.exact-reveal :where(#revealAll, #revealContinue):disabled { cursor: default; }
-#summonReveal.exact-reveal .reveal-grid { all: unset; position: absolute; display: block; left: 79px; top: 225px; width: 1774px; height: 395px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #a48753 #07101b; }
-#summonReveal.exact-reveal .exact-reveal-scroll-width { display: block; height: 1px; pointer-events: none; }
-#summonReveal.exact-reveal .reveal-grid .reveal-card { all: unset; position: absolute; display: block; left: var(--exact-card-x); top: var(--exact-card-y); width: 166px; height: 359px; max-width: none; padding: 0; border: 0; background: none; color: transparent; font-size: 0; cursor: pointer; perspective: none; animation: none !important; }
-#summonReveal.exact-reveal .reveal-card > .flip-inner { display: none; }
-#summonReveal.exact-reveal .exact-reveal-card-art { all: unset; display: block; width: 166px; height: 359px; image-rendering: auto; pointer-events: none; }
-#summonReveal.exact-reveal .exact-reveal-new { position: absolute; top: -18px; left: 49px; color: #fff4cb; font: italic 900 28px Impact, Arial, sans-serif; text-shadow: 0 0 7px #ffdb69, 0 0 15px #ff961d; pointer-events: none; }
-#summonReveal.exact-reveal :where(button, .reveal-grid):focus-visible { outline: 3px solid #ffe29a; outline-offset: 4px; }
-#summonReveal.exact-reveal .rare-spotlight, #summonReveal.exact-reveal .rare-group-celebration, #summonReveal.exact-reveal .rare-winner-banner { display: none !important; }
+#summonReveal.exact-reveal:not([open]){display:none!important}
+#summonReveal.exact-reveal[open]{display:block;position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;box-sizing:border-box;margin:0;padding:16px;overflow:hidden;border:0;border-radius:0;background:#020913;color:#f5f0e4;box-shadow:none;font-family:Arial,sans-serif}
+#summonReveal.exact-reveal::backdrop{background:#020913;backdrop-filter:none}
+#summonReveal.exact-reveal .exact-reveal-scene{position:relative;inset:auto;display:flex;flex-direction:column;gap:14px;width:100%;height:100%;max-width:1680px;margin:0 auto;padding:20px 26px;box-sizing:border-box;transform:none;isolation:isolate;overflow:hidden;border:1px solid #ab853e;background:linear-gradient(#020913bc,#020913de),var(--clean-reveal-background) center/cover no-repeat;box-shadow:inset 0 0 60px #0009;font-family:Arial,sans-serif}
+#summonReveal.exact-reveal .reveal-header{all:unset;display:flex;align-items:center;justify-content:space-between;gap:18px;flex:none;min-height:80px}
+#summonReveal.exact-reveal .reveal-header>div{min-width:0}
+#summonReveal.exact-reveal .reveal-header .eyebrow{all:unset;display:block;margin-bottom:7px;color:#e8a759;font:700 11px/1.3 Arial,sans-serif;letter-spacing:3px}
+#summonReveal.exact-reveal #revealTitle{all:unset;display:block;color:#fff0cf;font:800 clamp(22px,2vw,32px)/1.15 Arial,sans-serif;letter-spacing:-.5px;text-wrap:balance}
+#summonReveal.exact-reveal #revealProgress{all:unset;display:block;margin-top:8px;color:#c5d4e4;font:13px/1.3 Arial,sans-serif;background:none}
+#summonReveal.exact-reveal :where(#revealAll,#revealContinue){all:unset;display:inline-flex;flex:none;align-items:center;justify-content:center;box-sizing:border-box;min-width:120px;min-height:44px;padding:10px 20px;border:1px solid #ffda87;border-radius:4px;color:#251500;background:linear-gradient(#ffc857,#f39b20);box-shadow:0 0 16px #ef9a1d38;font:700 15px/1 Arial,sans-serif;cursor:pointer}
+#summonReveal.exact-reveal :where(#revealAll,#revealContinue):disabled{opacity:.55;cursor:default;box-shadow:none}
+#summonReveal.exact-reveal .reveal-grid{all:unset;display:grid;grid-template-columns:repeat(var(--clean-reveal-columns,5),var(--clean-card-width,190px));grid-auto-rows:var(--clean-card-height,270px);justify-content:center;align-content:safe center;gap:var(--clean-reveal-gap,16px);flex:1;min-height:0;min-width:0;padding:8px;box-sizing:border-box;overflow:auto;scrollbar-color:#896e3e #061020;scrollbar-width:thin}
+#summonReveal.exact-reveal .reveal-grid .reveal-card{all:unset;position:relative;display:block;box-sizing:border-box;width:var(--clean-card-width,190px);height:var(--clean-card-height,270px);min-width:0;max-width:none;padding:0;border:1px solid var(--clean-rank-color,#c39b4e);border-radius:5px;isolation:isolate;color:#edf7ff;background:radial-gradient(ellipse at 50% 32%,#27394b66,transparent 69%),linear-gradient(#081321,#020b13);box-shadow:0 3px 13px #0009,0 0 8px color-mix(in srgb,var(--clean-rank-color) 22%,transparent);cursor:pointer;transition:box-shadow .2s,transform .2s}
+#summonReveal.exact-reveal .reveal-grid .reveal-card[hidden]{display:none!important}
+#summonReveal.exact-reveal .reveal-card::after{content:'';position:absolute;inset:-1px;background:var(--clean-frame-art) center/100% 100% no-repeat;pointer-events:none;z-index:3}
+#summonReveal.exact-reveal .reveal-card>.flip-inner,#summonReveal.exact-reveal .exact-reveal-card-art,#summonReveal.exact-reveal .exact-reveal-new{display:none!important}
+#summonReveal.exact-reveal .clean-reveal-face{position:absolute;inset:7px;display:grid;grid-template-rows:minmax(0,1fr) auto auto auto auto;gap:3px;align-items:center;opacity:0;transform:rotateY(90deg);transition:opacity .35s,transform .45s;pointer-events:none}
+#summonReveal.exact-reveal .reveal-card.is-revealed .clean-reveal-face{opacity:1;transform:none}
+#summonReveal.exact-reveal .clean-reveal-portrait{display:block;width:100%;height:100%;min-height:0;overflow:hidden}
+#summonReveal.exact-reveal .clean-reveal-portrait canvas{all:unset;display:block;width:100%;height:100%;max-width:none;image-rendering:auto}
+#summonReveal.exact-reveal .clean-reveal-class{display:block;overflow:hidden;text-align:center;color:var(--clean-rank-color);font:700 clamp(9px,.85vw,12px)/1.2 Arial,sans-serif;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;text-overflow:ellipsis}
+#summonReveal.exact-reveal .clean-reveal-name{display:block;overflow:hidden;min-height:16px;max-height:34px;color:#f8edce;text-align:center;font:700 clamp(10px,.95vw,13px)/1.25 Arial,sans-serif;white-space:normal;text-wrap:balance;overflow-wrap:normal}
+#summonReveal.exact-reveal .clean-reveal-stars{display:block;color:#ffc952;text-shadow:0 1px 2px #000;text-align:center;font:17px/1.15 Arial,sans-serif;letter-spacing:1px}
+#summonReveal.exact-reveal .clean-reveal-rank{display:block;justify-self:center;width:min(88%,145px);box-sizing:border-box;padding:5px 8px;color:var(--clean-rank-color);border:1px solid color-mix(in srgb,var(--clean-rank-color) 55%,transparent);border-radius:4px;background:linear-gradient(#0c2338,#071421);text-align:center;font:700 14px/1 Arial,sans-serif}
+#summonReveal.exact-reveal .clean-reveal-seal{position:absolute;inset:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:#e7c486;text-align:center;pointer-events:none;border:1px solid #ac8d535c;border-radius:3px;background:radial-gradient(ellipse,#5b3c1244,transparent 70%);transition:opacity .25s,transform .4s}
+#summonReveal.exact-reveal .clean-seal-symbol{font:72px/1 serif;text-shadow:0 0 20px #f3b52844}
+#summonReveal.exact-reveal .clean-reveal-seal b{font:700 11px/1.2 Arial,sans-serif;letter-spacing:1px}
+#summonReveal.exact-reveal .clean-reveal-seal small{font:12px/1.3 Arial,sans-serif;color:#b9b6ac}
+#summonReveal.exact-reveal .reveal-card.is-revealed .clean-reveal-seal{opacity:0;transform:rotateY(-90deg)}
+#summonReveal.exact-reveal .reveal-card.rare-sealed{box-shadow:0 0 14px var(--clean-rank-color),inset 0 0 16px #dbb0ff15}
+#summonReveal.exact-reveal .reveal-card.rare-opening:not(.is-revealed){animation:clean-rare-shake .8s ease-in-out infinite!important;z-index:4}
+#summonReveal.exact-reveal .reveal-card.rare-opening.is-revealed{transform:scale(1.055);box-shadow:0 0 24px var(--clean-rank-color);z-index:4}
+#summonReveal.exact-reveal .reveal-card.clean-group-flash{animation:clean-group-flash .65s ease-in-out 2!important}
+#summonReveal.exact-reveal .clean-reveal-congratulations{flex:none;margin:0;padding:8px 12px;border:1px solid color-mix(in srgb,var(--glow,#dfb95c) 70%,transparent);border-radius:3px;background:#071321c9;color:#ffe3a2;text-align:center;font:700 14px/1.3 Arial,sans-serif}
+#summonReveal.exact-reveal .clean-reveal-congratulations[hidden]{display:none!important}
+#summonReveal.exact-reveal .reveal-footer{all:unset;display:flex;align-items:center;justify-content:space-between;gap:16px;flex:none;min-height:44px}
+#summonReveal.exact-reveal .reveal-footer p{all:unset;display:block;max-width:420px;color:#b7c9dc;font:13px/1.35 Arial,sans-serif}
+#summonReveal.exact-reveal .clean-reveal-pages{display:flex;align-items:center;justify-content:center;gap:12px;font:13px Arial,sans-serif;white-space:nowrap}
+#summonReveal.exact-reveal .clean-reveal-pages[hidden]{display:none!important}
+#summonReveal.exact-reveal .clean-reveal-pages button{all:unset;display:grid;place-items:center;box-sizing:border-box;width:30px;height:30px;border:1px solid #748294;border-radius:3px;background:#091b2d;color:#e8f3ff;font:24px/1 Arial,sans-serif;cursor:pointer}
+#summonReveal.exact-reveal .clean-reveal-pages button:disabled{opacity:.35;cursor:default}
+#summonReveal.exact-reveal :where(button,.reveal-card):focus-visible{outline:3px solid #ffe29a;outline-offset:4px}
+#summonReveal.exact-reveal .rare-spotlight,#summonReveal.exact-reveal .rare-group-celebration,#summonReveal.exact-reveal .rare-winner-banner{display:none!important}
+@keyframes clean-rare-shake{0%,100%{transform:translateX(0) rotate(0)}20%,60%{transform:translateX(-2px) rotate(-.6deg)}40%,80%{transform:translateX(2px) rotate(.6deg)}}
+@keyframes clean-group-flash{0%,100%{box-shadow:0 0 8px var(--clean-rank-color)}50%{box-shadow:0 0 24px 5px var(--clean-rank-color);filter:brightness(1.22)}}
+@media(max-width:650px){#summonReveal.exact-reveal[open]{padding:8px}#summonReveal.exact-reveal .exact-reveal-scene{padding:14px 10px;gap:9px}#summonReveal.exact-reveal .reveal-header{min-height:90px;gap:9px;align-items:flex-start}#summonReveal.exact-reveal .reveal-header .eyebrow{font-size:9px;letter-spacing:1.5px}#summonReveal.exact-reveal #revealTitle{font-size:21px}#summonReveal.exact-reveal #revealAll{min-width:92px;padding:10px 12px;font-size:13px}#summonReveal.exact-reveal .reveal-footer{flex-wrap:wrap;gap:8px;min-height:50px}#summonReveal.exact-reveal .reveal-footer p{font-size:10px;max-width:140px}#summonReveal.exact-reveal #revealContinue{min-width:100px;font-size:13px}#summonReveal.exact-reveal .clean-reveal-pages{order:2;width:100%}#summonReveal.exact-reveal .clean-reveal-class{font-size:9px}#summonReveal.exact-reveal .clean-reveal-name{font-size:10px}#summonReveal.exact-reveal .clean-reveal-rank{font-size:12px}#summonReveal.exact-reveal .clean-reveal-stars{font-size:14px}#summonReveal.exact-reveal .clean-reveal-congratulations{font-size:12px}}
+@media(prefers-reduced-motion:reduce){#summonReveal.exact-reveal *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

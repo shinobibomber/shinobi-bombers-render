@@ -31,7 +31,13 @@
     const modelTemplates = [8,7,4,0,5,6,1,3];
     const frameUrls = cardRects.map(([x,y,w,h]) => {
       const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(image,x,y,w,h,0,0,w,h); return canvas.toDataURL();
+      const context=canvas.getContext('2d');context.drawImage(image,x,y,w,h,0,0,w,h);
+      // Retain the original ornamental border and class emblem. One complete
+      // interior replaces the printed sample, rather than patches behind text.
+      const fill=context.createLinearGradient(0,0,w,h);fill.addColorStop(0,'#10283a');fill.addColorStop(.55,'#071823');fill.addColorStop(1,'#101329');
+      context.fillStyle=fill;context.fillRect(9,9,w-18,h-18);
+      context.drawImage(image,x+w-62,y+10,48,45,w-62,10,48,45);
+      return canvas.toDataURL();
     });
     const infoLeft = [176,166,162,156,162,176,166,162,162,162];
     const iconUrls = cardRects.map(([x,y,w,h],i) => {const cv=document.createElement('canvas');cv.width=22;cv.height=24;cv.getContext('2d').drawImage(image,x+infoLeft[i]+2,y+(i<5?76:81),22,24,0,0,22,24);return cv.toDataURL();});
@@ -43,9 +49,12 @@
       scene.style.left = Math.round((innerWidth - 1672 * scale)/2) + 'px';
       scene.style.top = Math.round((innerHeight - height * scale)/2) + 'px';
     }
+    const painted=new WeakMap();
     function portrait(canvas, hero) {
       const density = Math.min(2, Math.max(1, devicePixelRatio || 1));
       const width = Math.round(156 * density), height = Math.round(178 * density);
+      const now=performance.now(),key=[hero?.id,hero?.r,hero?.z,sprites.idleName(now,hero?.id||0),width,height].join(':');
+      if(painted.get(canvas)===key)return;
       if (canvas.width !== width) canvas.width = width;
       if (canvas.height !== height) canvas.height = height;
       canvas.setAttribute('data-exact-roster', '');
@@ -53,11 +62,8 @@
       context.setTransform(density,0,0,density,0,0);
       context.clearRect(0,0,156,178);
       context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
-      // This is an opaque patch over the printed example model. Its nighttime
-      // village background is sampled from the same supplied artwork.
-      context.drawImage(image,1000,0,300,110,0,0,156,178);
-      context.fillStyle='#020d1be8'; context.fillRect(0,0,156,178);
-      if (hero) sprites.blit(context,PlayerModels.portraitFrame(hero,performance.now()),78,155,3.85,false);
+      if(hero){if(PlayerModels.drawPortrait)PlayerModels.drawPortrait(context,hero,78,155,3.85,now);else sprites.blit(context,PlayerModels.portraitFrame(hero,now),78,155,3.85,false)}
+      painted.set(canvas,key);
     }
     function refresh() {
       if (tab !== 0) return;
@@ -88,7 +94,7 @@
         card.style.setProperty('--roster-rest-top',(h-52)+'px');
         card.style.setProperty('--roster-color',colors[model]);
         card.style.setProperty('--roster-frame',`url("${frameUrls[source]}")`);
-        let mask=card.querySelector('.roster-portrait-mask');if(!mask){mask=document.createElement('div');mask.className='roster-portrait-mask';mask.setAttribute('aria-hidden','true');card.prepend(mask);}
+        card.querySelector('.roster-portrait-mask')?.remove();
         let icon=card.querySelector('.roster-chakra-icon');if(!icon){icon=document.createElement('img');icon.className='roster-chakra-icon';icon.alt='';icon.setAttribute('aria-hidden','true');card.append(icon);}icon.src=iconUrls[source];
         let canvas = card.querySelector('canvas');
         if (!canvas) { canvas=document.createElement('canvas'); canvas.className='roster-design-empty-portrait'; card.prepend(canvas); }
@@ -98,7 +104,7 @@
           if (!name) {name=document.createElement('b');name.className='roster-empty-name';card.append(name);}
           if (!chakra) {chakra=document.createElement('small');chakra.className='roster-empty-chakra';card.append(chakra);}
           if (!bar) {bar=document.createElement('div');bar.className='roster-empty-bar';card.append(bar);}
-          name.textContent='Empty slot '+(index+1); chakra.textContent='—';
+          name.textContent='Empty slot '+(index+1); chakra.textContent='Deploy a battle-ready hero';
           const plus=card.querySelector('.exact-adventure-slot-plus'); if (plus) plus.textContent='+';
         } else {
           const name=card.querySelector('b'); if(name){name.textContent=hero.name.split(' ')[0];name.title=hero.name;}

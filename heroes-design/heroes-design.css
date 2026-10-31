@@ -84,3 +84,44 @@ body.exact-heroes-active .sakura-ambience { display: none; }
 #exactHeroesScene :where(button,input,select,summary):focus-visible { outline: 3px solid #fff1ad; outline-offset: -3px; }
 
 body.exact-heroes-active #toast { z-index: 60; }
+
+/* Keep the original frame and its exact card proportions. Its printed examples
+   are covered by one continuous panel, not separate rectangles behind each line. */
+#exactHeroesScene #p1 .reference-hero-card,
+#exactHeroesScene #p1 .heroes-empty-card { isolation:isolate;background:none; }
+#exactHeroesScene #p1 :is(.reference-hero-card,.heroes-empty-card) > .reference-card-frame { all:unset;position:absolute;inset:0;z-index:0;background:var(--card-source) center/100% 100% no-repeat;pointer-events:none; }
+#exactHeroesScene #p1 :is(.reference-hero-card,.heroes-empty-card)::before { inset:9px 9px 10px;z-index:1;background:linear-gradient(150deg,#07121b,#03121b 70%,#061624); }
+#exactHeroesScene #p1 :is(.reference-hero-card,.heroes-empty-card)[data-card-tier="0"] > .reference-card-frame { filter:grayscale(1) brightness(1.25); }
+#exactHeroesScene #p1 :is(.reference-hero-card,.heroes-empty-card)[data-card-tier="1"] > .reference-card-frame { filter:hue-rotate(-145deg); }
+#exactHeroesScene #p1 :is(.reference-hero-card,.heroes-empty-card)[data-card-tier="2"] > .reference-card-frame { filter:hue-rotate(-80deg); }
+#exactHeroesScene #p1 .hero-portrait,
+#exactHeroesScene #p1 .hero-identity h3,
+#exactHeroesScene #p1 .hero-identity > p,
+#exactHeroesScene #p1 .hero-status,
+#exactHeroesScene #p1 .heroes-live-damage,
+#exactHeroesScene #p1 .token-collection-badge,
+#exactHeroesScene #p1 .hero-stats,
+#exactHeroesScene #p1 .hero-energy,
+#exactHeroesScene #p1 .hero-actions button { z-index:2; }
+#exactHeroesScene #p1 .hero-portrait { overflow:hidden; }
+#exactHeroesScene #p1 .hero-portrait canvas { image-rendering:auto; }
+#exactHeroesScene #p1 .hero-identity h3 { font:700 17px/22px Arial,sans-serif;letter-spacing:0; }
+#exactHeroesScene #p1 .hero-identity > p:not(.attack-label) { gap:5px;justify-content:flex-start; }
+#exactHeroesScene #p1 .hero-identity > p.hero-style-line { z-index:3; }
+#exactHeroesScene #p1 .hero-identity > p > span:first-child { min-width:46px; }
+#exactHeroesScene #p1 .hero-identity > p > span:not(:first-child) { padding:3px 5px;font-size:10px; }
+#exactHeroesScene #p1 .heroes-live-damage { font-size:11.5px;letter-spacing:0; }
+#exactHeroesScene #p1 .token-collection-badge { font-size:10.5px;letter-spacing:.2px; }
+#exactHeroesScene #p1 .hero-stats { left:18px;width:calc(100% - 32px); }
+#exactHeroesScene #p1 .hero-stats > div::before { width:25px;height:25px;top:7px; }
+#exactHeroesScene #p1 .hero-stats dt { left:29px;font-size:9px; }
+#exactHeroesScene #p1 .hero-stats dd { left:29px;top:19px;font-size:14px; }
+#exactHeroesScene #p1 .hero-actions .hero-deploy-action { width:calc((100% - 35px)/2); }
+#exactHeroesScene #p1 .hero-actions .hero-train-action { width:calc((100% - 35px)/2); }
+#exactHeroesScene #p1 .hero-portrait > span { z-index:1;min-width:101px;height:29px;font-size:15px; }
+#exactHeroesScene #p1 .hero-status { z-index:3; }
+#exactHeroesScene #p1 .heroes-empty-card p { z-index:3; }
+#exactHeroesScene .ry { left:1167px;top:12px;width:113px;height:33px;font-size:11px;gap:3px;white-space:nowrap; }
+#exactHeroesScene #ry { font-size:15px; }
+#exactHeroesScene #mu { left:111px;top:0;height:33px;width:24px;background:#030a10; }
+#exactHeroesScene #mu::before { content:'';position:absolute;inset:8px 3px;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23eaf3ff' d='M3 8h5l5-4v16l-5-4H3z'/%3E%3Cpath fill='none' stroke='%23b9dcff' stroke-width='2' stroke-linecap='round' d='M16 8a6 6 0 010 8m3-11a10 10 0 010 14'/%3E%3C/svg%3E"); }

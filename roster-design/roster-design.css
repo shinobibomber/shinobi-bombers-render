@@ -16,3 +16,13 @@
 
 #exactAdventureScene.roster-design-active #strip .roster-design-card .roster-portrait-mask { position:absolute;left:9px;top:6px;width:calc(var(--roster-info-left) + 1px);height:calc(var(--roster-height) - 13px);background:#03121d; }
 #exactAdventureScene.roster-design-active #strip .roster-design-card .roster-chakra-icon { position:absolute;left:calc(var(--roster-info-left) + 2px);top:76px;width:22px;height:24px;max-width:none;pointer-events:none; }
+#exactAdventureScene.roster-design-active .roster-design-band{background:linear-gradient(#081626eb,#07101df5),url('../design-v3/village.png') center/cover}
+#exactAdventureScene.roster-design-active .roster-design-band img{display:none}
+#exactAdventureScene.roster-design-active #strip .roster-design-card :is(b,small){background:transparent;text-shadow:0 1px 2px #0008;font-family:Arial,sans-serif;-webkit-font-smoothing:antialiased}
+#exactAdventureScene.roster-design-active #strip .roster-design-card b{font-size:23px;font-weight:700;letter-spacing:.1px}
+#exactAdventureScene.roster-design-active #strip .roster-design-card small{font-size:16px;font-weight:500}
+#exactAdventureScene.roster-design-active #strip .map-hero.roster-design-card button{color:#eaf7ff;font:700 17px/1 Arial,sans-serif;display:grid;place-items:center;border:1px solid var(--roster-color);border-radius:5px;background:linear-gradient(#173349,#0c192b);box-shadow:inset 0 0 8px color-mix(in srgb,var(--roster-color) 15%,transparent)}
+#exactAdventureScene.roster-design-active #strip .roster-design-empty :is(.roster-empty-bar,.exact-adventure-slot-rest,.roster-chakra-icon){display:none}
+#exactAdventureScene.roster-design-active #strip .roster-design-empty b{left:169px;top:45px;width:calc(var(--roster-width) - 190px);font-size:22px}
+#exactAdventureScene.roster-design-active #strip .roster-design-empty small{left:169px;top:95px;padding:0;width:calc(var(--roster-width) - 185px);height:50px;font-size:16px;white-space:normal;line-height:1.5;color:#a8c0d0}
+#exactAdventureScene.roster-design-active #strip .roster-design-empty .exact-adventure-slot-plus{font-size:45px;color:#89d8ed}

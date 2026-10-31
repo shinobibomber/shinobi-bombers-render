@@ -36,8 +36,6 @@
         card.dataset.rankMatch = card.hidden ? '0' : '1';
         card.classList.add('reference-hero-card'); card.style.setProperty('--tier-color', TierAuras.tiers[hero.r].color);
         card.style.setProperty('--hero-backdrop', backdrop);
-        if (canvas.width !== 640) canvas.width = 640;
-        if (canvas.height !== 384) canvas.height = 384;
         canvas.setAttribute('data-exact-hero', '');
         canvas.setAttribute('aria-label', PlayerModels.modelFor(hero).label + ' · ' + R[hero.r][0]);
         const badge = card.querySelector('.hero-portrait > span'); badge.style.setProperty('--tier-icon', tierIcons[hero.r]);
@@ -46,14 +44,16 @@
           state.title = state.textContent; state.setAttribute('aria-label', state.textContent);
           state.textContent = hero.tokenId ? 'RESERVE' : 'PRACTICE';
         }
-        const styleLine = card.querySelector('.hero-identity > p');
-        const styleText = styleLine?.childNodes[0]?.textContent.trim() || R[hero.r][0] + ' style';
-        if (styleLine) { styleLine.replaceChildren(); for (const text of ['Lv. ' + hero.lv, styleText, ['Shuriken', 'Twin shuriken', 'Fire shuriken', 'Lightning blade', 'Rasengan / Chidori'][hero.r]]) { const span = document.createElement('span'); span.textContent = text; styleLine.append(span); } }
-        const damage = document.createElement('p'); damage.className = 'heroes-live-damage'; damage.textContent = GameBalance.damage(hero) + ' damage / hit · ' + hero.bm + ' projectiles · ' + hero.rg + ' range'; card.append(damage);
+        const styleLine = card.querySelector('.hero-identity > p:not(.attack-label)');
+        const styleText = styleLine?.dataset.baseStyle || styleLine?.childNodes[0]?.textContent.trim() || R[hero.r][0] + ' style';
+        if (styleLine) { styleLine.classList.add('hero-style-line'); styleLine.dataset.baseStyle = styleText; styleLine.replaceChildren(); for (const text of ['Lv. ' + hero.lv, styleText, ['Shuriken', 'Twin shuriken', 'Fire shuriken', 'Lightning blade', 'Rasengan / Chidori'][hero.r]]) { const span = document.createElement('span'); span.textContent = text; styleLine.append(span); } }
+        let damage = card.querySelector('.heroes-live-damage'); if (!damage) { damage = document.createElement('p'); damage.className = 'heroes-live-damage'; card.append(damage); }
+        damage.textContent = Number(GameBalance.damage(hero)).toLocaleString(undefined,{maximumFractionDigits:2}) + ' damage / hit · ' + hero.bm + ' projectiles · ' + hero.rg + ' range';
         card.querySelectorAll('.hero-stats > div').forEach((stat, i) => stat.style.setProperty('--stat-icon', icons[i]));
         const actions = card.querySelector('.hero-actions');
         const buttons = [...actions.children];
         buttons[0]?.classList.add('hero-deploy-action'); buttons[1]?.classList.add('hero-train-action');
+        if (buttons[1]) buttons[1].textContent = buttons[1].textContent.replace(/\d{4,}/g, value => Number(value).toLocaleString());
         if (!actions.querySelector('.hero-mode-button')) {
           const mode = document.createElement('button'); mode.type = 'button'; mode.className = 'hero-mode-button'; mode.textContent = 'Move to Reserve'; mode.disabled = true; mode.title = 'Sign in to manage your collection.'; actions.append(mode);
         }
@@ -89,7 +89,19 @@
         item.hidden = false;
         if (card) section.querySelector('.hero-grid').append(card);
         Object.assign(item.style, { left: box[0] + 'px', top: box[1] + 'px', width: box[2] + 'px', height: box[3] + 'px' });
-        item.style.setProperty('--card-source', cardArt[slot]);
+        const hero = card ? heroOf(card) : null, tier = hero?.r ?? 0;
+        item.style.setProperty('--card-source', cardArt[tier === 4 ? 0 : 2]);
+        item.dataset.cardTier = tier;
+        let frame = item.querySelector(':scope > .reference-card-frame');
+        if (!frame) { frame = document.createElement('span'); frame.className = 'reference-card-frame'; frame.setAttribute('aria-hidden','true'); item.prepend(frame); }
+        if (card) {
+          const canvas = card.querySelector('[data-hero]');
+          const density = Math.min(2, Math.max(1, devicePixelRatio || 1));
+          const width = Math.round((box[2] - 18) * density), height = Math.round(186 * density);
+          if (canvas.width !== width) canvas.width = width;
+          if (canvas.height !== height) canvas.height = height;
+          canvas.dataset.portraitDensity = density;
+        }
       }
       pager.replaceChildren(); pager.hidden = pages === 1;
       for (const [label, action, disabled] of [['Previous page', () => { page--; layout(); }, page === 0], ['Next page', () => { page++; layout(); }, page === pages - 1]]) { const button = document.createElement('button'); button.type = 'button'; button.setAttribute('aria-label', label); button.textContent = label.startsWith('Previous') ? '‹' : '›'; button.disabled = disabled; button.onclick = action; pager.append(button); }
@@ -102,7 +114,8 @@
         const hero = heroOf(card), canvas = card.querySelector('[data-hero]'), context = canvas.getContext('2d');
         context.clearRect(0, 0, canvas.width, canvas.height);
         context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
-        ShinobiSprites.blit(context, PlayerModels.portraitFrame(hero, now), canvas.width / 2, canvas.height - 45, 7.1, false);
+        const density = Number(canvas.dataset.portraitDensity) || 1;
+        PlayerModels.drawPortrait(context, hero, canvas.width / 2, canvas.height - 13 * density, 3.7 * density, now);
         const value = card.querySelector('.hero-energy b'); if (value) value.textContent = Math.floor(hero.en) + ' / ' + Math.floor(hero.st * 50);
         const fill = card.querySelector('.hero-energy .bar i'); if (fill) fill.style.width = Math.min(100, hero.en / (hero.st * 50) * 100) + '%';
         if (!card.classList.contains('hero-reserve')) card.querySelector('.hero-status').textContent = hero.on ? 'DEPLOYED' : 'RESTING';

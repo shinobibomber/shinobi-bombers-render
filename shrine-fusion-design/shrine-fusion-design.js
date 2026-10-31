@@ -17,7 +17,8 @@
    const wallet=document.createElement('button');wallet.type='button';wallet.className='crafting-wallet-target';wallet.setAttribute('aria-label','Open Ryo wallet');wallet.onclick=()=>ShinobiBetaUI.open();scene.append(wallet);
    scenes.set(page,{screen,scene,section,home});
   }
-  function resize(){const scale=Math.min(innerWidth/1536,innerHeight/1024);for(const {scene}of scenes.values()){scene.style.setProperty('--crafting-scale',scale);scene.style.left=Math.round((innerWidth-1536*scale)/2)+'px';scene.style.top=Math.round((innerHeight-1024*scale)/2)+'px'}}
+  function resize(){const scale=Math.min(innerWidth/1536,innerHeight/1024);for(const [page,{scene}]of scenes){const mobile=page===2&&innerWidth<700;scene.classList.toggle('shrine-mobile',mobile);scene.style.setProperty('--crafting-scale',mobile?1:scale);scene.style.left=mobile?'0px':Math.round((innerWidth-1536*scale)/2)+'px';scene.style.top=mobile?'0px':Math.round((innerHeight-1024*scale)/2)+'px';}fitHeader();}
+  function fitHeader(){const amount=document.getElementById('ry');if(!amount)return;if(tab!==2){amount.style.removeProperty('font-size');return;}amount.style.fontSize=Math.max(12,Math.min(18,185/Math.max(1,amount.textContent.trim().length)))+'px';}
   function sync(){
    const selected=(tab===2||tab===6)&&!LoginScreen.active&&!GameLoading.active?tab:null;
    const active=selected!==null;if(document.body.classList.contains('exact-crafting-active')!==active)document.body.classList.toggle('exact-crafting-active',active);
@@ -26,11 +27,11 @@
   }
   function shrine(){
    const section=scenes.get(2).section;
-   const canvas=section.querySelector('#shrinePortrait');if(canvas){canvas.id='exactShrinePortrait';canvas.width=484;canvas.height=712;canvas.setAttribute('aria-label','Current shared Shinobi player model');}
+   const canvas=section.querySelector('#shrinePortrait');if(canvas){canvas.id='exactShrinePortrait';canvas.setAttribute('aria-label','Current shared Shinobi player model');}
    const recruited=section.querySelector('.shrine-controls > p.mut');if(recruited)recruited.textContent='Heroes recruited: '+S.h.length;
    let fee=section.querySelector('.exact-summon-fee');if(!fee){fee=document.createElement('small');fee.className='exact-summon-fee';section.querySelector('.shrine-controls')?.append(fee)}
    fee.textContent='A 2% studio fee is shown at checkout.';
-   paint(performance.now());
+   fitHeader();paint(performance.now());
   }
   function fusion(){
    const section=scenes.get(6).section;
@@ -45,14 +46,31 @@
    paint(performance.now());
   }
   function draw(canvas,hero,now,scale){const context=canvas.getContext('2d');context.clearRect(0,0,canvas.width,canvas.height);context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';if(hero)ShinobiSprites.blit(context,PlayerModels.portraitFrame(hero,now),canvas.width/2,canvas.height-10,scale,false)}
+  function shrinePortrait(canvas,hero,now){
+   const density=Math.min(2,Math.max(1,devicePixelRatio||1)),w=242,h=356;
+   if(canvas.width!==Math.round(w*density))canvas.width=Math.round(w*density);
+   if(canvas.height!==Math.round(h*density))canvas.height=Math.round(h*density);
+   const context=canvas.getContext('2d');context.setTransform(density,0,0,density,0,0);context.clearRect(0,0,w,h);
+   context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';
+   // A real village scene replaces the flat patch that hid the printed example.
+   // The original outer scroll, side cards and lightning remain in the artwork.
+   const village=DesignModels.images?.village;
+   if(village?.complete){const cropWidth=village.naturalHeight*w/h;context.drawImage(village,(village.naturalWidth-cropWidth)/2,0,cropWidth,village.naturalHeight,0,0,w,h);}
+   else{context.fillStyle='#081425';context.fillRect(0,0,w,h);}
+   const shade=context.createLinearGradient(0,0,0,h);shade.addColorStop(0,'#02091a44');shade.addColorStop(.62,'#02091a88');shade.addColorStop(1,'#030b14dd');context.fillStyle=shade;context.fillRect(0,0,w,h);
+   const glow=context.createRadialGradient(w/2,h*.68,10,w/2,h*.68,150);glow.addColorStop(0,'#e5b04c30');glow.addColorStop(1,'#e5b04c00');context.fillStyle=glow;context.fillRect(0,0,w,h);
+   if(PlayerModels.drawPortrait)PlayerModels.drawPortrait(context,hero,w/2,h-25,5.8,now);
+   else ShinobiSprites.blit(context,PlayerModels.portraitFrame(hero,now),w/2,h-25,5.8,false);
+   context.setTransform(1,0,0,1,0,0);
+  }
   function paint(now){
-   if(tab===2){const c=document.getElementById('exactShrinePortrait');if(c)draw(c,lastS||{id:0,r:4},now,12)}
+   if(tab===2){const c=document.getElementById('exactShrinePortrait');if(c)shrinePortrait(c,lastS||{id:0,r:4},now)}
    if(tab===6){for(const c of scenes.get(6).section.querySelectorAll('[data-exact-fusionhero]'))draw(c,S.h.find(h=>h.id===Number(c.dataset.exactFusionhero)),now,3.6);for(const c of scenes.get(6).section.querySelectorAll('.exact-fusion-models canvas')){const hero=c.dataset.selectedHero===''?null:S.h.find(h=>h.id===Number(c.dataset.selectedHero));draw(c,hero,now,4.1)}}
   }
   const oldSumm=summ;summ=function(...args){const result=oldSumm(...args);shrine();return result};
   const oldFusion=FusionUI.render;FusionUI.render=function(...args){const result=oldFusion(...args);fusion();return result};
   const oldGo=go;go=function(...args){const result=oldGo(...args);sync();return result};
-  addEventListener('resize',resize);new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});
+  addEventListener('resize',resize);addEventListener('shinobi-ryo-ledger',fitHeader);new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});
   GameLoading.ready.then(sync);let last=0;function animate(now){requestAnimationFrame(animate);if(document.hidden||!scenes.get(tab)?.screen||scenes.get(tab).screen.hidden||now-last<160)return;last=now;paint(now)}requestAnimationFrame(animate);
   api.loaded=true;api.refresh=()=>{if(tab===2)shrine();if(tab===6)fusion();sync()};sync();if(tab===2)summ();if(tab===6)V2.clearFusion();return true;
  }

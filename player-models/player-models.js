@@ -5,7 +5,7 @@
   const sourceUrl = new URL('.', document.currentScript.src);
   const textures = new Map();
   const frames = new Map();
-  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, portraitFrame, frameInfo, clearExterior };
+  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, portraitFrame, drawPortrait, frameInfo, clearExterior };
 
   const image = new Image();
   const imageReady = new Promise((resolve, reject) => {
@@ -99,6 +99,29 @@
   function portraitFrame(hero, now = 0) {
     const base = heroFrame(hero, hero.z ? 's0' : sprites.idleName(now, hero.id));
     return window.TierAuras?.loaded ? TierAuras.compose(hero, base) : base;
+  }
+
+  // Draw the native source cell only once into the final display canvas. Portraits
+  // previously enlarged the cell into a 320x400 frame, then resized it again.
+  // The legacy blit scale and foot anchor remain identical for every caller.
+  function drawPortrait(context, hero, x, y, scale, now = 0) {
+    if (!api.loaded || !hero) return;
+    const info = frameInfo(hero, hero.z ? 's0' : sprites.idleName(now, hero.id));
+    const texture = textures.get(info.key), ratio = api.source.scale * scale / 8;
+    const [pivotX, pivotY] = info.cell.pivot;
+    context.save();
+    context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
+    if (hero.z) context.globalAlpha *= .68;
+    if (window.TierAuras?.loaded) {
+      const effect = TierAuras.frame(hero.r);
+      sprites.blit(context, effect, x, y, scale, false);
+      context.save(); context.globalCompositeOperation = 'screen';
+      context.globalAlpha *= .28 + Math.max(0, Math.min(4, hero.r)) * .035;
+      sprites.blit(context, effect, x, y, scale, false); context.restore();
+    }
+    context.drawImage(texture, x - pivotX * ratio, y - pivotY * ratio,
+      texture.width * ratio, texture.height * ratio);
+    context.restore();
   }
 
   function cut(cell) {
