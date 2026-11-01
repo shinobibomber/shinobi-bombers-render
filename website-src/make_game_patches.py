@@ -37,6 +37,21 @@ views = json.load(open(root / 'website-design/dojo-views.json'))
 dojo = cv2.imread(str(root / 'website/assets/scr-dojo.webp'))
 for key, v in views.items():
     W, H = v['W'], v['H']
+    if 'ref' in v:
+        # reference design page: example values are inpainted away (live values are drawn at runtime)
+        img = cv2.imread(str(root / v['ref']))
+        if 'ringcopy' in v:
+            # an example highlight frame is replaced by the plain frame of the row below it (dy pixels lower)
+            x0, y0, x1, y1, t, dy = v['ringcopy']; ring = np.zeros(img.shape[:2], bool); ring[y0:y1, x0:x1] = True; ring[y0 + t:y1 - t, x0 + t:x1 - t] = False
+            src = np.roll(img, -dy, axis=0); img[ring] = src[ring]
+        mask = np.zeros(img.shape[:2], np.uint8)
+        for x, y, w, h in v.get('clean', []): mask[y:y + h, x:x + w] = 255
+        if 'ring' in v:
+            x0, y0, x1, y1, t = v['ring']; ring = np.zeros_like(mask); ring[y0:y1, x0:x1] = 255; ring[y0 + t:y1 - t, x0 + t:x1 - t] = 0; mask |= ring
+        img = cv2.inpaint(img, mask, 5, cv2.INPAINT_TELEA)
+        cv2.imwrite(str(root / f'website-design/scr-{key}.webp'), img, [cv2.IMWRITE_WEBP_QUALITY, 92])
+        print(key, '-> website-design/scr-%s.webp (reference design)' % key)
+        continue
     bg = cv2.resize(dojo, (W, H), interpolation=cv2.INTER_AREA)
     bg = (cv2.GaussianBlur(bg, (0, 0), 14) * 0.45).astype(np.uint8)
     for pnl in v['panels']:

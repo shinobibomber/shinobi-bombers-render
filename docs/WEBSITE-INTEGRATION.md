@@ -109,8 +109,10 @@ Shared header and Dojo pages:
   the Guild header) is fixed at the top of the screen with the Guild screen's nav/Chest/Ryo/wallet/Tools positions;
   the active menu is highlighted at runtime. Each screen's own header is tucked underneath (`hdrH`).
 - Dojo opens on **Dojo Services**; **Enter Dojo** opens Dojo Upgrades and **Manage Sensei** opens Sensei; Back
-  returns to Services. The three pages are cut from the Dojo artwork (`website-design/dojo-views.json`,
-  `scr-dojo*.webp`); hotspots and live labels are mapped panel by panel. The game's own `DojoServices.open('hub' |
+  returns to Services. Services is cut from the Dojo artwork; Upgrades and Sensei use the reference designs in
+  `website-src/ref/` (example values inpainted away by `make_game_patches.py`, settings in
+  `website-design/dojo-views.json`), with live tier, status, price, return %, rotation toggle and HIRED state drawn
+  on top. Back buttons, the Upgrade button, the return-% select and Turn On/Off use the game's own controls. The game's own `DojoServices.open('hub' |
   'dojo' | 'sensei')` pane is kept in step.
 
 Styles: `website-design/website-screens.css` is generated from

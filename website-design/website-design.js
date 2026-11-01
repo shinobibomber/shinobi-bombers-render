@@ -330,7 +330,54 @@
     setText(b.status, !hired ? 'Sensei not hired' : on ? 'Ready when offline' : 'Rotation off');
     const up = $('.hs[data-sbwid="upg"]', b.st); if (up) up.classList.toggle('dim', next > 6);
   };
-  ['dojo-upg', 'dojo-sen'].forEach(k => { PAINT[k] = (b, now) => PAINT.dojo(b, now); });
+  /* Dojo Upgrades and Sensei pages (your reference designs; live values and real controls drawn on top) */
+  function dojoBack(b, title) {
+    const e = place(mk('div', 'sbw-dback', b.st), 64, 104, 520, 34);
+    e.innerHTML = `<button type="button">← Back</button><span>›</span><b>${title}</b>`;
+    e.querySelector('button').onclick = () => MODS.dojo.focus('svc');
+  }
+  const DROWY = [222, 307, 390, 471, 551, 633, 714];
+  INIT['dojo-upg'] = b => {
+    dojoBack(b, 'DOJO UPGRADES');
+    b.tier = place(mk('div', 'sbw-dtier', b.st), 84, 477, 92, 30);
+    b.name = place(mk('div', 'sbw-dname', b.st), 84, 506, 300, 50);
+    b.rate = place(mk('div', 'sbw-dval', b.st), 128, 581, 90, 34);
+    b.lvl = place(mk('div', 'sbw-dval', b.st), 466, 581, 70, 34);
+    b.rowhl = place(mk('div', 'sbw-drowhl', b.st), 606, 0, 1012, 80);
+    b.stat = DROWY.map(y => place(mk('div', 'sbw-dstat', b.st), 1306, y - 17, 108, 34));
+    b.up = place(mk('button', 'sbw-dup', b.st), 78, 760, 480, 70); b.up.type = 'button'; b.up.onclick = () => MODS.dojo.upgrade();
+  };
+  PAINT['dojo-upg'] = b => {
+    const g = gs() || {}, tier = Number(g.dojo || 0), next = tier + 1, prices = (window.GameBalance && GameBalance.dojoPrices) || [], rec = (window.GameBalance && GameBalance.dojoRecovery) || [];
+    setText(b.tier, 'TIER ' + (ROMAN[tier] === '–' ? '0' : ROMAN[tier])); setText(b.name, (DOJO_NAMES[tier] || '').toUpperCase());
+    b.rate.innerHTML = `<b>${rec[tier] || 1}/min</b>`; b.lvl.innerHTML = `<b>${tier}/6</b>`;
+    b.rowhl.style.top = (DROWY[tier] - 41) + 'px';
+    b.stat.forEach((e, i) => { const [t, c] = i < tier ? ['Unlocked', 'own'] : i === tier ? ['Active', 'act'] : i === next ? ['Next', 'nxt'] : ['—', 'lck']; if (e.textContent !== t) e.textContent = t; e.className = 'sbw-dstat ' + c; });
+    const k = next <= 6 ? `<i>⌂</i><span>UPGRADE - ${fmt(prices[next])} Ryo</span>` : '<i>★</i><span>MAX TIER REACHED</span>'; if (b.up.dataset.k !== k) { b.up.dataset.k = k; b.up.innerHTML = k; } b.up.disabled = next > 6;
+  };
+  INIT['dojo-sen'] = b => {
+    dojoBack(b, 'SENSEI');
+    b.sel = place(mk('select', 'sbw-dsel', b.st), 1312, 378, 260, 44); b.sel.setAttribute('aria-label', 'Return to battle at');
+    b.sel.innerHTML = [50, 60, 70, 80, 90].map(v => `<option value="${v}">${v}% chakra</option>`).join('');
+    b.sel.onchange = () => MODS.dojo.ret(String((+b.sel.value - 50) / 10));
+    b.svc = place(mk('div', 'sbw-dsv', b.st), 1300, 474, 266, 36);
+    b.cnt = place(mk('div', 'sbw-dsv', b.st), 1480, 536, 86, 36);
+    b.tg = place(mk('button', 'sbw-dtg', b.st), 1460, 594, 104, 44); b.tg.type = 'button'; b.tg.setAttribute('role', 'switch'); b.tg.onclick = () => MODS.dojo.hire();
+    b.st2 = place(mk('div', 'sbw-dhired', b.st), 878, 688, 450, 92);
+    b.btn = place(mk('button', 'sbw-dturn', b.st), 1346, 700, 222, 76); b.btn.type = 'button'; b.btn.onclick = () => MODS.dojo.hire();
+  };
+  PAINT['dojo-sen'] = b => {
+    const g = gs() || {}, v2 = g.v2 || {}, hired = senseiHired(), on = v2.butlerEnabled !== false, pct = Number(v2.senseiReturnPercent || 90), tier = Number(g.dojo || 0);
+    let rental = 0; try { const p = ledger().profile || {}; rental = !p.sensei && Number(p.senseiRentalUntil || 0); } catch {}
+    if (document.activeElement !== b.sel && b.sel.value !== String(pct)) b.sel.value = String(pct); b.sel.disabled = !hired;
+    setText(b.svc, `${DOJO_NAMES[tier]} ✓`); setText(b.cnt, hired ? '1' : '0');
+    b.tg.classList.toggle('on', hired && on); b.tg.setAttribute('aria-checked', String(hired && on)); b.tg.innerHTML = `<span>${hired && on ? 'ON' : 'OFF'}</span><i></i>`;
+    const k = hired + '|' + on + '|' + rental;
+    if (b.st2.dataset.k !== k) { b.st2.dataset.k = k;
+      b.st2.innerHTML = hired ? `<b class="ok">✓</b><strong>${rental ? 'RENTED' : 'HIRED'}</strong><small>${rental ? 'Rental active until ' + new Date(rental).toLocaleString() + '.' : 'Permanent automatic rotation and up to 12 hours of offline earnings.'}</small>`
+        : `<b class="no">!</b><strong>NOT HIRED</strong><small>Hire permanently or rent for 7 days to keep your team rotating.</small>`;
+      b.btn.textContent = !hired ? 'HIRE SENSEI' : on ? 'TURN OFF' : 'TURN ON'; }
+  };
   function senseiPane() { if (window.DojoServices) DojoServices.open('sensei'); }
   function hireSensei() {
     const perm = (window.GameBalance && GameBalance.senseiCost) || 0;
@@ -354,6 +401,22 @@
   function cov(b, x, y, w, h, bg, fs, color, cls = '') { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; }
   function heroAt(i) { const g = gs(); return g && g.h ? g.h[i] || null : null; }
   function drawHero(c, h, sc, now, bottom = 2) { if (!c) return; const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); if (h && window.PlayerModels && PlayerModels.loaded) { try { PlayerModels.drawPortrait(g, h, c.width / 2, c.height - bottom, sc, now); } catch {} } }
+  /* draws a hero's portrait centered in a canvas: the model is rendered off-screen once to find its bounds
+     (cached per hero), then every frame is scaled to fit with padding */
+  const BOX = new Map(); let OFF = null;
+  function drawCentered(c, h, now, pad = 8) {
+    if (!c) return; const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
+    if (!h || !window.PlayerModels || !PlayerModels.loaded) return;
+    if (!OFF) { OFF = document.createElement('canvas'); OFF.width = 320; OFF.height = 320; }
+    const o = OFF.getContext('2d', { willReadFrequently: true }); o.clearRect(0, 0, 320, 320);
+    try { PlayerModels.drawPortrait(o, h, 160, 300, 3, now); } catch { return; }
+    let bb = BOX.get(h.id);
+    if (!bb) { const d = o.getImageData(0, 0, 320, 320).data; let x0 = 320, y0 = 320, x1 = 0, y1 = 0;
+      for (let y = 0; y < 320; y++) for (let x = 0; x < 320; x++) if (d[(y * 320 + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      if (x1 <= x0) return; bb = [x0 - 6, y0 - 6, x1 + 6, y1 + 6]; BOX.set(h.id, bb); }
+    const w = bb[2] - bb[0], hh = bb[3] - bb[1], k = Math.min((c.width - 2 * pad) / w, (c.height - 2 * pad) / hh);
+    g.drawImage(OFF, bb[0], bb[1], w, hh, (c.width - w * k) / 2, (c.height - hh * k) / 2, w * k, hh * k);
+  }
   function mirror(dst, src, fit = 'contain', anchorY = .5) {
     if (!dst || !src || !src.width) return; const g = dst.getContext('2d'), W = dst.width, H = dst.height, sw = src.width, sh = src.height;
     const s = fit === 'cover' ? Math.max(W / sw, H / sh) : Math.min(W / sw, H / sh), w = sw * s, h = sh * s;
@@ -430,20 +493,21 @@
         const [lv, lvMax] = (c.lvl || '1/10').split('/').map(x => x.trim());
         const stat = (k, v) => `<div class="sbw-st"><span>${k}</span><b>${esc(v || '—')}</b></div>`;
         b.det.innerHTML = `<div class="sbw-h2" style="--rc:${RCOL[r]}">
-          <div class="sbw-h2-top"><div><h3>${esc(c.name)}</h3><p>Lv. ${esc(lv)} / ${esc(lvMax || '10')}<em>${esc(c.status)}</em></p></div><i class="sbw-h2-rank">${esc(RNAME[r].toUpperCase())}</i></div>
+          <div class="sbw-h2-top"><div><h3 data-fs="23">${esc(c.name)}</h3><p>Lv. ${esc(lv)} / ${esc(lvMax || '10')}<em>${esc(c.status)}</em></p></div><i class="sbw-h2-rank">${esc(RNAME[r].toUpperCase())}</i></div>
           <div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>
           <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + (r + 1))}</div>
-            <div class="sbw-h2-port"><canvas width="150" height="176"></canvas></div></div>
+            <div class="sbw-h2-port"><canvas width="292" height="344"></canvas></div></div>
           <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
           <h4>PERKS</h4>
-          <ul class="sbw-perks">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
+          <ul class="sbw-perks2">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
           <div class="sbw-h2-btns">
-            <button type="button" class="sbw-xbtn train" data-k="train" ${c.up && !c.up.disabled ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MAX LEVEL' : 'TRAIN'}</b><small>${maxed ? 'Fully trained' : 'Level ' + esc(lv) + ' → ' + (Number(lv) + 1)}</small></span>${price ? `<em><i class="coin"></i>${esc(price.replace(/\s*Ryo/, ''))}</em>` : ''}</button>
+            <button type="button" class="sbw-xbtn train" data-k="train" ${c.up && !c.up.disabled ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MAX LEVEL' : 'TRAIN'}</b><small>${maxed ? 'Fully trained' : price ? '<i class="coin"></i>' + esc(price) : 'Level ' + esc(lv) + ' → ' + (Number(lv) + 1)}</small></span></button>
             <button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>
           </div></div>`;
+        const n = $('h3', b.det); if (n) fitText(n);
       }
     }
-    drawHero($('.sbw-h2-port canvas', b.det), c && c.h, 2.7, now, 4);
+    drawCentered($('.sbw-h2-port canvas', b.det), c && c.h, now, 6);
   };
   MODS.heroes = {
     tab: a => { const v = HF[+a]; if (v != null) window.HeroFilters && HeroFilters.choose(v); built.heroes.sel = 0; built.heroes.sig = ''; },

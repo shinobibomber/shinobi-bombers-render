@@ -55,6 +55,7 @@ function applyWebsiteDesign(appDir = path.join(__dirname, 'app'), siteDir = path
   const dojoSrc = screens.dojo;
   for (const [key, v] of Object.entries(views)) {
     fs.copyFileSync(path.join(__dirname, 'website-design', 'scr-' + key + '.webp'), path.join(out, 'art', 'scr-' + key + '.webp'));
+    if (v.ref) { screens[key] = { W: v.W, H: v.H, img: 'art/scr-' + key + '.webp', base: 'dojo', page: true, hdrH: v.hdrH, hs: v.hs, fx: [], live: [], chest: null, hdr: null }; continue; }
     const map = r => { const cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, p = v.panels.find(p => cx >= p.src[0] && cx < p.src[2] && cy >= p.src[1] && cy < p.src[3]); if (!p) return null;
       return [p.dst[0] + (r[0] - p.src[0]) * p.k, p.dst[1] + (r[1] - p.src[1]) * p.k, p.dst[0] + (r[2] - p.src[0]) * p.k, p.dst[1] + (r[3] - p.src[1]) * p.k].map(Math.round); };
     const d = dojoSrc;
@@ -64,7 +65,7 @@ function applyWebsiteDesign(appDir = path.join(__dirname, 'app'), siteDir = path
       live: d.live.filter(l => l.id !== 'ryo') };
   }
   for (const [id, s] of Object.entries(screens)) {
-    if (s.view) continue;
+    if (s.view || s.page) continue;
     screens[id] = { ...s, hdrH: bottom(s), hs: s.hs.filter(h => !isHdr(h)), live: s.live.filter(l => l.id !== 'ryo'), chest: null, hdr: null };
   }
   // reference galleries used by the Codex sections (maps, bosses, hero models, auras)
