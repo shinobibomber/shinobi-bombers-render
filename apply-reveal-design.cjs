@@ -2,11 +2,24 @@ const fs = require('node:fs');
 const path = require('node:path');
 const marker = '<!-- exact-reveal-design -->';
 const script = '<script defer src="assets/reveal-design/reveal-design.js"></script>';
+// Narrow presentation hooks only. Exported so preservation checks can reverse
+// these exact edits and still hash every original gameplay/payment module.
+const cinematicPatches = [
+  ["function showReveal(){if(!pending().length)return;", "function showReveal(){if(!pending().length)return;if(window.RevealDesign?.loaded&&!RevealDesign.canReveal())return;"],
+  ["if(!item||item.revealed||busy)return false;", "if(!item||item.revealed||busy||(window.RevealDesign?.loaded&&!RevealDesign.canReveal()))return false;"],
+  ["if(S.v2.revealSource==='summon'&&item.hero.r>=3&&pending().some", "if(!window.RevealDesign?.loaded&&S.v2.revealSource==='summon'&&item.hero.r>=3&&pending().some"],
+  ["if(rare&&card){card.classList.add('rare-opening');if(!reduced)await pause(1000)}", "if(window.RevealDesign?.loaded){await RevealDesign.open(i);if(pending()[i]!==item||!RevealDesign.canReveal())return false}else if(rare&&card){card.classList.add('rare-opening');if(!reduced)await pause(1000)}"],
+  ["save();if(rare&&!reduced)await pause(1100);", "save();if(rare&&!reduced&&!window.RevealDesign?.loaded)await pause(1100);"],
+  ["document.getElementById('revealAll').disabled=busy||batchRun||allRevealed()}", "document.getElementById('revealAll').disabled=busy||batchRun||allRevealed();window.RevealDesign?.sync()}"],
+  ["async function finishReveal(){if(busy||batchRun||!allRevealed())return;", "async function finishReveal(){if(busy||batchRun||!allRevealed()||(window.RevealDesign?.loaded&&!RevealDesign.canReveal()))return;"],
+  ["if(!was||wasRevealed||!opened)return false;const card=", "if(!was||wasRevealed||!opened)return false;if(window.RevealDesign?.loaded)return opened;const card="]
+];
 const patches = [
   ["if(!dialog.open&&!document.body.classList.contains('is-loading'))dialog.showModal()}", "if(!dialog.open&&!document.body.classList.contains('is-loading'))dialog.showModal();window.RevealDesign?.refresh()}"],
   ["card.classList.add('is-revealed')}", "card.classList.add('is-revealed');window.RevealDesign?.paint(i)}"],
   ['function spotlight(card,h){', 'function spotlight(card,h){if(window.RevealDesign?.loaded)return null;'],
-  ['async function celebrateGroup(reduced){', 'async function celebrateGroup(reduced){if(window.RevealDesign?.loaded)return;']
+  ['async function celebrateGroup(reduced){', 'async function celebrateGroup(reduced){if(window.RevealDesign?.loaded)return;'],
+  ...cinematicPatches
 ];
 const count = (text, value) => text.split(value).length - 1;
 function patchHtml(html) {
@@ -30,5 +43,5 @@ function applyRevealDesign(appDir = path.join(__dirname, 'app')) {
   if (patched !== original) fs.writeFileSync(index, patched);
   console.log('Original reveal design applied to persisted reveal batches.');
 }
-module.exports = { applyRevealDesign, patchHtml };
+module.exports = { applyRevealDesign, patchHtml, cinematicPatches };
 if (require.main === module) applyRevealDesign();

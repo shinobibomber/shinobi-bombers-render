@@ -108,6 +108,15 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-02: cinematic scroll reveal work is scoped to `reveal-design/` and its build helper.
+  The existing shrine menu is unchanged. Real persisted batches support individual opening,
+  Reveal All, Skip Animation, independent element/rank styling and a final rarity summary.
+  Summon Again uses the existing quote/Pay flow. See `reveal-design/README.md` for recovery limits
+  and `tests/summon-reveal.cjs` for isolated integration tests. This entry does not indicate a live deploy.
+  Verified: `npm run build:local`, `npm test` (8 game suites + 17 website checks), and
+  `npm run test:visual -- HEAD` (24 unchanged website screenshots). Desktop/tablet/mobile reveal
+  screenshots are in `tests/out/summon-*.png`. Tests ran with the installed Node 26; Render targets Node 22.
+
 - Every finished result is committed and pushed to `main` straight away, so GitHub always has the latest work.
   When switching tools, run `git pull` first.
 - Pushing does **not** deploy: Render auto-deploy is off, so a change only goes live after Manual Deploy.

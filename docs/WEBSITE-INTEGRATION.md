@@ -117,3 +117,22 @@ Shared header and Dojo pages:
 
 Styles: `website-design/website-screens.css` is generated from
 `website/app.css` by `website-src/make_game_css.py` (scoped to `#sbwLayer`, keyframes prefixed `sbw-`).
+
+## Cinematic scroll reveals (2026-11-02)
+
+The shrine menu stays unchanged. `reveal-design/reveal-design.js` and `.css` present the actual
+`S.v2.revealBatch` as sealed scrolls, individual opening animations, Reveal All / Skip Animation,
+and a responsive final collection with a live rarity summary. Ten results use a 5×2 desktop grid;
+other native quantities, fusion and rescue batches keep their real size and source.
+
+`apply-reveal-design.cjs` adds narrow presentation hooks around the game's existing reveal
+functions. Native `Experience` still sets revealed flags, saves and finishes; native checkout still
+owns quoting, confirmation, charging and delivery. Summon Again opens that existing confirmation.
+The preservation suite reverses only these exact reviewed presentation hooks before comparing the
+original inline game modules. No wallet, server, balance or probability code is changed.
+
+Rank comes from the actual hero, while element artwork follows the existing model independently.
+NEW denotes a newly recruited server-owned hero, not a first-ever archetype claim. The game has no
+separate star-rating field, so cards show level, power and stamina. Existing local reveal progress
+recovers after refresh for the same account; there is no new cross-device reveal history service.
+See `reveal-design/README.md` and `tests/summon-reveal.cjs` for details and fixture verification.

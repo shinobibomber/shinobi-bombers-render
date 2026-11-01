@@ -19,6 +19,9 @@ async function capture(browser, siteDir, dest) {
     // always preview mode, so the comparison is about design, not about whether a game URL is configured
     await p.route(/site-config\.js$/, r => r.fulfill({ contentType: 'text/javascript', body: 'window.SB_SITE_CONFIG={gameUrl:""};' }));
     for (const r of ROUTES) {
+      // A hash-only navigation retains the previous screen's pending demo timers.
+      // Start a fresh document so Adventure rewards cannot alter the next capture.
+      await p.goto('about:blank');
       await p.goto(pathToFileURL(path.join(siteDir, 'index.html')).href + '#' + r);
       await p.evaluate(() => { try { window.SB.store.set({ adventure: 379840, spendable: 884250 }); } catch {} });
       await p.addStyleTag({ content: FREEZE }); await p.waitForTimeout(600);

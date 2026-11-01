@@ -199,15 +199,15 @@
     },
     {
       "path": "reveal-design/README.md",
-      "sha256": "2d309bf86a11b2c3fbcd0481c1db27138a85b6c596a348aefb31fb2532fe3556"
+      "sha256": "c5c492423748aedc111b91dfbb8577b45b41aa0f0d5f1ae8dbe789a9ecefe062"
     },
     {
       "path": "reveal-design/reveal-design.css",
-      "sha256": "85f7115aeb52cb585bd0b18357d6485044127bc004c2ee6a19291563fcb1d161"
+      "sha256": "66688bfca4ccaa42187b1d14da50b4645ebf08ef667d244d495ff62c3f217bba"
     },
     {
       "path": "reveal-design/reveal-design.js",
-      "sha256": "f1a27c6ce59cab6f8a4df7464a7026f933e59082b64bd65702da5ee5e5367d03"
+      "sha256": "6c99aa45c33ed2df24b6d80f40f6c76de0e09b9f357f080b9931fc5ac924922a"
     },
     {
       "path": "reveal-design/reveal-design.png",

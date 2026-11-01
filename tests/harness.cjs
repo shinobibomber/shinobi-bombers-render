@@ -21,7 +21,14 @@ async function withGame(run){
  case'claim-adventure':if(f.holdClaim)await pause('claim');if(f.claimError)throw Object.assign(Error('Reward service unavailable. Earnings remain in your Chest.'),{status:409});{const n=Math.min(Math.floor(f.pendingChest),f.pool);if(n<1)throw Error('No funded whole Ryo is available to claim yet.');f.balance+=n;f.pendingChest-=n;f.claimed+=n;f.pool-=n;data={chest:chest(n),...snapshot()}}break;
  case'deposit':if(f.depositNotFinalized)throw Object.assign(Error('Deposit has not finalized yet. Refresh to recover it.'),{status:409});if(!pending.has(req.signature)){pending.add(req.signature);const fee=economy.fee(req.amount);f.balance+=req.amount-fee;f.deposits.unshift({signature:req.signature,gross:String(req.amount),amount:String(req.amount-fee),studio_fee:String(fee),created:String(Date.now())})}data={credited:true,...snapshot()};break;
  case'withdraw':{let row=f.withdrawals.find(r=>r.request_id===req.requestId);if(!row){assert(Number.isInteger(req.amount)&&req.amount>=100000&&req.amount<=1000000&&req.amount<=f.balance&&Date.now()>=f.nextWithdrawalAt);f.balance-=req.amount;f.nextWithdrawalAt=Date.now()+86400000;row={request_id:req.requestId,amount:String(req.amount),net:String(req.amount-economy.fee(req.amount)),studio_fee:String(economy.fee(req.amount)),signature:'Z'.repeat(80),status:f.pendingWithdrawal?'pending':'confirmed',created:String(Date.now())};f.withdrawals.unshift(row)}data={withdrawal:row,...snapshot()};if(f.holdWithdrawal)await pause('withdrawal');break;}
- case'ack-purchase':data={ok:true};break;
+ case'quote':if(f.quoteError)throw Object.assign(Error('Summoning shrine is temporarily unavailable.'),{status:503});data=economy.quote(f.profile,req.product,req.params);if(f.holdQuote)await pause('quote');break;
+ case'purchase':{
+  if(f.purchaseError)throw Object.assign(Error('Summon could not be completed. No Ryo was charged.'),{status:409});
+  let row=f.purchases.find(r=>r.request_id===req.requestId);
+  if(!row){const q=economy.quote(f.profile,req.product,req.params);assert.equal(req.expectedTotal,q.total);assert(f.balance>=q.total);const fulfilled=(f.fulfillPurchase||economy.fulfill)(f.profile,q);f.profile=fulfilled.profile;f.balance-=q.total;row={request_id:req.requestId,amount:String(q.total),status:'confirmed',acknowledged:false,created:String(Date.now()),signature:'S'.repeat(80),quote:q,result:fulfilled.result};f.purchases.unshift(row)}
+  data={purchase:row,...snapshot()};if(f.holdPurchase)await pause('purchase');break;
+ }
+ case'ack-purchase':{const row=f.purchases.find(r=>r.request_id===req.requestId);if(row)row.acknowledged=true;data={ok:true};break;}
  case'ack-spend':data={ok:true};break;
  default:throw Error('Unexpected isolated API action: '+req.action);
  }}catch(error){status=error.status||400;data={error:error.message}}await route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)})});

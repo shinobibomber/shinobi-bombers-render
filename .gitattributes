@@ -1,0 +1,4 @@
+# Keep the reviewed reveal asset hashes stable across Windows and Linux checkouts.
+reveal-design/reveal-design.js text eol=lf
+reveal-design/reveal-design.css text eol=lf
+reveal-design/README.md text eol=lf
