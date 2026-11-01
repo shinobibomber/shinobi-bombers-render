@@ -10,7 +10,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const SCREENS = ['home', 'codex', 'summon', 'fusion', 'dojo'];
+const SCREENS = ['home', 'codex', 'summon', 'fusion', 'dojo', 'heroes', 'adventure', 'market', 'boss-hunt', 'guild', 'chat'];
 const EXTRA_ART = ['assets/sm-tab-on.webp', 'assets/sm-tab-off.webp'];
 
 function applyWebsiteDesign(appDir = path.join(__dirname, 'app'), siteDir = path.join(__dirname, 'website')) {
@@ -41,6 +41,8 @@ function applyWebsiteDesign(appDir = path.join(__dirname, 'app'), siteDir = path
     screens[id] = { ...s, img: copy(s.img) };
   }
   for (const rel of EXTRA_ART) copy(rel);
+  // game-only artwork patches made by website-src/make_game_patches.py
+  for (const f of ['adventure-tr-patch.webp']) fs.copyFileSync(path.join(__dirname, 'website-design', f), path.join(out, 'art', f));
   // reference galleries used by the Codex sections (maps, bosses, hero models, auras)
   const ref = JSON.parse(JSON.stringify(data.ref || {}));
   const walk = o => { for (const k in o) { if (o[k] && typeof o[k] === 'object') walk(o[k]); else if (k === 'src') o[k] = copy(o[k]); } };

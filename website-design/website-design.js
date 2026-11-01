@@ -11,7 +11,8 @@
   /* website screen → game page (go(page, mode)) */
   const ROUTE = { home: [5], heroes: [1], adventure: [0], summon: [2], fusion: [6], dojo: [4, 0], market: [4, 1], 'boss-hunt': [8], codex: [3] };
   /* game page → website screen shown there (screens enabled in this build) */
-  const SHOWN = { '5': 'home', '3': 'codex', '2': 'summon', '6': 'fusion', '4:0': 'dojo' };
+  const SHOWN = { '5': 'home', '3': 'codex', '2': 'summon', '6': 'fusion', '4:0': 'dojo', '1': 'heroes', '0': 'adventure', '4:1': 'market', '8': 'boss-hunt' };
+  let preview = null; /* Guild/Chat preview screens (no game page) */
   const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'];
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -64,8 +65,8 @@
   /* ---------- actions ---------- */
   const SOON = { guild: 'Guilds are coming soon.', chat: 'Chat is coming soon.' };
   function goScreen(k) {
-    if (k.startsWith('guild')) return notice('Guild', SOON.guild);
-    if (k === 'chat') return notice('Chat', SOON.chat);
+    if (k.startsWith('guild') || k === 'chat') { const p = k === 'chat' ? 'chat' : 'guild'; if (D.screens[p]) { preview = p; sync(); return; } return notice(p === 'chat' ? 'Chat' : 'Guild', p === 'chat' ? SOON.chat : SOON.guild); }
+    preview = null;
     const r = ROUTE[k]; if (r) go(r[0], r[1]);
   }
   const HOME = {
@@ -73,13 +74,13 @@
     'ev': () => notice('Events', 'No active event is configured. Check back for upcoming events.'),
     'go1': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go2': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go3': () => notice('Daily missions', 'Daily missions are not available yet.'),
     'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => go(3), 'news': () => notice('News', 'No news has been posted yet.'),
-    'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => notice('Chat', SOON.chat), 'c-gld': () => notice('Guild', SOON.guild)
+    'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => goScreen('chat'), 'c-gld': () => goScreen('guild')
   };
   function act(k, h, el) {
     const a = h.a || '', [t, ...rest] = a.split(':'), arg = rest.join(':');
     if (k === 'home' && HOME[h.id]) return HOME[h.id]();
     if (t === 'go') return goScreen(arg);
-    if (t === 'gcat') return notice('Guild', SOON.guild);
+    if (t === 'gcat') return k === 'guild' ? MODS.guild.x() : goScreen('guild');
     if (t === 'chest' || t === 'deposit') return openChest();
     if (t === 'wallet') return window.ShinobiBetaUI ? ShinobiBetaUI.open() : openChest();
     if (t === 'codex') return go(3);
@@ -124,7 +125,7 @@
   }
 
   /* ---------- per-screen live content ---------- */
-  const INIT = {}, MODS = {}, PAINT = {};
+  const INIT = {}, MODS = {}, PAINT = {}, MIRROR = {};
   INIT.home = b => {
     const cover = (x, y, w, h, bg, fs, color, cls = '') => { const e = place(mk('span', 'sbw-cover sbw-left ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; };
     b.name = cover(1380, 138, 80, 28, '#01060e', 25, '#ffffff', 'sbw-click'); b.name.title = 'Set your nickname';
@@ -327,6 +328,261 @@
     skin: () => toast('Sensei skins are not available yet.')
   };
 
+  /* ================= Phase 3: Heroes, Adventure, Market, Boss Hunt; Guild/Chat previews ================= */
+  /* shared helpers */
+  function cv(b, x, y, w, h, cls = '') { const c = place(mk('div', 'sbw-cv ' + cls, b.st), x, y, w, h); return c; }
+  function cov(b, x, y, w, h, bg, fs, color, cls = '') { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; }
+  function heroAt(i) { const g = gs(); return g && g.h ? g.h[i] || null : null; }
+  function drawHero(c, h, sc, now, bottom = 2) { if (!c) return; const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); if (h && window.PlayerModels && PlayerModels.loaded) { try { PlayerModels.drawPortrait(g, h, c.width / 2, c.height - bottom, sc, now); } catch {} } }
+  function mirror(dst, src, fit = 'contain', anchorY = .5) {
+    if (!dst || !src || !src.width) return; const g = dst.getContext('2d'), W = dst.width, H = dst.height, sw = src.width, sh = src.height;
+    const s = fit === 'cover' ? Math.max(W / sw, H / sh) : Math.min(W / sw, H / sh), w = sw * s, h = sh * s;
+    g.clearRect(0, 0, W, H); try { g.drawImage(src, (W - w) / 2, (H - h) * anchorY, w, h); } catch {}
+  }
+  const num = (t, re) => { const m = re.exec(t || ''); return m ? m[1] : ''; };
+  function pressIn(root, test) { if (!root) return false; const e = [...root.querySelectorAll('button')].find(test); if (e && !e.disabled) { e.click(); return true; } return false; }
+
+  /* ---------- Heroes (game page 1) ---------- */
+  const HF = [-1, -3, -2, 0, 1, 2, 3, 4], HFL = ['ALL', 'BATTLE-READY', 'RESERVE', 'GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND'];
+  function heroCards() {
+    return [...document.querySelectorAll('#p1 article.reference-hero-card')].filter(a => !a.closest('#sbwLayer')).map(a => {
+      const t = a.innerText || '', btn = re => [...a.querySelectorAll('button')].find(x => re.test(x.getAttribute('onclick') || '') || re.test(x.className || '')) || null;
+      const tg = btn(/^tog\(/), m = tg && /tog\((\d+)\)/.exec(tg.getAttribute('onclick'));
+      const idx = m ? +m[1] : null, h = idx != null ? heroAt(idx) : null;
+      return { a, idx, h, name: (h && h.name) || ((a.querySelector('h3') || {}).textContent || '').trim(),
+        status: (t.match(/\b(RESERVE|PRACTICE|RESTING|DEPLOYED|BATTLE-READY|WORKING)\b/) || [''])[0],
+        pw: num(t, /POWER\s*\n?\s*([\d.]+)/), sp: num(t, /SPEED\s*\n?\s*([\d.]+)/), stam: num(t, /STAMINA\s*\n?\s*([\d.]+)/),
+        vol: num(t, /VOLLEY\s*\n?\s*(\d+)/), rng: num(t, /RANGE\s*\n?\s*(\d+)/), lvl: num(t, /LEVEL\s*\n?\s*([\d/]+)/),
+        ch: num(t, /CHAKRA\s*\n?\s*(\d+\s*\/\s*\d+)/), attack: ([...a.querySelectorAll('span,small,em')].map(x => x.textContent.trim()).find(x => /shuriken|blade|rasengan|chidori|fire|lightning/i.test(x)) || ''),
+        style: ([...a.querySelectorAll('span,small,em')].map(x => x.textContent.trim()).find(x => /style$/i.test(x)) || ''),
+        perks: num(t, /Perks\s*·\s*(\d+)/), dmg: (t.match(/\d+ damage \/ hit[^\n]*/) || [''])[0],
+        tog: tg, up: btn(/^up\(/), list: btn(/openListing/), mode: btn(/hero-mode-button/) };
+    });
+  }
+  INIT.heroes = b => {
+    b.tabs = b.s.hs.filter(h => /^tf\d$/.test(h.id)).map((h, i) => cov(b, h.r[0] + 5, h.r[1] + 6, h.r[2] - h.r[0] - 10, h.r[3] - h.r[1] - 12, i === 0 ? '#342003' : '#04172e', 15, '#e8eefc'));
+    b.summary = cov(b, 24, 288, 600, 24, '#06071d', 15, '#cfd8ee', 'sbw-left');
+    b.page = cov(b, 1342, 288, 130, 24, '#000108', 15, '#ffffff');
+    b.grid = cv(b, 26, 322, 1036, 684, 'sbw-hgrid');
+    b.det = cv(b, 1078, 324, 434, 356, 'sbw-hdet');
+    b.dtab = cv(b, 1084, 724, 422, 104, 'sbw-hdtab');
+    b.depl = cov(b, 1350, 918, 132, 38, 'linear-gradient(#0a56d6,#0041ba)', 22, '#ffffff'); b.depl.style.fontWeight = '800';
+    b.sell = cov(b, 1150, 918, 136, 38, 'linear-gradient(#1f9b3a,#167a2c)', 22, '#ffffff'); b.sell.style.fontWeight = '800';
+    b.sel = 0; b.tabIdx = 0;
+    ['dfav'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
+  };
+  function heroCardHtml(c, i, on) {
+    const h = c.h || {}, r = h.r || 0, col = RCOL[r] || RCOL[0], [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0), pct = cm ? Math.round(100 * cc / cm) : 0;
+    const btn = (k, label, cls = '', dis) => `<button type="button" class="sbw-hb ${cls}" data-k="${k}" data-i="${i}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
+    return `<div class="sbw-hcard${on ? ' on' : ''}" data-i="${i}" style="--rc:${col}">
+      <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
+      <canvas width="170" height="120" data-i="${i}"></canvas>
+      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(c.attack || c.style)}</span></div>
+      <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
+      <div class="sbw-hc-ch"><span>CHAKRA</span><span>${esc(c.ch.replace(/\s/g, ' '))}</span></div><div class="sbw-bar"><i style="width:${pct}%"></i></div>
+      <div class="sbw-hc-btns">${btn('tog', c.tog ? c.tog.textContent.trim() : 'Deploy', 'alt', !c.tog || c.tog.disabled)}${btn('up', c.up ? c.up.textContent.replace(/\s+/g, ' ').trim() : 'Train', 'gold', !c.up || c.up.disabled)}${btn('list', 'Sell', 'green', !c.list || c.list.disabled)}${btn('mode', c.mode ? c.mode.textContent.trim() : '—', 'blue', !c.mode || c.mode.disabled)}</div></div>`;
+  }
+  PAINT.heroes = (b, now) => {
+    const cards = heroCards(), root = document.querySelector('#p1');
+    const fbtn = HF.map(v => nativeEl('#p1', e => (e.getAttribute('onclick') || '') === `HeroFilters.choose(${v})`));
+    fbtn.forEach((e, i) => { setText(b.tabs[i], `${HFL[i]} (${e ? ((e.querySelector('span') || {}).textContent || '0') : '0'})`); if (e && e.getAttribute('aria-pressed') === 'true') b.tabIdx = i; });
+    b.tabs.forEach((t, i) => { t.style.color = i === b.tabIdx ? '#ffd257' : '#e8eefc'; const hs = $(`.hs[data-sbwid="tf${i}"]`, b.st); if (hs) hs.classList.toggle('on2', i === b.tabIdx); });
+    setText(b.summary, nativeText('#p1', /\d+[–-]\d+ of \d+ heroes[^\n]*/) || nativeText('#p1', /\d+ of \d+ heroes[^\n]*/) || `${cards.length} heroes`);
+    const sm = /(\d+)[–-](\d+) of (\d+) heroes/.exec(nativeText('#p1', /\d+[–-]\d+ of \d+ heroes/)); setText(b.page, sm ? `${Math.ceil(+sm[1] / 10)} / ${Math.max(1, Math.ceil(+sm[3] / 10))}` : '1 / 1');
+    if (b.sel >= cards.length) b.sel = 0;
+    const sig = cards.map(c => [c.idx, c.status, c.lvl, c.ch, c.pw, c.tog && c.tog.textContent, c.up && c.up.textContent, c.mode && c.mode.textContent].join(',')).join('|') + '#' + b.sel;
+    if (sig !== b.sig) {
+      b.sig = sig;
+      b.grid.innerHTML = cards.length ? cards.slice(0, 10).map((c, i) => heroCardHtml(c, i, i === b.sel)).join('') : `<p class="sbw-empty">No heroes match this filter. Summon heroes at the Shrine.</p>`;
+      $$('.sbw-hcard', b.grid).forEach(el => el.addEventListener('click', ev => { const k = ev.target.dataset && ev.target.dataset.k; const c = heroCards()[+el.dataset.i]; if (!c) return; if (k) { ev.stopPropagation(); const n = c[k]; if (n && !n.disabled) n.click(); b.sig = ''; return; } b.sel = +el.dataset.i; b.sig = ''; }));
+    }
+    $$('.sbw-hcard canvas', b.grid).forEach(c => { const card = cards[+c.dataset.i]; drawHero(c, card && card.h, 2.7, now, 2); });
+    const c = cards[b.sel];
+    const dsig = c ? [c.idx, c.lvl, c.ch, c.pw, c.sp, c.stam, c.status, b.dt || 0].join(',') : 'none';
+    if (dsig !== b.dsig) {
+      b.dsig = dsig;
+      if (!c) { b.det.innerHTML = '<p class="sbw-empty">Select a hero.</p>'; b.dtab.innerHTML = ''; }
+      else {
+        const h = c.h || {}, r = h.r || 0, [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0);
+        b.det.innerHTML = `<div class="sbw-hd" style="--rc:${RCOL[r]}"><div class="sbw-hd-h"><b>${esc(c.name)}</b><i>${esc(RNAME[r].toUpperCase())}</i></div>
+          <div class="sbw-hd-lv">Lv. ${esc((c.lvl || '1/10').replace('/', ' / '))}<span>${esc(c.status)}</span></div>
+          <div class="sbw-hd-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r])}</span></div>
+          <canvas width="150" height="122"></canvas>
+          <div class="sbw-hd-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span><span>VOLLEY<b>${esc(c.vol)}</b></span><span>RANGE<b>${esc(c.rng)}</b></span><span>PERKS<b>${esc(c.perks || '0')}</b></span></div>
+          <div class="sbw-hc-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div></div>`;
+        const dt = b.dt || 0, info = [`${c.dmg || ''}`, `${c.attack || '—'} · ${c.style || ''}`, `Chakra ${cc} / ${cm}. Resting heroes recover in the Dojo; deployed heroes spend chakra in Adventure.`, `${c.status || ''} · ${h.tokenId ? 'Token collection · server owned' : 'Practice / local hero'}`][dt];
+        b.dtab.innerHTML = `<p>${esc(info)}</p>`;
+      }
+    }
+    drawHero($('canvas', b.det), c && c.h, 2.2, now, 2);
+    if (b.live.trainlbl) { b.live.trainlbl.hidden = false; setText(b.live.trainlbl, c && c.up ? c.up.textContent.replace(/\s+/g, ' ').trim() : 'Train'); }
+    setText(b.depl, c && c.tog ? c.tog.textContent.trim().replace('Deploy hero', 'Deploy') : 'Deploy');
+    setText(b.sell, 'Sell');
+  };
+  MODS.heroes = {
+    tab: a => { const v = HF[+a]; if (v != null) window.HeroFilters && HeroFilters.choose(v); built.heroes.sel = 0; built.heroes.sig = ''; },
+    search: () => { const inp = document.querySelector('#p1 .heroes-search'); if (!inp) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.onclick = null; dlg.innerHTML = '<h2>Search heroes</h2><form><input type="search" placeholder="Hero name"><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt">Clear</button><button class="sbw-btn">Search</button></div></form>'; const q = $('input', dlg); q.value = inp.value; const run = v => { inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); built.heroes.sig = ''; dlg.close(); }; $('.sbw-alt', dlg).onclick = () => run(''); $('form', dlg).onsubmit = e => { e.preventDefault(); run(q.value); }; dlg.showModal(); q.focus(); },
+    sort: () => { const s = document.querySelector('#p1 .heroes-sort'); if (!s) return; s.selectedIndex = (s.selectedIndex + 1) % s.options.length; s.dispatchEvent(new Event('change', { bubbles: true })); toast('Sort: ' + s.options[s.selectedIndex].text); built.heroes.sig = ''; },
+    page: (a, el) => { const prev = el && el.dataset.sbwid === 'pp'; if (!pressIn(document.querySelector('#p1'), x => !x.closest('#sbwLayer') && (prev ? /prev|‹|←|</i : /next|›|→|>/i).test((x.getAttribute('aria-label') || '') + x.textContent))) toast('All heroes fit on this page.'); built.heroes.sig = ''; },
+    sel: a => { built.heroes.sel = +a; built.heroes.sig = ''; },
+    fav: () => toast('Favourites are not available yet.'),
+    dtab: a => { built.heroes.dt = +a; built.heroes.dsig = ''; for (let i = 0; i < 4; i++) { const e = $(`.hs[data-sbwid="dt${i}"]`, built.heroes.st); if (e) e.classList.toggle('on2', i === +a); } },
+    train: () => { const c = heroCards()[built.heroes.sel]; if (c && c.up && !c.up.disabled) c.up.click(); else toast('Training is not available for this hero right now.'); },
+    sell: () => { const c = heroCards()[built.heroes.sel]; if (c && c.list && !c.list.disabled) c.list.click(); else toast('This hero cannot be listed right now.'); },
+    deploy: () => { const c = heroCards()[built.heroes.sel]; if (c && c.tog && !c.tog.disabled) c.tog.click(); else toast('This hero cannot be deployed right now.'); built.heroes.sig = ''; }
+  };
+
+  /* ---------- Adventure (game page 0): the real battle canvas inside your frame ---------- */
+  /* The team panel keeps the game's own 10-slot Adventure team (same cards, portraits and Deploy buttons), restyled in
+     the website theme. Deployed Elite and Legend heroes get an animated aura. */
+  INIT.adventure = b => {
+    b.map = place(mk('canvas', 'sbw-mirror', b.st), 272, 222, 1250, 469); b.map.width = 1250; b.map.height = 469;
+    b.stages = [0, 1, 2, 3, 4].map(i => cv(b, 24, 216 + i * 115, 236, 98, 'sbw-astage'));
+    /* the game has no difficulty setting: the Difficulty / Stage Info box is removed (inpainted scenery patch) */
+    const patch = place(mk('img', 'sbw-patch', b.st), 1150, 128, 386, 108); patch.src = BASE + 'art/adventure-tr-patch.webp'; patch.alt = '';
+    ['diff', 'sinfo'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
+    const t = cv(b, 272, 696, 1250, 310, 'sbw-ateam');
+    t.innerHTML = `<div class="sbw-at-head"><i class="sbw-at-icon">⚔</i><div><b>ADVENTURE TEAM</b><span>Deploy your shinobi and start bombing!</span></div>
+      <button type="button" data-a="manage">Manage heroes</button><button type="button" data-a="work">Work All</button><button type="button" data-a="rest">Rest All</button><em>Deployed <strong>0 / 10</strong></em></div><div class="sbw-at-grid"></div>`;
+    t.querySelector('.sbw-at-head').addEventListener('click', e => { const a = e.target.closest('button'); if (!a) return; ({ manage: () => go(1), work: () => MODS.adventure.work(), rest: () => MODS.adventure.rest() })[a.dataset.a](); });
+    b.team = t; b.grid = t.querySelector('.sbw-at-grid'); b.count = t.querySelector('strong');
+    b.slots = Array.from({ length: 10 }, (_, i) => { const e = mk('div', 'sbw-at-card empty', b.grid); e.dataset.i = i; e.addEventListener('click', ev => { const n = teamCards()[i]; if (!n) return go(1); const btn = n.a.querySelector('.roster-team-action'); if (ev.target.closest('button') && btn && !btn.disabled) { btn.click(); e.dataset.k = ''; } }); return e; });
+  };
+  function teamCards() { return [...document.querySelectorAll('#p0 article.map-hero')].filter(a => !a.closest('#sbwLayer')).map(a => ({ a, idx: +a.dataset.maphero, deployed: a.dataset.deployed === 'true', cv: a.querySelector('canvas') })); }
+  function advInfo() { const t = ((document.querySelector('.adventure-mobile-status') || {}).textContent || '').replace(/\s+/g, ' '); return { stage: num(t, /Stage\s*(\d+)/i), name: ((document.querySelector('.adventure-stage-name') || {}).textContent || '').trim(), enemies: (t.match(/ENEMIES\s*([\d]+\s*\/\s*[\d]+)/i) || [, ''])[1], gained: (t.match(/GAINED\s*([+\-]?[\d,]+)/i) || [, '0'])[1] }; }
+  PAINT.adventure = (b, now) => {
+    const a = advInfo(), st = +a.stage || 1;
+    if (b.live.stitle) { b.live.stitle.hidden = false; setText(b.live.stitle, `Stage ${st} · ${a.name || ''}`); }
+    if (b.live.enemies) { b.live.enemies.hidden = false; setText(b.live.enemies, a.enemies || '—'); }
+    if (b.live.reward) { b.live.reward.hidden = false; setText(b.live.reward, `${a.gained || '+0'} Ryo`); }
+    const ssig = st + a.name; if (ssig !== b.ssig) { b.ssig = ssig; b.stages.forEach((e, i) => { e.classList.toggle('on', i === 0); const n2 = st + i; e.innerHTML = i === 0 ? `<b>Stage ${st}</b><span>${esc(a.name)}</span><em>CURRENT</em>` : `<b>Stage ${n2}</b><span class="lock">🔒 Clear stage ${n2 - 1} to unlock</span>`; }); }
+    const cards = teamCards(); b.count.textContent = `${cards.filter(c => c.deployed).length} / 10`;
+    b.slots.forEach((e, i) => {
+      const c = cards[i], h = c && heroAt(c.idx);
+      if (!c || !h) { if (e.dataset.k !== 'empty') { e.dataset.k = 'empty'; e.className = 'sbw-at-card empty'; e.style.removeProperty('--rc'); e.innerHTML = `<b>+</b><div><strong>Empty slot ${i + 1}</strong><span>Deploy a battle-ready hero</span></div>`; } return; }
+      const a2 = c.a, meta = ((a2.querySelector('.roster-hero-meta') || {}).textContent || '').replace(/\s+/g, ' ').trim(), bar = ((a2.querySelector('.bar i') || {}).style || {}).width || '0%', btn = a2.querySelector('.roster-team-action'), el = a2.querySelector('.roster-element-icon');
+      const k = [c.idx, h.lv, meta, bar, btn && btn.textContent, c.deployed].join('|');
+      if (e.dataset.k !== k) {
+        const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
+        e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
+        e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">✦ ${esc(RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
+        if (keep && e.dataset.hero === String(c.idx)) { const n = e.querySelector('canvas'); try { n.getContext('2d').drawImage(keep, 0, 0); } catch {} }
+        e.dataset.hero = String(c.idx);
+      }
+    });
+  };
+  MIRROR.adventure = b => {
+    mirror(b.map, document.getElementById('cv'), 'contain', .5);
+    b.tick = (b.tick || 0) + 1; if (b.tick % 2) return; /* the game's own team-card portrait (same model and tier aura), ~30 fps */
+    const cards = teamCards(); b.slots.forEach((e, i) => {
+      const c = cards[i], d = e.querySelector('canvas'); if (!c || !c.cv || !d || !c.cv.width) return;
+      try { const px = c.cv.getContext('2d', { willReadFrequently: true }).getImageData(c.cv.width >> 1, c.cv.height >> 2, 1, c.cv.height >> 1).data; let ink = false; for (let k = 3; k < px.length; k += 4) if (px[k]) { ink = true; break; } if (!ink) return; } catch { return; }
+      const g = d.getContext('2d'); g.clearRect(0, 0, d.width, d.height); try { g.drawImage(c.cv, 0, 0, d.width, d.height); } catch {}
+    });
+  };
+  MODS.adventure = {
+    stage: () => notice('Stages', 'Stages advance automatically as your team clears each map. Eight battlefields rotate as you progress.'),
+    stageinfo: () => { const a = advInfo(); notice(`Stage ${a.stage || 1} · ${a.name}`, `Enemies remaining: ${a.enemies || '—'}. Ryo earned this session: ${a.gained || '+0'}. Deployed heroes fight automatically and spend chakra; rest them in the Dojo to recover.`); },
+    work: () => { if (!pressOnclick('#p0', 'Experience.workAll()')) toast('No rested heroes to send to work.'); },
+    rest: () => { if (!pressOnclick('#p0', 'Experience.restAll()')) toast('No deployed heroes to rest.'); },
+    hero: () => go(1)
+  };
+
+  /* ---------- Market (game page 4, mode 1): local practice market ---------- */
+  INIT.market = b => {
+    b.grid = cv(b, 72, 360, 1060, 494, 'sbw-mgrid');
+    b.pager = cov(b, 380, 862, 440, 46, '#010d19', 15, '#9aa6c8');
+    b.det = cv(b, 1162, 160, 446, 626, 'sbw-mdet');
+    ['dprev', 'dnext', 'dfav', 'dt1', 'dt2', 'dt3', 'dt4'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
+    b.price = cov(b, 1176, 856, 160, 46, '#010d19', 18, '#ffd257');
+    b.tabs = [1, 2].map(i => { const h = b.s.hs.find(x => x.id === 'tb' + (i + 1)); const e = cov(b, h.r[0] + 4, h.r[1] + 4, h.r[2] - h.r[0] - 8, h.r[3] - h.r[1] - 8, '#070b1e', 15, '#7d86a8'); e.textContent = i === 1 ? 'ITEMS · coming soon' : 'RESOURCES · coming soon'; return e; });
+    b.seller = cov(b, 1168, 786, 290, 60, '#050a17', 14, '#9aa6c8', 'sbw-left'); b.seller.textContent = 'Seller: local listings only';
+  };
+  function marketRows() { return [...document.querySelectorAll('#p4 [data-market-id]')].filter(e => !e.closest('#sbwLayer') && !e.matches('canvas')).map(e => ({ el: e, id: e.dataset.marketId, text: (e.innerText || '').replace(/\s+/g, ' ').trim() })); }
+  PAINT.market = b => {
+    const rows = marketRows(), note = nativeText('#p4', /Local listings only[^\n]*/) || 'Local listings only. Trading with other players needs a shared market service; buying is unavailable.';
+    const sig = rows.map(r => r.id + r.text).join('|') + (b.sel || '');
+    if (sig !== b.sig) {
+      b.sig = sig;
+      b.grid.innerHTML = rows.length ? rows.slice(0, 10).map((r, i) => `<button type="button" class="sbw-mcard${r.id === b.sel ? ' on' : ''}" data-i="${i}">${esc(r.text)}</button>`).join('')
+        : `<div class="sbw-empty"><b>No listings yet</b><p>Open Heroes and choose <em>Sell · List on Market</em> to set an asking price.</p><p class="sbw-small">${esc(note)}</p><button type="button" class="sbw-btn" data-go="1">Browse Heroes</button></div>`;
+      $$('.sbw-mcard', b.grid).forEach(e => e.onclick = () => { const r = marketRows()[+e.dataset.i]; if (r) { r.el.click(); b.sel = r.id; b.sig = ''; } });
+      const bg = $('[data-go]', b.grid); if (bg) bg.onclick = () => go(1);
+      const sel = rows.find(r => r.id === b.sel);
+      b.det.innerHTML = `<div class="sbw-md"><h3>${sel ? 'Listing' : 'Select a hero'}</h3><p>${esc(sel ? sel.text : 'Choose a listing to inspect its stats, chakra, skills and asking price.')}</p><div class="sbw-note">MARKET · OFFLINE PROTOTYPE<br>${esc(note)}</div></div>`;
+    }
+    setText(b.pager, rows.length > 10 ? `Showing 10 of ${rows.length}` : '');
+    setText(b.price, '— Ryo');
+    const scope = ['heroes', 'mine'].find(s => { const e = nativeEl('#p4', x => (x.getAttribute('onclick') || '') === `Market.scope('${s}')`); return e && e.classList.contains('active'); }) || 'heroes';
+    const rk = [-1, 0, 1, 2, 3, 4].findIndex(v => { const e = nativeEl('#p4', x => (x.getAttribute('onclick') || '') === `Market.rank(${v})`); return e && e.classList.contains('active'); });
+    for (let i = 0; i < 6; i++) { const e = $(`.hs[data-sbwid="f${i}"]`, b.st); if (e) e.classList.toggle('on2', i === Math.max(0, rk)); }
+    ['tb1', 'tb4'].forEach((id, i) => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.classList.toggle('on2', (i === 0 && scope === 'heroes') || (i === 1 && scope === 'mine')); });
+  };
+  MODS.market = {
+    mtab: a => { const s = { 0: 'heroes', 3: 'mine' }[+a]; if (!s) return notice('Market', 'Items and resources are not in the game yet. Only heroes can be listed (practice market).'); window.Market && Market.scope(s); built.market.sig = ''; },
+    rar: a => { const i = ['All', 'Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'].indexOf(a); window.Market && Market.rank(i - 1); built.market.sig = ''; },
+    dd: a => { if (a === 'price') { const n = nativeEl('#p4', x => (x.getAttribute('onclick') || '') === "Market.sort('price')"); const by = n && n.classList.contains('active') ? 'newest' : 'price'; window.Market && Market.sort(by); toast('Sorted by ' + (by === 'price' ? 'price' : 'newest')); built.market.sig = ''; } else notice('Market filters', 'Element and skill filters are not available yet.'); },
+    search: () => toast('Search is not available in the practice market yet.'),
+    reset: () => { if (window.Market) { Market.scope('heroes'); Market.rank(-1); } built.market.sig = ''; },
+    card: a => { const r = marketRows()[+a]; if (r) { r.el.click(); built.market.sel = r.id; built.market.sig = ''; } },
+    page: () => toast('All listings fit on one page.'), cyc: () => {}, fav: () => toast('Favourites are not available yet.'), dtab: () => {},
+    listings: () => { window.Market && Market.scope('mine'); built.market.sig = ''; },
+    buy: () => notice('Buying is unavailable', 'This market is a local practice prototype. Buying from other players needs a shared market service that is not available yet. No Ryo is charged.'),
+    offer: () => notice('Offers are unavailable', 'Making offers needs a shared market service that is not available yet.')
+  };
+
+  /* ---------- Boss Hunt (game page 8): the real sanctuary canvas inside your frame ---------- */
+  const GUARD = ['Akuma · Fallen Shinobi', 'Yuki Onna · Frozen Moon', 'Raijin · Thunder Lord', 'Daichi · Ancient Golem', 'Orochi · Serpent King', 'Shadow Emperor'];
+  INIT['boss-hunt'] = b => {
+    b.arena = place(mk('canvas', 'sbw-mirror', b.st), 222, 346, 770, 368); b.arena.width = 770; b.arena.height = 368;
+    b.world = cov(b, 50, 218, 160, 20, '#0d0407', 14, '#e9dcff', 'sbw-left');
+    b.name = cov(b, 50, 234, 520, 42, '#0d0407', 28, '#ffffff', 'sbw-left'); b.name.style.fontWeight = '800';
+    b.badge = cov(b, 806, 214, 176, 26, '#2a1a05', 15, '#ffd257');
+    b.rec = cov(b, 690, 254, 292, 22, '#05040d', 14, '#cfd8ee'); b.rec.style.justifyContent = 'flex-end';
+    b.hpbar = cv(b, 54, 282, 928, 22, 'sbw-hp'); b.hptext = cov(b, 52, 312, 300, 22, '#05040d', 15, '#ffffff', 'sbw-left');
+    b.list = [0, 1, 2, 3, 4].map(i => cv(b, 48, [353, 427, 499, 570, 642][i], 159, 69, 'sbw-blist'));
+    b.tpl = cov(b, 1092, 330, 300, 20, '#0c192d', 13, '#cfd8ee', 'sbw-left'); b.tpv = cov(b, 1092, 354, 260, 40, '#0c192d', 32, '#ffd257', 'sbw-left'); b.tpv.style.fontWeight = '800';
+    b.rcm = cov(b, 1300, 368, 200, 22, '#0c192d', 13, '#6ef294'); b.rcm.style.justifyContent = 'flex-end';
+    b.dep = cov(b, 1030, 420, 250, 24, '#060a19', 16, '#ffffff', 'sbw-left');
+    b.tiles = [1032, 1090, 1149, 1208, 1267, 1330, 1386, 1442].map((x, i) => cv(b, x, 452, 54, i < 5 ? 122 : 86, 'sbw-btile'));
+    b.chal = cov(b, 1180, 618, 290, 40, 'linear-gradient(#ffc13a,#f39a12)', 25, '#2a1000'); b.chal.style.fontWeight = '900';
+    b.mech = cv(b, 1052, 722, 450, 128, 'sbw-mech');
+    b.rw = [1, 2, 3, 4, 5, 6, 7].map(i => { const h = b.s.hs.find(x => x.id === 'rw' + i); const e = cv(b, h.r[0], h.r[1], h.r[2] - h.r[0], h.r[3] - h.r[1], 'sbw-soon'); e.textContent = 'Not yet'; return e; });
+    b.rw0 = cov(b, 52, 838, 90, 18, '#2a1a05', 12, '#ffd257');
+    b.ranks = cv(b, 32, 920, 960, 82, 'sbw-soonpanel'); b.ranks.innerHTML = '<b>Daily rankings are not available yet</b><span>Rankings need a shared leaderboard service.</span>';
+    b.recp = cv(b, 1018, 930, 490, 72, 'sbw-recpanel');
+  };
+  function bossInfo() { const t = ((document.querySelector('#p8') || {}).innerText || ''); return { hunt: num(t, /HUNT\s*(\d+)/), name: (t.match(/HUNT\s*\d+\s*\n\s*([^\n]+)/) || [, ''])[1].trim(), status: (() => { const L = t.split('\n').map(x => x.trim()).filter(Boolean), i = L.findIndex(x => /^HUNT\s*\d+$/i.test(x)); return i >= 0 && L[i + 2] && L[i + 2].length < 24 ? L[i + 2] : ''; })(), hp: (t.match(/([\d,]+)\s*\/\s*([\d,]+)\s*HP/) || []), secs: num(t, /HP\s*·\s*(\d+)s/), dmg: num(t, /Damage dealt:\s*([\d,]+)/), reward: num(t, /FIRST-CLEAR REWARD\s*\n?\s*([\d,]+)\s*Ryo/i), chal: (t.match(/CHALLENGE\s*·\s*\d+/) || ['CHALLENGE'])[0], mech: (t.match(/Shockwaves[^\n]*/) || [''])[0] }; }
+  PAINT['boss-hunt'] = (b, now) => {
+    const x = bossInfo(), hunt = +x.hunt || 1, cur = Math.max(0, GUARD.indexOf(x.name)), cl = Math.max(0, hunt - 1);
+    setText(b.world, `HUNT ${hunt}`); setText(b.name, x.name || GUARD[cur]); setText(b.badge, x.status || 'READY');
+    const hp = +(x.hp[1] || '0').replace(/,/g, ''), max = +(x.hp[2] || '1').replace(/,/g, '') || 1, pct = Math.max(0, Math.min(100, Math.round(100 * hp / max)));
+    b.hpbar.innerHTML = `<i style="width:${pct}%"></i><span>${pct}%</span>`; setText(b.hptext, `${x.hp[1] || '—'} / ${x.hp[2] || '—'} HP`);
+    setText(b.rec, `${x.secs || 90}s · Damage dealt: ${x.dmg || 0}`);
+    if (b.live.btimer) { b.live.btimer.hidden = false; setText(b.live.btimer, `${x.secs || 90}s`); }
+    const lsig = hunt + x.name; if (lsig !== b.lsig) { b.lsig = lsig; b.list.forEach((e, i) => { const g = (cur + i) % GUARD.length; e.classList.toggle('on', i === 0); e.classList.toggle('lock', i > 0); e.innerHTML = `<b>${esc(GUARD[g].split(' · ')[0])}</b><span>${i === 0 ? 'Hunt ' + hunt : 'Hunt ' + (hunt + i)}</span>`; }); }
+    setText(b.tpl, 'NEXT FIRST-CLEAR REWARD'); setText(b.tpv, `${x.reward || '—'} Ryo`); setText(b.rcm, 'Every 5th hunt: + Chunin hero'); setText(b.rw0, x.reward ? x.reward : '—');
+    let team = []; try { team = BattleRoster.list().filter(h => h.on); } catch { team = deployed(); }
+    setText(b.dep, `Deployed heroes (${team.length}/10)`);
+    b.tiles.forEach((e, i) => { const h = team[i]; e.classList.toggle('empty', !h); e.style.setProperty('--rc', h ? RCOL[h.r] : '#2a3a6a'); const k = h ? h.id + ',' + h.lv : 'x'; if (e.dataset.k !== k) { e.dataset.k = k; e.innerHTML = h ? `<canvas width="53" height="70"></canvas><span>Lv. ${h.lv}</span><small>${esc(RNAME[h.r])}</small>` : '<b>+</b><small>Empty</small>'; } if (h) drawHero($('canvas', e), h, 1, now, 2); });
+    setText(b.chal, x.chal.toUpperCase());
+    const ms = x.mech + cl; if (ms !== b.ms) { b.ms = ms; b.mech.innerHTML = `<p>⏱ 90 seconds · 1 chakra per projectile · Adventure pauses during the hunt.</p><p>⚡ ${esc(x.mech || 'Shockwaves drain chakra every 8 seconds.')}</p><p>🔥 Below 35% HP the guardian enrages: waves every 5 seconds drain 3 chakra.</p>`; b.recp.innerHTML = `<span>Highest damage<b>—</b></span><span>Best rank<b>—</b></span><span>Hunts cleared<b>${cl}</b></span>`; }
+  };
+  MIRROR['boss-hunt'] = b => mirror(b.arena, document.getElementById('bossHuntMap'), 'cover', .62);
+  MODS['boss-hunt'] = {
+    challenge: () => { if (!pressOnclick('#p8', 'V2.startBoss()')) toast('Deploy a rested hero first.'); },
+    team: () => go(1),
+    bossinfo: () => { const x = bossInfo(); notice(x.name || 'Guardian', `Hunt ${x.hunt || 1}. ${x.mech} First clear rewards ${x.reward || '—'} Ryo; every fifth hunt also awards a Chunin hero.`); },
+    locked: () => toast('Clear the current hunt to face the next guardian.'),
+    ranking: () => notice('Rankings', 'Daily rankings need a shared leaderboard service and are not available yet.')
+  };
+
+  /* ---------- Guild and Chat: previews (no backend yet) ---------- */
+  ['guild', 'chat'].forEach(k => {
+    INIT[k] = b => { const r = mk('div', 'sbw-preview', b.st); r.innerHTML = `<b>PREVIEW</b> ${k === 'guild' ? 'Guilds are' : 'Chat is'} not available yet — everything on this screen is example artwork, not real players or data.`; };
+    MODS[k] = new Proxy({}, { get: () => () => notice(k === 'guild' ? 'Guild' : 'Chat', k === 'guild' ? 'Guilds are not available yet. This screen is a preview of the design.' : 'Chat is not available yet. This screen is a preview of the design.') });
+  });
+
   /* ---------- live refresh ---------- */
   function setText(e, t) { if (e && e.textContent !== t) { e.textContent = t; fitText(e); } }
   function fitText(e) { const base = +e.dataset.fs; if (!base) return; let fs = base; e.style.fontSize = fs + 'px'; while (e.scrollWidth > e.clientWidth + 1 && fs > 8) { fs -= 1; e.style.fontSize = fs + 'px'; } }
@@ -362,6 +618,7 @@
   function screenForPage() {
     if (!D || (window.LoginScreen && LoginScreen.active) || (window.GameLoading && GameLoading.active)) return null;
     let page; try { page = tab; } catch { return null; }
+    if (preview) return preview;
     let mode = 0; try { mode = vm || 0; } catch {}
     return SHOWN[page === 4 ? '4:' + mode : String(page)] || null;
   }
@@ -385,7 +642,7 @@
     D = await fetch(BASE + 'screens.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('screens.json ' + r.status); return r.json(); });
     layer = mk('div', '', document.body); layer.id = 'sbwLayer'; layer.hidden = true;
     const prior = window.go;
-    if (typeof prior === 'function') { window.go = function (...args) { const r = prior.apply(this, args); queueMicrotask(sync); return r; }; }
+    if (typeof prior === 'function') { window.go = function (...args) { preview = null; const r = prior.apply(this, args); queueMicrotask(sync); return r; }; }
     addEventListener('shinobi-navigation', sync);
     addEventListener('shinobi-ryo-ledger', () => refresh());
     addEventListener('shinobi-beta-wallet', () => refresh());
@@ -395,7 +652,7 @@
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('click', e => { const g = e.target.closest('#sbwLayer .gt'); if (!g) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.innerHTML = `<h2>${esc(g.dataset.t)}</h2><img class="sbw-lb" src="${g.dataset.src}" alt="${esc(g.dataset.t)}"><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`; $('button', dlg).onclick = () => dlg.close(); dlg.showModal(); });
     setInterval(() => { sync(); placeTrigger(); }, 700);
-    let last = 0; const loop = now => { if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+    let last = 0; const loop = now => { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     sync();
     window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync };
   }

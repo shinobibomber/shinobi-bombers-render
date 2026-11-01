@@ -6,8 +6,8 @@ _Development copy created 2026-11-01 (Asia/Singapore)._
 | --- | --- |
 | **This folder** | `D:\Projects\Shinobi-Bombers-Development` — the working copy for Claude and OpenAI Codex |
 | **Source** | GitHub `shinobibomber/shinobi-bombers-render`, branch `main`, commit `11eddc8`. Full history (29 commits, branch `origin/v3/integrated-redesign-2026-11-01`, tag `v3-reference-beta`) attaches with the one-time git setup below |
-| **Uncommitted here** | Phase 2 website screens (Summon, Fusion, Dojo/Sensei). Tested, not yet pushed or deployed. See "Uncommitted work" below |
-| **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Running commit `11eddc8` (Phase 1) |
+| **Latest work** | Phase 3 (Heroes, Adventure, Market, Boss Hunt, Guild/Chat previews) is committed on `main` but **not yet deployed**; it goes live on the next Render Manual Deploy |
+| **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Running Phase 2 (`d92f6a3`) until the next Manual Deploy |
 | **Original local copy** | `D:\shinobi-bombers-render` — untouched. It is an older clone at `a68984b`, 3 commits behind `main`, with no local edits |
 
 ## How to run (Windows, Node 22)
@@ -79,18 +79,30 @@ npm run typecheck; npm run lint # chest-ui (React/TypeScript)
   - Phase 2 (this folder only): Summon, Fusion and Dojo/Sensei on your designs. They press the game's own buttons:
     real quote and checkout, real Reserve list, live counts, odds and stat ranges, tier status, Sensei settings.
 
-## Uncommitted work (Phase 2)
+## Progress: the game uses the website designs
 
-| File | Change |
-| --- | --- |
-| `apply-website-design.cjs` | Enables `summon`, `fusion`, `dojo`; copies the Summon tab sprites |
-| `website-design/website-design.js` | Summon, Fusion and Dojo/Sensei modules; safe access to the game's `S` save object |
-| `website-design/website-design.css` | Styles for the live Fusion list/slots, Dojo chips, Sensei controls |
-| `docs/WEBSITE-INTEGRATION.md` | Phase 2 notes |
+| Phase | Screens | State |
+| --- | --- | --- |
+| 1 | Home, Codex | live (`11eddc8`) |
+| 2 | Summon, Fusion, Dojo/Sensei | live (`d92f6a3`) |
+| 3 | Heroes, Adventure (themed 10-slot team, Elite/Legend auras, Difficulty box removed), Market, Boss Hunt, Guild/Chat previews | on `main`, waiting for review + Manual Deploy |
 
-Verified in Claude's workspace: the browser suite and the preservation suite pass. An offline build gives exactly
-the package game plus `assets/website-design/`, and the server files are identical. To publish:
-`git add -A && git commit` → `git push origin main` → Render **Manual Deploy**.
+Phase 3 was verified in Claude's workspace with the test wallet: the browser and preservation suites pass, and
+Train, Deploy, filters, Work/Rest, Challenge and Market scope press the game's own controls. Buy/Offer report
+that they are unavailable.
+
+## Handoff notes (Claude ↔ Codex)
+
+- Every finished result is committed and pushed to `main` straight away, so GitHub always has the latest work.
+  When switching tools, run `git pull` first.
+- Pushing does **not** deploy: Render auto-deploy is off, so a change only goes live after Manual Deploy.
+- Where to work:
+  - website screens inside the game: `website-design/website-design.js`, with one `INIT/PAINT/MODS` block per
+    screen and `MIRROR` for live canvases;
+  - their styles: `website-design/website-design.css`;
+  - enabled screens: `SCREENS` in `apply-website-design.cjs`.
+- Rebuild with `npm run build:local`, preview with `npm start`, and test with `npm test` (fixture wallet).
+  Never edit `app/`, which is generated.
 
 ## Known problems / limits
 
@@ -114,17 +126,17 @@ the package game plus `assets/website-design/`, and the server files are identic
 
 ## Next development tasks
 
-1. Review Phase 2 locally, then commit, push to `main` and Manual Deploy. Verify `/play/` Summon, Fusion and Dojo.
+1. Review Phase 3, then Manual Deploy on Render. Verify `/play/` Heroes, Adventure, Market, Boss Hunt and Guild.
 2. Optional: open `/play/` on the website Home design before sign-in, with its wallet pill starting the real game
    sign-in.
-3. Phase 3: Heroes (live cards), Adventure (the real battle canvas inside the website frame), Market (practice
-   market), Boss Hunt; Guild and Chat stay honest previews.
+3. Polish requests from review (e.g. more Adventure/Heroes styling) as small commits.
 4. Reconnect Render auto-deploy.
 5. Keep `SCREENS` in `apply-website-design.cjs` and `docs/WEBSITE-INTEGRATION.md` up to date with each phase.
 
 ## Rules for Claude and Codex in this folder
 
-- Work on `main` in small, reviewable commits. Never force-push. Do not create branches or PRs unless asked.
+- Work on `main` in small, reviewable commits; commit and push after every finished result. Never force-push. Do not
+  create branches or PRs unless asked.
 - Keep the website design unchanged. Game mechanics, art and backend come from the package helpers.
 - Never commit credentials, private keys, `.env` files or seed phrases. Do not run real token transactions.
 - Do not reset player data or add a second ledger. Do not invent missing backend services.

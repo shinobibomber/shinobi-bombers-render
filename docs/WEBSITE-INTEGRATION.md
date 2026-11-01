@@ -65,7 +65,8 @@ pages that have a website screen, the screen is drawn above the game menu and wi
   pill (labelled Tools; the game has no gems), so Claim/Deposit/Withdraw/History and Tools are the game's own;
 - unsupported features (Guild, Chat, events, daily missions, seasons, news) show honest notices.
 
-Enabled screens are listed in `SCREENS` in `apply-website-design.cjs` (phase 1: Home, Codex; phase 2: Summon,
+Enabled screens are listed in `SCREENS` in `apply-website-design.cjs` (phase 1: Home, Codex; phase 2: Summon, Fusion, Dojo/Sensei; phase 3: Heroes, Adventure, Market, Boss Hunt,
+Guild/Chat previews —
 Fusion, Dojo/Sensei). Other pages keep the game's own UI until their website screen is connected.
 
 Phase 2 screens press the game's own buttons (found by their `onclick`) and read the game's own DOM/state, so prices,
@@ -79,5 +80,25 @@ odds, checkout and saving stay exactly the game's:
 - Dojo/Sensei: tier status chips, current tier facts and upgrade price from `S.dojo`/`GameBalance`; Upgrade →
   `DojoServices.upgrade()` (real checkout); Hire/Rent → `DojoServices.hire()` / `TokenCheckout.request('sensei-rental')`;
   return-at % → the game's own Sensei select (`sensei-settings`); Turn on/off → `V2.toggleButler()`.
-- Not provided by the game and shown honestly: rate-up/featured events, Sensei skins, last offline session details. Styles: `website-design/website-screens.css` is generated from
+- Not provided by the game and shown honestly: rate-up/featured events, Sensei skins, last offline session details.
+
+Phase 3 screens (same approach: the game's own buttons and state):
+
+- Heroes: filter tabs → `HeroFilters.choose`; cards mirror the game's hero cards (Deploy/Reserve `tog(i)`, Train
+  `up(i)`, Sell `Market.openListing`, Make Battle-ready); the detail panel's Train/Sell/Deploy press the same
+  buttons; search and sort drive the game's own search box and sort select.
+- Adventure: the game's battle canvas (`#cv`) is drawn into the website frame every frame (read-only mirror); stage,
+  enemies and session Ryo come from the game's status bar. The team panel is the game's own 10-slot Adventure team
+  (same portraits and Deploy buttons) restyled in the website theme, with animated auras for deployed Elite and
+  Legend heroes; Work All / Rest All → `Experience.workAll/restAll`. The Difficulty / Stage Info box is removed (the
+  game has no difficulty) with an inpainted scenery patch made by `website-src/make_game_patches.py`.
+- Boss Hunt: the sanctuary canvas (`#bossHuntMap`) is mirrored; hunt number, guardian, status, HP, timer, damage and
+  first-clear reward come from the game; Challenge → `V2.startBoss()`. Rewards the game does not award, daily
+  rankings and best damage/rank are marked as not available.
+- Market (`go(4,1)`): the game's local practice market (`Market.scope/rank/sort`). Buy / Make Offer and the Items /
+  Resources tabs report honestly that a shared market service does not exist yet.
+- Guild and Chat: website screens shown as labelled previews (no backend); every action shows a "not available yet"
+  notice.
+
+Styles: `website-design/website-screens.css` is generated from
 `website/app.css` by `website-src/make_game_css.py` (scoped to `#sbwLayer`, keyframes prefixed `sbw-`).
