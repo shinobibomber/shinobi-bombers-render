@@ -1,0 +1,43 @@
+/* Shinobi Bombers game link – isolated styles. Every selector is prefixed .sbg- so nothing here can affect
+   existing website pages. Visual tokens are copied from the website (navy panels, gold borders, Rajdhani). */
+.sbg-cover{position:absolute;z-index:7;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;
+  pointer-events:none;font:700 1em Rajdhani,'Arial Narrow',system-ui,sans-serif;color:#f1ecff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.sbg-play{position:fixed;inset:0;z-index:180;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(16px + env(safe-area-inset-bottom,0px));
+  background:radial-gradient(ellipse at 50% 30%,rgba(60,20,110,.88),rgba(4,2,14,.96) 70%);font:600 16px Rajdhani,system-ui,sans-serif;color:#f5efff;animation:sbgIn .3s;overflow:auto}
+.sbg-play[hidden]{display:none}
+.sbg-panel{position:relative;width:min(760px,100%);max-height:100%;overflow:auto;border:2px solid #f6a823;border-radius:14px;background:linear-gradient(160deg,#1a0b40,#0a0521 60%,#14072e);
+  box-shadow:0 0 28px rgba(246,168,35,.6),0 0 90px rgba(139,61,255,.45);padding:18px 20px}
+.sbg-panel h1{margin:0;font:italic 700 34px/1 Rajdhani,sans-serif;color:#ffcf4a;text-shadow:0 0 14px rgba(255,150,40,.6);letter-spacing:.5px}
+.sbg-sub{margin:4px 0 14px;color:#b7a8e8;font-size:15px;font-weight:500}
+.sbg-status{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1.5px solid #5a3aa8;border-radius:8px;background:#0b0620;margin-bottom:14px;font-size:16px}
+.sbg-dot{width:12px;height:12px;border-radius:50%;flex:none;background:#8a8aa8;box-shadow:0 0 8px #8a8aa8}
+.sbg-dot.sbg-live{background:#35e06b;box-shadow:0 0 10px #35e06b}
+.sbg-status code{font:600 14px ui-monospace,Consolas,monospace;color:#ffe9a8;word-break:break-all}
+.sbg-actions{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 16px}
+.sbg-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;border:0;cursor:pointer;text-decoration:none;font:700 19px Rajdhani,sans-serif;
+  background:linear-gradient(#ffc13a,#e07a10);color:#2a1000;box-shadow:0 0 14px rgba(246,168,35,.45);transition:filter .2s,transform .2s}
+.sbg-btn:hover{filter:brightness(1.15);transform:translateY(-2px)}
+.sbg-btn.sbg-alt{background:linear-gradient(#2a1a6a,#170d40);color:#fff;box-shadow:none;border:1px solid #6a4aff}
+.sbg-btn:focus-visible,.sbg-panel summary:focus-visible{outline:3px solid #33c8ff;outline-offset:2px}
+.sbg-btn[aria-disabled="true"]{filter:grayscale(.8) brightness(.55);pointer-events:none}
+.sbg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin:6px 0 14px}
+.sbg-grid div{border:1.5px solid #3a2a66;border-radius:8px;background:#0d0722;padding:8px 10px;font-size:15px;color:#cfc4f5;font-weight:500}
+.sbg-grid b{display:block;font-size:17px;color:#fff}
+.sbg-tag{display:inline-block;margin-left:6px;padding:0 7px;border-radius:4px;font-size:12px;font-weight:700;vertical-align:2px}
+.sbg-ok{background:#1d8a3a;color:#fff}.sbg-local{background:#2a5ab8;color:#fff}.sbg-no{background:#5a2030;color:#ffc2cc}
+.sbg-panel h2{margin:8px 0 4px;font:italic 700 21px Rajdhani,sans-serif;color:#ffcf4a}
+.sbg-panel p{margin:6px 0;color:#d9d0ff;font-weight:500;line-height:1.35}
+.sbg-panel details{border:1.5px solid #3a2a66;border-radius:8px;background:#0b0620;padding:8px 12px;margin-top:10px}
+.sbg-panel summary{cursor:pointer;font-weight:700;font-size:17px}
+.sbg-frame{display:block;width:100%;height:min(70vh,560px);border:2px solid #6a4aff;border-radius:8px;margin-top:8px;background:#05020f}
+.sbg-x{position:absolute;right:12px;top:12px;width:36px;height:32px;border:0;border-radius:6px;background:#f6a823;color:#2a1000;font:700 18px Rajdhani,sans-serif;cursor:pointer}
+.sbg-x:focus-visible{outline:3px solid #33c8ff;outline-offset:2px}
+.sbg-hand p{margin:6px 0}
+.sbg-hand .sbg-actions{justify-content:flex-end;margin:12px 0 0}
+@keyframes sbgIn{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.sbg-play{animation:none}.sbg-btn{transition:none}}
+@media (max-width:600px){.sbg-panel h1{font-size:28px}.sbg-btn{flex:1 1 100%;justify-content:center}}
+/* header controls added for the game link: artwork slice drawn only while hovered/focused, so the resting page is
+   pixel-identical to the original design */
+.hs.sbg-h>.sl{opacity:0}
+.hs.sbg-h:hover>.sl,.hs.sbg-h:focus-visible>.sl{opacity:1}

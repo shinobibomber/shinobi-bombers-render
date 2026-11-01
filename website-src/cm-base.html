@@ -1,0 +1,22 @@
+<div class="cm" id="cm" hidden><div class="cmb" data-x></div>
+<section class="cmd" id="cmd" role="dialog" aria-modal="true" aria-labelledby="cmt" tabindex="-1">
+<div class="cmh"><button class="gb" data-x>← Back</button><h2 class="cmt" id="cmt"><img src="__IMG__" alt="Chest"></h2><div class="cms"><b>MANAGE YOUR ADVENTURE RYO</b><span>Claim rewards, deposit, withdraw, and track transactions</span></div><button class="cmw" id="cmw" aria-label="Copy wallet address">👛 <span id="cma"></span> ⧉</button></div>
+<div class="cmg"><div class="mn">
+<div class="hero"><img class="art" alt="" src="__IMG__"><div class="r"><h3>ADVENTURE RYO</h3><img class="coin" alt="" src="__IMG__"><div class="big"><span id="cmadv">0</span> <small>RYO</small></div></div></div>
+<div class="st3"><div>Reward Pool<b id="cmpool"></b></div><div>Current Loot Rate<b id="cmrate"></b></div><div>Claim Status<b id="cmcs"></b></div></div>
+<div class="ab"><button class="gb" id="cmclaim">🎁 Claim Ryo<i class="dot2" id="cmd2" hidden></i></button><button class="gb" data-p="withdraw">⬆ Withdraw Ryo</button><button class="gb" data-p="deposit">⬇ Deposit Ryo</button><button class="gb" data-p="history">☰ Transaction History</button></div>
+<p class="msg" id="cmmsg" role="status" aria-live="polite"></p>
+<div class="ov"><h4>🎁 REWARDS OVERVIEW</h4><div class="g3" id="cmov"></div></div>
+<div class="ov nt"><h4>📜 NOTICE</h4><ul id="cmnt"></ul></div></div>
+<div class="pn" data-pn="withdraw" hidden><header><h3>⬆ WITHDRAW RYO</h3><button class="x" data-cp aria-label="Close withdraw">✕</button></header>
+<p>Spendable Ryo balance → wallet tokens</p><p id="wdrng"></p><label class="vh" for="wda">Gross withdraw amount (Ryo)</label><input id="wda" type="number" inputmode="numeric" step="1">
+<div class="rows"><div>Available Balance<b id="wdav"></b></div><div><span id="wdfl"></span><b id="wdfee"></b></div><div>You receive<b class="k" id="wdnet"></b></div></div><p id="wdcd"></p>
+<div><button class="gb" id="wdgo" style="width:100%;margin-top:8px">WITHDRAW RYO</button><div id="wdbox"></div></div><p class="msg" id="wdmsg" role="status" aria-live="polite"></p></div>
+<div class="pn" data-pn="deposit" hidden><header><h3>⬇ DEPOSIT RYO</h3><button class="x" data-cp aria-label="Close deposit">✕</button></header>
+<p>Wallet tokens → spendable Ryo balance</p><p id="dprng"></p><label class="vh" for="dpa">Gross deposit amount (tokens)</label><input id="dpa" type="number" inputmode="numeric" step="1">
+<div class="rows"><div>Wallet Tokens<b id="dpav"></b></div><div><span id="dpfl"></span><b id="dpfee"></b></div><div>You receive<b class="k" id="dpnet"></b></div></div><p>Solana network fees are separate and paid from your wallet. Ryo is credited only after on-chain confirmation.</p>
+<div><button class="gb" id="dpgo" style="width:100%;margin-top:8px">DEPOSIT RYO</button><div id="dpbox"></div></div><p class="msg" id="dpmsg" role="status" aria-live="polite"></p></div>
+<div class="pn" data-pn="history" hidden><header><h3>☰ TRANSACTION HISTORY</h3><button class="x" data-cp aria-label="Close history">✕</button></header>
+<div class="tabs"><button data-tab="deposit">Deposits</button><button data-tab="withdraw">Withdrawals</button><button data-tab="claim">Claims</button></div><div id="hl"></div>
+<div class="pg"><button id="hpv" aria-label="Previous page">‹</button><span id="hpg"></span><button id="hnx" aria-label="Next page">›</button></div></div>
+</div></section></div>
