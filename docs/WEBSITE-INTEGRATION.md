@@ -65,6 +65,19 @@ pages that have a website screen, the screen is drawn above the game menu and wi
   pill (labelled Tools; the game has no gems), so Claim/Deposit/Withdraw/History and Tools are the game's own;
 - unsupported features (Guild, Chat, events, daily missions, seasons, news) show honest notices.
 
-Enabled screens are listed in `SCREENS` in `apply-website-design.cjs` (phase 1: Home, Codex). Other pages keep the
-game's own UI until their website screen is connected. Styles: `website-design/website-screens.css` is generated from
+Enabled screens are listed in `SCREENS` in `apply-website-design.cjs` (phase 1: Home, Codex; phase 2: Summon,
+Fusion, Dojo/Sensei). Other pages keep the game's own UI until their website screen is connected.
+
+Phase 2 screens press the game's own buttons (found by their `onclick`) and read the game's own DOM/state, so prices,
+odds, checkout and saving stay exactly the game's:
+
+- Summon: quantity tabs/pack cards → `Combat.quantity(n)`; Summon → the game's `Combat.summonBatch()` button (real
+  quote + checkout dialog). Live total cost and button label come from the game's Summon menu.
+- Fusion: rank tabs → `FusionUI.tab`, Select Weakest/Clear/Fuse ×1/×5/×10/Max/Fuse Now → the game's buttons. The
+  Reserve list mirrors the game's fusion table and toggles its real checkboxes (`V2.select`); counts, odds, stat
+  ranges and selected heroes are live.
+- Dojo/Sensei: tier status chips, current tier facts and upgrade price from `S.dojo`/`GameBalance`; Upgrade →
+  `DojoServices.upgrade()` (real checkout); Hire/Rent → `DojoServices.hire()` / `TokenCheckout.request('sensei-rental')`;
+  return-at % → the game's own Sensei select (`sensei-settings`); Turn on/off → `V2.toggleButler()`.
+- Not provided by the game and shown honestly: rate-up/featured events, Sensei skins, last offline session details. Styles: `website-design/website-screens.css` is generated from
 `website/app.css` by `website-src/make_game_css.py` (scoped to `#sbwLayer`, keyframes prefixed `sbw-`).

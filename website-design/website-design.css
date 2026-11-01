@@ -57,3 +57,34 @@ body.sbw-active .gc-header .gc-tools>div{position:absolute;top:calc(100% + 6px);
 /* The game header's honest "Guild/Chat — coming soon" buttons stay available to assistive technology (visually
    hidden; the website screens show their own Guild/Chat artwork, which reports the same status when used). */
 body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed!important;left:0;top:0;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0!important}
+/* Summon quantity tabs, Fusion list/slots, Dojo chips and Sensei controls (live game state) */
+#sbwLayer .sbw-smtab{position:absolute;z-index:12;background-size:100% 100%;display:flex;align-items:center;justify-content:center;font:700 24px Rajdhani,sans-serif;color:#fff;pointer-events:none}
+#sbwLayer .sbw-flist{position:absolute;z-index:12;overflow-y:auto;background:#060a1c;border-radius:4px;scrollbar-width:thin}
+#sbwLayer .sbw-frow{display:grid;grid-template-columns:26px 44px minmax(0,2.2fr) .6fr .6fr .6fr minmax(0,1.2fr);align-items:center;gap:10px;width:100%;height:60px;padding:0 26px 0 12px;border:0;border-bottom:1px solid #1d2448;background:transparent;color:#fff;font:600 17px Rajdhani,sans-serif;text-align:left;cursor:pointer}
+#sbwLayer .sbw-frow:hover{background:rgba(120,170,255,.10)}
+#sbwLayer .sbw-frow:disabled{opacity:.45;cursor:not-allowed}
+#sbwLayer .sbw-frow i{width:22px;height:22px;border-radius:4px;border:2px solid #6a5aa8;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:900;color:#241000}
+#sbwLayer .sbw-frow.on{background:rgba(255,190,60,.10)}
+#sbwLayer .sbw-frow.on i{background:#ffb81f;border-color:#ffb81f;box-shadow:0 0 10px #ffb81f}
+#sbwLayer .sbw-frow canvas{width:44px;height:48px;border-radius:5px;background:#120a30}
+#sbwLayer .sbw-fname{display:flex;flex-direction:column;min-width:0;line-height:1.1}
+#sbwLayer .sbw-fname b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-fname small{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-frow em{font-style:normal;color:#e6e0ff;font-size:17px;text-align:center}
+#sbwLayer .sbw-fj{color:#b7c3ff;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-fempty{margin:0;padding:24px;color:#cfc4f5;font:600 18px Rajdhani,sans-serif;text-align:center}
+#sbwLayer .sbw-fslot{position:absolute;z-index:12;display:flex;gap:8px;align-items:center;padding:6px;border:2px solid #ffb81f;border-radius:6px;background:linear-gradient(135deg,#1d1046,#0b0620);box-shadow:0 0 16px rgba(255,180,40,.6);cursor:pointer}
+#sbwLayer .sbw-fslot[hidden]{display:none}
+#sbwLayer .sbw-fslot canvas{width:58px;height:58px;border-radius:6px;background:#120a30}
+#sbwLayer .sbw-fslot span{font:700 14px Rajdhani,sans-serif;color:#fff;line-height:1.1}
+#sbwLayer .sbw-dchip{position:absolute;z-index:12;display:flex;align-items:center;justify-content:center;border-radius:4px;font:600 14px Rajdhani,sans-serif;pointer-events:none}
+#sbwLayer .sbw-dchip.own{background:#0f3a24;border:1.5px solid #2ecc71;color:#bff5d4}
+#sbwLayer .sbw-dchip.act{background:#17a34a;border:1.5px solid #4ef08a;color:#fff}
+#sbwLayer .sbw-dchip.nxt{background:#2a1606;border:1.5px solid #ff9a1f;color:#ffcf8a}
+#sbwLayer .sbw-dchip.lck{background:#121a2e;border:1.5px solid #3a4a6e;color:#9aa6c8}
+#sbwLayer .sbw-drp{position:absolute;z-index:12;display:flex;align-items:center;justify-content:center;border:1.5px solid #2c3a5e;border-radius:4px;background:#0a1122;color:#fff;font:600 15px Rajdhani,sans-serif;pointer-events:none}
+#sbwLayer .sbw-drp.on{border-color:#3ee07a;background:#0b2a1a;box-shadow:0 0 10px #3ee07a}
+#sbwLayer .sbw-dtog{position:absolute;z-index:12;display:flex;align-items:center;justify-content:center;border-radius:9px;background:#2a3044;border:1.5px solid #556;color:#9aa6c8;font:700 12px Rajdhani,sans-serif;pointer-events:none}
+#sbwLayer .sbw-dtog.on{background:#17a34a;border-color:#4ef08a;color:#fff}
+#sbwLayer .sbw-dtl{position:absolute;z-index:12;display:flex;align-items:center;justify-content:center;border-radius:6px;background:linear-gradient(#ffd25a,#f2a01a);color:#2a1406;font:700 17px Rajdhani,sans-serif;pointer-events:none}
+.sbw-dialog .sbw-small{font-size:13px;color:#a99ad8}

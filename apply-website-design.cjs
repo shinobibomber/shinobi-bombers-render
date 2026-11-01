@@ -10,7 +10,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const SCREENS = ['home', 'codex'];
+const SCREENS = ['home', 'codex', 'summon', 'fusion', 'dojo'];
+const EXTRA_ART = ['assets/sm-tab-on.webp', 'assets/sm-tab-off.webp'];
 
 function applyWebsiteDesign(appDir = path.join(__dirname, 'app'), siteDir = path.join(__dirname, 'website')) {
   const publicDir = path.join(appDir, 'public');
@@ -39,6 +40,7 @@ function applyWebsiteDesign(appDir = path.join(__dirname, 'app'), siteDir = path
     if (!s || !s.hs) throw new Error('Cannot apply website designs: screen "' + id + '" not found in website data.');
     screens[id] = { ...s, img: copy(s.img) };
   }
+  for (const rel of EXTRA_ART) copy(rel);
   // reference galleries used by the Codex sections (maps, bosses, hero models, auras)
   const ref = JSON.parse(JSON.stringify(data.ref || {}));
   const walk = o => { for (const k in o) { if (o[k] && typeof o[k] === 'object') walk(o[k]); else if (k === 'src') o[k] = copy(o[k]); } };
