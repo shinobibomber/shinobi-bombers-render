@@ -6,8 +6,8 @@ _Development copy created 2026-11-01 (Asia/Singapore)._
 | --- | --- |
 | **This folder** | `D:\Projects\Shinobi-Bombers-Development` — the working copy for Claude and OpenAI Codex |
 | **Source** | GitHub `shinobibomber/shinobi-bombers-render`, branch `main`, commit `11eddc8`. Full history (29 commits, branch `origin/v3/integrated-redesign-2026-11-01`, tag `v3-reference-beta`) attaches with the one-time git setup below |
-| **Latest work** | Phase 3 (Heroes, Adventure, Market, Boss Hunt, Guild/Chat previews) is committed on `main` but **not yet deployed**; it goes live on the next Render Manual Deploy |
-| **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Running Phase 2 (`d92f6a3`) until the next Manual Deploy |
+| **Latest work** | Phase 3 (Heroes, Adventure, Market, Boss Hunt, Guild/Chat previews) is live (deployed 2026-11-01, commit `29e354e`) |
+| **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Running `29e354e` (Phases 1–3) |
 | **Original local copy** | `D:\shinobi-bombers-render` — untouched. It is an older clone at `a68984b`, 3 commits behind `main`, with no local edits |
 
 ## How to run (Windows, Node 22)
@@ -85,7 +85,7 @@ npm run typecheck; npm run lint # chest-ui (React/TypeScript)
 | --- | --- | --- |
 | 1 | Home, Codex | live (`11eddc8`) |
 | 2 | Summon, Fusion, Dojo/Sensei | live (`d92f6a3`) |
-| 3 | Heroes, Adventure (themed 10-slot team, Elite/Legend auras, Difficulty box removed), Market, Boss Hunt, Guild/Chat previews | on `main`, waiting for review + Manual Deploy |
+| 3 | Heroes, Adventure (themed 10-slot team, Elite/Legend auras, Difficulty box removed), Market, Boss Hunt, Guild/Chat previews | live (`31ee408`, deployed with `29e354e`) |
 
 Phase 3 was verified in Claude's workspace with the test wallet: the browser and preservation suites pass, and
 Train, Deploy, filters, Work/Rest, Challenge and Market scope press the game's own controls. Buy/Offer report
@@ -126,7 +126,7 @@ that they are unavailable.
 
 ## Next development tasks
 
-1. Review Phase 3, then Manual Deploy on Render. Verify `/play/` Heroes, Adventure, Market, Boss Hunt and Guild.
+1. Play-test the signed-in `/play/` screens (Heroes, Adventure, Market, Boss Hunt, Guild) and note polish requests.
 2. Optional: open `/play/` on the website Home design before sign-in, with its wallet pill starting the real game
    sign-in.
 3. Polish requests from review (e.g. more Adventure/Heroes styling) as small commits.
