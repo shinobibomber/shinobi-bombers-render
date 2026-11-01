@@ -2,3 +2,10 @@ node_modules/
 app/
 .env*
 *.log
+
+verified-game.zip
+chest-ui/dist/
+vendor/game-base.zip
+previews/
+tmp/
+tests/node_modules/

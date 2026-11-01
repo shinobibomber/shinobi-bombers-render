@@ -1,0 +1,3 @@
+const fs=require('node:fs'),path=require('node:path');
+function scan(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())scan(file);else if(/\.tsx?$/.test(file)){const source=fs.readFileSync(file,'utf8');for(const [name,pattern]of [['unsafe HTML injection',/dangerouslySetInnerHTML/],['TypeScript suppression',/@ts-ignore|@ts-nocheck/],['untyped any',/:\s*any\b|as\s+any\b/],['debug logging',/console\.log\(/]])if(pattern.test(source))throw Error(file+': '+name)}}}
+scan(path.join(__dirname,'src'));console.log('Chest source hygiene checks passed (HTML injection, type suppression, any and debug logging).');

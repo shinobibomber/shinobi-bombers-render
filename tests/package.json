@@ -1,0 +1,12 @@
+{
+  "name": "shinobi-global-chest-tests",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node run.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1",
+    "@electric-sql/pglite": "0.3.14"
+  }
+}

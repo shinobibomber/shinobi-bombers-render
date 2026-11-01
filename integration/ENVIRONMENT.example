@@ -1,0 +1,9 @@
+# Names/placeholders only. Set values privately on the runtime server.
+DATABASE_URL=
+RYO_TREASURY_SECRET=
+RYO_TOKEN_MINT=
+RYO_STUDIO_WALLET=
+RYO_REVENUE_WALLET=
+RYO_SITE_ORIGIN=http://localhost:10000
+SOLANA_DEVNET_RPC_URL=https://api.devnet.solana.com
+PORT=10000

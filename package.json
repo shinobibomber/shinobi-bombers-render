@@ -6,10 +6,17 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "node unpack.cjs && npm --prefix app ci --omit=dev && npm --prefix app run db:init",
-    "start": "node app/server/render-server.cjs"
+    "build": "npm run build:local && npm --prefix app run db:init",
+    "start": "node app/server/render-server.cjs",
+    "build:ui": "npm --prefix chest-ui ci --include=dev && npm --prefix chest-ui run build",
+    "build:local": "npm run build:ui && node unpack.cjs && npm --prefix app ci --omit=dev",
+    "typecheck": "npm --prefix chest-ui run typecheck",
+    "lint": "npm --prefix chest-ui run lint",
+    "test": "npm --prefix tests test",
+    "test:browser": "node tests/browser.cjs",
+    "test:server": "node tests/transaction-review.cjs && node tests/financial-server.cjs && node tests/gameplay-options-server.cjs"
   },
   "dependencies": {
-    "extract-zip": "2.0.1"
+    "yauzl": "3.4.0"
   }
 }

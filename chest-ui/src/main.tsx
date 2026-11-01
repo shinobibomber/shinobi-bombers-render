@@ -1,0 +1,17 @@
+import{Component,useEffect,useState,type ReactNode}from'react';
+import{createRoot}from'react-dom/client';
+import{bridge,initialize,money,snapshot,subscribe,type Snapshot}from'./bridge';
+import{GameHeader}from'./GameHeader';
+import{ChestManager,type ChestPage}from'./ChestManager';
+declare global{interface Window{GlobalChestUI?:{ready:boolean;open:()=>void;openHistory:()=>void;close:()=>void}}}
+class Boundary extends Component<{children:ReactNode},{error:boolean}>{state={error:false};static getDerivedStateFromError(){return{error:true}}componentDidCatch(error:Error){console.error('Chest interface error:',error)}render(){return this.state.error?<div className="gc-fatal" role="alert">The Chest interface could not load. <button onClick={()=>location.reload()}>Reload interface</button></div>:this.props.children}}
+function App(){
+ const[s,setSnapshot]=useState<Snapshot>(snapshot),[open,setOpen]=useState(false),[initialPage,setInitialPage]=useState<ChestPage>('dashboard'),active=s.authenticated&&!s.loading&&!s.login;
+ useEffect(()=>{const update=()=>setSnapshot(snapshot()),unsubscribe=subscribe(update),stop=initialize(update);window.GlobalChestUI={ready:true,open:()=>{if(snapshot().authenticated){setInitialPage('dashboard');setOpen(true)}},openHistory:()=>{if(snapshot().authenticated){setInitialPage('history');setOpen(true)}},close:()=>setOpen(false)};update();return()=>{unsubscribe();stop();delete window.GlobalChestUI}},[]);
+ useEffect(()=>{document.body.classList.toggle('gc-shell-active',active);if(!active)setOpen(false);return()=>document.body.classList.remove('gc-shell-active')},[active]);
+ useEffect(()=>{if(!active)return;const fit=()=>{const header=document.querySelector('.gc-header')?.getBoundingClientRect().height||84;document.body.style.setProperty('--gc-header-height',header+'px');for(const scene of document.querySelectorAll<HTMLElement>('#exactHomeScene,#exactAdventureScene,#exactDojoScene,#exactSummonScene,#exactFusionScene')){if(innerWidth<700&&(scene.id==='exactAdventureScene'||scene.id==='exactSummonScene'))continue;const width=scene.offsetWidth,height=scene.offsetHeight,cut=76;if(!width||!height)continue;const scale=Math.min(innerWidth/width,Math.max(200,innerHeight-header)/(height-cut));scene.style.setProperty('--gc-scale',String(scale));scene.style.setProperty('--gc-center',header+(innerHeight-header-cut*scale)/2+'px')}};fit();const observer=new ResizeObserver(fit),header=document.querySelector('.gc-header');if(header)observer.observe(header);document.querySelectorAll('#exactHomeScene,#exactAdventureScene,#exactDojoScene,#exactSummonScene,#exactFusionScene').forEach(scene=>observer.observe(scene));addEventListener('resize',fit);return()=>{observer.disconnect();removeEventListener('resize',fit)}},[active,s.page,s.mode]);
+ if(!active)return null;
+ const launch=()=>{setInitialPage('dashboard');setOpen(true)};
+ return <><GameHeader page={s.page} mode={s.mode} balance={money(s.balance)} claimable={s.chest?money(s.chest.pending):null} wallet={s.account||''} onNavigate={bridge.navigate} onChest={launch} onBack={bridge.back} online={s.online} muted={s.muted} community={s.community} onMute={bridge.mute}/>{open&&<ChestManager snapshot={s} initialPage={initialPage} onClose={()=>setOpen(false)}/>}</>
+}
+const root=document.createElement('div');root.id='global-chest-root';document.body.append(root);createRoot(root).render(<Boundary><App/></Boundary>);

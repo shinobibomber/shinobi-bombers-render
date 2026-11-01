@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Play Shinobi Bombers — website integration example</title>
+ <style>
+  *{box-sizing:border-box}body{margin:0;padding:clamp(16px,4vw,52px);background:#050b18;color:#f7eddb;font:16px/1.6 system-ui,sans-serif}.game-entry{max-width:1300px;margin:auto;padding:clamp(20px,4vw,44px);border:1px solid #8b58bd;border-radius:16px;background:linear-gradient(135deg,#10162d,#060d1b)}h1{margin:0 0 12px;color:#ffd477;font-size:clamp(28px,4vw,42px)}p{color:#c1cbe0}.launch{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:10px 22px;border:1px solid #ffe3a0;border-radius:7px;background:linear-gradient(110deg,#ffd465,#f59b18);color:#211303;font-weight:800;text-decoration:none}details{margin-top:24px}summary{cursor:pointer;min-height:44px;padding:9px 0;color:#e1c5ff;font-weight:700}a:focus-visible,summary:focus-visible{outline:3px solid #ffe3a0;outline-offset:5px}.fallback{font-size:14px}.fallback a{color:#ffda83}iframe{display:block;width:100%;height:min(78vh,900px);min-height:420px;border:1px solid #624985;border-radius:8px;background:#030918}
+ </style>
+</head>
+<body>
+ <section class="game-entry" aria-labelledby="game-title">
+  <h1 id="game-title">Shinobi Bombers</h1>
+  <p>Enter the village and continue your Shinobi journey. Open the full game for wallet sign-in and the complete experience.</p>
+  <!-- Replace both link URLs and the iframe URL with the actual complete game URL. -->
+  <a class="launch" href="https://game.example.com" target="_blank" rel="noopener noreferrer">Play Shinobi Bombers ↗</a>
+  <details>
+   <summary>Show embedded preview</summary>
+   <p class="fallback">Wallet support inside this frame has not been verified. <a href="https://game.example.com" target="_blank" rel="noopener noreferrer">Open full game ↗</a></p>
+   <iframe title="Shinobi Bombers game preview" src="https://game.example.com" loading="lazy" allow="fullscreen; clipboard-write" allowfullscreen></iframe>
+  </details>
+ </section>
+</body>
+</html>
