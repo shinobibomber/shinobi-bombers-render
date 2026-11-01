@@ -87,6 +87,10 @@ Phase 3 screens (same approach: the game's own buttons and state):
 - Heroes: filter tabs → `HeroFilters.choose`; cards mirror the game's hero cards (Deploy/Reserve `tog(i)`, Train
   `up(i)`, Sell `Market.openListing`, Make Battle-ready); the detail panel's Train/Sell/Deploy press the same
   buttons; search and sort drive the game's own search box and sort select.
+  The Heroes screen uses the same header as the other menus (`website-design/scr-heroes-game.webp`, made by
+  `website-src/make_game_patches.py`, with the Guild screen's header hotspots). Cards keep two buttons
+  (Deploy hero / Rest hero and Make Battle-ready / Move to Reserve); Train and Sell are in the detail panel. The
+  detail Stats tab lists the hero's perks from the game's own perk table (`PK`, `h.pk`).
 - Adventure: the game's battle canvas (`#cv`) is drawn into the website frame every frame (read-only mirror); stage,
   enemies and session Ryo come from the game's status bar. The team panel is the game's own 10-slot Adventure team
   (same portraits and Deploy buttons) restyled in the website theme, with animated auras for deployed Elite and
