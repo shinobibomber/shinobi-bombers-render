@@ -6,8 +6,8 @@ _Development copy created 2026-11-01 (Asia/Singapore)._
 | --- | --- |
 | **This folder** | `D:\Projects\Shinobi-Bombers-Development` — the working copy for Claude and OpenAI Codex |
 | **Source** | GitHub `shinobibomber/shinobi-bombers-render`, branch `main`, commit `11eddc8`. Full history (29 commits, branch `origin/v3/integrated-redesign-2026-11-01`, tag `v3-reference-beta`) attaches with the one-time git setup below |
-| **Latest work** | Phases 1–3 plus polish (shared header on every menu, Dojo Services landing page, Heroes detail panel) are live — commit `70a63ff`, deployed 2026-11-01 |
-| **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Running `70a63ff` |
+| **Latest work** | Live: `dafe3e4` (deployed 2026-11-01) — shared header on every menu, Dojo Services landing + Upgrades/Sensei from reference designs (`website-src/ref/`), polished Heroes detail. Nothing pending |
+| **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Running `dafe3e4` |
 | **Original local copy** | `D:\shinobi-bombers-render` — untouched. It is an older clone at `a68984b`, 3 commits behind `main`, with no local edits |
 
 ## How to run (Windows, Node 22)
@@ -91,6 +91,20 @@ npm run typecheck; npm run lint # chest-ui (React/TypeScript)
 Phase 3 was verified in Claude's workspace with the test wallet: the browser and preservation suites pass, and
 Train, Deploy, filters, Work/Rest, Challenge and Market scope press the game's own controls. Buy/Offer report
 that they are unavailable.
+
+## Start here (Codex)
+
+1. `git pull` → `npm ci` → `npm run build:local` → `npm start` → open http://localhost:10000/play/.
+2. Signed-in screens only show with a wallet; to see them locally use the test wallet: `npm test` (or run
+   `tests/browser.cjs`), which signs in automatically with fixture data.
+3. UI work for the website screens inside the game: `website-design/website-design.js` (+ `.css`).
+   Per screen: `INIT.<screen>` builds overlays, `PAINT.<screen>` updates live values (~8×/s), `MODS.<screen>`
+   handles hotspot actions (`fn:` in the screen data), `MIRROR.<screen>` copies live canvases. The shared header is
+   `buildHeader()` / `markNav()`. Dojo pages: `dojo`, `dojo-upg`, `dojo-sen` (`dojoView`).
+4. Artwork changes: edit `website-src/make_game_patches.py` (header, Dojo pages, Adventure patch), run it with
+   Python 3 + `opencv-python` + `numpy`, then `npm run build:local`.
+5. Rules: press the game's own buttons/functions (never change balances directly), don't edit `app/` (generated),
+   run `npm test` before pushing, commit + push to `main`, then Render → Manual Deploy.
 
 ## Handoff notes (Claude ↔ Codex)
 
