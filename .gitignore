@@ -11,3 +11,10 @@ tmp/
 tests/node_modules/
 tests/out/
 __pycache__/
+
+# copied out of the game archive by unpack.cjs on every build (build outputs, not source)
+dojo-design/dojo-menu.png
+dojo-design/dojo-list-upgrades.png
+dojo-design/sensei-tab.png
+shrine-fusion-design/summoning-shrine.png
+shrine-fusion-design/fusion-menu.png
