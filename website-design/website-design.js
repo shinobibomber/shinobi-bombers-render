@@ -344,6 +344,8 @@
 
   /* ---------- Heroes (game page 1) ---------- */
   const HF = [-1, -3, -2, 0, 1, 2, 3, 4], HFL = ['ALL', 'BATTLE-READY', 'RESERVE', 'GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND'];
+  /* the game's own perk table (script-level PK: [name, description]) and the hero's perk indexes (h.pk) */
+  function heroPerks(h) { let T = null; try { T = PK; } catch {} return h && Array.isArray(h.pk) && T ? h.pk.map(i => T[i]).filter(Boolean).map(([name, desc]) => ({ name, desc })) : []; }
   function heroCards() {
     return [...document.querySelectorAll('#p1 article.reference-hero-card')].filter(a => !a.closest('#sbwLayer')).map(a => {
       const t = a.innerText || '', btn = re => [...a.querySelectorAll('button')].find(x => re.test(x.getAttribute('onclick') || '') || re.test(x.className || '')) || null;
@@ -356,6 +358,7 @@
         ch: num(t, /CHAKRA\s*\n?\s*(\d+\s*\/\s*\d+)/), attack: ([...a.querySelectorAll('span,small,em')].map(x => x.textContent.trim()).find(x => /shuriken|blade|rasengan|chidori|fire|lightning/i.test(x)) || ''),
         style: ([...a.querySelectorAll('span,small,em')].map(x => x.textContent.trim()).find(x => /style$/i.test(x)) || ''),
         perks: num(t, /Perks\s*·\s*(\d+)/), dmg: (t.match(/\d+ damage \/ hit[^\n]*/) || [''])[0],
+        perkList: heroPerks(h),
         tog: tg, up: btn(/^up\(/), list: btn(/openListing/), mode: btn(/hero-mode-button/) };
     });
   }
@@ -366,8 +369,8 @@
     b.grid = cv(b, 26, 322, 1036, 684, 'sbw-hgrid');
     b.det = cv(b, 1078, 324, 434, 356, 'sbw-hdet');
     b.dtab = cv(b, 1084, 724, 422, 104, 'sbw-hdtab');
-    b.depl = cov(b, 1350, 918, 132, 38, 'linear-gradient(#0a56d6,#0041ba)', 22, '#ffffff'); b.depl.style.fontWeight = '800';
-    b.sell = cov(b, 1150, 918, 136, 38, 'linear-gradient(#1f9b3a,#167a2c)', 22, '#ffffff'); b.sell.style.fontWeight = '800';
+    const hb = (id, cls) => { const h = b.s.hs.find(x => x.id === id), r = h.r; return place(mk('div', 'sbw-dbtn ' + cls, b.st), r[0], r[1], r[2] - r[0], r[3] - r[1]); };
+    b.btrain = hb('dtrain', 'gold'); b.sell = hb('dsell', 'green'); b.depl = hb('ddep', 'blue');
     b.sel = 0; b.tabIdx = 0;
     ['dfav'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
   };
@@ -380,7 +383,7 @@
       <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
       <div class="sbw-hc-ch"><span>CHAKRA</span><span>${esc(c.ch.replace(/\s/g, ' '))}</span></div><div class="sbw-bar"><i style="width:${pct}%"></i></div>
-      <div class="sbw-hc-btns">${btn('tog', c.tog ? c.tog.textContent.trim() : 'Deploy', 'alt', !c.tog || c.tog.disabled)}${btn('up', c.up ? c.up.textContent.replace(/\s+/g, ' ').trim() : 'Train', 'gold', !c.up || c.up.disabled)}${btn('list', 'Sell', 'green', !c.list || c.list.disabled)}${btn('mode', c.mode ? c.mode.textContent.trim() : '—', 'blue', !c.mode || c.mode.disabled)}</div></div>`;
+      <div class="sbw-hc-btns">${btn('tog', c.tog ? c.tog.textContent.trim().replace(/^Reserve$/, 'In Reserve') : 'Deploy hero', c.status === 'DEPLOYED' ? 'rest' : 'deploy', !c.tog || c.tog.disabled)}${btn('mode', c.mode ? c.mode.textContent.trim() : '—', 'mode', !c.mode || c.mode.disabled)}</div></div>`;
   }
   PAINT.heroes = (b, now) => {
     const cards = heroCards(), root = document.querySelector('#p1');
@@ -407,17 +410,20 @@
         b.det.innerHTML = `<div class="sbw-hd" style="--rc:${RCOL[r]}"><div class="sbw-hd-h"><b>${esc(c.name)}</b><i>${esc(RNAME[r].toUpperCase())}</i></div>
           <div class="sbw-hd-lv">Lv. ${esc((c.lvl || '1/10').replace('/', ' / '))}<span>${esc(c.status)}</span></div>
           <div class="sbw-hd-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r])}</span></div>
-          <canvas width="150" height="122"></canvas>
+          <canvas width="160" height="140"></canvas>
           <div class="sbw-hd-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span><span>VOLLEY<b>${esc(c.vol)}</b></span><span>RANGE<b>${esc(c.rng)}</b></span><span>PERKS<b>${esc(c.perks || '0')}</b></span></div>
           <div class="sbw-hc-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div></div>`;
-        const dt = b.dt || 0, info = [`${c.dmg || ''}`, `${c.attack || '—'} · ${c.style || ''}`, `Chakra ${cc} / ${cm}. Resting heroes recover in the Dojo; deployed heroes spend chakra in Adventure.`, `${c.status || ''} · ${h.tokenId ? 'Token collection · server owned' : 'Practice / local hero'}`][dt];
-        b.dtab.innerHTML = `<p>${esc(info)}</p>`;
+        const dt = b.dt || 0, pl = c.perkList || [];
+        const perksHtml = pl.length ? `<ul class="sbw-perks">${pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('')}</ul>` : `<p>${esc(c.perks ? c.perks + ' perks' : 'No perks yet.')}</p>`;
+        b.dtab.innerHTML = [perksHtml, `<p><b>${esc(c.attack || '—')}</b> · ${esc(c.style || '')}<br>${esc(c.dmg || '')}</p>`, `<p>Chakra <b>${cc} / ${cm}</b>. 1 stamina = 50 chakra; each attack normally costs 1 chakra. Resting heroes recover in the Dojo.</p>`, `<p>${esc(c.status || '')} · ${h.tokenId ? 'Token collection · server owned' : 'Practice / local hero'}<br>Perks ${pl.length} / ${r + 1}</p>`][dt];
       }
     }
-    drawHero($('canvas', b.det), c && c.h, 2.2, now, 2);
-    if (b.live.trainlbl) { b.live.trainlbl.hidden = false; setText(b.live.trainlbl, c && c.up ? c.up.textContent.replace(/\s+/g, ' ').trim() : 'Train'); }
-    setText(b.depl, c && c.tog ? c.tog.textContent.trim().replace('Deploy hero', 'Deploy') : 'Deploy');
-    setText(b.sell, 'Sell');
+    drawHero($('canvas', b.det), c && c.h, 2.9, now, 2);
+    const lbl = (e, icon, t) => { const k = icon + t; if (e.dataset.k !== k) { e.dataset.k = k; e.innerHTML = `<i>${icon}</i><span>${esc(t)}</span>`; } };
+    const tr = c && c.up ? c.up.textContent.replace(/\s+/g, ' ').trim() : 'Train';
+    lbl(b.btrain, '⇧', /max/i.test(tr) ? 'Max level' : tr); b.btrain.classList.toggle('off', !(c && c.up && !c.up.disabled));
+    lbl(b.sell, '⇄', 'Sell'); b.sell.classList.toggle('off', !(c && c.list && !c.list.disabled));
+    const dep = c && c.tog ? c.tog.textContent.trim() : 'Deploy hero'; lbl(b.depl, /reserve|rest/i.test(dep) ? '☾' : '➤', dep === 'Reserve' ? 'In Reserve' : dep); b.depl.classList.toggle('off', !(c && c.tog && !c.tog.disabled));
   };
   MODS.heroes = {
     tab: a => { const v = HF[+a]; if (v != null) window.HeroFilters && HeroFilters.choose(v); built.heroes.sel = 0; built.heroes.sig = ''; },

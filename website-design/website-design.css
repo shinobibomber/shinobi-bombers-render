@@ -104,14 +104,14 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-hc-top{display:flex;justify-content:space-between;align-items:center}
 #sbwLayer .sbw-hc-top b{font:800 15px Rajdhani,sans-serif;color:var(--rc)}
 #sbwLayer .sbw-hc-top i{font:700 10px Rajdhani,sans-serif;font-style:normal;padding:1px 6px;border:1px solid #8a7ac8;border-radius:4px;background:#120b2e;color:#e8e0ff}
-#sbwLayer .sbw-hcard canvas{width:170px;height:120px;align-self:center;border-radius:6px;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--rc) 35%,#1a1040),#0a0620 70%)}
+#sbwLayer .sbw-hcard canvas{width:170px;height:138px;align-self:center;border-radius:6px;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--rc) 35%,#1a1040),#0a0620 70%)}
 #sbwLayer .sbw-hc-name{font:800 16px Rajdhani,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-hc-sub{display:flex;gap:8px;font:600 12px Rajdhani,sans-serif;color:#cfd8ee}
 #sbwLayer .sbw-hc-sub span{color:#ff8ad8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-hc-stats{display:grid;grid-template-columns:repeat(3,1fr);font:600 10px Rajdhani,sans-serif;color:#9aa6c8}
 #sbwLayer .sbw-hc-stats b{display:block;font-size:15px;color:#fff}
 #sbwLayer .sbw-hc-ch{display:flex;justify-content:space-between;font:600 11px Rajdhani,sans-serif;color:#9aa6c8}
-#sbwLayer .sbw-hc-btns{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:auto}
+#sbwLayer .sbw-hc-btns{display:grid;grid-template-columns:1fr;gap:5px;margin-top:auto}
 #sbwLayer .sbw-hb{min-width:0;height:24px;border-radius:5px;border:1px solid #3b4a8a;background:#0d1440;color:#dfe6ff;font:700 11px Rajdhani,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;padding:0 4px}
 #sbwLayer .sbw-hb.gold{background:linear-gradient(#ffc13a,#f39a12);color:#2a1000;border-color:#ffb02a}
 #sbwLayer .sbw-hb.green{background:linear-gradient(#22a743,#167a2c);color:#fff;border-color:#2fd35a}
@@ -126,11 +126,11 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-hd-lv span{font-size:12px;color:#b7a6ff;align-self:center}
 #sbwLayer .sbw-hd-tags{display:flex;gap:6px;margin:6px 0}
 #sbwLayer .sbw-hd-tags span{padding:2px 8px;border:1px solid #b45cff;border-radius:5px;background:#1d0d45;font:600 12px Rajdhani,sans-serif;color:#e7d7ff}
-#sbwLayer .sbw-hd canvas{position:absolute;right:14px;top:30px;width:150px;height:122px}
-#sbwLayer .sbw-hd-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:44px;margin-bottom:8px}
+#sbwLayer .sbw-hd canvas{position:absolute;right:12px;top:34px;width:160px;height:140px}
+#sbwLayer .sbw-hd-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:104px;margin-bottom:8px}
 #sbwLayer .sbw-hd-stats span{padding:4px 8px;border:1px solid #1f2a55;border-radius:6px;background:#070c2a;font:600 11px Rajdhani,sans-serif;color:#9aa6c8}
 #sbwLayer .sbw-hd-stats b{display:block;font-size:18px;color:#fff}
-#sbwLayer .sbw-hdtab{padding:8px 12px;border-radius:8px;background:#070b26;font:600 15px Rajdhani,sans-serif;color:#dfe6ff}
+#sbwLayer .sbw-hdtab{padding:6px 10px;border-radius:8px;background:#070b26;font:600 15px Rajdhani,sans-serif;color:#dfe6ff}
 #sbwLayer .sbw-hdtab p{margin:0}
 /* Adventure */
 #sbwLayer .sbw-astage{display:flex;flex-direction:column;justify-content:center;padding:0 12px 0 16px;border:1px solid #2a3166;border-radius:8px;background:linear-gradient(90deg,#0a0d2c,#070a20)}
@@ -250,3 +250,25 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 @keyframes sbw-raysPulse{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.12)}}
 @keyframes sbw-sparkle{0%,100%{opacity:.2;transform:translateY(2px) scale(.9)}50%{opacity:1;transform:translateY(-3px) scale(1.08)}}
 @media (prefers-reduced-motion:reduce){#sbwLayer .sbw-at-card .sbw-at-port::before,#sbwLayer .sbw-at-card .sbw-at-port::after,#sbwLayer .sbw-at-card .sbw-at-port canvas{animation:none}}
+
+/* Heroes: card buttons (Deploy/Rest hero + Make Battle-ready/Move to Reserve) and the big detail buttons */
+#sbwLayer .sbw-hb{height:28px;border-radius:7px;border:1px solid rgba(255,255,255,.18);font:800 13px Rajdhani,sans-serif;letter-spacing:.3px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 6px rgba(0,0,0,.45);transition:filter .15s,transform .15s}
+#sbwLayer .sbw-hb:hover:not(:disabled){filter:brightness(1.2);transform:translateY(-1px)}
+#sbwLayer .sbw-hb.deploy{background:linear-gradient(#2f6dff,#1440c4);border-color:#5f8dff}
+#sbwLayer .sbw-hb.rest{background:linear-gradient(#5a3fd0,#2e1d86);border-color:#8f78ff}
+#sbwLayer .sbw-hb.mode{background:linear-gradient(#27b04a,#14762d);border-color:#3fe06a}
+#sbwLayer .sbw-dbtn{position:absolute;z-index:13;display:flex;align-items:center;justify-content:center;gap:12px;border-radius:9px;pointer-events:none;
+  font:900 24px Rajdhani,sans-serif;letter-spacing:.3px;white-space:nowrap;color:#fff;text-shadow:0 2px 3px rgba(0,0,0,.55);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.25),0 4px 12px rgba(0,0,0,.5)}
+#sbwLayer .sbw-dbtn i{font-style:normal;font-size:26px;line-height:1}
+#sbwLayer .sbw-dbtn.gold{background:linear-gradient(#ffd45a,#ffab1c 55%,#f08a0c);color:#2a1000;text-shadow:0 1px 0 rgba(255,255,255,.4);border:2px solid #ffe08a}
+#sbwLayer .sbw-dbtn.green{background:linear-gradient(#34c95a,#1a8a36);border:2px solid #5ff08a}
+#sbwLayer .sbw-dbtn.blue{background:linear-gradient(#3a7dff,#1646c9);border:2px solid #79a6ff}
+#sbwLayer .sbw-dbtn.off{filter:grayscale(.7) brightness(.6)}
+#sbwLayer .hs[data-sbwid="dtrain"]:hover~.sbw-dbtn.gold,#sbwLayer .sbw-dbtn{transition:filter .15s}
+#sbwLayer .sbw-hdtab{overflow:auto}
+#sbwLayer .sbw-perks{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+#sbwLayer .sbw-perks li{display:flex;gap:8px;align-items:baseline;white-space:nowrap;overflow:hidden;padding:1px 8px;border-left:3px solid #b45cff;border-radius:4px;background:rgba(120,70,255,.12)}
+#sbwLayer .sbw-perks b{flex:none;font:800 14px Rajdhani,sans-serif;color:#ffd257}
+#sbwLayer .sbw-perks span{overflow:hidden;text-overflow:ellipsis;font:600 12.5px Rajdhani,sans-serif;color:#dfe6ff}
+#sbwLayer .sbw-dbtn.blue,#sbwLayer .sbw-dbtn.green{font-size:21px;gap:8px}

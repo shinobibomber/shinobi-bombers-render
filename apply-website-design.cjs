@@ -41,6 +41,14 @@ function applyWebsiteDesign(appDir = path.join(__dirname, 'app'), siteDir = path
     screens[id] = { ...s, img: copy(s.img) };
   }
   for (const rel of EXTRA_ART) copy(rel);
+  // Heroes uses the same header as the other menus: artwork from website-src/make_game_patches.py, header hotspots,
+  // Chest button, Ryo/wallet/gems positions from the Guild screen (same header layout).
+  if (screens.heroes && data.guild) {
+    const isHdr = h => h.id === 'logo' || h.id === 'wallet' || h.id === 'ryoplus' || h.id.startsWith('nav-');
+    fs.copyFileSync(path.join(__dirname, 'website-design', 'scr-heroes-game.webp'), path.join(out, 'art', 'scr-heroes-game.webp'));
+    screens.heroes = { ...screens.heroes, img: 'art/scr-heroes-game.webp', hs: [...data.guild.hs.filter(isHdr), ...screens.heroes.hs.filter(h => !isHdr(h))],
+      chest: data.guild.chest, hdr: data.guild.hdr, live: [...data.guild.live.filter(l => l.id === 'ryo'), ...screens.heroes.live.filter(l => l.id !== 'ryo')] };
+  }
   // game-only artwork patches made by website-src/make_game_patches.py
   for (const f of ['adventure-tr-patch.webp']) fs.copyFileSync(path.join(__dirname, 'website-design', f), path.join(out, 'art', f));
   // reference galleries used by the Codex sections (maps, bosses, hero models, auras)
