@@ -87,10 +87,9 @@ Phase 3 screens (same approach: the game's own buttons and state):
 - Heroes: filter tabs → `HeroFilters.choose`; cards mirror the game's hero cards (Deploy/Reserve `tog(i)`, Train
   `up(i)`, Sell `Market.openListing`, Make Battle-ready); the detail panel's Train/Sell/Deploy press the same
   buttons; search and sort drive the game's own search box and sort select.
-  The Heroes screen uses the same header as the other menus (`website-design/scr-heroes-game.webp`, made by
-  `website-src/make_game_patches.py`, with the Guild screen's header hotspots). Cards keep two buttons
-  (Deploy hero / Rest hero and Make Battle-ready / Move to Reserve); Train and Sell are in the detail panel. The
-  detail Stats tab lists the hero's perks from the game's own perk table (`PK`, `h.pk`).
+  Cards keep two buttons (Deploy hero / Rest hero and Make Battle-ready / Move to Reserve). The detail panel shows
+  rarity, a stats grid beside the portrait, chakra, the hero's perks (from the game's perk table `PK`, `h.pk`) and
+  only Train and Sell.
 - Adventure: the game's battle canvas (`#cv`) is drawn into the website frame every frame (read-only mirror); stage,
   enemies and session Ryo come from the game's status bar. The team panel is the game's own 10-slot Adventure team
   (same portraits and Deploy buttons) restyled in the website theme, with animated auras for deployed Elite and
@@ -103,6 +102,16 @@ Phase 3 screens (same approach: the game's own buttons and state):
   Resources tabs report honestly that a shared market service does not exist yet.
 - Guild and Chat: website screens shown as labelled previews (no backend); every action shows a "not available yet"
   notice.
+
+Shared header and Dojo pages:
+
+- One header for every menu: `website-design/shared-header.webp` (built by `website-src/make_game_patches.py` from
+  the Guild header) is fixed at the top of the screen with the Guild screen's nav/Chest/Ryo/wallet/Tools positions;
+  the active menu is highlighted at runtime. Each screen's own header is tucked underneath (`hdrH`).
+- Dojo opens on **Dojo Services**; **Enter Dojo** opens Dojo Upgrades and **Manage Sensei** opens Sensei; Back
+  returns to Services. The three pages are cut from the Dojo artwork (`website-design/dojo-views.json`,
+  `scr-dojo*.webp`); hotspots and live labels are mapped panel by panel. The game's own `DojoServices.open('hub' |
+  'dojo' | 'sensei')` pane is kept in step.
 
 Styles: `website-design/website-screens.css` is generated from
 `website/app.css` by `website-src/make_game_css.py` (scoped to `#sbwLayer`, keyframes prefixed `sbw-`).

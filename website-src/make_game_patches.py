@@ -19,22 +19,34 @@ patch = out[y0:y1, x0:x1]
 cv2.imwrite(str(root / 'website-design/adventure-tr-patch.webp'), patch, [cv2.IMWRITE_WEBP_QUALITY, 92])
 print('patch', patch.shape, '->', 'website-design/adventure-tr-patch.webp')
 
-# scr-heroes-game.webp: the Heroes screen with the shared header used by the other menus (taken from the Guild
-# screen, with Guild un-highlighted from the Fusion header and Heroes highlighted), so the header matches everywhere.
-heroes = cv2.imread(str(root / 'website/assets/scr-heroes.webp')).astype(np.float32)
-guild = cv2.imread(str(root / 'website/assets/scr-guild.webp')).astype(np.float32)
-fusion = cv2.imread(str(root / 'website/assets/scr-fusion.webp')).astype(np.float32)
-hdr = guild[:122].copy()
-hdr[0:88, 968:1072] = fusion[0:88, 972:1076]                     # Guild item without its highlight
-x0h, x1h = 306, 392                                                # Heroes item: purple highlight like the others
-cell = hdr[0:88, x0h:x1h]
-yy = np.linspace(0, 1, 88)[:, None, None]
-purple = np.array([235, 40, 120], np.float32) * (1 - yy) + np.array([150, 20, 70], np.float32) * yy   # BGR gradient
-lit = 255 - (255 - cell) * (255 - purple * .85) / 255                # screen blend keeps the white icon/label
-lit[-4:] = np.array([255, 120, 200], np.float32)                   # bright bottom edge
-lit[:, :2] = lit[:, -2:] = np.array([200, 70, 150], np.float32)
-hdr[0:88, x0h:x1h] = lit
-alpha = np.ones((122, 1, 1), np.float32); alpha[96:] = np.linspace(1, 0, 26)[:, None, None]   # blend into scenery
-heroes[:122] = hdr * alpha + heroes[:122] * (1 - alpha)
-cv2.imwrite(str(root / 'website-design/scr-heroes-game.webp'), heroes.clip(0, 255).astype(np.uint8), [cv2.IMWRITE_WEBP_QUALITY, 90])
-print('heroes header ->', 'website-design/scr-heroes-game.webp')
+# shared-header.webp: ONE header used on every website screen inside the game (fixed at the top, identical on all
+# menus). It is the Guild screen's header with Guild un-highlighted (that cell taken from the Fusion header); the
+# active menu is highlighted at runtime. Bottom rows fade out (alpha) into each screen's scenery.
+guild = cv2.imread(str(root / 'website/assets/scr-guild.webp'))
+fusion = cv2.imread(str(root / 'website/assets/scr-fusion.webp'))
+hdr = guild[:124].copy()
+hdr[0:88, 968:1072] = fusion[0:88, 972:1076]
+a = np.full(hdr.shape[:2], 255, np.uint8); a[112:] = np.linspace(255, 0, 12).astype(np.uint8)[:, None]
+cv2.imwrite(str(root / 'website-design/shared-header.webp'), np.dstack([hdr, a]), [cv2.IMWRITE_WEBP_QUALITY, 95])
+print('shared header ->', 'website-design/shared-header.webp')
+
+# dojo views: the Dojo artwork holds three panels (Services, Upgrades, Sensei). Each becomes its own page
+# (website-design/dojo-views.json): panels are scaled to the page width over a blurred, darkened backdrop.
+import json
+views = json.load(open(root / 'website-design/dojo-views.json'))
+dojo = cv2.imread(str(root / 'website/assets/scr-dojo.webp'))
+for key, v in views.items():
+    W, H = v['W'], v['H']
+    bg = cv2.resize(dojo, (W, H), interpolation=cv2.INTER_AREA)
+    bg = (cv2.GaussianBlur(bg, (0, 0), 14) * 0.45).astype(np.uint8)
+    for pnl in v['panels']:
+        x0, y0, x1, y1 = pnl['src']; k = W / (pnl['src'][2] - pnl['src'][0]) if key != 'dojo-sen' else 1536 / 1167
+        crop = dojo[y0:y1, x0:x1]
+        out = cv2.resize(crop, (round((x1 - x0) * k), round((y1 - y0) * k)), interpolation=cv2.INTER_LANCZOS4)
+        sharp = cv2.addWeighted(out, 1.35, cv2.GaussianBlur(out, (0, 0), 1.2), -0.35, 0)
+        dx, dy = pnl['dst']; h, w = sharp.shape[:2]; h = min(h, H - dy); w = min(w, W - dx)
+        bg[dy:dy + h, dx:dx + w] = sharp[:h, :w]
+        pnl['k'] = k
+    cv2.imwrite(str(root / f'website-design/scr-{key}.webp'), bg, [cv2.IMWRITE_WEBP_QUALITY, 90])
+    print(key, '->', f'website-design/scr-{key}.webp')
+json.dump(views, open(root / 'website-design/dojo-views.json', 'w'), indent=1)

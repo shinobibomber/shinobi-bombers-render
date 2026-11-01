@@ -13,6 +13,7 @@
   /* game page → website screen shown there (screens enabled in this build) */
   const SHOWN = { '5': 'home', '3': 'codex', '2': 'summon', '6': 'fusion', '4:0': 'dojo', '1': 'heroes', '0': 'adventure', '4:1': 'market', '8': 'boss-hunt' };
   let preview = null; /* Guild/Chat preview screens (no game page) */
+  let dojoView = 'dojo'; /* Dojo pages: 'dojo' (Services, landing), 'dojo-upg' (Enter Dojo), 'dojo-sen' (Manage Sensei) */
   const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'];
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -63,10 +64,11 @@
   }
 
   /* ---------- actions ---------- */
+  /* MODS for Dojo pages resolve to MODS.dojo (see act) */
   const SOON = { guild: 'Guilds are coming soon.', chat: 'Chat is coming soon.' };
   function goScreen(k) {
     if (k.startsWith('guild') || k === 'chat') { const p = k === 'chat' ? 'chat' : 'guild'; if (D.screens[p]) { preview = p; sync(); return; } return notice(p === 'chat' ? 'Chat' : 'Guild', p === 'chat' ? SOON.chat : SOON.guild); }
-    preview = null;
+    preview = null; if (k === 'dojo') dojoView = 'dojo';
     const r = ROUTE[k]; if (r) go(r[0], r[1]);
   }
   const HOME = {
@@ -86,7 +88,22 @@
     if (t === 'codex') return go(3);
     if (t === 'soon') return notice(arg, arg + ' is coming soon.');
     if (t === 'toast') return toast(arg);
-    if (t === 'fn') { const [fn, ...p] = arg.split(':'); const m = (MODS[k] || {})[fn]; if (m) return m(p.join(':'), el); }
+    if (t === 'fn') { const [fn, ...p] = arg.split(':'); const m = (MODS[k] || MODS[(D.screens[k] || {}).base] || {})[fn]; if (m) return m(p.join(':'), el); }
+  }
+
+  /* Dojo pages: labels are created in the original artwork's coordinates, then moved panel by panel (scaled) */
+  function remapView(b) {
+    const panels = b.s.view;
+    [...b.st.children].forEach(e => {
+      if (e.matches('.sbw-base,.hs,.petals,.fx') || e.dataset.mapped) return;
+      const x = parseFloat(e.style.left), y = parseFloat(e.style.top), w = parseFloat(e.style.width) || 0, h = parseFloat(e.style.height) || 0;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      const cx = x + w / 2, cy = y + h / 2, p = panels.find(p => cx >= p.src[0] && cx < p.src[2] && cy >= p.src[1] && cy < p.src[3]);
+      e.dataset.mapped = '1';
+      if (!p) { e.classList.add('sbw-offview'); return; }
+      e.style.left = (p.dst[0] + (x - p.src[0]) * p.k) + 'px'; e.style.top = (p.dst[1] + (y - p.src[1]) * p.k) + 'px';
+      e.style.transformOrigin = '0 0'; e.style.transform = `scale(${p.k})`;
+    });
   }
 
   /* ---------- screen building (mirrors website/app.js) ---------- */
@@ -102,10 +119,10 @@
       if ((h.c || '').includes('nav') && h.a === 'go:' + k) e.setAttribute('aria-current', 'page');
     });
     // header Chest button
-    const c = s.chest, cb = mk('div', 'hs chestbtn', st); place(cb, c.r[0], c.r[1], c.r[2] - c.r[0], c.r[3] - c.r[1]); cb.tabIndex = 0; cb.setAttribute('role', 'button'); cb.setAttribute('aria-label', 'Open your Chest');
-    slice(mk('i', 'sl', cb), s, c.r); const lbl = place(mk('span', 'cbt sbw-chest', cb), c.tx, c.ty, c.tw, c.th); lbl.style.fontSize = c.fs + 'px'; lbl.dataset.fs = c.fs;
-    const dot = place(mk('i', 'cdot', cb), c.dx, c.dy, c.ds, c.ds); dot.hidden = true;
-    cb.addEventListener('click', openChest); cb.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openChest(); } });
+    let cb = null, lbl = null, dot = null; const c = s.chest; if (c) { cb = mk('div', 'hs chestbtn', st); place(cb, c.r[0], c.r[1], c.r[2] - c.r[0], c.r[3] - c.r[1]); cb.tabIndex = 0; cb.setAttribute('role', 'button'); cb.setAttribute('aria-label', 'Open your Chest');
+    slice(mk('i', 'sl', cb), s, c.r); lbl = place(mk('span', 'cbt sbw-chest', cb), c.tx, c.ty, c.tw, c.th); lbl.style.fontSize = c.fs + 'px'; lbl.dataset.fs = c.fs;
+    dot = place(mk('i', 'cdot', cb), c.dx, c.dy, c.ds, c.ds); dot.hidden = true;
+    cb.addEventListener('click', openChest); cb.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openChest(); } }); }
     // live text slots from the website data (Ryo balance etc.)
     const live = {};
     s.live.forEach(l => { const e = mk('span', 'lv', st); place(e, l.x, l.y, l.w, l.h); e.style.fontSize = l.fs + 'px'; e.dataset.fs = l.fs; e.style.color = l.c; live[l.id] = e; });
@@ -121,7 +138,9 @@
     const pt = mk('div', 'petals', st); pt.innerHTML = Array.from({ length: 22 }, () => `<i style="left:${R(0, s.W)}px;--x:${R(-160, 160)}px;animation-duration:${R(9, 18)}s;animation-delay:${-R(0, 16)}s;scale:${R(.6, 1.4)}"></i>`).join('');
     $$('.hs.card', st).forEach(e => { e.addEventListener('mousemove', ev => { if (RM) return; const r = e.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width - .5, y = (ev.clientY - r.top) / r.height - .5; e.firstChild.style.transform = `perspective(700px) rotateY(${x * 9}deg) rotateX(${-y * 9}deg) translateY(-4px) scale(1.03)`; }); e.addEventListener('mouseleave', () => { e.firstChild.style.transform = ''; }); });
     const b = { sec, st, s, live, covers, label: lbl, dot, chestEl: cb };
-    built[k] = b; (INIT[k] || (() => {}))(b); return b;
+    built[k] = b; (INIT[k] || INIT[s.base] || (() => {}))(b);
+    if (s.view) remapView(b);
+    return b;
   }
 
   /* ---------- per-screen live content ---------- */
@@ -311,6 +330,7 @@
     setText(b.status, !hired ? 'Sensei not hired' : on ? 'Ready when offline' : 'Rotation off');
     const up = $('.hs[data-sbwid="upg"]', b.st); if (up) up.classList.toggle('dim', next > 6);
   };
+  ['dojo-upg', 'dojo-sen'].forEach(k => { PAINT[k] = (b, now) => PAINT.dojo(b, now); });
   function senseiPane() { if (window.DojoServices) DojoServices.open('sensei'); }
   function hireSensei() {
     const perm = (window.GameBalance && GameBalance.senseiCost) || 0;
@@ -320,7 +340,7 @@
     if (!dlg.open) dlg.showModal();
   }
   MODS.dojo = {
-    focus: a => { if (a === 'sen' && !senseiHired()) return hireSensei(); if (window.DojoServices) DojoServices.open(a === 'sen' ? 'sensei' : 'dojo'); toast(a === 'sen' ? 'Sensei is hired – adjust the return threshold and auto rotation below.' : 'Choose a tier on the right to see its recovery rate.'); },
+    focus: a => { dojoView = a === 'sen' ? 'dojo-sen' : a === 'upg' ? 'dojo-upg' : 'dojo'; if (window.DojoServices) DojoServices.open(a === 'sen' ? 'sensei' : a === 'upg' ? 'dojo' : 'hub'); sync(); },
     tier: a => { const i = +a, tier = Number(gs().dojo || 0), prices = GameBalance.dojoPrices, rec = GameBalance.dojoRecovery; if (window.DojoServices) { DojoServices.open('dojo'); DojoServices.selectTier(i); } notice(DOJO_NAMES[i], `Recovery ${rec[i]} chakra per minute for every resting hero. Status: ${i < tier ? 'Owned' : i === tier ? 'Active' : i === tier + 1 ? 'Next – use Upgrade' : 'Locked'}. Price: ${prices[i] ? fmt(prices[i]) + ' Ryo' : 'Free'}.`); },
     upgrade: () => { const tier = Number(gs().dojo || 0); if (tier >= 6) return toast('Your dojo is at the highest tier.'); DojoServices.open('dojo'); DojoServices.selectTier(tier + 1); if (!pressOnclick('#p4', 'DojoServices.upgrade()')) DojoServices.upgrade(); },
     hire: () => { if (!senseiHired()) return hireSensei(); senseiPane(); if (!pressOnclick('#p4', 'V2.toggleButler()') && typeof V2 !== 'undefined') V2.toggleButler(); },
@@ -367,12 +387,11 @@
     b.summary = cov(b, 24, 288, 600, 24, '#06071d', 15, '#cfd8ee', 'sbw-left');
     b.page = cov(b, 1342, 288, 130, 24, '#000108', 15, '#ffffff');
     b.grid = cv(b, 26, 322, 1036, 684, 'sbw-hgrid');
-    b.det = cv(b, 1078, 324, 434, 356, 'sbw-hdet');
-    b.dtab = cv(b, 1084, 724, 422, 104, 'sbw-hdtab');
-    const hb = (id, cls) => { const h = b.s.hs.find(x => x.id === id), r = h.r; return place(mk('div', 'sbw-dbtn ' + cls, b.st), r[0], r[1], r[2] - r[0], r[3] - r[1]); };
-    b.btrain = hb('dtrain', 'gold'); b.sell = hb('dsell', 'green'); b.depl = hb('ddep', 'blue');
+    /* detail panel: one clean panel over the artwork's (portrait, stats, perks, Train, Sell) */
+    b.det = cv(b, 1090, 322, 416, 650, 'sbw-hd2');
+    b.det.addEventListener('click', ev => { const k = ev.target.closest('[data-k]'); if (k) MODS.heroes[k.dataset.k](); });
     b.sel = 0; b.tabIdx = 0;
-    ['dfav'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
+    ['dfav', 'dtrain', 'dsell', 'ddep', 'dt0', 'dt1', 'dt2', 'dt3'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
   };
   function heroCardHtml(c, i, on) {
     const h = c.h || {}, r = h.r || 0, col = RCOL[r] || RCOL[0], [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0), pct = cm ? Math.round(100 * cc / cm) : 0;
@@ -401,29 +420,30 @@
     }
     $$('.sbw-hcard canvas', b.grid).forEach(c => { const card = cards[+c.dataset.i]; drawHero(c, card && card.h, 2.7, now, 2); });
     const c = cards[b.sel];
-    const dsig = c ? [c.idx, c.lvl, c.ch, c.pw, c.sp, c.stam, c.status, b.dt || 0].join(',') : 'none';
+    const dsig = c ? [c.idx, c.lvl, c.ch, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled].join(',') : 'none';
     if (dsig !== b.dsig) {
       b.dsig = dsig;
-      if (!c) { b.det.innerHTML = '<p class="sbw-empty">Select a hero.</p>'; b.dtab.innerHTML = ''; }
+      if (!c) b.det.innerHTML = '<p class="sbw-empty">Select a hero.</p>';
       else {
-        const h = c.h || {}, r = h.r || 0, [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0);
-        b.det.innerHTML = `<div class="sbw-hd" style="--rc:${RCOL[r]}"><div class="sbw-hd-h"><b>${esc(c.name)}</b><i>${esc(RNAME[r].toUpperCase())}</i></div>
-          <div class="sbw-hd-lv">Lv. ${esc((c.lvl || '1/10').replace('/', ' / '))}<span>${esc(c.status)}</span></div>
-          <div class="sbw-hd-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r])}</span></div>
-          <canvas width="160" height="140"></canvas>
-          <div class="sbw-hd-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span><span>VOLLEY<b>${esc(c.vol)}</b></span><span>RANGE<b>${esc(c.rng)}</b></span><span>PERKS<b>${esc(c.perks || '0')}</b></span></div>
-          <div class="sbw-hc-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div></div>`;
-        const dt = b.dt || 0, pl = c.perkList || [];
-        const perksHtml = pl.length ? `<ul class="sbw-perks">${pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('')}</ul>` : `<p>${esc(c.perks ? c.perks + ' perks' : 'No perks yet.')}</p>`;
-        b.dtab.innerHTML = [perksHtml, `<p><b>${esc(c.attack || '—')}</b> · ${esc(c.style || '')}<br>${esc(c.dmg || '')}</p>`, `<p>Chakra <b>${cc} / ${cm}</b>. 1 stamina = 50 chakra; each attack normally costs 1 chakra. Resting heroes recover in the Dojo.</p>`, `<p>${esc(c.status || '')} · ${h.tokenId ? 'Token collection · server owned' : 'Practice / local hero'}<br>Perks ${pl.length} / ${r + 1}</p>`][dt];
+        const h = c.h || {}, r = h.r || 0, [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0), pl = c.perkList || [];
+        const tr = c.up ? c.up.textContent.replace(/\s+/g, ' ').trim() : 'Train', price = (tr.match(/[\d,]+\s*Ryo/) || [''])[0], maxed = /max/i.test(tr);
+        const [lv, lvMax] = (c.lvl || '1/10').split('/').map(x => x.trim());
+        const stat = (k, v) => `<div class="sbw-st"><span>${k}</span><b>${esc(v || '—')}</b></div>`;
+        b.det.innerHTML = `<div class="sbw-h2" style="--rc:${RCOL[r]}">
+          <div class="sbw-h2-top"><div><h3>${esc(c.name)}</h3><p>Lv. ${esc(lv)} / ${esc(lvMax || '10')}<em>${esc(c.status)}</em></p></div><i class="sbw-h2-rank">${esc(RNAME[r].toUpperCase())}</i></div>
+          <div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>
+          <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + (r + 1))}</div>
+            <div class="sbw-h2-port"><canvas width="150" height="176"></canvas></div></div>
+          <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
+          <h4>PERKS</h4>
+          <ul class="sbw-perks">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
+          <div class="sbw-h2-btns">
+            <button type="button" class="sbw-xbtn train" data-k="train" ${c.up && !c.up.disabled ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MAX LEVEL' : 'TRAIN'}</b><small>${maxed ? 'Fully trained' : 'Level ' + esc(lv) + ' → ' + (Number(lv) + 1)}</small></span>${price ? `<em><i class="coin"></i>${esc(price.replace(/\s*Ryo/, ''))}</em>` : ''}</button>
+            <button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>
+          </div></div>`;
       }
     }
-    drawHero($('canvas', b.det), c && c.h, 2.9, now, 2);
-    const lbl = (e, icon, t) => { const k = icon + t; if (e.dataset.k !== k) { e.dataset.k = k; e.innerHTML = `<i>${icon}</i><span>${esc(t)}</span>`; } };
-    const tr = c && c.up ? c.up.textContent.replace(/\s+/g, ' ').trim() : 'Train';
-    lbl(b.btrain, '⇧', /max/i.test(tr) ? 'Max level' : tr); b.btrain.classList.toggle('off', !(c && c.up && !c.up.disabled));
-    lbl(b.sell, '⇄', 'Sell'); b.sell.classList.toggle('off', !(c && c.list && !c.list.disabled));
-    const dep = c && c.tog ? c.tog.textContent.trim() : 'Deploy hero'; lbl(b.depl, /reserve|rest/i.test(dep) ? '☾' : '➤', dep === 'Reserve' ? 'In Reserve' : dep); b.depl.classList.toggle('off', !(c && c.tog && !c.tog.disabled));
+    drawHero($('.sbw-h2-port canvas', b.det), c && c.h, 2.7, now, 4);
   };
   MODS.heroes = {
     tab: a => { const v = HF[+a]; if (v != null) window.HeroFilters && HeroFilters.choose(v); built.heroes.sel = 0; built.heroes.sig = ''; },
@@ -589,17 +609,45 @@
     MODS[k] = new Proxy({}, { get: () => () => notice(k === 'guild' ? 'Guild' : 'Chat', k === 'guild' ? 'Guilds are not available yet. This screen is a preview of the design.' : 'Chat is not available yet. This screen is a preview of the design.') });
   });
 
+  /* ---------- the shared header (identical on every menu; fixed at the top) ---------- */
+  let HDR = null;
+  const NAVOF = { home: 'nav-home', heroes: 'nav-heroes', adventure: 'nav-adventure', summon: 'nav-summon', fusion: 'nav-fusion', dojo: 'nav-dojo', 'dojo-upg': 'nav-dojo', 'dojo-sen': 'nav-dojo', market: 'nav-market', 'boss-hunt': 'nav-bosshunt', codex: 'nav-codex', guild: 'nav-guild', chat: 'nav-guild' };
+  function buildHeader() {
+    const H = D.header, el = mk('div', 'sbw-hdr', layer), st = mk('div', 'sbw-hdr-stage', el); st.style.width = H.W + 'px'; st.style.height = H.H + 'px';
+    const im = mk('img', 'sbw-hdr-img', st); im.src = BASE + H.img; im.alt = '';
+    const hs = { img: H.img, W: H.W, H: H.H }, sl = (e, r) => { e.style.backgroundImage = `url(${BASE + H.img})`; e.style.backgroundSize = `${H.W}px ${H.H}px`; e.style.backgroundPosition = `${-r[0]}px ${-r[1]}px`; };
+    const navhl = mk('div', 'sbw-navhl', st);
+    const nav = {};
+    H.hs.forEach((h, i) => {
+      const r = h.r, e = mk('div', 'hs ' + (h.c || ''), st); place(e, r[0], r[1], r[2] - r[0], r[3] - r[1]); e.dataset.sbwid = h.id; e.style.setProperty('--i', i % 17); sl(mk('i', 'sl', e), r);
+      e.tabIndex = 0; e.setAttribute('role', 'button'); e.setAttribute('aria-label', h.l || h.id.replace('nav-', ''));
+      e.addEventListener('click', () => act('hdr', h, e)); e.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); act('hdr', h, e); } });
+      if (h.id.startsWith('nav-')) nav[h.id] = e;
+    });
+    const c = H.chest, cb = mk('div', 'hs chestbtn', st); place(cb, c.r[0], c.r[1], c.r[2] - c.r[0], c.r[3] - c.r[1]); cb.tabIndex = 0; cb.setAttribute('role', 'button'); cb.setAttribute('aria-label', 'Open your Chest');
+    sl(mk('i', 'sl', cb), c.r); const label = place(mk('span', 'cbt sbw-chest', cb), c.tx, c.ty, c.tw, c.th); label.style.fontSize = c.fs + 'px'; label.dataset.fs = c.fs;
+    const dot = place(mk('i', 'cdot', cb), c.dx, c.dy, c.ds, c.ds); dot.hidden = true; cb.addEventListener('click', openChest);
+    const live = {}; H.live.forEach(l => { const e = mk('span', 'lv', st); place(e, l.x, l.y, l.w, l.h); e.style.fontSize = l.fs + 'px'; e.dataset.fs = l.fs; e.style.color = l.c; live[l.id] = e; });
+    const covers = {}; for (const key of ['wallet', 'gems']) { const t = H.hdr[key]; const e = place(mk('span', 'sbw-cover', st), t.x, t.y, t.w, t.h); e.style.background = t.bg; e.style.fontSize = t.fs + 'px'; e.dataset.fs = t.fs; covers[key] = e; }
+    HDR = { el, st, nav, navhl, label, dot, chestEl: cb, live, covers };
+  }
+  function markNav() {
+    if (!HDR) return; const id = NAVOF[cur]; for (const k in HDR.nav) { const on = k === id; HDR.nav[k].classList.toggle('sbw-on', on); if (on) HDR.nav[k].setAttribute('aria-current', 'page'); else HDR.nav[k].removeAttribute('aria-current'); }
+    const e = id && HDR.nav[id]; HDR.navhl.hidden = !e; if (e) { HDR.navhl.style.left = e.style.left; HDR.navhl.style.width = e.style.width; }
+  }
+
   /* ---------- live refresh ---------- */
   function setText(e, t) { if (e && e.textContent !== t) { e.textContent = t; fitText(e); } }
   function fitText(e) { const base = +e.dataset.fs; if (!base) return; let fs = base; e.style.fontSize = fs + 'px'; while (e.scrollWidth > e.clientWidth + 1 && fs > 8) { fs -= 1; e.style.fontSize = fs + 'px'; } }
   function refresh(now = performance.now()) {
     const b = cur && built[cur]; if (!b) return;
     const l = ledger(), a = account(), pend = chestPending();
-    if (b.live.ryo) setText(b.live.ryo, a && Number.isFinite(Number(l.balance)) ? fmt(Number(l.balance)) + ' Ryo' : '— Ryo');
-    setText(b.label, pend != null && Number.isFinite(pend) ? 'Chest : ' + fmt(pend) : 'Chest');
-    b.dot.hidden = !(pend >= 1);
-    if (b.covers.wallet) setText(b.covers.wallet, a ? a.slice(0, 4) + '...' + a.slice(-4) : 'Sign in');
-    if (b.covers.gems) setText(b.covers.gems, '⚙ Tools');
+    const hb = HDR || b;
+    if (hb.live.ryo) setText(hb.live.ryo, a && Number.isFinite(Number(l.balance)) ? fmt(Number(l.balance)) + ' Ryo' : '— Ryo');
+    if (hb.label) setText(hb.label, pend != null && Number.isFinite(pend) ? 'Chest : ' + fmt(pend) : 'Chest');
+    if (hb.dot) hb.dot.hidden = !(pend >= 1);
+    if (hb.covers.wallet) setText(hb.covers.wallet, a ? a.slice(0, 4) + '...' + a.slice(-4) : 'Sign in');
+    if (hb.covers.gems) setText(hb.covers.gems, '⚙ Tools');
     for (const id of ['ltimer', 'btimer', 'cost', 'slabel', 'fcount', 'stitle', 'enemies', 'reward', 'team', 'upcost', 'trainlbl']) if (b.live[id]) b.live[id].hidden = true;
     (PAINT[cur] || (() => {}))(b, now);
   }
@@ -607,26 +655,35 @@
   /* ---------- show/hide over the matching game page ---------- */
   function fit() {
     const b = cur && built[cur]; if (!b) return;
-    const vw = innerWidth, vh = innerHeight, s = Math.min(vw / b.s.W, vh / b.s.H);
-    b.st.style.transform = `translate(${Math.max(0, (vw - b.s.W * s) / 2)}px,${Math.max(0, (vh - b.s.H * s) / 2)}px) scale(${s})`;
+    const vw = innerWidth, vh = innerHeight;
+    if (HDR) {
+      const H = D.header, hs = Math.min(vw / H.W, (vh * 0.14) / H.body), Hh = H.body * hs, hx = (vw - H.W * hs) / 2;
+      HDR.st.style.transform = `translate(${hx}px,0) scale(${hs})`; HDR.el.style.height = (H.body * hs) + 'px';
+      const top = b.s.hdrH || 0, s = Math.min(vw / b.s.W, (vh - Hh) / (b.s.H - top));
+      b.st.style.transform = `translate(${Math.max(0, (vw - b.s.W * s) / 2)}px,${Hh - top * s}px) scale(${s})`;
+    } else {
+      const s = Math.min(vw / b.s.W, vh / b.s.H);
+      b.st.style.transform = `translate(${Math.max(0, (vw - b.s.W * s) / 2)}px,${Math.max(0, (vh - b.s.H * s) / 2)}px) scale(${s})`;
+    }
     placeTrigger();
   }
   /* align the game's real Chest trigger with the website Chest artwork */
   function placeTrigger() {
     const b = cur && built[cur]; if (!b) return;
-    const r = b.chestEl.getBoundingClientRect(), d = document.documentElement.style;
+    const hb = HDR || b, gh = HDR ? D.header.hdr : b.s.hdr; if (!hb.chestEl) return;
+    const r = hb.chestEl.getBoundingClientRect(), d = document.documentElement.style;
     d.setProperty('--sbw-chest-x', r.left + 'px'); d.setProperty('--sbw-chest-y', r.top + 'px'); d.setProperty('--sbw-chest-w', r.width + 'px'); d.setProperty('--sbw-chest-h', r.height + 'px');
-    if (b.covers.gems) { const g = b.covers.gems.getBoundingClientRect(), k = g.height / Math.max(1, (b.s.hdr.gems.h || 1)); d.setProperty('--sbw-tools-x', (g.left - 46 * k) + 'px'); d.setProperty('--sbw-tools-y', (g.top - 8 * k) + 'px'); d.setProperty('--sbw-tools-w', (g.width + 54 * k) + 'px'); d.setProperty('--sbw-tools-h', (g.height + 16 * k) + 'px'); }
+    if (hb.covers.gems && gh) { const g = hb.covers.gems.getBoundingClientRect(), k = g.height / Math.max(1, (gh.gems.h || 1)); d.setProperty('--sbw-tools-x', (g.left - 46 * k) + 'px'); d.setProperty('--sbw-tools-y', (g.top - 8 * k) + 'px'); d.setProperty('--sbw-tools-w', (g.width + 54 * k) + 'px'); d.setProperty('--sbw-tools-h', (g.height + 16 * k) + 'px'); }
     const real = document.querySelector('[data-gc-chest]');
-    if (real && !real._sbw) { real._sbw = true; real.addEventListener('mouseenter', () => { const c = cur && built[cur]; c && c.chestEl.classList.add('sbw-hover'); }); real.addEventListener('mouseleave', () => { for (const k in built) built[k].chestEl.classList.remove('sbw-hover'); }); }
-    b.chestEl.tabIndex = real ? -1 : 0; b.chestEl.setAttribute('aria-hidden', real ? 'true' : 'false');
+    if (real && !real._sbw) { real._sbw = true; real.addEventListener('mouseenter', () => hb.chestEl.classList.add('sbw-hover')); real.addEventListener('mouseleave', () => hb.chestEl.classList.remove('sbw-hover')); }
+    hb.chestEl.tabIndex = real ? -1 : 0; hb.chestEl.setAttribute('aria-hidden', real ? 'true' : 'false');
   }
   function screenForPage() {
     if (!D || (window.LoginScreen && LoginScreen.active) || (window.GameLoading && GameLoading.active)) return null;
     let page; try { page = tab; } catch { return null; }
     if (preview) return preview;
     let mode = 0; try { mode = vm || 0; } catch {}
-    return SHOWN[page === 4 ? '4:' + mode : String(page)] || null;
+    const k = SHOWN[page === 4 ? '4:' + mode : String(page)] || null; return k === 'dojo' ? dojoView : k;
   }
   function sync() {
     const k = screenForPage();
@@ -634,7 +691,7 @@
       if (cur && built[cur]) built[cur].sec.classList.remove('on');
       cur = k;
       if (k) { const b = built[k] || build(k); b.sec.classList.add('on'); if (!RM) { b.sec.classList.remove('enter'); void b.sec.offsetWidth; b.sec.classList.add('enter'); } }
-      layer.hidden = !k;
+      layer.hidden = !k; markNav();
       document.body.classList.toggle('sbw-active', !!k);
       for (const id of ['exactHomeScreen']) { const e = document.getElementById(id); if (e) e.inert = !!k; }
       const main = document.querySelector('main'); if (main) main.inert = !!k;
@@ -647,8 +704,9 @@
     if (window.GameLoading && GameLoading.ready) await GameLoading.ready;
     D = await fetch(BASE + 'screens.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('screens.json ' + r.status); return r.json(); });
     layer = mk('div', '', document.body); layer.id = 'sbwLayer'; layer.hidden = true;
+    if (D.header) buildHeader();
     const prior = window.go;
-    if (typeof prior === 'function') { window.go = function (...args) { preview = null; const r = prior.apply(this, args); queueMicrotask(sync); return r; }; }
+    if (typeof prior === 'function') { window.go = function (...args) { preview = null; if (args[0] !== 4 || args[1]) dojoView = 'dojo'; const r = prior.apply(this, args); queueMicrotask(sync); return r; }; }
     addEventListener('shinobi-navigation', sync);
     addEventListener('shinobi-ryo-ledger', () => refresh());
     addEventListener('shinobi-beta-wallet', () => refresh());

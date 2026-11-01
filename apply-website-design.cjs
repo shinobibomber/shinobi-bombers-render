@@ -41,21 +41,37 @@ function applyWebsiteDesign(appDir = path.join(__dirname, 'app'), siteDir = path
     screens[id] = { ...s, img: copy(s.img) };
   }
   for (const rel of EXTRA_ART) copy(rel);
-  // Heroes uses the same header as the other menus: artwork from website-src/make_game_patches.py, header hotspots,
-  // Chest button, Ryo/wallet/gems positions from the Guild screen (same header layout).
-  if (screens.heroes && data.guild) {
-    const isHdr = h => h.id === 'logo' || h.id === 'wallet' || h.id === 'ryoplus' || h.id.startsWith('nav-');
-    fs.copyFileSync(path.join(__dirname, 'website-design', 'scr-heroes-game.webp'), path.join(out, 'art', 'scr-heroes-game.webp'));
-    screens.heroes = { ...screens.heroes, img: 'art/scr-heroes-game.webp', hs: [...data.guild.hs.filter(isHdr), ...screens.heroes.hs.filter(h => !isHdr(h))],
-      chest: data.guild.chest, hdr: data.guild.hdr, live: [...data.guild.live.filter(l => l.id === 'ryo'), ...screens.heroes.live.filter(l => l.id !== 'ryo')] };
+  // One shared header for every screen (website-design/shared-header.webp, made by website-src/make_game_patches.py
+  // from the Guild header). Each screen's own header hotspots, Chest button and Ryo label are removed; hdrH records
+  // where the screen's own header ends so the runtime can tuck it under the shared header.
+  const isHdr = h => h.id === 'logo' || h.id === 'wallet' || h.id === 'ryoplus' || h.id.startsWith('nav-');
+  for (const f of ['shared-header.webp']) fs.copyFileSync(path.join(__dirname, 'website-design', f), path.join(out, 'art', f));
+  const g = data.guild;
+  const header = { img: 'art/shared-header.webp', W: 1536, H: 124, body: 112, hs: g.hs.filter(isHdr), chest: g.chest, hdr: g.hdr, live: g.live.filter(l => l.id === 'ryo') };
+  const bottom = s => Math.max(s.chest ? s.chest.r[3] : 0, ...s.hs.filter(isHdr).map(h => h.r[3])) + 4;
+  // Dojo: the artwork's three panels become three pages (website-design/dojo-views.json): Services (landing),
+  // Upgrades (Enter Dojo) and Sensei (Manage Sensei). Hotspots and live labels are mapped panel by panel.
+  const views = JSON.parse(fs.readFileSync(path.join(__dirname, 'website-design', 'dojo-views.json'), 'utf8'));
+  const dojoSrc = screens.dojo;
+  for (const [key, v] of Object.entries(views)) {
+    fs.copyFileSync(path.join(__dirname, 'website-design', 'scr-' + key + '.webp'), path.join(out, 'art', 'scr-' + key + '.webp'));
+    const map = r => { const cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, p = v.panels.find(p => cx >= p.src[0] && cx < p.src[2] && cy >= p.src[1] && cy < p.src[3]); if (!p) return null;
+      return [p.dst[0] + (r[0] - p.src[0]) * p.k, p.dst[1] + (r[1] - p.src[1]) * p.k, p.dst[0] + (r[2] - p.src[0]) * p.k, p.dst[1] + (r[3] - p.src[1]) * p.k].map(Math.round); };
+    const d = dojoSrc;
+    screens[key] = { ...d, W: v.W, H: v.H, img: 'art/scr-' + key + '.webp', view: v.panels, base: 'dojo', hdrH: 112,
+      hs: d.hs.filter(h => !isHdr(h)).map(h => ({ ...h, r: map(h.r) })).filter(h => h.r),
+      fx: d.fx.map(f => { const r = map([f.x - f.w / 2, f.y - f.h / 2, f.x + f.w / 2, f.y + f.h / 2]); return r && { ...f, x: (r[0] + r[2]) / 2, y: (r[1] + r[3]) / 2, w: r[2] - r[0], h: r[3] - r[1] }; }).filter(Boolean),
+      live: d.live.filter(l => l.id !== 'ryo') };
   }
-  // game-only artwork patches made by website-src/make_game_patches.py
-  for (const f of ['adventure-tr-patch.webp']) fs.copyFileSync(path.join(__dirname, 'website-design', f), path.join(out, 'art', f));
+  for (const [id, s] of Object.entries(screens)) {
+    if (s.view) continue;
+    screens[id] = { ...s, hdrH: bottom(s), hs: s.hs.filter(h => !isHdr(h)), live: s.live.filter(l => l.id !== 'ryo'), chest: null, hdr: null };
+  }
   // reference galleries used by the Codex sections (maps, bosses, hero models, auras)
   const ref = JSON.parse(JSON.stringify(data.ref || {}));
   const walk = o => { for (const k in o) { if (o[k] && typeof o[k] === 'object') walk(o[k]); else if (k === 'src') o[k] = copy(o[k]); } };
   walk(ref);
-  fs.writeFileSync(path.join(out, 'screens.json'), JSON.stringify({ screens, ref }));
+  fs.writeFileSync(path.join(out, 'screens.json'), JSON.stringify({ screens, ref, header }));
 
   for (const file of ['website-screens.css', 'website-design.css', 'website-design.js']) {
     fs.copyFileSync(path.join(__dirname, 'website-design', file), path.join(out, file));
