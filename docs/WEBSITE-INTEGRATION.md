@@ -53,3 +53,18 @@ screens are pixel-identical.
 - **No backend:** Guild, Chat, cross-player Marketplace settlement and NFT minting/trading have no backend.
 - **Dependency audit:** inherited Solana dependency findings: 9 (3 high, 6 moderate). See
   `integration/VERIFICATION.md`.
+
+## Website designs inside the game (`/play/`)
+
+`apply-website-design.cjs` (runs after the 17 game helpers) copies website screens into
+`app/public/assets/website-design/` and adds `website-design/website-design.js` + styles to the game page. On game
+pages that have a website screen, the screen is drawn above the game menu and wired to the game itself:
+
+- `go(page, mode)` navigation; real Ryo balance (`RyoPayments`), Chest amount (`AdventureChest`), wallet account (`BetaWallet`), heroes (`S`, `BattleRoster`, `PlayerModels` portraits);
+- the game's real shared Chest trigger and Tools menu are positioned invisibly over the website's Chest and gem
+  pill (labelled Tools; the game has no gems), so Claim/Deposit/Withdraw/History and Tools are the game's own;
+- unsupported features (Guild, Chat, events, daily missions, seasons, news) show honest notices.
+
+Enabled screens are listed in `SCREENS` in `apply-website-design.cjs` (phase 1: Home, Codex). Other pages keep the
+game's own UI until their website screen is connected. Styles: `website-design/website-screens.css` is generated from
+`website/app.css` by `website-src/make_game_css.py` (scoped to `#sbwLayer`, keyframes prefixed `sbw-`).

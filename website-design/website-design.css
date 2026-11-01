@@ -1,0 +1,59 @@
+/* Website designs on game screens – layer, live labels and dialogs. All selectors are scoped to #sbwLayer or
+   prefixed .sbw- so the game's own UI is unaffected. Shared website styles come from website-screens.css. */
+#sbwLayer{position:fixed;inset:0;z-index:115;background:#05020f;overflow:hidden;font:600 16px Rajdhani,'Arial Narrow',system-ui,sans-serif;color:#f5efff}
+#sbwLayer[hidden]{display:none}
+#sbwLayer .sbw-scr{display:none;position:absolute;inset:0}
+#sbwLayer .sbw-scr.on{display:block}
+#sbwLayer .sbw-stage{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:#07041a}
+#sbwLayer .sbw-scr.enter .sbw-base{animation:sbw-scrIn .55s cubic-bezier(.2,.8,.2,1)}
+#sbwLayer .sbw-base{position:absolute;inset:0;width:100%;height:100%;user-select:none;pointer-events:none}
+#sbwLayer .cbt{font-family:Rajdhani,'Arial Narrow',system-ui,sans-serif}
+#sbwLayer .sbw-cover{position:absolute;z-index:7;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;pointer-events:none;
+  font:700 1em Rajdhani,'Arial Narrow',system-ui,sans-serif;color:#f1ecff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#sbwLayer .sbw-cover.sbw-left{justify-content:flex-start;padding-left:2px}
+#sbwLayer .sbw-cover.sbw-click{pointer-events:auto;cursor:pointer}
+#sbwLayer .sbw-cover.sbw-click:hover{text-decoration:underline}
+#sbwLayer .sbw-avatar{position:absolute;z-index:7;border-radius:8px;background:radial-gradient(circle at 50% 40%,#3a1a7a,#12082e);pointer-events:none}
+#sbwLayer .sbw-tile{position:absolute;z-index:8;border:2px solid var(--rc);border-radius:8px;background:linear-gradient(#1b1546,#0a0720);box-shadow:0 0 12px var(--rc);cursor:pointer;overflow:hidden;transition:transform .2s}
+#sbwLayer .sbw-tile:hover{transform:translateY(-4px) scale(1.06)}
+#sbwLayer .sbw-tile canvas{position:absolute;left:0;top:0;width:66px;height:75px}
+#sbwLayer .sbw-tile b{position:absolute;left:0;right:0;bottom:18px;height:22px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);font:700 15px Rajdhani,sans-serif;color:#fff}
+#sbwLayer .sbw-tile.sbw-empty{border-style:dashed;box-shadow:none;background:linear-gradient(#141036,#08061a)}
+#sbwLayer .sbw-tile.sbw-empty b{bottom:44px;background:none;color:#b7c3ff}
+.sbw-dialog{max-width:min(560px,92vw);border:2px solid #f6a823;border-radius:12px;background:linear-gradient(160deg,#1a0b40,#0a0521);color:#f5efff;font:600 16px Rajdhani,system-ui,sans-serif;
+  box-shadow:0 0 28px rgba(246,168,35,.6),0 0 80px rgba(139,61,255,.45);padding:16px 18px}
+.sbw-dialog::backdrop{background:rgba(5,2,15,.75)}
+.sbw-dialog h2{margin:0 0 8px;font:italic 700 26px Rajdhani,sans-serif;color:#ffcf4a}
+.sbw-dialog p{margin:6px 0;color:#d9d0ff;font-weight:500}
+.sbw-dialog input{width:100%;margin-top:6px;border:2px solid #6a4aff;border-radius:6px;background:#0b0620;color:#fff;font:600 18px Rajdhani,sans-serif;padding:8px 10px}
+.sbw-dialog .sbw-lb{display:block;max-width:100%;border-radius:8px}
+.sbw-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+.sbw-btn{border:0;border-radius:8px;background:linear-gradient(#ffc13a,#e07a10);color:#2a1000;font:700 17px Rajdhani,sans-serif;padding:8px 18px;cursor:pointer}
+.sbw-btn.sbw-alt{background:linear-gradient(#2a1a6a,#170d40);color:#fff;border:1px solid #6a4aff}
+.sbw-btn:focus-visible,.sbw-dialog input:focus-visible{outline:3px solid #33c8ff;outline-offset:2px}
+.sbw-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:116;transform:translate(-50%,40px);opacity:0;transition:.3s;pointer-events:none;
+  background:#1a0f3c;border:2px solid #f6a823;border-radius:10px;padding:10px 20px;color:#fff;font:600 17px Rajdhani,system-ui,sans-serif;max-width:92vw;text-align:center}
+.sbw-toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){#sbwLayer .sbw-tile{transition:none}.sbw-toast{transition:none}}
+/* While a website screen is showing it provides the header; the game's header bar is hidden (its Chest manager,
+   dialogs and Tools menu keep working and stay above the website layer). */
+body.sbw-active .gc-header{visibility:hidden}
+/* The game's real shared Chest trigger stays the one control people use: on website screens it becomes an invisible
+   hit area exactly over the website's Chest artwork (position set by website-design.js). */
+body.sbw-active .gc-header [data-gc-chest]{visibility:visible;position:fixed!important;left:var(--sbw-chest-x,0);top:var(--sbw-chest-y,0);
+  width:var(--sbw-chest-w,0);height:var(--sbw-chest-h,0);min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;
+  background:none!important;border:0!important;box-shadow:none!important;color:transparent!important;cursor:pointer;z-index:1;border-radius:10px}
+body.sbw-active .gc-header [data-gc-chest]>*{opacity:0!important}
+body.sbw-active .gc-header [data-gc-chest]:focus-visible{outline:3px solid #33c8ff!important;outline-offset:2px}
+#sbwLayer .chestbtn.sbw-hover>.sl{filter:brightness(1.25) drop-shadow(0 0 12px #ffb02a);transform:scale(1.045)}
+/* The game's real Tools menu (sound, players online, community links) uses the website's gem pill position –
+   the game has no gems, so the pill is labelled Tools on website screens. */
+body.sbw-active .gc-header .gc-tools{visibility:visible;position:fixed!important;left:var(--sbw-tools-x,0);top:var(--sbw-tools-y,0);width:var(--sbw-tools-w,0);height:var(--sbw-tools-h,0);margin:0!important;z-index:1}
+body.sbw-active .gc-header .gc-tools>summary{position:absolute;inset:0;width:100%!important;height:100%!important;min-width:0!important;margin:0!important;padding:0!important;
+  background:none!important;border:0!important;box-shadow:none!important;color:transparent!important;cursor:pointer;border-radius:10px;list-style:none}
+body.sbw-active .gc-header .gc-tools>summary>*{opacity:0!important}
+body.sbw-active .gc-header .gc-tools>summary:focus-visible{outline:3px solid #33c8ff!important;outline-offset:2px}
+body.sbw-active .gc-header .gc-tools>div{position:absolute;top:calc(100% + 6px);right:0;left:auto}
+/* The game header's honest "Guild/Chat — coming soon" buttons stay available to assistive technology (visually
+   hidden; the website screens show their own Guild/Chat artwork, which reports the same status when used). */
+body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed!important;left:0;top:0;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0!important}
