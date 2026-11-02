@@ -83,14 +83,8 @@
     return { model, state, phase, direction: direction || 'front', data, cell: cells[phase], key: [model, state, phase, direction || 'front'].join('.') };
   }
   function heroFrame(hero, pose = 'i0', blink, direction) {
-    if (pose === 's0') return PlayerModels.presentationFrame?.(hero, pose, direction) || baseHero(hero, pose, blink, direction);
+    if (pose === 's0') return baseHero(hero, pose, blink, direction);
     const info = frameInfo(hero, pose, direction);
-    // The optional HD renderer replaces locomotion presentation only. Resolve
-    // real action events first so attack/skill/hurt/victory clips remain intact.
-    if (['idle', 'walk', 'run'].includes(info.state)) {
-      const presentation = PlayerModels.presentationFrame?.(hero, token(info.state, motion.matches ? 0 : info.phase), direction);
-      if (presentation) return presentation;
-    }
     // The action sheets do not contain back-facing action cycles. Keep the exact
     // supplied back-view base frames instead of mirroring or inventing a back view.
     if (direction === 'back') return baseHero(hero, ['walk', 'run'].includes(info.state) ? 'w' + (motion.matches ? 0 : info.phase) : 'i0', blink, direction);

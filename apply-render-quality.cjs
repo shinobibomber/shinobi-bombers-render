@@ -20,7 +20,7 @@ function applyRenderQuality(appDir = path.join(__dirname, 'app')) {
   const file = path.join(appDir, 'public/index.html'), html = fs.readFileSync(file, 'utf8'), patched = patchHtml(html);
   // These original-art helpers are also copied by their owning build adapters.
   // Refresh them here so incremental local builds and full builds agree.
-  for (const [folder, name] of [['player-models','player-models.js'],['player-models','hero-motion.js'],['player-models','hero-directions-hd.png'],['heroes-design','heroes-design.js'],['roster-design','roster-design.js'],['tier-auras','tier-auras.js']]) {
+  for (const [folder, name] of [['player-models','player-models.js'],['heroes-design','heroes-design.js'],['roster-design','roster-design.js'],['tier-auras','tier-auras.js']]) {
     const dest = path.join(appDir, 'public/assets', folder); fs.mkdirSync(dest, { recursive: true });
     fs.copyFileSync(path.join(__dirname, folder, name), path.join(dest, name));
   }

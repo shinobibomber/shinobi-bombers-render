@@ -47,7 +47,7 @@
     },
     {
       "path": "character-animations/character-animations.js",
-      "sha256": "7333e4f4514a21ca533f82ca1f3ff8eaa0a065b1f2f9e37114f1f10bea58dc0d"
+      "sha256": "4d3caa3aeae2e6dc0bc9875209b05416dc63a7811678d2d6bd3ae95107dd4c6a"
     },
     {
       "path": "character-animations/manifest.json",
@@ -187,7 +187,7 @@
     },
     {
       "path": "player-models/player-models.js",
-      "sha256": "de0961a51d4b614b7f5c5ecda12e28813ea6c8c0d941bd536ecbd7fbe2a6a72d"
+      "sha256": "079beb5f80b4db79c78b76f0fb830a3aa303aef847ce67989da0a669f1ff2ff2"
     },
     {
       "path": "player-models/playermodel.png",
@@ -223,7 +223,7 @@
     },
     {
       "path": "roster-design/roster-design.js",
-      "sha256": "55c646f10b8bbf6f0f27f27546e819a315dfe93179a80c9cfbedf5eb7d2eb8d9"
+      "sha256": "d2201c55a9fe1669ad2fe0c3c912bfbc780d54134354caa096a9ec07074fd768"
     },
     {
       "path": "roster-design/source.png",
@@ -320,14 +320,6 @@
     {
       "path": "reveal-design/reveal-models-hd.png",
       "sha256": "f990903f650b80de8da807ee5916a847815261f5d5c53746adb1649aca41f9a9"
-    },
-    {
-      "path": "player-models/hero-motion.js",
-      "sha256": "a1019f5050e193b322f6752c0bb3724736d27af971d9157e7f106b2769991770"
-    },
-    {
-      "path": "player-models/hero-directions-hd.png",
-      "sha256": "b409dc873fb0b9f4a4fe139485b1f037b62e13ed9147676edf17421760d4dedf"
     }
   ],
   "inlineScripts": [

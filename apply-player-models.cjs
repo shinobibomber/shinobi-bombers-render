@@ -4,6 +4,7 @@ const path = require('node:path');
 const headMarker = '<!-- exact-player-models -->';
 const directionMarker = '/* exact-player-models-direction */';
 const scriptTag = '<script defer src="assets/player-models/player-models.js"></script>';
+// Retired HD locomotion loader; earlier generated builds may still include it.
 const motionScriptTag = '<script defer src="assets/player-models/hero-motion.js"></script>';
 const patches = [
   [
@@ -44,9 +45,9 @@ function patchHtml(html) {
       fail('arena renderer changed or was only partly patched.');
     }
   }
-  if (applied) return motionCount ? html : html.replace(scriptTag, scriptTag + '\n' + motionScriptTag);
+  if (applied) return motionCount ? html.replace('\n' + motionScriptTag, '').replace(motionScriptTag, '') : html;
   for (const [original, replacement] of patches) html = html.replace(original, replacement);
-  return html.replace('</head>', headMarker + '\n' + scriptTag + '\n' + motionScriptTag + '\n</head>');
+  return html.replace('</head>', headMarker + '\n' + scriptTag + '\n</head>');
 }
 
 function applyPlayerModels(appDir = path.join(__dirname, 'app')) {
@@ -55,7 +56,7 @@ function applyPlayerModels(appDir = path.join(__dirname, 'app')) {
   const html = fs.readFileSync(index, 'utf8');
   // Validate the complete patch before touching generated application files.
   const patched = patchHtml(html);
-  const files = ['player-models.js', 'hero-motion.js', 'hero-directions-hd.png', 'frames.json', 'playermodel.png'];
+  const files = ['player-models.js', 'frames.json', 'playermodel.png'];
   for (const file of files) {
     if (!fs.statSync(path.join(__dirname, 'player-models', file)).isFile()) {
       throw new Error('Cannot apply player models: missing source asset ' + file);

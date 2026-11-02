@@ -20,7 +20,7 @@ const economy = require('../app/server/economy.cjs');
     const heroes = p.locator('.sbw-hdr [data-sbwid="nav-heroes"]');
     const adventure = p.locator('.sbw-hdr [data-sbwid="nav-adventure"]');
     await heroes.click();
-    await p.waitForFunction(() => WebsiteDesign.current() === 'heroes' && PlayerModels.hdReady && document.querySelectorAll('.sbw-hcard canvas').length === 10);
+    await p.waitForFunction(() => WebsiteDesign.current() === 'heroes' && document.querySelectorAll('.sbw-hcard canvas').length === 10);
     assert.equal(await p.evaluate(() => BattleRoster.list().length), 10);
     await p.waitForTimeout(250);
     await p.evaluate(() => {
@@ -45,12 +45,14 @@ const economy = require('../app/server/economy.cjs');
     });
     await p.waitForTimeout(900);
     const idle = await p.evaluate(() => ({ ...renderCounters, retained: portraitNodes.every((node, i) => node === document.querySelectorAll('.sbw-hcard canvas')[i]) }));
-    assert.equal(idle.portraits, 0, 'unchanged HD portraits require zero repeated draw calls');
+    // Animated portraits flip idle pose every 520ms: one settle repaint plus at most
+    // two flips per canvas in 900ms (10 cards + detail). A per-tick repaint would be ~80.
+    assert(idle.portraits > 0 && idle.portraits <= 11 * 3, 'portraits repaint only on idle pose changes: ' + idle.portraits);
     assert.equal(idle.readbacks, 0, 'portrait display never reads GPU pixels back');
     assert(idle.retained, 'polling retains the existing ten display canvases');
 
     // A DPR/viewport change must invalidate backing dimensions even if hero data
-    // and HD artwork did not change. Logical model proportions remain fixed.
+    // did not change. Logical model proportions remain fixed.
     await p.evaluate(() => { Object.defineProperty(window, 'devicePixelRatio', { configurable: true, value: 2 }); dispatchEvent(new Event('resize')); });
     await p.waitForTimeout(160);
     const desktopSizes = await p.locator('.sbw-hcard canvas').evaluateAll(nodes => nodes.map(c => ({ width: c.width, height: c.height, rect: [c.getBoundingClientRect().width, c.getBoundingClientRect().height] })));
@@ -61,14 +63,14 @@ const economy = require('../app/server/economy.cjs');
       assert(Math.abs(c.height - Math.ceil(c.rect[1] * 2)) <= 1);
     }
     const output = path.join(__dirname, 'out'); fs.mkdirSync(output, { recursive: true });
-    await p.screenshot({ path: path.join(output, 'heroes-hd-desktop.png'), scale: 'css' });
+    await p.screenshot({ path: path.join(output, 'heroes-desktop.png'), scale: 'css' });
     await p.setViewportSize({ width: 390, height: 844 });
     await p.waitForTimeout(200);
     const mobileSizes = await p.locator('.sbw-hcard canvas').evaluateAll(nodes => nodes.map(c => ({ width: c.width, height: c.height, rect: [c.getBoundingClientRect().width, c.getBoundingClientRect().height] })));
     assert(mobileSizes[0].width < desktopSizes[0].width, 'mobile keeps only the backing pixels needed by its display');
     for (const c of mobileSizes) assert(Math.abs(c.width - Math.ceil(c.rect[0] * 2)) <= 1);
     assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    await p.screenshot({ path: path.join(output, 'heroes-hd-mobile.png'), scale: 'css' });
+    await p.screenshot({ path: path.join(output, 'heroes-mobile.png'), scale: 'css' });
     await p.setViewportSize({ width: 1440, height: 1000 });
     await adventure.click();
     await p.waitForFunction(() => WebsiteDesign.current() === 'adventure');
@@ -80,7 +82,7 @@ const economy = require('../app/server/economy.cjs');
     await p.waitForTimeout(900);
     const active = await p.evaluate(() => ({ ...renderCounters, retained: teamPortraitNodes.every((node, i) => node === document.querySelectorAll('.sbw-at-card canvas')[i]) }));
     assert.equal(active.readbacks, 0, 'Adventure no longer probes native roster alpha on every frame');
-    assert(active.portraits <= 10, 'active gameplay updates team portraits only when hero presentation changes');
+    assert(active.portraits <= 10 * 3,'active gameplay updates team portraits only on idle pose changes: ' + active.portraits);
     assert(active.retained, 'native status changes retain displayed team canvas nodes');
     assert(active.mirrors > 0, 'the actual live Adventure canvas still reaches the visible map');
     await p.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); renderCounters.portraits = renderCounters.mirrors = 0; });
@@ -90,17 +92,13 @@ const economy = require('../app/server/economy.cjs');
     await p.locator('.sbw-scr.on [data-a="rest"]').click();
     await heroes.click();
     await p.waitForFunction(() => WebsiteDesign.current() === 'heroes');
-    await p.screenshot({ path: path.join(output, 'heroes-hd-performance.png'), scale: 'css' });
+    await p.screenshot({ path: path.join(output, 'heroes-performance.png'), scale: 'css' });
 
     const animation = await p.evaluate(() => {
       const ca = CharacterAnimations, h = { id: 900000, sp: 3 };
       const phaseZero = ca.poseFor(h, 12345, { moving: true, phase: 0 });
       const phaseOne = ca.poseFor(h, 12345, { moving: true, phase: 1 });
-      const presentation = PlayerModels.presentationFrame;
-      PlayerModels.presentationFrame = () => null;
-      let back;
-      try { back = [0, 1, 2].map(i => ca.heroFrame(h, 'clip:walk:' + i, false, 'back').playerModel.phase); }
-      finally { PlayerModels.presentationFrame = presentation; }
+      const back = [0, 1, 2].map(i => ca.heroFrame(h, 'clip:walk:' + i, false, 'back').playerModel.phase);
       const attack = ca.heroFrame(h, 'clip:melee:1', false, 'front').characterAnimation.state;
       const now = performance.now();
       for (let i = 0; i < 129; i++) ca.play({ id: 900000 + i }, 'melee', now);
@@ -112,7 +110,7 @@ const economy = require('../app/server/economy.cjs');
     assert.equal(animation.phaseZero, 'clip:walk:0', 'zero is a real movement phase, not missing input');
     assert.equal(animation.phaseOne, 'clip:walk:1');
     assert.deepEqual(animation.back, [0, 1, 2], 'back-facing clip tokens advance the supplied walk frames');
-    assert.equal(animation.attack, 'melee', 'real attack clips remain independent of HD locomotion');
+    assert.equal(animation.attack, 'melee', 'real attack clips play from the original action sheets');
     assert(animation.evicted.startsWith('clip:idle:'), 'presentation event retention is bounded');
     assert.equal(animation.newest, 'clip:melee:0');
     await p.emulateMedia({ reducedMotion: 'reduce' });

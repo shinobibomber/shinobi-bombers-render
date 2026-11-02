@@ -445,14 +445,15 @@
     }
     const surface = portraitSurface(c), PM = window.PlayerModels;
     if (!surface) return;
-    const phase = RM || PM?.hdReady ? 0 : Math.floor((now || 0) / 180);
-    const key = [h?.id, h?.r, h?.z, h?.model, PM?.loaded, PM?.portraitRevision, phase, x, y, scale].join('|');
+    // Repaint only when the idle pose flips (every 520ms), not on every paint tick.
+    const time = RM ? 0 : now || 0, pose = h && PM?.loaded ? PM.portraitPose(h, time) : '';
+    const key = [h?.id, h?.r, h?.z, h?.model, PM?.loaded, pose, x, y, scale].join('|');
     if (surface.key === key) return;
     const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
     if (h && PM?.loaded) {
       const ratio = Math.min(c.width / surface.w, c.height / surface.h);
       g.save(); g.setTransform(ratio, 0, 0, ratio, (c.width - surface.w * ratio) / 2, (c.height - surface.h * ratio) / 2);
-      try { PM.drawPortrait(g, h, x, y, scale, RM ? 0 : now); } catch { return; } finally { g.restore(); }
+      try { PM.drawPortrait(g, h, x, y, scale, time); } catch { return; } finally { g.restore(); }
     }
     surface.key = key;
   }
@@ -536,7 +537,7 @@
     if (sig !== b.sig) {
       b.sig = sig;
       // Chakra/status updates replace text and controls, but an unchanged model
-      // keeps its display canvas and cached HD pixels.
+      // keeps its display canvas and cached portrait pixels.
       const portraits = new Map($$('.sbw-hcard canvas', b.grid).map(c => [c.dataset.sbwHero, c]));
       b.grid.innerHTML = cards.length ? cards.slice(0, 10).map((c, i) => heroCardHtml(c, i, i === b.sel)).join('') : `<p class="sbw-empty">No heroes match this filter. Summon heroes at the Shrine.</p>`;
       $$('.sbw-hcard canvas', b.grid).forEach(c => { const id = String(cards[+c.dataset.i]?.h?.id), old = portraits.get(id); if (old) { old.dataset.i = c.dataset.i; c.replaceWith(old); } else c.dataset.sbwHero = id; });

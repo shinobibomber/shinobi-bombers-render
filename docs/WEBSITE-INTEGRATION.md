@@ -118,20 +118,20 @@ Shared header and Dojo pages:
 Styles: `website-design/website-screens.css` is generated from
 `website/app.css` by `website-src/make_game_css.py` (scoped to `#sbwLayer`, keyframes prefixed `sbw-`).
 
-## HD heroes and Adventure rendering (2026-11-03)
+## Hero portraits and Adventure rendering (2026-11-03)
 
-The in-game website overlays now draw Heroes, Home, Fusion and Adventure team
-portraits directly from the shared eight-model HD atlas. Canvas resolution follows
-the displayed size and device pixel ratio (capped at 2); unchanged portraits keep
-their canvas and pixels across native status updates. Covered native portrait loops
+The in-game website overlays draw Heroes, Home, Fusion and Adventure team portraits
+from the original animated eight-model sprites. Canvas resolution follows the
+displayed size and device pixel ratio (capped at 2); each portrait keeps its canvas
+across native status updates and repaints only when its idle pose changes
+(`PlayerModels.portraitPose`, every 520ms). Covered native portrait loops
 skip drawing while their original labels/buttons continue to supply real actions.
 The Adventure map itself remains a live mirror of the native game canvas.
 
-`player-models/hero-motion.js` adds optional front/side/rear HD locomotion. It observes
-the existing direction and movement phase, retaining native combat action clips.
-Art preparation yields between chunks, frame caches have fixed limits, and failed
-optional images fall back to original sprites. See `player-models/HD-ARTWORK.md`
-for the exact assets, generation prompt, rendering limits and test commands.
+Adventure heroes use the original sprite-sheet idle/walk/run cycles and action clips.
+The HD locomotion layer (`hero-motion.js`, `hero-directions-hd.png`) was retired on
+request; it remains in git history before the "Restore original hero animations"
+commit. The summon reveal keeps its own HD atlas.
 
 The map renderer skips draw-list entries for baked collision walls without removing
 those walls from the simulation. Projection coordinates are unchanged; effects

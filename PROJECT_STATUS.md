@@ -6,7 +6,7 @@ _Development copy created 2026-11-01 (Asia/Singapore)._
 | --- | --- |
 | **This folder** | `D:\Projects\Shinobi-Bombers-Development` — the working copy for Claude and OpenAI Codex |
 | **Source** | GitHub `shinobibomber/shinobi-bombers-render`, branch `main`, commit `11eddc8`. Full history (29 commits, branch `origin/v3/integrated-redesign-2026-11-01`, tag `v3-reference-beta`) attaches with the one-time git setup below |
-| **Latest work** | Shared HD hero portraits, directional Adventure models and rendering optimizations (2026-11-03); see Handoff notes. Manual deployment required after push. |
+| **Latest work** | Original animated hero sprites restored (HD hero layer retired), animated Elite/Legend auras and rendering optimizations (2026-11-03); see Handoff notes. Manual deployment required after push. |
 | **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Last verified deployment: `d839583` (2026-11-02) |
 | **Original local copy** | `D:\shinobi-bombers-render` — untouched. It is an older clone at `a68984b`, 3 commits behind `main`, with no local edits |
 
@@ -107,6 +107,15 @@ that they are unavailable.
    run `npm test` before pushing, commit + push to `main`, then Render → Manual Deploy.
 
 ## Handoff notes (Claude ↔ Codex)
+
+- 2026-11-03 original hero animations restored (owner request): menus and Adventure
+  use the original animated sprites again. Removed the HD locomotion layer
+  (`hero-motion.js`, `hero-directions-hd.png`, `HD-ARTWORK.md`, `hero-motion.cjs`)
+  and HD menu portraits; the summon reveal keeps its HD atlas. All 8a65309
+  optimizations stay (bounded clip events, live reduced motion, retained canvases,
+  hidden/covered paint skipping, no readbacks). New: portrait caches key on the idle
+  pose (`PlayerModels.portraitPose`), so portraits repaint every 520ms, not per tick.
+  `hero-portraits.cjs` now covers the native animated portraits.
 
 - 2026-11-03 Elite/Legend auras and map floors (Codex pass finished by Claude):
   tier auras isolate the supplied sheet with smooth alpha, drop stray specks and
