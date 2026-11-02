@@ -25,6 +25,15 @@
   margin: 0;
 }
 
+#loginScreen.reference-login-exact .login-reference-viewport {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 #loginScreen.reference-login-exact .login-reference-art {
   display: block;
   width: 100%;
@@ -56,13 +65,13 @@
 #loginScreen.reference-login-exact .login-subtitle,
 #loginScreen.reference-login-exact .login-shinobi,
 #loginScreen.reference-login-exact .exact-login-heading,
-#loginScreen.reference-login-exact .login-documents,
-#loginScreen.reference-login-exact .login-disclaimer {
+#loginScreen.reference-login-exact .login-documents {
   display: none;
 }
 
 /* Retain the accessible heading without painting duplicate lettering over the art. */
-#loginScreen.reference-login-exact #loginTitle {
+#loginScreen.reference-login-exact #loginTitle,
+#loginScreen.reference-login-exact .login-disclaimer {
   display: block;
   position: absolute;
   width: 1px;
@@ -91,29 +100,29 @@
 }
 
 #loginScreen.reference-login-exact :is(#loginPhantom, #loginSolflare) {
-  /* x: 550, width: 437, height: 66 */
-  left: 35.8072916667%;
-  width: 28.4505208333%;
-  height: 6.4453125%;
+  /* Approved art: x 503, width 530, height 72, on a 1536 × 1024 canvas. */
+  left: 32.7473958333%;
+  width: 34.5052083333%;
+  height: 7.03125%;
   border-radius: 6px;
 }
 
-#loginScreen.reference-login-exact #loginPhantom { top: 52.5390625%; }
-#loginScreen.reference-login-exact #loginSolflare { top: 60.546875%; }
+#loginScreen.reference-login-exact #loginPhantom { top: 48.828125%; }
+#loginScreen.reference-login-exact #loginSolflare { top: 57.51953125%; }
 
 #loginScreen.reference-login-exact .community-link {
-  /* y: 729, width: 148, height: 47 */
-  top: 71.19140625%;
-  width: 9.6354166667%;
-  height: 4.58984375%;
+  /* Approved art: y 713, height 51. */
+  top: 69.62890625%;
+  width: 11.8489583333%;
+  height: 4.98046875%;
   border-radius: 4px;
 }
 
-#loginScreen.reference-login-exact [data-community="discord"] { left: 34.7005208333%; }
-#loginScreen.reference-login-exact [data-community="x"] { left: 45.1822916667%; }
+#loginScreen.reference-login-exact [data-community="discord"] { left: 31.1848958333%; }
+#loginScreen.reference-login-exact [data-community="x"] { left: 43.8802083333%; width: 12.3697916667%; }
 #loginScreen.reference-login-exact [data-community="pumpfun"] {
-  left: 55.6640625%;
-  width: 9.7005208333%;
+  left: 57.0963541667%;
+  width: 12.0442708333%;
 }
 
 #loginScreen.reference-login-exact.login-keyboard-navigation :where(#loginPhantom, #loginSolflare, .community-link):focus-visible {
@@ -127,9 +136,9 @@
 /* Status and errors are the only extra visible UI, and appear only after interaction. */
 #loginScreen.reference-login-exact #loginMessage {
   position: absolute;
-  left: 31%;
-  bottom: 17.5%;
-  width: 38%;
+  left: 32.7%;
+  bottom: 52%;
+  width: 34.6%;
   box-sizing: border-box;
   min-height: 0;
   margin: 0;
@@ -144,3 +153,24 @@
 }
 
 #loginScreen.reference-login-exact #loginMessage:empty { display: none; }
+
+/* Keep the same composition on narrow screens, cropped around its center.
+   The original wallet buttons remain large enough to tap, without scaling text
+   or controls down to the tiny full-poster phone thumbnail. */
+@media (max-width: 650px) and (orientation: portrait) {
+  #loginScreen.reference-login-exact { grid-template-columns: minmax(0, 1fr); overflow: hidden auto; }
+  #loginScreen.reference-login-exact .login-content { width: min(960px, 250vw); flex: none; }
+  #loginScreen.reference-login-exact :is(#loginPhantom, #loginSolflare, .community-link) { min-height: 44px; }
+  #loginScreen.reference-login-exact .login-disclaimer {
+    position: absolute; left: 31%; top: 76.4%; width: 38%; height: auto;
+    margin: 0; padding: 4px; box-sizing: border-box; overflow: visible;
+    clip-path: none; white-space: normal; background: #0a0922;
+    color: #f0ecff; font: 11px/1.4 system-ui, sans-serif; text-align: center;
+  }
+  #loginScreen.reference-login-exact #loginMessage { padding: 5px 7px; font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #loginScreen.reference-login-exact *, #loginScreen.reference-login-exact *::before,
+  #loginScreen.reference-login-exact *::after { animation: none !important; transition: none !important; }
+}

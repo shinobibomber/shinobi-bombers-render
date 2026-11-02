@@ -9,13 +9,26 @@ const ROOT = path.resolve(__dirname, '..'), ref = process.argv[2] || 'HEAD', max
 const OUT = path.join(ROOT, 'tests', 'out', 'visual');
 const ROUTES = ['home', 'summon', 'fusion', 'market', 'boss-hunt', 'guild', 'guild-shop', 'adventure', 'heroes', 'codex', 'chat', 'dojo'];
 const SEED = `(()=>{const T0=1793500000000;Date.now=()=>T0;let a=1234567;Math.random=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}})()`;
-const FREEZE = '*,*::before,*::after{animation:none!important;transition:none!important}.petals,.fx,.afx{display:none!important}';
+const FREEZE = '*,*::before,*::after{animation:none!important;transition:none!important;will-change:auto!important}.petals,.fx,.afx{display:none!important}';
 
 async function capture(browser, siteDir, dest) {
   fs.mkdirSync(dest, { recursive: true });
   for (const [vp, w, h] of [['desktop', 1672, 941], ['mobile', 390, 844]]) {
     const p = await browser.newPage({ viewport: { width: w, height: h } });
     await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort()); await p.addInitScript(SEED);
+    // Freeze before first paint: stopping a running transform afterward can leave
+    // a differently scaled cached compositor layer in otherwise identical pages.
+    await p.addInitScript(css => {
+      const install = () => {
+        if (!document.documentElement) return false;
+        const style = document.createElement('style'); style.textContent = css;
+        document.documentElement.append(style); return true;
+      };
+      if (!install()) {
+        const observer = new MutationObserver(() => { if (install()) observer.disconnect(); });
+        observer.observe(document, { childList: true, subtree: true });
+      }
+    }, FREEZE);
     // always preview mode, so the comparison is about design, not about whether a game URL is configured
     await p.route(/site-config\.js$/, r => r.fulfill({ contentType: 'text/javascript', body: 'window.SB_SITE_CONFIG={gameUrl:""};' }));
     for (const r of ROUTES) {
@@ -24,7 +37,13 @@ async function capture(browser, siteDir, dest) {
       await p.goto('about:blank');
       await p.goto(pathToFileURL(path.join(siteDir, 'index.html')).href + '#' + r);
       await p.evaluate(() => { try { window.SB.store.set({ adventure: 379840, spendable: 884250 }); } catch {} });
-      await p.addStyleTag({ content: FREEZE }); await p.waitForTimeout(600);
+      await p.evaluate(async () => {
+        await document.fonts.ready;
+        await Promise.all([...document.images].filter(image => image.currentSrc || image.getAttribute('src')).map(async image => {
+          try { await image.decode(); } catch { throw Error('Screenshot image failed to decode: ' + image.src); }
+        }));
+      });
+      await p.waitForTimeout(600);
       await p.screenshot({ path: path.join(dest, `${vp}-${r}.png`) });
     }
     await p.close();

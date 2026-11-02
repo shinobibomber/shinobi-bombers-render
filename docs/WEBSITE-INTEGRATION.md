@@ -143,3 +143,20 @@ The Adventure overlay reserves `data-sbw-hero` for its own metadata. Native `dat
 for the game's hero canvases; reusing it on an overlay DIV caused the Heroes renderer to throw on
 Adventure → Heroes navigation. Adventure roster `data-maphero` values are resolved as hero IDs,
 not collection array indices. `tests/heroes-navigation.cjs` covers both regressions.
+
+## Login, loading and collection paging (2026-11-02)
+
+`login-screen/login-reference.png` and `loading-design/loading-reference.png` are the exact
+enhanced Design 13 images supplied by the user. Existing wallet controls sit over their actual
+artwork positions; native sign-in, recovery, rejection and configured community links remain
+unchanged. Portrait mobile screens crop the center while retaining usable controls.
+
+The loading screen covers the illustrated percentage/bar with live native milestone values.
+It awaits both images and actual font readiness, shows explicit errors/retry, and has no added
+minimum loading delay. Three narrow startup presentation hooks are exported by
+`apply-loading-design.cjs` and reversed by preservation checks. See `login-screen/README.md`.
+
+Heroes arrows target `#p1 .heroes-pagination` buttons by their exact accessible labels.
+Their page count and disabled state come from the native pager. The previous broad arrow-glyph
+search could accidentally select a hero Perks button. Tests cover paging both directions,
+keyboard interaction and first/last boundaries without opening hero details.

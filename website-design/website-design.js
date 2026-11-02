@@ -445,10 +445,12 @@
         tog: tg, up: btn(/^up\(/), list: btn(/openListing/), mode: btn(/hero-mode-button/) };
     });
   }
+  function heroPageButton(previous) { return document.querySelector('#p1 .heroes-pagination button[aria-label="' + (previous ? 'Previous page' : 'Next page') + '"]'); }
   INIT.heroes = b => {
     b.tabs = b.s.hs.filter(h => /^tf\d$/.test(h.id)).map((h, i) => cov(b, h.r[0] + 5, h.r[1] + 6, h.r[2] - h.r[0] - 10, h.r[3] - h.r[1] - 12, i === 0 ? '#342003' : '#04172e', 15, '#e8eefc'));
     b.summary = cov(b, 24, 288, 600, 24, '#06071d', 15, '#cfd8ee', 'sbw-left');
     b.page = cov(b, 1342, 288, 130, 24, '#000108', 15, '#ffffff');
+    b.page.setAttribute('role', 'status'); b.page.setAttribute('aria-live', 'polite');
     b.grid = cv(b, 26, 322, 1036, 684, 'sbw-hgrid');
     /* detail panel: one clean panel over the artwork's (portrait, stats, perks, Train, Sell) */
     b.det = cv(b, 1090, 322, 416, 650, 'sbw-hd2');
@@ -473,7 +475,8 @@
     fbtn.forEach((e, i) => { setText(b.tabs[i], `${HFL[i]} (${e ? ((e.querySelector('span') || {}).textContent || '0') : '0'})`); if (e && e.getAttribute('aria-pressed') === 'true') b.tabIdx = i; });
     b.tabs.forEach((t, i) => { t.style.color = i === b.tabIdx ? '#ffd257' : '#e8eefc'; const hs = $(`.hs[data-sbwid="tf${i}"]`, b.st); if (hs) hs.classList.toggle('on2', i === b.tabIdx); });
     setText(b.summary, nativeText('#p1', /\d+[–-]\d+ of \d+ heroes[^\n]*/) || nativeText('#p1', /\d+ of \d+ heroes[^\n]*/) || `${cards.length} heroes`);
-    const sm = /(\d+)[–-](\d+) of (\d+) heroes/.exec(nativeText('#p1', /\d+[–-]\d+ of \d+ heroes/)); setText(b.page, sm ? `${Math.ceil(+sm[1] / 10)} / ${Math.max(1, Math.ceil(+sm[3] / 10))}` : '1 / 1');
+    const pageSelect = root.querySelector('.heroes-page-select'); setText(b.page, pageSelect?.selectedOptions[0]?.textContent || '1 / 1');
+    for (const id of ['pp', 'pn']) { const e = $(`.hs[data-sbwid="${id}"]`, b.st), button = heroPageButton(id === 'pp'); if (e) { const disabled = !button || button.disabled; e.setAttribute('aria-disabled', String(disabled)); e.classList.toggle('dim', disabled); } }
     if (b.sel >= cards.length) b.sel = 0;
     const sig = cards.map(c => [c.idx, c.status, c.lvl, c.ch, c.pw, c.tog && c.tog.textContent, c.up && c.up.textContent, c.mode && c.mode.textContent].join(',')).join('|') + '#' + b.sel;
     if (sig !== b.sig) {
@@ -513,7 +516,8 @@
     tab: a => { const v = HF[+a]; if (v != null) window.HeroFilters && HeroFilters.choose(v); built.heroes.sel = 0; built.heroes.sig = ''; },
     search: () => { const inp = document.querySelector('#p1 .heroes-search'); if (!inp) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.onclick = null; dlg.innerHTML = '<h2>Search heroes</h2><form><input type="search" placeholder="Hero name"><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt">Clear</button><button class="sbw-btn">Search</button></div></form>'; const q = $('input', dlg); q.value = inp.value; const run = v => { inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); built.heroes.sig = ''; dlg.close(); }; $('.sbw-alt', dlg).onclick = () => run(''); $('form', dlg).onsubmit = e => { e.preventDefault(); run(q.value); }; dlg.showModal(); q.focus(); },
     sort: () => { const s = document.querySelector('#p1 .heroes-sort'); if (!s) return; s.selectedIndex = (s.selectedIndex + 1) % s.options.length; s.dispatchEvent(new Event('change', { bubbles: true })); toast('Sort: ' + s.options[s.selectedIndex].text); built.heroes.sig = ''; },
-    page: (a, el) => { const prev = el && el.dataset.sbwid === 'pp'; if (!pressIn(document.querySelector('#p1'), x => !x.closest('#sbwLayer') && (prev ? /prev|‹|←|</i : /next|›|→|>/i).test((x.getAttribute('aria-label') || '') + x.textContent))) toast('All heroes fit on this page.'); built.heroes.sig = ''; },
+    // Scope arrows to the native pager: hero Perks buttons also contain a › glyph.
+    page: (a, el) => { const button = heroPageButton(el?.dataset.sbwid === 'pp'); if (!button || button.disabled) return; button.click(); built.heroes.sel = 0; built.heroes.sig = ''; refresh(); el?.focus({ preventScroll: true }); },
     sel: a => { built.heroes.sel = +a; built.heroes.sig = ''; },
     fav: () => toast('Favourites are not available yet.'),
     dtab: a => { built.heroes.dt = +a; built.heroes.dsig = ''; for (let i = 0; i < 4; i++) { const e = $(`.hs[data-sbwid="dt${i}"]`, built.heroes.st); if (e) e.classList.toggle('on2', i === +a); } },

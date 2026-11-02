@@ -7,9 +7,11 @@ let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 // original module against its existing frozen hash. No economy/wallet exception.
 const {cinematicPatches}=require('../apply-reveal-design.cjs');
 for(const [before,after]of cinematicPatches){assert.equal(html.split(after).length-1,1,'one exact cinematic presentation hook: '+before);html=html.replace(after,before)}
+const {startupPatches}=require('../apply-loading-design.cjs');
+for(const [before,after]of startupPatches){assert.equal(html.split(after).length-1,1,'one exact startup presentation hook: '+before);html=html.replace(after,before)}
 const getter="get pendingDeposits(){return readPending().filter(record=>record&&record.kind==='deposit'&&record.network===NETWORK&&record.account===state.account&&record.tokenAddress===state.tokenAddress).length},";
 assert.equal(html.split(getter).length-1,1,'one reviewed read-only pending-deposit getter is present');
 const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(x=>x.trim()).map(source=>sha(source.replace(getter,''))),remaining=[...scripts];
 for(const hash of baseline.inlineScripts){const index=remaining.indexOf(hash);assert(index>=0,'a baseline inline module changed outside the explicitly allowed Ryo/Chest adapter boundaries: '+hash);remaining.splice(index,1)}
 assert(!html.includes('V3Adventure.preserveNativeGrid'),'stopped V3 topology replacement is not imported');assert(!html.includes('integrated-v3-react-ui'),'stopped broad V3 shell is not imported');
-console.log(`PASS: ${baseline.files.length} maintained files and original inline modules preserved after reversing ${cinematicPatches.length} exact presentation hooks and the reviewed read-only pending getter; original map art/topology, combat, models, inventory/economy/server unchanged.`);
+console.log(`PASS: ${baseline.files.length} maintained files and original inline modules preserved after reversing ${cinematicPatches.length} reveal hooks, ${startupPatches.length} startup hooks and the reviewed read-only pending getter; original map art/topology, combat, models, inventory/economy/server unchanged.`);

@@ -115,19 +115,19 @@
     },
     {
       "path": "loading-design/loading-design.css",
-      "sha256": "bd878f862888a6489adc13bba25c14c2511e2c1ec50f60fcb8045d070a7c4723"
+      "sha256": "05918d01ca38444c5ee8133331e278be94621d9f6479ccae9a362d56d3f2dee7"
     },
     {
       "path": "loading-design/loading-design.js",
-      "sha256": "9043d8cc12619723de8f4764aeaaad549f034fd5fdbe2e5993ed05830242ad60"
+      "sha256": "33006875021278f1d70008b056ecc98a45d4a90c4b0265c1a7ae08902ce33afb"
     },
     {
       "path": "login-screen/login-exact.css",
-      "sha256": "a12b84ae333dfdeb159d2b72e72c7ad79e8e7604fa9341a0859dacade6bbd73c"
+      "sha256": "6c60bc5b7500bf4b38a52487c48431015eec131076ae9f4119412476785b2b1d"
     },
     {
       "path": "login-screen/login-exact.js",
-      "sha256": "390dec42773f49834af30824e5aadbfed84100a3fb04a8de2a492e4ff6427324"
+      "sha256": "200baaef4b70de8e73009c975400cf69c9ed55c6ac3bb8652d38f98ac7ea38d6"
     },
     {
       "path": "main-menu/main-menu.css",
@@ -304,6 +304,14 @@
     {
       "path": "app/server/transaction-review.cjs",
       "sha256": "bcde937214147886f0dfa44b75be468d0cdda7979f0e324efcb465df5c6311f6"
+    },
+    {
+      "path": "login-screen/login-reference.png",
+      "sha256": "95e6f1afddb32b71e4bc5414518ed7bef509f468ef4ff84591d8291451cc35e1"
+    },
+    {
+      "path": "loading-design/loading-reference.png",
+      "sha256": "fcdca38ba5926100306824e0e372258f69f3d72bc8815e708423aa7a3515c3e7"
     }
   ],
   "inlineScripts": [

@@ -6,7 +6,7 @@ _Development copy created 2026-11-01 (Asia/Singapore)._
 | --- | --- |
 | **This folder** | `D:\Projects\Shinobi-Bombers-Development` — the working copy for Claude and OpenAI Codex |
 | **Source** | GitHub `shinobibomber/shinobi-bombers-render`, branch `main`, commit `11eddc8`. Full history (29 commits, branch `origin/v3/integrated-redesign-2026-11-01`, tag `v3-reference-beta`) attaches with the one-time git setup below |
-| **Latest work** | Cinematic reveal refinements and Adventure → Heroes crash fix (2026-11-02); see Handoff notes. Manual deployment required after push. |
+| **Latest work** | Heroes pagination fix and supplied login/loading artwork integration (2026-11-02); see Handoff notes. Manual deployment required after push. |
 | **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Last verified deployment: `d839583` (2026-11-02) |
 | **Original local copy** | `D:\shinobi-bombers-render` — untouched. It is an older clone at `a68984b`, 3 commits behind `main`, with no local edits |
 
@@ -107,6 +107,21 @@ that they are unavailable.
    run `npm test` before pushing, commit + push to `main`, then Render → Manual Deploy.
 
 ## Handoff notes (Claude ↔ Codex)
+
+- 2026-11-02 login/loading follow-up: imported the exact Design 13 enhanced PNGs into
+  `login-screen/` and `loading-design/`. Native wallet controls align with the artwork;
+  portrait phones use a centered crop with readable controls. Startup percentage/bar reflect
+  existing asset/font milestones, await both images, and offer retry on failure. The artificial
+  minimum loading delay is removed. Three exact presentation hooks are reversed by preservation
+  tests; wallet/server/economy modules are unchanged. See `login-screen/README.md`.
+  Heroes previous/next now target only the native pager; the old glyph search could click
+  a hero's Perks button. Native page count and disabled states are mirrored.
+  Regression coverage: `tests/login-loading.cjs` and `tests/heroes-navigation.cjs`.
+  Verified: `npm run build:local` (including TypeScript), `npm run lint`, `npm test`
+  (10 game suites + 17 website checks), and `npm run test:visual -- HEAD` (24 unchanged
+  screens). The visual harness now freezes animations before first paint and awaits
+  decoded images, removing false differences from already-running animated layers.
+  Desktop login matches every reference-image pixel; loading keeps live milestone values.
 
 - 2026-11-02 follow-up: reveal uses original scroll artwork and larger portraits from the existing
   eight-model sheet, Reveal One, rank stars, first-model NEW! badges, and native quoted Ryo cost.

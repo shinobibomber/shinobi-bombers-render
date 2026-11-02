@@ -1,12 +1,27 @@
+/* The supplied 1536 × 1024 illustration is unchanged. Live values cover examples. */
 #gameLoading.loading-reference-active{padding:0;display:grid;place-items:center;background:#020812;overflow:hidden}
 #gameLoading.loading-reference-active::before{display:none}
+#gameLoading .loading-reference-viewport{display:grid;grid-template-columns:minmax(0,1fr);place-items:center;width:100%;height:100%;overflow:hidden}
 #gameLoading.loading-reference-active>.loading-emblem,#gameLoading.loading-reference-active>.loading-eyebrow,#gameLoading.loading-reference-active>h1,#gameLoading.loading-reference-active>small{display:none}
-#gameLoading .loading-reference-stage{position:relative;width:min(100vw,150dvh);aspect-ratio:3/2;flex:none;isolation:isolate}
-#gameLoading .loading-reference-art{position:absolute;inset:0;width:100%;height:100%;display:block;max-width:none;object-fit:contain}
-#gameLoading .loading-reference-panel{position:absolute;left:31%;top:43.7%;width:38.2%;height:38.2%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:4%;background:radial-gradient(ellipse at 50% 35%,#102537,#030d19 80%);color:#fff0cb;font-family:Arial,sans-serif;gap:18px}
-#gameLoading .loading-reference-panel h2{all:unset;display:block;font:800 clamp(12px,1.8vw,28px)/1.3 Arial,sans-serif;letter-spacing:1px;text-align:center;text-wrap:balance}
-#gameLoading .loading-reference-copy{all:unset;color:#b7c9db;font:clamp(8px,1vw,16px)/1.4 Arial,sans-serif;text-align:center}
-#gameLoading .loading-reference-panel #loadingStatus{margin:8px 0 0;color:#d4e2ee;font:clamp(8px,1vw,15px)/1.4 Arial,sans-serif}
-#gameLoading .loading-reference-panel #loadingProgress{width:100%;max-width:360px;height:8px;border:1px solid #b99a56;border-radius:8px;overflow:hidden;background:#08111e}
-#gameLoading .loading-reference-panel #loadingProgress i{height:100%;background:linear-gradient(90deg,#c959ed,#ffd169);box-shadow:0 0 12px #eaa54a66}
-@media(max-width:650px){#gameLoading .loading-reference-panel{gap:5px;padding:3%}#gameLoading .loading-reference-panel #loadingStatus{margin:3px 0 0}#gameLoading .loading-reference-panel #loadingProgress{height:4px}}
+#gameLoading .loading-reference-stage{position:relative;width:min(100vw,150dvh);aspect-ratio:3/2;flex:none;isolation:isolate;container-type:inline-size}
+#gameLoading .loading-reference-art{position:absolute;inset:0;width:100%;height:100%;display:block;max-width:none;object-fit:contain;pointer-events:none;user-select:none}
+#gameLoading .loading-accessible-title,#gameLoading .loading-accessible-tip{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#gameLoading #loadingPercent{position:absolute;left:61.35%;top:60.45%;width:5.4%;height:2.6%;display:grid;place-items:center;background:linear-gradient(90deg,#231036,#321442,#21102f);color:#fff;font:800 1.82cqw/1 Arial,sans-serif;text-shadow:0 0 8px #b57aff;box-sizing:border-box}
+#gameLoading .loading-reference-stage #loadingProgress{position:absolute;left:29.3%;top:64.45%;width:41.4%;height:3.45%;max-width:none;margin:0;box-sizing:border-box;border:0;border-radius:999px;overflow:hidden;background:linear-gradient(#100a2e,#050821);box-shadow:inset 0 0 6px #5746c9}
+#gameLoading .loading-reference-stage #loadingProgress i{display:block;position:relative;height:100%;overflow:hidden;border-radius:999px;background:#c442ff;box-shadow:0 0 12px #ee83ff;transition:width .2s ease-out}
+#gameLoading .loading-fill-art{display:block;position:absolute;inset:0 auto 0 0;width:41.4cqw;background-image:url('loading-reference.png');background-repeat:no-repeat;background-size:130cqw 66.6667cqw;background-position:-38.09cqw -42.9667cqw}
+#gameLoading .loading-reference-stage #loadingStatus{position:absolute;left:28%;top:90.7%;width:44%;min-height:0;margin:0;padding:4px 8px;box-sizing:border-box;color:#f3e6ff;background:#080b23e6;border:1px solid #8570be66;border-radius:5px;font:500 clamp(10px,1cqw,16px)/1.35 system-ui,sans-serif;text-align:center;overflow-wrap:anywhere}
+#gameLoading #loadingRetry{position:absolute;left:40%;top:82.8%;width:20%;min-height:44px;padding:10px 12px;border:1px solid #ffe18a;border-radius:8px;background:linear-gradient(#8c3be5,#4b1ca5);color:white;font:700 clamp(13px,1.2cqw,19px)/1.2 system-ui,sans-serif;cursor:pointer;box-shadow:0 0 20px #ad3fff88}
+#gameLoading #loadingRetry[hidden]{display:none}
+#gameLoading #loadingRetry:focus-visible{outline:3px solid #fff1a0;outline-offset:4px}
+#gameLoading.loading-failed #loadingStatus{color:#fff0bd;border-color:#dcb762;top:92%;background:#151025}
+@media(max-width:650px) and (orientation:portrait){
+  #gameLoading.loading-reference-active{grid-template-columns:minmax(0,1fr);overflow:hidden auto;padding:0}
+  #gameLoading .loading-reference-stage{width:min(740px,190vw);margin-bottom:66px}
+  #gameLoading #loadingPercent{font-size:1.82cqw}
+  #gameLoading .loading-reference-stage #loadingStatus{left:25%;top:102%;width:50%;padding:8px;font-size:13px}
+  #gameLoading #loadingRetry{left:35%;top:118%;width:30%;font-size:14px}
+  #gameLoading.loading-failed .loading-reference-stage{margin-bottom:140px}
+  #gameLoading.loading-failed #loadingStatus{top:102%}
+}
+@media(prefers-reduced-motion:reduce){#gameLoading.loading-reference-active,#gameLoading .loading-reference-stage #loadingProgress i{transition:none}}

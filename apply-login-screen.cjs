@@ -11,12 +11,12 @@ function applyLoginScreen(appDir = path.join(__dirname, 'app')) {
   if (!html.includes(marker) && !html.includes('</head>')) {
     throw new Error('Cannot apply login artwork: application HTML has no closing head.');
   }
-  if (!fs.existsSync(path.join(publicDir, 'assets', 'design-v3', 'ref-login.png'))) {
-    throw new Error('Cannot apply login artwork: original reference image is missing.');
+  if (!fs.existsSync(path.join(__dirname, 'login-screen', 'login-reference.png'))) {
+    throw new Error('Cannot apply login artwork: approved reference image is missing.');
   }
 
   fs.mkdirSync(assets, { recursive: true });
-  for (const file of ['login-exact.css', 'login-exact.js']) {
+  for (const file of ['login-exact.css', 'login-exact.js', 'login-reference.png']) {
     fs.copyFileSync(path.join(__dirname, 'login-screen', file), path.join(assets, file));
   }
   if (!html.includes(marker)) {
