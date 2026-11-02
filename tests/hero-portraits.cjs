@@ -41,6 +41,13 @@ const collection = async p => {
     assert.equal(await p.locator('.gc-tools > div > strong').isVisible(), false, 'the menu does not repeat the pill\'s player count');
     await p.keyboard.press('Escape');
     assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'Disconnect', 'the signed-in wallet pill is a Disconnect button');
+    // The Home chat bar pops up a chat panel in place instead of switching screens.
+    await p.locator('.sbw-scr.on [data-sbwid="chatbar"]').click();
+    assert.equal(await p.locator('.sbw-chatpop').isVisible(), true, 'the chat bar opens the chat pop-up');
+    assert.equal(await p.evaluate(() => WebsiteDesign.current()), 'home', 'chat opens over Home, not as another screen');
+    assert.equal(await p.locator('.sbw-cp-in input').isDisabled(), true, 'sending stays unavailable until a chat service exists');
+    await p.keyboard.press('Escape');
+    assert.equal(await p.locator('.sbw-chatpop').isVisible(), false, 'Escape closes the chat pop-up');
     await collection(p);
     await p.waitForTimeout(600);
     const portraits = await p.evaluate(() => {

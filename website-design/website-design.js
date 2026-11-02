@@ -83,7 +83,7 @@
     'ev': () => notice('Events', 'No active event is configured. Check back for upcoming events.'),
     'go1': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go2': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go3': () => notice('Daily missions', 'Daily missions are not available yet.'),
     'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => go(3), 'news': () => notice('News', 'No news has been posted yet.'),
-    'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => goScreen('chat'), 'c-gld': () => goScreen('guild')
+    'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
   };
   function act(k, h, el) {
     const a = h.a || '', [t, ...rest] = a.split(':'), arg = rest.join(':');
@@ -832,7 +832,7 @@
       const s = Math.min(vw / b.s.W, vh / b.s.H);
       b.st.style.transform = `translate(${Math.max(0, (vw - b.s.W * s) / 2)}px,${Math.max(0, (vh - b.s.H * s) / 2)}px) scale(${s})`;
     }
-    placeTrigger();
+    placeTrigger(); placeChat();
   }
   /* align the game's real Chest trigger with the website Chest artwork */
   function placeTrigger() {
@@ -855,9 +855,42 @@
     let mode = 0; try { mode = vm || 0; } catch {}
     const k = SHOWN[page === 4 ? '4:' + mode : String(page)] || null; return k === 'dojo' ? dojoView : k;
   }
+  /* ---------- chat pop-up (Home chat bar) ---------- */
+  // Opens over Home instead of switching to the full chat preview. There is no chat
+  // service yet, so it shows only the real welcome line and says sending is unavailable.
+  let chatPop = null;
+  const CHAT_TABS = { Global: '<p class="sbw-cp-sys"><i>[Global]</i>Welcome to Shinobi Bombers! Forge your ninja way!</p>', Guild: '<p class="sbw-cp-empty">Guild chat opens when guilds launch.</p>', System: '<p class="sbw-cp-sys"><i>[System]</i>Welcome to Shinobi Bombers! Forge your ninja way!</p>' };
+  function chatBar() { return cur && built[cur] ? built[cur].sec.querySelector('[data-sbwid="chatbar"]') : null; }
+  function toggleChat(open) {
+    if (!chatPop) {
+      chatPop = mk('div', 'sbw-chatpop', layer); chatPop.hidden = true; chatPop.setAttribute('role', 'dialog'); chatPop.setAttribute('aria-label', 'Global chat');
+      chatPop.innerHTML = `<div class="sbw-cp-head"><b>💬 GLOBAL CHAT</b><div class="sbw-cp-tabs" role="tablist">${Object.keys(CHAT_TABS).map((t, i) => `<button type="button" role="tab" aria-selected="${!i}">${t}</button>`).join('')}</div><button type="button" class="sbw-cp-x" aria-label="Close chat">✕</button></div>
+        <div class="sbw-cp-log" role="log" aria-live="polite">${CHAT_TABS.Global}</div>
+        <p class="sbw-cp-note">Live chat is coming soon. Messages can't be sent yet.</p>
+        <form class="sbw-cp-in"><input type="text" disabled placeholder="Chat is coming soon" aria-label="Message (chat is coming soon)"><button type="submit" disabled>Send</button></form>`;
+      $('.sbw-cp-x', chatPop).onclick = () => toggleChat(false);
+      $('form', chatPop).onsubmit = e => e.preventDefault();
+      $$('[role="tab"]', chatPop).forEach(tab => tab.onclick = () => { $$('[role="tab"]', chatPop).forEach(t => t.setAttribute('aria-selected', String(t === tab))); $('.sbw-cp-log', chatPop).innerHTML = CHAT_TABS[tab.textContent]; });
+      chatPop.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); toggleChat(false); } });
+      document.addEventListener('pointerdown', e => { if (!chatPop.hidden && !chatPop.contains(e.target) && !chatBar()?.contains(e.target)) toggleChat(false); });
+    }
+    const show = open ?? chatPop.hidden, bar = chatBar();
+    chatPop.hidden = !show; bar?.setAttribute('aria-expanded', String(show));
+    if (show) { placeChat(); $('.sbw-cp-x', chatPop).focus(); } else if (bar && chatPop.contains(document.activeElement)) bar.focus();
+  }
+  // Above the bar when there is room, otherwise below it; never wider than the viewport.
+  function placeChat() {
+    if (!chatPop || chatPop.hidden) return;
+    const r = chatBar()?.getBoundingClientRect(), w = Math.min(innerWidth - 32, Math.max(380, r ? r.width : 420)), s = chatPop.style;
+    s.width = w + 'px'; s.left = Math.max(16, Math.min(innerWidth - 16 - w, r ? r.left + r.width / 2 - w / 2 : 16)) + 'px';
+    const above = r ? r.top - 24 : innerHeight - 32;
+    if (!r || above >= 260) { s.top = ''; s.bottom = (r ? innerHeight - r.top + 8 : 16) + 'px'; s.maxHeight = Math.min(420, above) + 'px'; }
+    else { s.bottom = ''; s.top = (r.bottom + 8) + 'px'; s.maxHeight = Math.min(420, innerHeight - r.bottom - 24) + 'px'; }
+  }
   function sync() {
     const k = screenForPage();
     if (k !== cur) {
+      if (chatPop && !chatPop.hidden) toggleChat(false);
       if (cur && built[cur]) built[cur].sec.classList.remove('on');
       cur = k;
       if (k) { const b = built[k] || build(k); b.sec.classList.add('on'); if (!RM) { b.sec.classList.remove('enter'); void b.sec.offsetWidth; b.sec.classList.add('enter'); } }
