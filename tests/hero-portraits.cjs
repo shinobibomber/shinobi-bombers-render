@@ -31,6 +31,14 @@ const collection = async p => {
       .map(({ scale, crisp }) => ({ crisp, device: PlayerModels.source.scale * scale / 8 })));
     assert.deepEqual(crisp.map(c => c.crisp), [false, true, true], 'only heavy magnification switches to crisp pixels');
     assert(Math.abs(crisp[1].device - 3) < 1e-9 && Math.abs(crisp[2].device * 2 - 6) < 1e-9, 'crisp portraits snap to whole device pixels');
+    // Header: the gem pill shows the game's real presence count; its gear opens Tools.
+    await p.waitForFunction(() => /\d/.test(document.getElementById('onlinePlayers')?.textContent || '') &&
+      document.querySelector('.sbw-online b')?.textContent === document.getElementById('onlinePlayers').textContent.match(/\d[\d,]*/)[0]);
+    const gear = await p.locator('.sbw-gear').boundingBox(), summary = await p.locator('.gc-tools summary').boundingBox();
+    assert(summary.x <= gear.x && summary.x + summary.width >= gear.x + gear.width - .5 && Math.abs(summary.height - gear.height) < 1, 'the Tools hit area covers the gear without overhanging the header');
+    await p.mouse.click(gear.x + gear.width / 2, gear.y + gear.height / 2);
+    assert.equal(await p.evaluate(() => document.querySelector('.gc-tools').open), true, 'the gear opens the game Tools menu');
+    await p.keyboard.press('Escape');
     await collection(p);
     await p.waitForTimeout(600);
     const portraits = await p.evaluate(() => {

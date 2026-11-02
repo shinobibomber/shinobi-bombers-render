@@ -47,10 +47,16 @@ body.sbw-active .gc-header [data-gc-chest]{visibility:visible;position:fixed!imp
 body.sbw-active .gc-header [data-gc-chest]>*{opacity:0!important}
 body.sbw-active .gc-header [data-gc-chest]:focus-visible{outline:3px solid #33c8ff!important;outline-offset:2px}
 #sbwLayer .chestbtn.sbw-hover>.sl{filter:brightness(1.25) drop-shadow(0 0 12px #ffb02a);transform:scale(1.045)}
-/* The game's real Tools menu (sound, players online, community links) uses the website's gem pill position –
-   the game has no gems, so the pill is labelled Tools on website screens. */
+/* The game has no gems: the artwork's gem pill shows Players Online, and the game's real Tools menu
+   (sound, players online, community links) opens from the gear that replaces the pill's "+". */
+#sbwLayer .sbw-online{position:absolute;z-index:8;display:flex;flex-direction:column;justify-content:center;gap:2px;line-height:1;background:#01020a;pointer-events:none}
+#sbwLayer .sbw-online small{font:700 9px Rajdhani,sans-serif;letter-spacing:.6px;white-space:nowrap;color:#9be7ac}
+#sbwLayer .sbw-online b{display:flex;align-items:center;gap:6px;font:800 18px Rajdhani,sans-serif;color:#fff}
+#sbwLayer .sbw-online b::before{content:'';width:7px;height:7px;border-radius:50%;background:#3ee87a;box-shadow:0 0 6px #3ee87a}
+#sbwLayer .sbw-gear{position:absolute;z-index:8;display:grid;place-items:center;border-radius:6px;background:linear-gradient(#021133,#010e33);color:#71b3fa;pointer-events:none}
+#sbwLayer .sbw-gear svg{width:22px;height:22px;filter:drop-shadow(0 0 3px #3b8cff)}
 body.sbw-active .gc-header .gc-tools{visibility:visible;position:fixed!important;left:var(--sbw-tools-x,0);top:var(--sbw-tools-y,0);width:var(--sbw-tools-w,0);height:var(--sbw-tools-h,0);margin:0!important;z-index:1}
-body.sbw-active .gc-header .gc-tools>summary{position:absolute;inset:0;width:100%!important;height:100%!important;min-width:0!important;margin:0!important;padding:0!important;
+body.sbw-active .gc-header .gc-tools>summary{position:absolute;inset:0;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;
   background:none!important;border:0!important;box-shadow:none!important;color:transparent!important;cursor:pointer;border-radius:10px;list-style:none}
 body.sbw-active .gc-header .gc-tools>summary>*{opacity:0!important}
 body.sbw-active .gc-header .gc-tools>summary:focus-visible{outline:3px solid #33c8ff!important;outline-offset:2px}
