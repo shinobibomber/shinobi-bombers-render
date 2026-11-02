@@ -45,9 +45,21 @@ const collection = async p => {
     await p.locator('.sbw-scr.on [data-sbwid="chatbar"]').click();
     assert.equal(await p.locator('.sbw-chatpop').isVisible(), true, 'the chat bar opens the chat pop-up');
     assert.equal(await p.evaluate(() => WebsiteDesign.current()), 'home', 'chat opens over Home, not as another screen');
-    assert.equal(await p.locator('.sbw-cp-in input').isDisabled(), true, 'sending stays unavailable until a chat service exists');
+    // Real messages go through the game API to the chat module and render as plain text.
+    const chatInput = p.locator('.sbw-cp-in input');
+    await chatInput.fill('<b>Hello</b> shinobi'); await p.keyboard.press('Enter');
+    await p.waitForFunction(() => document.querySelectorAll('.sbw-cp-msg').length === 1);
+    assert.equal(await p.locator('.sbw-cp-msg span').textContent(), '<b>Hello</b> shinobi', 'messages are shown as text, never markup');
+    assert.equal(await p.locator('.sbw-cp-log b').filter({ hasText: 'Hello' }).count(), 0);
+    assert.equal(await chatInput.inputValue(), '', 'a sent message clears the input');
+    await chatInput.fill('visit evil.xyz now'); await p.keyboard.press('Enter');
+    await p.waitForFunction(() => /Links are not allowed/.test(document.querySelector('.sbw-cp-note').textContent));
+    assert.equal(await chatInput.inputValue(), 'visit evil.xyz now', 'a rejected message stays editable');
+    assert.equal(await p.locator('.sbw-cp-msg').count(), 1, 'rejected messages are never shown');
     await p.keyboard.press('Escape');
     assert.equal(await p.locator('.sbw-chatpop').isVisible(), false, 'Escape closes the chat pop-up');
+    await p.waitForFunction(() => /Hello/.test(document.querySelector('.sbw-chatline')?.textContent || ''));
+    assert.equal(await p.locator('.sbw-chatline').isVisible(), true, 'the Home chat bar shows the newest real message');
     await collection(p);
     await p.waitForTimeout(600);
     const portraits = await p.evaluate(() => {

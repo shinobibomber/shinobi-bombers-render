@@ -72,7 +72,7 @@
 
   /* ---------- actions ---------- */
   /* MODS for Dojo pages resolve to MODS.dojo (see act) */
-  const SOON = { guild: 'Guilds are coming soon.', chat: 'Chat is coming soon.' };
+  const SOON = { guild: 'Guilds are coming soon.', chat: 'Open live Global chat from the chat bar on Home.' };
   function goScreen(k) {
     if (k.startsWith('guild') || k === 'chat') { const p = k === 'chat' ? 'chat' : 'guild'; if (D.screens[p]) { preview = p; sync(); return; } return notice(p === 'chat' ? 'Chat' : 'Guild', p === 'chat' ? SOON.chat : SOON.guild); }
     preview = null; if (k === 'dojo') dojoView = 'dojo';
@@ -159,11 +159,18 @@
     b.line = cover(1380, 172, 230, 23, '#000712', 18, '#e2edf6');
     b.row = cover(1386, 204, 248, 24, '#000b19', 18, '#7de5ff');
     b.avatar = place(mk('canvas', 'sbw-avatar', b.st), 1271, 139, 95, 92); b.avatar.width = 190; b.avatar.height = 184;
+    // The chat bar's printed welcome line gives way to the newest real Global message. It lives
+    // inside the bar's artwork slice (bar at 529,877) so hover/focus highlights move it together.
+    const barArt = b.st.querySelector('[data-sbwid="chatbar"] > .sl') || b.st;
+    b.chat = place(mk('span', 'sbw-chatline', barArt), barArt === b.st ? 582 : 53, barArt === b.st ? 888 : 11, 620, 32); b.chat.hidden = true;
+    mk('i', '', b.chat).textContent = '[Global]'; mk('b', '', b.chat); mk('span', '', b.chat);
     b.tiles = [1270, 1345, 1420, 1494, 1569].map((x, i) => { const t = place(mk('div', 'sbw-tile', b.st), x, 302, 66, 122); const cv = mk('canvas', '', t); cv.width = 132; cv.height = 150; mk('b', '', t); t.addEventListener('click', () => go(1)); return t; });
   };
   PAINT.home = (b, now) => {
     const nickName = (gs() && gs().nick) || 'Shinobi', mine = owned(), dep = deployed();
     setText(b.name, nickName); setText(b.line, `${mine.length} Shinobi · ${dep.length}/10 deployed`);
+    const last = chatMsgs.at(-1); b.chat.hidden = !last;
+    if (last) { setText(b.chat.children[1], last.name + ':'); setText(b.chat.children[2], last.text); }
     let ready = 0; try { ready = BattleRoster.list().length; } catch {}
     setText(b.row, `Battle-ready ${ready} / 50`);
     const draw = (cv, h, cx, by, sc) => paintPortrait(cv, h, cx, by, sc, now);
@@ -742,8 +749,8 @@
 
   /* ---------- Guild and Chat: previews (no backend yet) ---------- */
   ['guild', 'chat'].forEach(k => {
-    INIT[k] = b => { const r = mk('div', 'sbw-preview', b.sec); r.innerHTML = `<b>PREVIEW</b> ${k === 'guild' ? 'Guilds are' : 'Chat is'} not available yet — this screen shows example artwork, not real players or data.`; b.previewNotice = r; };
-    MODS[k] = new Proxy({}, { get: () => () => notice(k === 'guild' ? 'Guild' : 'Chat', k === 'guild' ? 'Guilds are not available yet. This screen is a preview of the design.' : 'Chat is not available yet. This screen is a preview of the design.') });
+    INIT[k] = b => { const r = mk('div', 'sbw-preview', b.sec); r.innerHTML = k === 'guild' ? '<b>PREVIEW</b> Guilds are not available yet — this screen shows example artwork, not real players or data.' : '<b>PREVIEW</b> This screen shows example artwork. Live Global chat opens from the chat bar on Home.'; b.previewNotice = r; };
+    MODS[k] = new Proxy({}, { get: () => () => notice(k === 'guild' ? 'Guild' : 'Chat', k === 'guild' ? 'Guilds are not available yet. This screen is a preview of the design.' : 'This screen is a preview of the design. Open live Global chat from the chat bar on Home.') });
   });
 
   /* ---------- the shared header (identical on every menu; fixed at the top) ---------- */
@@ -856,27 +863,86 @@
     const k = SHOWN[page === 4 ? '4:' + mode : String(page)] || null; return k === 'dojo' ? dojoView : k;
   }
   /* ---------- chat pop-up (Home chat bar) ---------- */
-  // Opens over Home instead of switching to the full chat preview. There is no chat
-  // service yet, so it shows only the real welcome line and says sending is unavailable.
-  let chatPop = null;
-  const CHAT_TABS = { Global: '<p class="sbw-cp-sys"><i>[Global]</i>Welcome to Shinobi Bombers! Forge your ninja way!</p>', Guild: '<p class="sbw-cp-empty">Guild chat opens when guilds launch.</p>', System: '<p class="sbw-cp-sys"><i>[System]</i>Welcome to Shinobi Bombers! Forge your ninja way!</p>' };
+  // Global chat through the game's authenticated API (RyoPayments.chat → chat.cjs). Messages are
+  // rendered as text only. It polls every 3s while open and every 20s for Home's chat bar.
+  let chatPop = null, chatTab = 'Global', chatAfter = 0, chatOwner = null, chatTimer = 0, chatFetching = false, chatSending = false;
+  const chatMsgs = [], CHAT_KEEP = 50, WELCOME = 'Welcome to Shinobi Bombers! Forge your ninja way!';
   function chatBar() { return cur && built[cur] ? built[cur].sec.querySelector('[data-sbwid="chatbar"]') : null; }
+  const chatReady = () => !!(window.RyoPayments?.chat && RyoPayments.state.authenticated);
+  function chatNote(text, isError = false) { if (!chatPop) return; const n = $('.sbw-cp-note', chatPop); n.textContent = text; n.classList.toggle('sbw-cp-error', isError); n.setAttribute('role', isError ? 'alert' : 'status'); }
+  function chatLine(cls, label, text) { const p = document.createElement('p'); p.className = cls; mk('i', '', p).textContent = label; p.append(text); return p; }
+  function renderChat() {
+    if (!chatPop || chatPop.hidden) return;
+    const log = $('.sbw-cp-log', chatPop), stick = log.scrollHeight - log.scrollTop - log.clientHeight < 40, nodes = [];
+    if (chatTab === 'Guild') { const p = document.createElement('p'); p.className = 'sbw-cp-empty'; p.textContent = 'Guild chat opens when guilds launch.'; nodes.push(p); }
+    else if (chatTab === 'System') nodes.push(chatLine('sbw-cp-sys', '[System]', WELCOME));
+    else {
+      nodes.push(chatLine('sbw-cp-sys', '[Global]', WELCOME));
+      for (const m of chatMsgs) {
+        const p = document.createElement('p'), d = new Date(m.created); p.className = 'sbw-cp-msg' + (m.mine ? ' sbw-cp-mine' : '');
+        mk('b', '', p).textContent = m.name; mk('small', '', p).textContent = m.from;
+        const t = mk('time', '', p); t.dateTime = d.toISOString(); t.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        mk('span', '', p).textContent = m.text; nodes.push(p);
+      }
+    }
+    log.replaceChildren(...nodes); if (stick) log.scrollTop = log.scrollHeight;
+    const input = $('input', chatPop), on = chatTab === 'Global' && chatReady();
+    input.disabled = !on; $('button[type="submit"]', chatPop).disabled = !on || chatSending;
+    input.placeholder = chatTab !== 'Global' ? 'Switch to Global to chat' : chatReady() ? 'Type your message…' : 'Sign in to chat';
+  }
+  function mergeChat(list) {
+    const account = RyoPayments.state.account;
+    if (account !== chatOwner) { chatOwner = account; chatMsgs.length = 0; chatAfter = 0; }
+    const seen = new Set(chatMsgs.map(m => m.id));
+    for (const m of list || []) if (!seen.has(m.id)) { chatMsgs.push(m); chatAfter = Math.max(chatAfter, m.id); }
+    chatMsgs.sort((a, b) => a.id - b.id); if (chatMsgs.length > CHAT_KEEP) chatMsgs.splice(0, chatMsgs.length - CHAT_KEEP);
+    renderChat(); refresh();
+  }
+  async function pollChat() {
+    clearTimeout(chatTimer); const open = !!chatPop && !chatPop.hidden;
+    if (!chatFetching && chatReady() && !document.hidden && (open || cur === 'home')) {
+      chatFetching = true;
+      try {
+        if (RyoPayments.state.account !== chatOwner) mergeChat([]);
+        mergeChat((await RyoPayments.chat('chat-list', { channel: 'global', after: chatAfter })).messages);
+        if (open && !chatSending && $('.sbw-cp-note', chatPop).classList.contains('sbw-cp-error')) chatNote('');
+      } catch { if (open) chatNote('Chat is temporarily unavailable. Retrying…', true); }
+      finally { chatFetching = false; }
+    }
+    chatTimer = setTimeout(pollChat, chatPop && !chatPop.hidden ? 3000 : 20000);
+  }
+  async function sendChat(e) {
+    e.preventDefault(); const input = $('input', chatPop), text = input.value.trim();
+    if (!text || chatSending || !chatReady()) return;
+    chatSending = true; renderChat();
+    try {
+      mergeChat((await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter })).messages);
+      input.value = ''; chatNote(''); updateCount();
+    } catch (err) { chatNote(err.message || 'Message could not be sent.', true); }
+    finally { chatSending = false; renderChat(); input.focus(); }
+  }
+  function updateCount() { $('.sbw-cp-count', chatPop).textContent = [...$('input', chatPop).value].length + ' / 200'; }
   function toggleChat(open) {
     if (!chatPop) {
       chatPop = mk('div', 'sbw-chatpop', layer); chatPop.hidden = true; chatPop.setAttribute('role', 'dialog'); chatPop.setAttribute('aria-label', 'Global chat');
-      chatPop.innerHTML = `<div class="sbw-cp-head"><b>💬 GLOBAL CHAT</b><div class="sbw-cp-tabs" role="tablist">${Object.keys(CHAT_TABS).map((t, i) => `<button type="button" role="tab" aria-selected="${!i}">${t}</button>`).join('')}</div><button type="button" class="sbw-cp-x" aria-label="Close chat">✕</button></div>
-        <div class="sbw-cp-log" role="log" aria-live="polite">${CHAT_TABS.Global}</div>
-        <p class="sbw-cp-note">Live chat is coming soon. Messages can't be sent yet.</p>
-        <form class="sbw-cp-in"><input type="text" disabled placeholder="Chat is coming soon" aria-label="Message (chat is coming soon)"><button type="submit" disabled>Send</button></form>`;
+      chatPop.innerHTML = `<div class="sbw-cp-head"><b>💬 GLOBAL CHAT</b><div class="sbw-cp-tabs" role="tablist">${['Global', 'Guild', 'System'].map((t, i) => `<button type="button" role="tab" aria-selected="${!i}">${t}</button>`).join('')}</div><button type="button" class="sbw-cp-x" aria-label="Close chat">✕</button></div>
+        <div class="sbw-cp-log" role="log" aria-live="polite"></div>
+        <p class="sbw-cp-note" role="status"></p>
+        <form class="sbw-cp-in"><input type="text" maxlength="200" autocomplete="off" aria-label="Message"><small class="sbw-cp-count">0 / 200</small><button type="submit">Send</button></form>
+        <p class="sbw-cp-rules">Be kind. Links are blocked, and the team never messages you first about wallets or trades.</p>`;
       $('.sbw-cp-x', chatPop).onclick = () => toggleChat(false);
-      $('form', chatPop).onsubmit = e => e.preventDefault();
-      $$('[role="tab"]', chatPop).forEach(tab => tab.onclick = () => { $$('[role="tab"]', chatPop).forEach(t => t.setAttribute('aria-selected', String(t === tab))); $('.sbw-cp-log', chatPop).innerHTML = CHAT_TABS[tab.textContent]; });
+      $('form', chatPop).onsubmit = sendChat;
+      $('input', chatPop).addEventListener('input', updateCount);
+      $$('[role="tab"]', chatPop).forEach(tab => tab.onclick = () => { chatTab = tab.textContent; $$('[role="tab"]', chatPop).forEach(t => t.setAttribute('aria-selected', String(t === tab))); renderChat(); });
       chatPop.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); toggleChat(false); } });
       document.addEventListener('pointerdown', e => { if (!chatPop.hidden && !chatPop.contains(e.target) && !chatBar()?.contains(e.target)) toggleChat(false); });
     }
     const show = open ?? chatPop.hidden, bar = chatBar();
     chatPop.hidden = !show; bar?.setAttribute('aria-expanded', String(show));
-    if (show) { placeChat(); $('.sbw-cp-x', chatPop).focus(); } else if (bar && chatPop.contains(document.activeElement)) bar.focus();
+    if (show) {
+      placeChat(); renderChat(); const log = $('.sbw-cp-log', chatPop); log.scrollTop = log.scrollHeight;
+      (chatReady() ? $('input', chatPop) : $('.sbw-cp-x', chatPop)).focus(); pollChat();
+    } else if (bar && chatPop.contains(document.activeElement)) bar.focus();
   }
   // Above the bar when there is room, otherwise below it; never wider than the viewport.
   function placeChat() {
@@ -892,7 +958,7 @@
     if (k !== cur) {
       if (chatPop && !chatPop.hidden) toggleChat(false);
       if (cur && built[cur]) built[cur].sec.classList.remove('on');
-      cur = k;
+      cur = k; if (k === 'home') pollChat();
       if (k) { const b = built[k] || build(k); b.sec.classList.add('on'); if (!RM) { b.sec.classList.remove('enter'); void b.sec.offsetWidth; b.sec.classList.add('enter'); } }
       layer.hidden = !k; markNav();
       document.body.classList.toggle('sbw-active', !!k);

@@ -108,6 +108,13 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 live Global chat (owner request): `chat/` + `apply-chat.cjs` add a server-backed
+  chat to the existing Ryo API (`chat-list` / `chat-send`, table `ryo_chat`, created by
+  `db:init`). Home's chat bar opens it as a pop-up and shows the newest message. Server rules:
+  signed-in only, 200-character plain text, links blocked, 2s gap / 10 per 30s / no repeats,
+  newest 200 kept. No new env vars or services. Details: `chat/README.md`. Tests:
+  `chat-server.cjs` (PGlite) and the browser flow in `hero-portraits.cjs`.
+
 - 2026-11-03 summon reveal shows actual heroes (owner request): result cards draw the
   in-game hero with its rank aura via `PlayerModels.drawPortrait`, once per hero and
   display size (CSS keeps the idle motion). Retired the HD reveal atlas

@@ -74,6 +74,22 @@ body.sbw-active .gc-header .gc-tools>div>strong{display:none}
 #sbwLayer .sbw-cp-sys i{margin-right:8px;font-style:normal;color:#ffd447}
 #sbwLayer .sbw-cp-empty{padding:18px 6px;text-align:center;color:#a99bd6}
 #sbwLayer .sbw-cp-note{margin:0;color:#b7a9e6;font-size:13px}
+#sbwLayer .sbw-cp-note:empty{display:none}
+#sbwLayer .sbw-cp-note.sbw-cp-error{color:#ff9a9a}
+#sbwLayer .sbw-cp-log{display:flex;flex-direction:column;gap:6px}
+#sbwLayer .sbw-cp-msg{display:grid;grid-template-columns:auto auto 1fr;align-items:baseline;column-gap:7px;padding:5px 8px;border-radius:6px;background:#140f33}
+#sbwLayer .sbw-cp-msg b{color:#9fd8ff;font-weight:800}
+#sbwLayer .sbw-cp-msg small{color:#8f86b8;font-size:12px}
+#sbwLayer .sbw-cp-msg time{justify-self:end;color:#8f86b8;font-size:12px}
+#sbwLayer .sbw-cp-msg span{grid-column:1/-1;color:#efeaff;overflow-wrap:anywhere;white-space:pre-wrap}
+#sbwLayer .sbw-cp-mine{background:#241650;border:1px solid #5b3aa8}
+#sbwLayer .sbw-cp-mine b{color:#ffd447}
+#sbwLayer .sbw-cp-count{align-self:center;color:#8f86b8;font-size:12px;white-space:nowrap}
+#sbwLayer .sbw-cp-rules{margin:0;color:#8f86b8;font-size:12px}
+#sbwLayer .sbw-chatline{position:absolute;z-index:8;display:flex;align-items:center;gap:8px;overflow:hidden;background:#000b19;color:#e6ecff;font:600 17px Rajdhani,sans-serif;white-space:nowrap;pointer-events:none}
+#sbwLayer .sbw-chatline i{font-style:normal;font-weight:800;color:#cfd8ee}
+#sbwLayer .sbw-chatline b{color:#9fd8ff}
+#sbwLayer .sbw-chatline span{overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-cp-in{display:flex;gap:8px;margin:0}
 #sbwLayer .sbw-cp-in input{flex:1;min-width:0;height:38px;padding:0 10px;border:1px solid #3d2c78;border-radius:7px;background:#0b0822;color:#fff;font:600 15px Rajdhani,sans-serif}
 #sbwLayer .sbw-cp-in button{padding:0 18px;border:0;border-radius:7px;background:linear-gradient(#ffd447,#f2a71b);color:#2a1600;font:800 16px Rajdhani,sans-serif}
