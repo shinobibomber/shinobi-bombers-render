@@ -88,6 +88,21 @@ const signedIn = p => p.waitForFunction(() => RyoPayments.state.authenticated &&
 
   await withGame(async ({ p, f, errors, assert }) => {
     await p.setViewportSize({ width: 1536, height: 1024 });
+    // Hold deferred presentation JS: the parser must already show the enhanced
+    // scene, rather than flashing the old dark emblem/title screen first.
+    let releasePresentation;
+    const holdPresentation = async route => { await new Promise(resolve => { releasePresentation = resolve; }); await route.fallback(); };
+    await p.route('**/assets/loading-design/loading-design.js', holdPresentation);
+    await p.reload({ waitUntil: 'commit' });
+    await p.waitForFunction(() => document.querySelector('.loading-reference-art')?.naturalWidth === 1536 && typeof LoadingDesign === 'undefined');
+    assert.equal(await p.locator('#gameLoading .loading-emblem, #gameLoading > h1').count(), 0, 'legacy loader markup is removed before deferred scripts run');
+    assert.equal(await p.locator('#loadingPercent').textContent(), '33%', 'the illustrated 75% is masked with the real native milestone before hydration');
+    assert.equal(await p.locator('#enhanced-startup-preload').count(), 1, 'required loading art is preloaded once');
+    assert.equal(await p.locator('#gameLoading').evaluate(screen => getComputedStyle(screen).display), 'grid', 'critical scene CSS is present before hydration');
+    await p.screenshot({ path: path.join(output, 'loading-first-paint.png'), scale: 'css' });
+    releasePresentation();
+    await p.evaluate(() => GameLoading.ready);
+    await p.unroute('**/assets/loading-design/loading-design.js', holdPresentation);
     await p.addInitScript(() => {
       // A controllable font milestone proves that startup waits for real work.
       Object.defineProperty(document.fonts, 'ready', { value: new Promise(resolve => { window.releaseTestFonts = resolve; }) });
@@ -107,6 +122,10 @@ const signedIn = p => p.waitForFunction(() => RyoPayments.state.authenticated &&
     });
     const actualPercent = await p.locator('#loadingProgress').evaluate(progress => Math.round(Number(progress.getAttribute('aria-valuenow')) / Number(progress.getAttribute('aria-valuemax')) * 100) + '%');
     assert.equal(await p.locator('#loadingPercent').textContent(), actualPercent, 'visible percentage follows completed native milestones');
+    const fill = await p.locator('#loadingProgress i').evaluate(element => ({ property: getComputedStyle(element).transitionProperty, width: element.style.width, transform: element.style.transform }));
+    assert.equal(fill.property, 'transform', 'progress animates a compositor transform rather than layout width');
+    assert.equal(fill.width, '');
+    assert.match(fill.transform, /^scaleX\(0\.333/);
     await p.screenshot({ path: path.join(output, 'loading-desktop.png'), scale: 'css' });
     await p.setViewportSize({ width: 390, height: 844 });
     await p.screenshot({ path: path.join(output, 'loading-mobile.png'), scale: 'css' });

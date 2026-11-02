@@ -21,9 +21,13 @@ and font completion. These are initialization milestones, not download-byte esti
 There is no fixed 75% or deliberate minimum delay. Required image failures hold the
 screen with an explicit error and a Retry loading button that reloads the existing page.
 The normal native transition and reduced-motion preference remain in control.
+The enhanced scene and its critical styles are now emitted into the initial HTML, with
+an image preload, so slow deferred scripts cannot flash the legacy dark loading screen.
+The runtime reuses that scene and decoded image. Progress animates a transform instead
+of changing layout width, and observers are disconnected when the screen is removed.
 
 `apply-login-screen.cjs` and `apply-loading-design.cjs` copy these files into generated
-`app/`. The loading helper exports three reviewed startup hooks; preservation tests
+`app/`. The loading helper exports five reviewed startup hooks; preservation tests
 reverse only those hooks before checking the existing inline game modules. Authentication,
 backend, ownership, currency, combat and persistence remain unchanged.
 

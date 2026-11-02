@@ -6,7 +6,7 @@ _Development copy created 2026-11-01 (Asia/Singapore)._
 | --- | --- |
 | **This folder** | `D:\Projects\Shinobi-Bombers-Development` — the working copy for Claude and OpenAI Codex |
 | **Source** | GitHub `shinobibomber/shinobi-bombers-render`, branch `main`, commit `11eddc8`. Full history (29 commits, branch `origin/v3/integrated-redesign-2026-11-01`, tag `v3-reference-beta`) attaches with the one-time git setup below |
-| **Latest work** | Heroes pagination fix and supplied login/loading artwork integration (2026-11-02); see Handoff notes. Manual deployment required after push. |
+| **Latest work** | Loading first-paint cleanup, animated summon models and menu/price display fixes (2026-11-02); see Handoff notes. Manual deployment required after push. |
 | **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Last verified deployment: `d839583` (2026-11-02) |
 | **Original local copy** | `D:\shinobi-bombers-render` — untouched. It is an older clone at `a68984b`, 3 commits behind `main`, with no local edits |
 
@@ -107,6 +107,21 @@ that they are unavailable.
    run `npm test` before pushing, commit + push to `main`, then Render → Manual Deploy.
 
 ## Handoff notes (Claude ↔ Codex)
+
+- 2026-11-02 presentation cleanup: enhanced loading markup/styles are present in the first
+  HTML response, removing the legacy loader flash; progress uses a transform and actual
+  startup milestones. Summon results now render the existing animated character models
+  on transparent canvases with a capped shared scheduler. Discount labels in the shrine
+  artwork are replaced by live original base prices; existing fees and checkout are unchanged.
+  Menu title/header overlap and the Guild preview notice are corrected. No wallet/server,
+  gameplay, balances, odds or persistence changes.
+  Verified: `npm run build:local` (including TypeScript), `npm run lint`, `npm test`
+  (11 game suites + 17 website checks), and `npm run test:visual -- HEAD` (24 unchanged
+  website screens). New `tests/menu-layout.cjs` covers original pack prices, caption
+  coverage at rest/hover, native quantity controls and heading/notice layout. Updated
+  loading/reveal suites cover first paint, real progress and model animation cleanup.
+  Reviewed desktop/mobile screenshots are in `tests/out/loading-*.png`,
+  `tests/out/summon-*.png` and `tests/out/menu-*.png`.
 
 - 2026-11-02 login/loading follow-up: imported the exact Design 13 enhanced PNGs into
   `login-screen/` and `loading-design/`. Native wallet controls align with the artwork;

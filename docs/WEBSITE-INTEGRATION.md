@@ -160,3 +160,26 @@ Heroes arrows target `#p1 .heroes-pagination` buttons by their exact accessible 
 Their page count and disabled state come from the native pager. The previous broad arrow-glyph
 search could accidentally select a hero Perks button. Tests cover paging both directions,
 keyboard interaction and first/last boundaries without opening hero details.
+
+## Presentation cleanup (2026-11-02)
+
+The enhanced startup scene is emitted by the loading build helper directly into the initial
+HTML, with critical styles and an image preload. Deferred initialization reuses it; the old
+dark loader no longer appears while scripts download. The native progress bar animates a
+transform and reports actual startup milestones, retaining failure/retry and reduced motion.
+Five exact startup presentation hooks are reversed by the preservation suite before it
+checks the original inline game modules.
+
+Summon result canvases render the game's existing `CharacterAnimations` idle models rather
+than rectangular portrait crops. A shared capped scheduler skips unchanged/offscreen frames
+and stops when the dialog closes or the page is hidden; reduced motion displays a still model.
+
+The shrine pack labels show the original base price from `GameBalance.summonCost` for each
+native quantity. Illustrated discounts and outdated example prices are covered; charges and
+fees remain owned by native checkout. Shared-header artwork is clipped so its stray title
+pixels cannot overlap menu headings, and preview notices have reserved space.
+
+Verified with the local build/typecheck, lint, all 11 game suites, 17 website checks
+and 24 unchanged desktop/mobile website screenshots. `tests/menu-layout.cjs` checks
+live pack captions (including hover), native quantity selection and menu/notice geometry;
+loading and reveal tests cover initial paint, true progress and model-loop cleanup.

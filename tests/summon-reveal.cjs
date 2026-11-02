@@ -167,6 +167,32 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert(sameModel.length, 'ten sequential model IDs exercise the same model at independent ranks');
     for (const [a, b] of sameModel) { assert.equal(a.aura, b.aura); assert.notEqual(a.rarity, b.rarity); }
 
+    // Observe actual drawing, not presentation labels: result canvases must use
+    // native transparent actor frames and stop spending work when out of view.
+    await p.evaluate(() => {
+      window.revealModelDraws = [];
+      const drawImage = CanvasRenderingContext2D.prototype.drawImage;
+      CanvasRenderingContext2D.prototype.drawImage = function (source, ...args) {
+        if (this.canvas.closest?.('.cinematic-model')) {
+          revealModelDraws.push({ model: source.characterAnimation?.model, state: source.characterAnimation?.state, phase: source.characterAnimation?.phase });
+        }
+        return drawImage.call(this, source, ...args);
+      };
+    });
+    await p.waitForTimeout(650);
+    const modelDraws = await p.evaluate(() => revealModelDraws);
+    assert(modelDraws.length >= 10 && modelDraws.length <= 90, 'shared actor loop draws changed frames within its capped budget');
+    assert(modelDraws.every(frame => frame.state === 'idle' && Number.isInteger(frame.model)), 'results draw the existing character idle models, never portrait images');
+    assert(new Set(modelDraws.map(frame => frame.phase)).size > 1, 'native idle poses animate');
+    await p.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+      document.dispatchEvent(new Event('visibilitychange'));
+      revealModelDraws.length = 0;
+    });
+    await p.waitForTimeout(250);
+    assert.equal(await p.evaluate(() => revealModelDraws.length), 0, 'hidden reveal stops model drawing');
+    await p.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); });
+
     for (const [label, width, height, minColumns, maxColumns] of [
       ['desktop', 1440, 1000, 5, 5], ['tablet', 900, 1100, 3, 4], ['mobile', 390, 844, 2, 2], ['small-mobile', 320, 640, 2, 2]
     ]) {
@@ -195,6 +221,9 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     await p.emulateMedia({ reducedMotion: 'reduce' });
     await p.waitForTimeout(50);
     assert.equal(await p.locator('#summonReveal').evaluate(dialog => dialog.getAnimations({ subtree: true }).filter(animation => animation.playState === 'running').length), 0, 'reduced motion stops all reveal/ambient effects');
+    await p.evaluate(() => { revealModelDraws.length = 0; });
+    await p.waitForTimeout(350);
+    assert.equal(await p.evaluate(() => revealModelDraws.length), 0, 'reduced motion keeps a static model without a drawing loop');
     await p.locator('#revealAgain').click();
     await p.waitForSelector('#tokenCheckoutDialog[open]');
     assert.equal(count(f, 'quote'), 3, 'Summon Again obtains a fresh native checkout quote');
@@ -225,11 +254,15 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     await p.waitForSelector('#summonReveal', { state: 'hidden' });
     assert.equal(await p.evaluate(() => S.v2.revealBatch.length), 0);
     assert.equal(await p.locator('#summonReveal').evaluate(dialog => dialog.getAnimations({ subtree: true }).filter(animation => animation.playState === 'running').length), 0, 'closed reveal has no running presentation animations');
+    await p.emulateMedia({ reducedMotion: 'no-preference' });
+    await p.evaluate(() => { revealModelDraws.length = 0; });
+    await p.waitForTimeout(250);
+    assert.equal(await p.evaluate(() => revealModelDraws.length), 0, 'closed reveal cannot restart the model loop');
     assert.equal(await p.evaluate(() => tab), 2, 'Continue returns to the original shrine');
     assert.equal(count(f, 'purchase'), 2, 'Continue never triggers another purchase');
     assert.equal(f.balance, 719500, 'single summon retains its existing price and fee');
     assert.deepEqual(errors, []);
-    console.log('PASS: actual checkout, duplicate guards, Reveal One/All/Skip, refresh/disconnect recovery, first-model NEW badges, rank stars, quoted cost, independent element/rank styling, responsive layout and reduced motion.');
+    console.log('PASS: actual checkout, duplicate guards, Reveal One/All/Skip, refresh/disconnect recovery, first-model NEW badges, rank stars, quoted cost, native animated result models, stopped hidden/closed/reduced-motion loops, responsive layout and independent element/rank styling.');
   });
 
   await withGame(async ({ p, f, errors, assert }) => {

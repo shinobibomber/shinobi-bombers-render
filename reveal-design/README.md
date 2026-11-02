@@ -1,9 +1,10 @@
 # Cinematic summon reveal
 
 The reveal presentation reuses the existing moonlit village background, original website
-scroll artwork and all eight `PlayerModels` bases. Card portraits crop the larger artwork
-already supplied at the top of `playermodel.png`, with the native sprite as a loading fallback.
-The Summoning Shrine menu, wallet, server and game economy are unchanged.
+scroll artwork and all eight existing character models. Results draw the game's cached
+`CharacterAnimations` idle frames directly onto transparent canvases, with the native
+model frame as fallback. No separate portrait image or top-of-sheet panel is loaded.
+The native shrine purchase flow, wallet, server and game economy are unchanged.
 
 ## Native state and actions
 
@@ -48,7 +49,9 @@ history after heroes have been sold/fused. Legacy rescue/fusion records require 
 
 Native buttons support keyboard and touch. Reveal progress and rare announcements use
 live regions. Animations use CSS transforms/opacity, limited decorative particles and
-one-shot portrait redraws; reduced-motion preferences and Skip Animation bypass the
+one shared model scheduler capped at 12 frames per second. Only changed poses or canvas
+sizes are redrawn; offscreen cards are skipped and hidden/closed screens stop the scheduler.
+Reduced motion shows a still model, and reduced-motion preferences and Skip Animation bypass the
 visual waits. The existing sound preference remains in control.
 
 ## Recovery and ownership

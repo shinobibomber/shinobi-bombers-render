@@ -9,33 +9,17 @@
   if (!screen) { api.ready = Promise.resolve(); return; }
   const progress = document.getElementById('loadingProgress');
   const status = document.getElementById('loadingStatus');
-  const stage = document.createElement('div'); stage.className = 'loading-reference-stage';
-  const image = new Image(1536, 1024); image.className = 'loading-reference-art';
-  image.alt = ''; image.setAttribute('aria-hidden', 'true'); image.draggable = false;
+  const image = screen.querySelector('.loading-reference-art');
   const artwork = new Promise((resolve, reject) => {
-    image.onload = () => image.naturalWidth === 1536 && image.naturalHeight === 1024
-      ? resolve() : reject(Error('Loading artwork has unexpected dimensions.'));
+    const loaded = () => image.naturalWidth === 1536 && image.naturalHeight === 1024
+      ? image.decode().then(resolve, reject) : reject(Error('Loading artwork has unexpected dimensions.'));
+    image.onload = loaded;
     image.onerror = () => reject(Error('Loading artwork could not load. Check your connection and retry.'));
+    if (image.complete) image.naturalWidth ? loaded() : image.onerror();
   });
-  image.src = new URL('loading-reference.png', document.currentScript.src).href;
-  stage.append(image);
-
-  const percent = document.createElement('strong'); percent.id = 'loadingPercent';
-  percent.setAttribute('aria-hidden', 'true');
-  // Draw the supplied wave texture inside the live bar, never its illustrated 75%.
-  const fillArt = document.createElement('span'); fillArt.className = 'loading-fill-art';
-  progress.querySelector('i').append(fillArt);
-  const retry = document.createElement('button'); retry.id = 'loadingRetry';
-  retry.type = 'button'; retry.textContent = 'Retry loading'; retry.hidden = true;
+  const percent = document.getElementById('loadingPercent');
+  const retry = document.getElementById('loadingRetry');
   retry.addEventListener('click', () => location.reload());
-  const title = document.createElement('h2'); title.className = 'loading-accessible-title';
-  title.textContent = 'Preparing the Hidden Village';
-  const tip = document.createElement('p'); tip.className = 'loading-accessible-tip';
-  tip.textContent = 'Ninja tip: Fuse three eligible heroes of the same rank to unlock the next rarity.';
-  stage.append(title, tip, percent, progress, status, retry);
-  const viewport = document.createElement('div'); viewport.className = 'loading-reference-viewport';
-  viewport.append(stage); screen.append(viewport); screen.classList.add('loading-reference-active');
-  screen.setAttribute('aria-busy', 'true');
 
   function update() {
     const max = Number(progress.getAttribute('aria-valuemax')) || 3;
@@ -48,7 +32,7 @@
   update();
   const removed = new MutationObserver(() => { if (!screen.isConnected) cleanup(); });
   removed.observe(document.body, { childList: true });
-  function cleanup() { changes.disconnect(); removed.disconnect(); }
+  function cleanup() { changes.disconnect(); removed.disconnect(); image.onload = image.onerror = null; }
   addEventListener('pagehide', cleanup, { once: true });
 
   // Login is the next view, so its artwork must also be ready before the gate

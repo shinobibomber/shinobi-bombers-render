@@ -12,11 +12,9 @@
     lightning: ['Lightning', 'ϟ', '#ffe175'], spirit: ['Spirit', '✦', '#f2a1ef']
   };
   const motion = matchMedia('(prefers-reduced-motion: reduce)'), timers = new Set();
-  const sourceRoot = new URL('.', document.currentScript.src), portraits = new Image();
-  const portraitX = [15, 206, 397, 588, 779, 969, 1159, 1350];
-  const quotes = new WeakMap();
-  let portraitsRequested = false, portraitsLoaded = false, oneBusy = false;
-  let dialog, scene, currentBatch, opening = null, skipAnimations = false, againBusy = false, portraitFrame = 0, focusKey = null;
+  const quotes = new WeakMap(), drawnModels = new WeakMap();
+  let oneBusy = false, modelFrame = 0, modelTimer = 0;
+  let dialog, scene, currentBatch, opening = null, skipAnimations = false, againBusy = false, focusKey = null;
   const api = window.RevealDesign = { loaded: false, ready: null, refresh, paint, open, sync, skip, canReveal };
   const batch = () => S.v2.revealBatch || [];
   const $ = selector => dialog?.querySelector(selector);
@@ -36,19 +34,31 @@
     opening?.finish(); opening = null;
     for (const timer of timers) clearTimeout(timer);
     timers.clear();
-    if (portraitFrame) cancelAnimationFrame(portraitFrame);
-    portraitFrame = 0;
+    stopModels();
     dialog?.classList.remove('legend-opening');
     dialog?.querySelectorAll('.is-opening,.cinematic-elite,.cinematic-legend').forEach(card => card.classList.remove('is-opening', 'cinematic-elite', 'cinematic-legend'));
   }
-  function schedulePortraits() {
-    if (portraitFrame || !dialog?.open || !canReveal()) return;
-    portraitFrame = requestAnimationFrame(() => {
-      portraitFrame = 0;
-      dialog.querySelectorAll('.is-revealed[data-reveal]').forEach(card => drawPortrait(card, batch()[Number(card.dataset.reveal)]?.hero));
+  function stopModels() {
+    if (modelFrame) cancelAnimationFrame(modelFrame);
+    if (modelTimer) clearTimeout(modelTimer);
+    modelFrame = modelTimer = 0;
+  }
+  function scheduleModels() {
+    if (modelFrame || modelTimer || !dialog?.open || document.hidden || !canReveal()) return;
+    modelFrame = requestAnimationFrame(now => {
+      modelFrame = 0;
+      if (!dialog.open || document.hidden || !canReveal()) return;
+      const viewport = $('.reveal-grid').getBoundingClientRect();
+      let visible = false;
+      dialog.querySelectorAll('.is-revealed[data-reveal]').forEach(card => {
+        visible = drawModel(card, batch()[Number(card.dataset.reveal)]?.hero, now, viewport) || visible;
+      });
+      // One capped scheduler for the whole collection. Cached idle frames are
+      // redrawn only when their pose or display size changes, not every RAF.
+      if (visible && !motion.matches) modelTimer = setTimeout(() => { modelTimer = 0; scheduleModels(); }, 1000 / 12);
     });
   }
-  const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(schedulePortraits) : null;
+  const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(scheduleModels) : null;
   api.ready = sprites.ready = Promise.resolve(sprites.ready).then(() => {
     dialog = document.getElementById('summonReveal');
     dialog.classList.add('exact-reveal', 'cinematic-reveal');
@@ -57,12 +67,14 @@
       focusKey = card ? '[data-reveal="' + card.dataset.reveal + '"]' : event.target.id ? '#' + event.target.id : null;
     });
     dialog.addEventListener('close', () => { if (!dialog.open) { cleanup(); resize?.disconnect(); } });
+    dialog.addEventListener('scroll', scheduleModels, { capture: true, passive: true });
     addEventListener('pagehide', cleanup);
     document.addEventListener('visibilitychange', () => {
       document.body.classList.toggle('cinematic-paused', document.hidden);
-      if (document.hidden) opening?.finish();
+      if (document.hidden) { opening?.finish(); stopModels(); }
+      else scheduleModels();
     });
-    motion.addEventListener('change', () => { if (motion.matches) opening?.finish(); });
+    motion.addEventListener('change', () => { if (motion.matches) opening?.finish(); stopModels(); scheduleModels(); });
     const accountChanged = () => {
       if (!canReveal()) { cleanup(); if (dialog.open) dialog.close(); }
       else if (batch().length && !dialog.open && !window.GameLoading?.active) Experience.refreshReveal();
@@ -78,11 +90,6 @@
     if (!api.loaded || !batch().length) return;
     if (!canReveal()) { cleanup(); if (dialog.open) dialog.close(); return; }
     if (!$('.reveal-grid')) return;
-    if (!portraitsRequested) {
-      portraitsRequested = true;
-      portraits.onload = () => { portraitsLoaded = portraits.naturalWidth === 1536 && portraits.naturalHeight === 1024; schedulePortraits(); };
-      portraits.src = new URL('../player-models/playermodel.png', sourceRoot).href;
-    }
     const restoreFocus = document.activeElement === document.body ? focusKey : null;
     // Native delivery can rebuild a modal mid-animation. Native reveal validates
     // the same record after the visual wait, so no new result is manufactured.
@@ -119,7 +126,7 @@
     $('.reveal-grid').setAttribute('aria-label', 'Shinobi summoning scrolls');
     batch().forEach((_, index) => paint(index));
     resize?.disconnect(); resize?.observe($('.reveal-grid'));
-    sync(); schedulePortraits();
+    sync(); scheduleModels();
     if (restoreFocus && dialog.open) $(restoreFocus)?.focus({ preventScroll: true });
   }
 
@@ -141,7 +148,7 @@
       const seal = document.createElement('span'); seal.className = 'cinematic-seal';
       seal.innerHTML = '<span class="cinematic-scroll" aria-hidden="true"><i class="cinematic-scroll-cap top"></i><span class="cinematic-scroll-body"><b>忍</b></span><i class="cinematic-scroll-cap bottom"></i></span><b>SEALED SCROLL</b><small>Tap to reveal</small>';
       const face = document.createElement('span'); face.className = 'cinematic-face';
-      face.innerHTML = '<span class="cinematic-portrait"><i class="cinematic-aura" aria-hidden="true"></i><canvas aria-hidden="true"></canvas><i class="cinematic-sparks" aria-hidden="true"></i></span><span class="cinematic-element"></span><strong class="cinematic-name"></strong><span class="cinematic-stars"></span><span class="cinematic-stats"></span><span class="cinematic-rank"></span><span class="cinematic-new">NEW!</span>';
+      face.innerHTML = '<span class="cinematic-portrait cinematic-model"><i class="cinematic-aura" aria-hidden="true"></i><canvas aria-hidden="true"></canvas><i class="cinematic-sparks" aria-hidden="true"></i></span><span class="cinematic-element"></span><strong class="cinematic-name"></strong><span class="cinematic-stars"></span><span class="cinematic-stats"></span><span class="cinematic-rank"></span><span class="cinematic-new">NEW!</span>';
       card.append(seal, face);
     }
     const face = card.querySelector('.cinematic-face');
@@ -162,24 +169,32 @@
       const revealedOpening = opening;
       later(() => { card.classList.remove('cinematic-elite', 'cinematic-legend'); if (opening === revealedOpening) dialog.classList.remove('legend-opening'); }, skipAnimations || motion.matches ? 0 : 420);
     }
-    schedulePortraits(); sync();
+    scheduleModels(); sync();
   }
 
-  function drawPortrait(card, hero) {
-    if (!hero || !card.isConnected || !dialog.open) return;
+  function drawModel(card, hero, now, viewport) {
+    if (!hero || !card.isConnected || !dialog.open) return false;
+    const bounds = card.getBoundingClientRect();
+    if (bounds.bottom <= viewport.top || bounds.top >= viewport.bottom || bounds.right <= viewport.left || bounds.left >= viewport.right) return false;
     const canvas = card.querySelector('.cinematic-portrait canvas'), width = canvas.clientWidth, height = canvas.clientHeight;
-    if (!width || !height) return;
+    if (!width || !height) return false;
     const density = Math.min(2, devicePixelRatio || 1);
-    canvas.width = Math.round(width * density); canvas.height = Math.round(height * density);
-    const context = canvas.getContext('2d'); context.scale(density, density);
+    const pixelWidth = Math.round(width * density), pixelHeight = Math.round(height * density);
+    const phase = motion.matches ? 0 : Math.floor(now / 280 + (hero.id || 0) * .37);
+    // Use the same transparent full-body idle clips as the game. Explicit idle
+    // tokens avoid changing or borrowing any live combat animation state.
+    const frame = window.CharacterAnimations?.loaded
+      ? CharacterAnimations.heroFrame(hero, 'clip:idle:' + phase, false, 'front')
+      : PlayerModels.heroFrame(hero, 'i' + (phase % 4));
+    const previous = drawnModels.get(canvas);
+    if (previous?.frame === frame && previous.width === pixelWidth && previous.height === pixelHeight) return true;
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
+    const context = canvas.getContext('2d'); context.setTransform(density, 0, 0, density, 0, 0);
+    context.clearRect(0, 0, width, height);
     context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
-    // Larger portraits are the same eight original models, cropped above the
-    // sheet's sample text. Shared arena sprites and rank-independent identity stay intact.
-    if (portraitsLoaded) {
-      const model = PlayerModels.modelFor(hero).index, scale = Math.min(width / 173, height / 216);
-      const w = 173 * scale, h = 216 * scale;
-      context.drawImage(portraits, portraitX[model], 256, 173, 216, (width - w) / 2, height - h, w, h);
-    } else sprites.blit(context, PlayerModels.heroFrame(hero, 'i0'), width / 2, height * .95, Math.min(width / 40, height / 50) * .96, false);
+    sprites.blit(context, frame, width / 2, height * .9, Math.min(width / 40, height / 45) * .97, false);
+    drawnModels.set(canvas, { frame, width: pixelWidth, height: pixelHeight });
+    return true;
   }
 
   function isNewModel(index) {

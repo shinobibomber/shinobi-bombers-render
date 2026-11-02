@@ -196,10 +196,27 @@
   const QTY = [1, 5, 10, 15];
   INIT.summon = b => {
     b.tabs = [['q1', 1], ['q5', 5], ['q10', 10], ['q15', 15]].map(([id, n]) => { const h = b.s.hs.find(x => x.id === id), r = h.r; const e = place(mk('div', 'sbw-smtab', b.st, '×' + n), r[0], r[1], r[2] - r[0], r[3] - r[1]); e.dataset.n = n; return e; });
+    // The poster contains example discounts and incorrect ×15 artwork. Cover
+    // that entire caption area, including on hover, with current game prices.
+    b.packs = QTY.map(quantity => {
+      const card = $(`.hs[data-sbwid="k${quantity}"]`, b.st);
+      card.classList.add('sbw-pack');
+      const footer = mk('span', 'sbw-pack-price', card.querySelector('.sl'));
+      footer.innerHTML = `<small>${quantity} ${quantity === 1 ? 'SCROLL' : 'SCROLLS'} · BASE PRICE</small><strong>— Ryo</strong>`;
+      return { quantity, card, price: footer.querySelector('strong') };
+    });
+    const fee = cov(b, 1277, 356, 360, 17, '#08091b', 13, '#d4d9e8');
+    fee.classList.add('sbw-summon-fee'); fee.textContent = 'Existing studio fee shown at checkout';
   };
   function summonQty() { const sel = nativeEl('#p2', e => /Combat\.quantity\(\d+\)/.test(e.getAttribute('onclick') || '') && e.classList.contains('selected')); const m = sel && /\((\d+)\)/.exec(sel.getAttribute('onclick')); return m ? +m[1] : 1; }
   PAINT.summon = b => {
     const n = summonQty();
+    const unit = window.GameBalance?.summonCost;
+    for (const pack of b.packs) {
+      const cost = Number.isFinite(unit) && unit >= 0 ? fmt(unit * pack.quantity) + ' Ryo' : '— Ryo';
+      setText(pack.price, cost);
+      pack.card.setAttribute('aria-label', `${pack.quantity} ${pack.quantity === 1 ? 'scroll' : 'scrolls'}, base price ${cost}`);
+    }
     b.tabs.forEach(t => { const on = +t.dataset.n === n; t.hidden = n === 1; t.style.backgroundImage = `url(${BASE}art/sm-tab-${on ? 'on' : 'off'}.webp)`; });
     for (const q of QTY) { const c = $(`.hs[data-sbwid="k${q}"]`, b.st); if (c) c.classList.toggle('picked', q === n && n !== 1); }
     const total = nativeText('#p2', /Total\s+[\d,]+\s*Ryo/i).replace(/^Total\s+/i, '');
@@ -675,7 +692,7 @@
 
   /* ---------- Guild and Chat: previews (no backend yet) ---------- */
   ['guild', 'chat'].forEach(k => {
-    INIT[k] = b => { const r = mk('div', 'sbw-preview', b.st); r.innerHTML = `<b>PREVIEW</b> ${k === 'guild' ? 'Guilds are' : 'Chat is'} not available yet — everything on this screen is example artwork, not real players or data.`; };
+    INIT[k] = b => { const r = mk('div', 'sbw-preview', b.sec); r.innerHTML = `<b>PREVIEW</b> ${k === 'guild' ? 'Guilds are' : 'Chat is'} not available yet — this screen shows example artwork, not real players or data.`; b.previewNotice = r; };
     MODS[k] = new Proxy({}, { get: () => () => notice(k === 'guild' ? 'Guild' : 'Chat', k === 'guild' ? 'Guilds are not available yet. This screen is a preview of the design.' : 'Chat is not available yet. This screen is a preview of the design.') });
   });
 
@@ -729,8 +746,15 @@
     if (HDR) {
       const H = D.header, hs = Math.min(vw / H.W, (vh * 0.14) / H.body), Hh = H.body * hs, hx = (vw - H.W * hs) / 2;
       HDR.st.style.transform = `translate(${hx}px,0) scale(${hs})`; HDR.el.style.height = (H.body * hs) + 'px';
-      const top = b.s.hdrH || 0, s = Math.min(vw / b.s.W, (vh - Hh) / (b.s.H - top));
-      b.st.style.transform = `translate(${Math.max(0, (vw - b.s.W * s) / 2)}px,${Hh - top * s}px) scale(${s})`;
+      let noticeHeight = 0;
+      if (b.previewNotice) { b.previewNotice.style.top = (Hh + 6) + 'px'; noticeHeight = b.previewNotice.offsetHeight + 12; }
+      const contentTop = Hh + noticeHeight, top = b.s.hdrH || 0;
+      const s = Math.min(vw / b.s.W, (vh - contentTop) / (b.s.H - top));
+      // Crop the former per-screen header out of its own viewport. It must not
+      // reappear behind the shared header or the reserved preview notice.
+      b.sec.style.clipPath = `inset(${Hh}px 0 0)`;
+      b.st.style.clipPath = `inset(${top}px 0 0)`;
+      b.st.style.transform = `translate(${Math.max(0, (vw - b.s.W * s) / 2)}px,${contentTop - top * s}px) scale(${s})`;
     } else {
       const s = Math.min(vw / b.s.W, vh / b.s.H);
       b.st.style.transform = `translate(${Math.max(0, (vw - b.s.W * s) / 2)}px,${Math.max(0, (vh - b.s.H * s) / 2)}px) scale(${s})`;

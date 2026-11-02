@@ -5,7 +5,7 @@
 #sbwLayer .sbw-scr{display:none;position:absolute;inset:0}
 #sbwLayer .sbw-scr.on{display:block}
 #sbwLayer .sbw-stage{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:#07041a}
-#sbwLayer .sbw-scr.enter .sbw-base{animation:sbw-scrIn .55s cubic-bezier(.2,.8,.2,1)}
+#sbwLayer .sbw-scr.enter .sbw-base{animation:none}
 #sbwLayer .sbw-base{position:absolute;inset:0;width:100%;height:100%;user-select:none;pointer-events:none}
 #sbwLayer .cbt{font-family:Rajdhani,'Arial Narrow',system-ui,sans-serif}
 #sbwLayer .sbw-cover{position:absolute;z-index:7;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;pointer-events:none;
@@ -59,6 +59,12 @@ body.sbw-active .gc-header .gc-tools>div{position:absolute;top:calc(100% + 6px);
 body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed!important;left:0;top:0;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0!important}
 /* Summon quantity tabs, Fusion list/slots, Dojo chips and Sensei controls (live game state) */
 #sbwLayer .sbw-smtab{position:absolute;z-index:12;background-size:100% 100%;display:flex;align-items:center;justify-content:center;font:700 24px Rajdhani,sans-serif;color:#fff;pointer-events:none}
+/* Reset native .card box metrics so poster slices stay in their exact artwork bounds.
+   The opaque backing also hides the poster while the foreground tilts or presses. */
+#sbwLayer .hs.sbw-pack{padding:0;border:0;background:#08091b}
+#sbwLayer .sbw-pack-price{position:absolute;left:4px;right:4px;bottom:4px;height:82px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-sizing:border-box;border-top:1px solid #b8954e;background:linear-gradient(#0c0d28,#060819);color:#fff2cc;font-style:normal;pointer-events:none}
+#sbwLayer .sbw-pack-price small{font:700 11px/1.2 Rajdhani,system-ui,sans-serif;letter-spacing:.8px;color:#c3d6ec}
+#sbwLayer .sbw-pack-price strong{font:800 21px/1.2 Rajdhani,system-ui,sans-serif;white-space:nowrap}
 #sbwLayer .sbw-flist{position:absolute;z-index:12;overflow-y:auto;background:#060a1c;border-radius:4px;scrollbar-width:thin}
 #sbwLayer .sbw-frow{display:grid;grid-template-columns:26px 44px minmax(0,2.2fr) .6fr .6fr .6fr minmax(0,1.2fr);align-items:center;gap:10px;width:100%;height:60px;padding:0 26px 0 12px;border:0;border-bottom:1px solid #1d2448;background:transparent;color:#fff;font:600 17px Rajdhani,sans-serif;text-align:left;cursor:pointer}
 #sbwLayer .sbw-frow:hover{background:rgba(120,170,255,.10)}
@@ -183,7 +189,7 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-recpanel span{font:600 13px Rajdhani,sans-serif;color:#9aa6c8}
 #sbwLayer .sbw-recpanel b{display:block;font-size:22px;color:#fff}
 /* Guild / Chat previews */
-#sbwLayer .sbw-preview{position:absolute;z-index:20;left:50%;top:128px;transform:translateX(-50%);padding:8px 18px;border:2px solid #ffb02a;border-radius:10px;background:rgba(20,8,40,.94);color:#fff;font:600 16px Rajdhani,sans-serif;white-space:nowrap;box-shadow:0 0 18px rgba(255,176,42,.5);pointer-events:none}
+#sbwLayer .sbw-preview{position:absolute;z-index:20;left:16px;right:16px;padding:7px 12px;border:1px solid #c18e35;border-radius:6px;background:#140828;color:#fff;font:600 14px/1.35 Rajdhani,system-ui,sans-serif;text-align:center;white-space:normal;box-sizing:border-box;pointer-events:none}
 #sbwLayer .sbw-preview b{color:#ffd257;margin-right:6px}
 
 /* Phase 3: decorative live panels let clicks reach the screen's own hotspots underneath */
@@ -273,9 +279,11 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-perks span{overflow:hidden;text-overflow:ellipsis;font:600 12.5px Rajdhani,sans-serif;color:#dfe6ff}
 #sbwLayer .sbw-dbtn.blue,#sbwLayer .sbw-dbtn.green{font-size:21px;gap:8px}
 /* ---------- shared header: identical on every menu ---------- */
-#sbwLayer .sbw-hdr{position:absolute;left:0;top:0;width:100%;z-index:40;background:#05030f;overflow:visible}
+#sbwLayer .sbw-hdr{position:absolute;left:0;top:0;width:100%;z-index:40;background:#05030f;overflow:hidden}
 #sbwLayer .sbw-hdr-stage{position:absolute;left:0;top:0;transform-origin:0 0}
-#sbwLayer .sbw-hdr-img{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;user-select:none}
+/* The source header includes the beginning of the Guild title below navigation.
+   Clip only that decoration; preserve the taller Chest and wallet controls. */
+#sbwLayer .sbw-hdr-img{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;user-select:none;clip-path:polygon(0 0,100% 0,100% 90.32258%,70% 90.32258%,70% 80.64516%,0 80.64516%)}
 #sbwLayer .sbw-navhl{position:absolute;top:0;height:86px;z-index:6;pointer-events:none;border-radius:0 0 6px 6px;mix-blend-mode:screen;
   background:linear-gradient(180deg,rgba(150,60,255,.95),rgba(96,22,200,.9));box-shadow:inset 0 -3px 0 #ff7ad0,0 0 18px rgba(170,80,255,.85)}
 #sbwLayer .sbw-navhl::after{content:"";position:absolute;inset:0;border:1px solid rgba(220,170,255,.7);border-top:0;border-radius:inherit}
