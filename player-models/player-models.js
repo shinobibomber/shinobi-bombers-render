@@ -5,7 +5,7 @@
   const sourceUrl = new URL('.', document.currentScript.src);
   const textures = new Map();
   const frames = new Map();
-  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, portraitFrame, portraitPose, drawPortrait, frameInfo, clearExterior };
+  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, portraitFrame, portraitPose, drawPortrait, crispScale, frameInfo, clearExterior };
 
   const image = new Image();
   const imageReady = new Promise((resolve, reject) => {
@@ -109,7 +109,9 @@
 
   // Draw the native source cell once into the final DPR-aware display surface.
   // Preserve the legacy foot anchor, sleeping opacity and independently ranked aura.
-  function drawPortrait(context, hero, x, y, scale, now = 0) {
+  // crisp: nearest-neighbour source pixels on device-pixel bounds, for heavy
+  // magnification where smoothing a 58x92 cell visibly blurs it (see crispScale).
+  function drawPortrait(context, hero, x, y, scale, now = 0, crisp = false) {
     if (!api.loaded || !hero) return;
     const info = frameInfo(hero, portraitPose(hero, now));
     const texture = textures.get(info.key), ratio = api.source.scale * scale / 8;
@@ -120,9 +122,22 @@
     if (window.TierAuras?.loaded) {
       TierAuras.draw(context, hero, x, y, scale);
     }
-    context.drawImage(texture, x - pivotX * ratio, y - pivotY * ratio,
-      texture.width * ratio, texture.height * ratio);
+    let left = x - pivotX * ratio, top = y - pivotY * ratio;
+    if (crisp) {
+      const { a, d } = context.getTransform();
+      context.imageSmoothingEnabled = false;
+      left = Math.round(left * a) / a; top = Math.round(top * d) / d;
+    }
+    context.drawImage(texture, left, top, texture.width * ratio, texture.height * ratio);
     context.restore();
+  }
+
+  // Large single portraits: when one source pixel would cover 3+ device pixels,
+  // snap to a whole number of device pixels and draw crisp instead of smoothing.
+  function crispScale(scale, density = 1) {
+    const device = api.source.scale * scale / 8 * density;
+    if (device < 3) return { scale, crisp: false };
+    return { scale: Math.floor(device) / density * 8 / api.source.scale, crisp: true };
   }
 
   function cut(cell) {

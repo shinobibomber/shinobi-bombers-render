@@ -187,7 +187,7 @@
     },
     {
       "path": "player-models/player-models.js",
-      "sha256": "079beb5f80b4db79c78b76f0fb830a3aa303aef847ce67989da0a669f1ff2ff2"
+      "sha256": "4456c2bade8e46a6cf439c4cb58ad1fd2319882bcfa4e34eb07ce02c8a039f13"
     },
     {
       "path": "player-models/playermodel.png",
@@ -207,7 +207,7 @@
     },
     {
       "path": "reveal-design/reveal-design.js",
-      "sha256": "77370c399efdad2b1d6fa8f4ca5847a99c4df054a17c0a164166dcdc7f2e7a57"
+      "sha256": "59e6c806fad03b1586ef66907ac4148b0d3dc16fb9528ee8a0f36d1d04553402"
     },
     {
       "path": "reveal-design/reveal-design.png",

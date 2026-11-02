@@ -163,8 +163,11 @@
     const draw = (cv, h, cx, by, sc) => paintPortrait(cv, h, cx, by, sc, now);
     draw(b.avatar, dep[0] || mine[0], 95, 178, 3.4);
     b.tiles.forEach((t, i) => {
-      const h = dep[i]; t.classList.toggle('sbw-empty', !h); t.style.setProperty('--rc', h ? RCOL[h.r] : '#3a4a7a');
-      t.lastChild.textContent = h ? `★ Lv. ${h.lv}` : '+ Deploy'; t.title = h ? `${h.name} · ${RNAME[h.r]} · Lv. ${h.lv}` : 'Deploy a hero from Heroes';
+      // Own empty-state class: the shared .sbw-empty message styles widened these tiles.
+      const h = dep[i]; t.classList.toggle('sbw-tile-empty', !h); t.style.setProperty('--rc', h ? RCOL[h.r] : '#3a4a7a');
+      const label = h ? `★ Lv. ${h.lv}` : 'Deploy', title = h ? `${h.name} · ${RNAME[h.r]} · Lv. ${h.lv}` : 'Deploy a hero from Heroes';
+      if (t.lastChild.textContent !== label) t.lastChild.textContent = label;
+      if (t.title !== title) t.title = title;
       draw(t.firstChild, h, 66, 146, 2.7);
     });
   };

@@ -18,8 +18,9 @@
 #sbwLayer .sbw-tile:hover{transform:translateY(-4px) scale(1.06)}
 #sbwLayer .sbw-tile canvas{position:absolute;left:0;top:0;width:66px;height:75px}
 #sbwLayer .sbw-tile b{position:absolute;left:0;right:0;bottom:18px;height:22px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);font:700 15px Rajdhani,sans-serif;color:#fff}
-#sbwLayer .sbw-tile.sbw-empty{border-style:dashed;box-shadow:none;background:linear-gradient(#141036,#08061a)}
-#sbwLayer .sbw-tile.sbw-empty b{bottom:44px;background:none;color:#b7c3ff}
+#sbwLayer .sbw-tile.sbw-tile-empty{border-style:dashed;box-shadow:none;background:linear-gradient(#141036,#08061a)}
+#sbwLayer .sbw-tile.sbw-tile-empty b{top:0;bottom:0;height:auto;flex-direction:column;gap:4px;background:none;color:#b7c3ff;font-size:14px;letter-spacing:.3px;white-space:nowrap}
+#sbwLayer .sbw-tile.sbw-tile-empty b::before{content:'+';font-size:30px;line-height:.8}
 .sbw-dialog{max-width:min(560px,92vw);border:2px solid #f6a823;border-radius:12px;background:linear-gradient(160deg,#1a0b40,#0a0521);color:#f5efff;font:600 16px Rajdhani,system-ui,sans-serif;
   box-shadow:0 0 28px rgba(246,168,35,.6),0 0 80px rgba(139,61,255,.45);padding:16px 18px}
 .sbw-dialog::backdrop{background:rgba(5,2,15,.75)}

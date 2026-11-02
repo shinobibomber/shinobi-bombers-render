@@ -199,7 +199,10 @@
     context.clearRect(0, 0, width, height);
     context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
     // The actual in-game hero and its rarity aura, drawn exactly as the menus draw them.
-    PlayerModels.drawPortrait(context, hero, width / 2, height * .92, Math.min(width / 40, height / 50) * .97, 0);
+    // Large cards (a single summon, high-DPI phones) magnify the small source cell;
+    // crispScale keeps those pixels sharp instead of smoothing them into blur.
+    const { scale, crisp } = PlayerModels.crispScale(Math.min(width / 40, height / 50) * .97, density);
+    PlayerModels.drawPortrait(context, hero, width / 2, height * .92, scale, 0, crisp);
     drawnModels.set(canvas, key);
   }
 

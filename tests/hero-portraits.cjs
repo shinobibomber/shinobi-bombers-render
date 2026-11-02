@@ -17,6 +17,20 @@ const collection = async p => {
     f.holdAdventure = false;
     f.profile = economy.fulfill(f.profile, economy.quote(f.profile, 'summon', { quantity: 15 })).profile;
     await login(p);
+    // Home strike team: empty slots keep their own 66px tiles and fit the label.
+    // The shared .sbw-empty message style once widened them into overlapping boxes.
+    await p.waitForFunction(() => document.querySelectorAll('.sbw-scr.on .sbw-tile').length === 5);
+    const tiles = await p.locator('.sbw-scr.on .sbw-tile').evaluateAll(nodes => nodes.map(tile => {
+      const box = tile.getBoundingClientRect(), label = tile.querySelector('b');
+      return { left: box.left, right: box.right, fits: label.scrollWidth <= label.clientWidth && label.getBoundingClientRect().width <= box.width + .5 };
+    }));
+    assert(tiles.every(tile => tile.fits), 'strike team labels fit inside their tiles');
+    assert(tiles.every((tile, i) => !i || tile.left >= tiles[i - 1].right - .5), 'strike team tiles never overlap');
+    // Large single portraits draw crisp whole-pixel source texels instead of a smoothed blur.
+    const crisp = await p.evaluate(() => [PlayerModels.crispScale(3.7, 1), PlayerModels.crispScale(6.34, 1), PlayerModels.crispScale(6.34, 2)]
+      .map(({ scale, crisp }) => ({ crisp, device: PlayerModels.source.scale * scale / 8 })));
+    assert.deepEqual(crisp.map(c => c.crisp), [false, true, true], 'only heavy magnification switches to crisp pixels');
+    assert(Math.abs(crisp[1].device - 3) < 1e-9 && Math.abs(crisp[2].device * 2 - 6) < 1e-9, 'crisp portraits snap to whole device pixels');
     await collection(p);
     await p.waitForTimeout(600);
     const portraits = await p.evaluate(() => {
