@@ -230,6 +230,10 @@
       enemyCount.setAttribute('aria-label', remaining + ' enemies remaining of ' + enemyTotal + ' at map start');
       mobileEnemies.textContent = remaining + ' / ' + enemyTotal;
       refreshSession();
+      document.getElementById('st').textContent = 'Deployed ' + S.h.filter(hero => hero.on).length + '/10 · Enemy ninja ' + remaining;
+      // The newer roster owns these cards and slot placement. Rebuilding legacy
+      // empty slots here creates throwaway DOM on every HUD update.
+      if (window.RosterDesign?.loaded) return;
       strip.querySelectorAll('.exact-adventure-empty-slot').forEach(card => card.remove());
       const real = [...strip.querySelectorAll('.map-hero')];
       for (let i = real.length; i < 10; i++) {
@@ -245,7 +249,6 @@
         card.style.setProperty('--slot-x', x + 'px'); card.style.setProperty('--slot-y', y + 'px'); card.style.setProperty('--slot-width', width + 'px');
         const button = card.querySelector('button'); if (card.classList.contains('map-hero') && button) button.setAttribute('aria-label', 'Rest ' + (card.querySelector('b')?.textContent || 'hero'));
       });
-      document.getElementById('st').textContent = 'Deployed ' + S.h.filter(hero => hero.on).length + '/10 · Enemy ninja ' + left();
     }
     function resize() {
       const scale = Math.min(innerWidth / 1672, innerHeight / 941);
@@ -258,7 +261,11 @@
     function sync() {
       const active = tab === 0 && !window.LoginScreen?.active && !window.GameLoading?.active;
       document.body.classList.toggle('exact-adventure-active', active); screen.hidden = !active; screen.inert = !active;
-      if (active) { scene.append(adventure, bar); resize(); refreshRoster(); }
+      if (active) {
+        if (adventure.parentNode !== scene) scene.append(adventure);
+        if (bar.parentNode !== scene) scene.append(bar);
+        resize(); refreshRoster();
+      }
       else {
         if (adventure.parentNode === scene) originalAdventure.after(adventure);
         if (bar.parentNode === scene) originalBar.after(bar);

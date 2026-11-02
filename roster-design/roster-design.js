@@ -61,11 +61,14 @@
       if(nodes.some((node,i)=>strip.children[i]!==node)||strip.children.length!==10)strip.replaceChildren(...nodes);if(focused?.isConnected&&document.activeElement!==focused)focused.focus({preventScroll:true});count.textContent=deployed+' / 10';count.setAttribute('aria-label',deployed+' of 10 heroes deployed');document.getElementById('camToggle')?.setAttribute('data-team-view','View: '+(Arena3D.cfg.tilt?'3D':'2D'));const kept=new Set(heroes.map(h=>h.id));for(const[id,card]of cache)if(!kept.has(id)){card.remove();cache.delete(id);}paint(performance.now(),true);resize();
     }
     function paint(now,force=false){
+      // The visible website team draws the shared HD source itself. Native
+      // cards remain the source of actions and status, not a second paint loop.
+      if(document.hidden||window.LoginScreen?.active||window.GameLoading?.active||(document.body.classList.contains('sbw-active')&&window.WebsiteDesign?.current()==='adventure'))return;
       const frame=reduced.matches?0:Math.floor(now/80);if(!force&&frame===paintedFrame)return;paintedFrame=frame;
-      for(const h of heroes){const card=cache.get(h.id);if(!card?.isConnected)continue;const cv=card.querySelector('canvas'),d=Math.min(2,Math.max(1,devicePixelRatio||1)),size=Math.round(126*d);if(cv.width!==size||cv.height!==size){cv.width=size;cv.height=size;}const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);c.clearRect(0,0,126,126);c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';const time=reduced.matches?0:now,phase=reduced.matches?0:Math.sin(now/520+h.id);
-        // Pulse the same source aura beneath the original native source model.
-        // The model itself is never stretched, recolored or re-drawn.
-        if(window.TierAuras?.loaded){c.save();c.globalAlpha=.32+(phase+1)*.12;sprites.blit(c,TierAuras.frame(h.r),63,119,2.9+phase*.09,false);c.restore();}PlayerModels.drawPortrait(c,h,63,119,2.85,time);cv.dataset.animationFrame=frame;cv.dataset.portraitVisible='true';
+      for(const h of heroes){const card=cache.get(h.id);if(!card?.isConnected)continue;const cv=card.querySelector('canvas'),d=Math.min(2,Math.max(1,devicePixelRatio||1)),size=Math.round(126*d);if(cv.width!==size||cv.height!==size){cv.width=size;cv.height=size;cv.dataset.portraitKey='';}const key=[h.id,h.r,h.z,PlayerModels.portraitRevision,PlayerModels.hdReady||reduced.matches?0:frame].join(':');if(cv.dataset.portraitKey===key)continue;const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);c.clearRect(0,0,126,126);c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';const time=reduced.matches?0:now;
+        // drawPortrait already includes the rank aura; a third additive pass
+        // made fine edges appear blown out and repeated the same texture work.
+        PlayerModels.drawPortrait(c,h,63,119,2.85,time);cv.dataset.portraitKey=key;cv.dataset.animationFrame=frame;cv.dataset.portraitVisible='true';
       }
     }
     api.refresh=refresh;

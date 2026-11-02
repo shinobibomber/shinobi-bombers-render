@@ -1,11 +1,15 @@
-/* Shared player art from the original uploaded sheet. No hero/account state is changed. */
+/* Shared eight-model art, with optional HD portraits. No hero/account state is changed. */
 (() => {
   const sprites = window.ShinobiSprites;
   const previousReady = sprites.ready;
   const sourceUrl = new URL('.', document.currentScript.src);
   const textures = new Map();
   const frames = new Map();
-  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, portraitFrame, drawPortrait, frameInfo, clearExterior };
+  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, portraitFrame, drawPortrait, frameInfo, clearExterior,
+    get hdReady() { return window.RevealModels?.status === 'ready'; },
+    get portraitRevision() { return api.hdReady ? 1 : 0; }
+  };
+  let portraitLoad = null;
 
   const image = new Image();
   const imageReady = new Promise((resolve, reject) => {
@@ -101,11 +105,24 @@
     return window.TierAuras?.loaded ? TierAuras.compose(hero, base) : base;
   }
 
-  // Draw the native source cell only once into the final display canvas. Portraits
-  // previously enlarged the cell into a 320x400 frame, then resized it again.
-  // The legacy blit scale and foot anchor remain identical for every caller.
+  // Reuse the reveal atlas and its single optional image request. No extra
+  // startup dependency, duplicate decode, or per-hero image is introduced.
+  function portraitArtwork(hero) {
+    const artwork = window.RevealModels;
+    if (!artwork) return null;
+    if (artwork.status === 'idle' && !portraitLoad) {
+      portraitLoad = artwork.load().then(loaded => {
+        if (loaded) dispatchEvent(new CustomEvent('shinobi-portrait-art-ready'));
+      }).catch(() => {});
+    }
+    return artwork.frame(hero);
+  }
+
+  // Draw source pixels once into the final DPR-aware display surface. Preserve
+  // the legacy foot anchor, sleeping opacity and independently ranked aura.
   function drawPortrait(context, hero, x, y, scale, now = 0) {
     if (!api.loaded || !hero) return;
+    const artwork = portraitArtwork(hero);
     const info = frameInfo(hero, hero.z ? 's0' : sprites.idleName(now, hero.id));
     const texture = textures.get(info.key), ratio = api.source.scale * scale / 8;
     const [pivotX, pivotY] = info.cell.pivot;
@@ -119,8 +136,14 @@
       context.globalAlpha *= .28 + Math.max(0, Math.min(4, hero.r)) * .035;
       sprites.blit(context, effect, x, y, scale, false); context.restore();
     }
-    context.drawImage(texture, x - pivotX * ratio, y - pivotY * ratio,
-      texture.width * ratio, texture.height * ratio);
+    if (artwork) {
+      const [sx, sy, sw, sh] = artwork.rect;
+      const height = 352 * scale / 8, width = height * sw / sh;
+      context.drawImage(artwork.image, sx, sy, sw, sh, x - width / 2, y - height, width, height);
+    } else {
+      context.drawImage(texture, x - pivotX * ratio, y - pivotY * ratio,
+        texture.width * ratio, texture.height * ratio);
+    }
     context.restore();
   }
 

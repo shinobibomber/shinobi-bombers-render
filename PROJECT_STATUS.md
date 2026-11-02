@@ -6,7 +6,7 @@ _Development copy created 2026-11-01 (Asia/Singapore)._
 | --- | --- |
 | **This folder** | `D:\Projects\Shinobi-Bombers-Development` — the working copy for Claude and OpenAI Codex |
 | **Source** | GitHub `shinobibomber/shinobi-bombers-render`, branch `main`, commit `11eddc8`. Full history (29 commits, branch `origin/v3/integrated-redesign-2026-11-01`, tag `v3-reference-beta`) attaches with the one-time git setup below |
-| **Latest work** | Sharper summon-result models and reveal lifecycle/performance fixes (2026-11-02); see Handoff notes. Manual deployment required after push. |
+| **Latest work** | Shared HD hero portraits, directional Adventure models and rendering optimizations (2026-11-03); see Handoff notes. Manual deployment required after push. |
 | **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Last verified deployment: `d839583` (2026-11-02) |
 | **Original local copy** | `D:\shinobi-bombers-render` — untouched. It is an older clone at `a68984b`, 3 commits behind `main`, with no local edits |
 
@@ -107,6 +107,28 @@ that they are unavailable.
    run `npm test` before pushing, commit + push to `main`, then Render → Manual Deploy.
 
 ## Handoff notes (Claude ↔ Codex)
+
+- 2026-11-03 hero quality and Adventure rendering: Heroes/Home/Fusion/Adventure
+  portraits reuse the eight-model reveal atlas directly at display resolution.
+  Added matching side/rear artwork and an optional HD locomotion renderer, with
+  native action clips and original-art fallback. Source cleanup yields between
+  idle chunks; bounded caches and retained portrait canvases eliminate recurring
+  image readbacks and hidden portrait work. Fixed valid phase-zero/back-walk
+  animation, live reduced motion, clipped hero names and a missing Adventure
+  scenery patch. Map rendering skips baked-wall draw entries while preserving
+  collision data and all eight original projections. Prices, balances, ownership,
+  wallet/server and combat mechanics are unchanged.
+  Artwork provenance, exact generation prompt, limits and run instructions:
+  `player-models/HD-ARTWORK.md`. Regression coverage adds `hero-portraits.cjs`,
+  `hero-motion.cjs`, `adventure-rendering.cjs`, `render-performance.cjs`.
+  Tests exercise 376 owned heroes, ten deployed, 24 model/direction combinations,
+  art failure, real actions, cache limits and zero warm portrait readbacks.
+  Verified: `npm run build:local` (including TypeScript), lint, `npm test`
+  (15 game suites + 17 website checks), and `npm run test:visual -- HEAD`
+  (24 unchanged standalone website screens). No live wallet transactions or deploy.
+  Desktop/mobile and model previews: `tests/out/heroes-hd-*.png`,
+  `tests/out/hero-directions-contact.png`, `tests/out/adventure-hd-desktop.png`.
+  No cross-device FPS guarantee: timings depend on hardware, effects and browser.
 
 - 2026-11-02 reveal quality follow-up: source action poses were only 56–60px tall.
   Added a reveal-only transparent HD atlas derived from the same eight model references;

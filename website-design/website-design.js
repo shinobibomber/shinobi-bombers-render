@@ -15,7 +15,8 @@
   let preview = null; /* Guild/Chat preview screens (no game page) */
   let dojoView = 'dojo'; /* Dojo pages: 'dojo' (Services, landing), 'dojo-upg' (Enter Dojo), 'dojo-sen' (Manage Sensei) */
   const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'];
-  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+  let RM = motionPreference.matches, geometryRevision = 0;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const fmt = n => (typeof n === 'number' && Number.isFinite(n) ? Math.floor(n).toLocaleString('en-US') : '—');
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -159,8 +160,7 @@
     setText(b.name, nickName); setText(b.line, `${mine.length} Shinobi · ${dep.length}/10 deployed`);
     let ready = 0; try { ready = BattleRoster.list().length; } catch {}
     setText(b.row, `Battle-ready ${ready} / 50`);
-    const PM = window.PlayerModels;
-    const draw = (cv, h, cx, by, sc) => { const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); if (h && PM && PM.loaded) { try { PM.drawPortrait(g, h, cx, by, sc, now); } catch {} } };
+    const draw = (cv, h, cx, by, sc) => paintPortrait(cv, h, cx, by, sc, now);
     draw(b.avatar, dep[0] || mine[0], 95, 178, 3.4);
     b.tiles.forEach((t, i) => {
       const h = dep[i]; t.classList.toggle('sbw-empty', !h); t.style.setProperty('--rc', h ? RCOL[h.r] : '#3a4a7a');
@@ -289,7 +289,7 @@
         : `<p class="sbw-fempty">No ${RNAME[rank]} heroes in Reserve. Move heroes to Reserve in Heroes, or summon more Shinobi.</p>`;
       $$('.sbw-frow', b.list).forEach(btn => btn.onclick = () => { const r = fusionRows()[+btn.dataset.i]; if (r && !r.input.disabled) { r.input.click(); b.sig = ''; refresh(); } });
     }
-    const hero = id => (gs() && gs().h.find(h => h.id === id)) || null, draw = (cv, h, sc) => { const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); if (h && window.PlayerModels) { try { PlayerModels.drawPortrait(g, h, cv.width / 2, cv.height - 2, sc, now); } catch {} } };
+    const heroes = new Map(owned().map(h => [h.id, h])), hero = id => heroes.get(id) || null, draw = (cv, h, sc) => drawHero(cv, h, sc, now);
     $$('.sbw-frow canvas', b.list).forEach(cv => draw(cv, hero(+cv.dataset.id), 1.5));
     const picked = rows.filter(r => r.checked);
     b.slots.forEach((e, j) => { const r = picked[j]; e.hidden = !r; if (!r) return; e.lastChild.textContent = r.name; draw(e.firstChild, hero(r.id), 2.4); e.onclick = () => { r.input.click(); b.sig = ''; refresh(); }; });
@@ -417,22 +417,47 @@
   function cv(b, x, y, w, h, cls = '') { const c = place(mk('div', 'sbw-cv ' + cls, b.st), x, y, w, h); return c; }
   function cov(b, x, y, w, h, bg, fs, color, cls = '') { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; }
   function heroAt(i) { const g = gs(); return g && g.h ? g.h[i] || null : null; }
-  function drawHero(c, h, sc, now, bottom = 2) { if (!c) return; const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); if (h && window.PlayerModels && PlayerModels.loaded) { try { PlayerModels.drawPortrait(g, h, c.width / 2, c.height - bottom, sc, now); } catch {} } }
-  /* draws a hero's portrait centered in a canvas: the model is rendered off-screen once to find its bounds
-     (cached per hero), then every frame is scaled to fit with padding */
-  const BOX = new Map(); let OFF = null;
+  // Keep logical coordinates independent of backing pixels. Measure only after
+  // layout changes; each canvas is released with its DOM node through WeakMap.
+  const portraitSurfaces = new WeakMap();
+  function portraitSurface(c) {
+    let surface = portraitSurfaces.get(c);
+    if (!surface) { surface = { w: c.width, h: c.height, geometry: -1, dpr: 0, key: '' }; portraitSurfaces.set(c, surface); }
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    if (surface.geometry !== geometryRevision || surface.dpr !== dpr) {
+      const rect = c.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      const w = Math.max(1, Math.ceil(rect.width * dpr)), h = Math.max(1, Math.ceil(rect.height * dpr));
+      if (c.width !== w || c.height !== h) { c.width = w; c.height = h; surface.key = ''; }
+      surface.geometry = geometryRevision; surface.dpr = dpr;
+    }
+    return surface;
+  }
+  function paintPortrait(c, h, x, y, scale, now) {
+    if (!c) return;
+    const surface = portraitSurface(c), PM = window.PlayerModels;
+    if (!surface) return;
+    const phase = RM || PM?.hdReady ? 0 : Math.floor((now || 0) / 180);
+    const key = [h?.id, h?.r, h?.z, h?.model, PM?.loaded, PM?.portraitRevision, phase, x, y, scale].join('|');
+    if (surface.key === key) return;
+    const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
+    if (h && PM?.loaded) {
+      const ratio = Math.min(c.width / surface.w, c.height / surface.h);
+      g.save(); g.setTransform(ratio, 0, 0, ratio, (c.width - surface.w * ratio) / 2, (c.height - surface.h * ratio) / 2);
+      try { PM.drawPortrait(g, h, x, y, scale, RM ? 0 : now); } catch { return; } finally { g.restore(); }
+    }
+    surface.key = key;
+  }
+  function drawHero(c, h, sc, now, bottom = 2) {
+    if (!c) return; const surface = portraitSurface(c); if (!surface) return;
+    paintPortrait(c, h, surface.w / 2, surface.h - bottom, sc, now);
+  }
+  // The model API uses a fixed foot anchor and known logical frame. Render it
+  // straight into the displayed canvas: no alpha scan or intermediate resize.
   function drawCentered(c, h, now, pad = 8) {
-    if (!c) return; const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
-    if (!h || !window.PlayerModels || !PlayerModels.loaded) return;
-    if (!OFF) { OFF = document.createElement('canvas'); OFF.width = 320; OFF.height = 320; }
-    const o = OFF.getContext('2d', { willReadFrequently: true }); o.clearRect(0, 0, 320, 320);
-    try { PlayerModels.drawPortrait(o, h, 160, 300, 3, now); } catch { return; }
-    let bb = BOX.get(h.id);
-    if (!bb) { const d = o.getImageData(0, 0, 320, 320).data; let x0 = 320, y0 = 320, x1 = 0, y1 = 0;
-      for (let y = 0; y < 320; y++) for (let x = 0; x < 320; x++) if (d[(y * 320 + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-      if (x1 <= x0) return; bb = [x0 - 6, y0 - 6, x1 + 6, y1 + 6]; BOX.set(h.id, bb); }
-    const w = bb[2] - bb[0], hh = bb[3] - bb[1], k = Math.min((c.width - 2 * pad) / w, (c.height - 2 * pad) / hh);
-    g.drawImage(OFF, bb[0], bb[1], w, hh, (c.width - w * k) / 2, (c.height - hh * k) / 2, w * k, hh * k);
+    if (!c) return; const surface = portraitSurface(c); if (!surface) return;
+    const scale = Math.min((surface.w - 2 * pad) / 40, (surface.h - 2 * pad) / 44);
+    paintPortrait(c, h, surface.w / 2, surface.h - pad, scale, now);
   }
   function mirror(dst, src, fit = 'contain', anchorY = .5) {
     if (!dst || !src || !src.width) return; const g = dst.getContext('2d'), W = dst.width, H = dst.height, sw = src.width, sh = src.height;
@@ -498,7 +523,11 @@
     const sig = cards.map(c => [c.idx, c.status, c.lvl, c.ch, c.pw, c.tog && c.tog.textContent, c.up && c.up.textContent, c.mode && c.mode.textContent].join(',')).join('|') + '#' + b.sel;
     if (sig !== b.sig) {
       b.sig = sig;
+      // Chakra/status updates replace text and controls, but an unchanged model
+      // keeps its display canvas and cached HD pixels.
+      const portraits = new Map($$('.sbw-hcard canvas', b.grid).map(c => [c.dataset.sbwHero, c]));
       b.grid.innerHTML = cards.length ? cards.slice(0, 10).map((c, i) => heroCardHtml(c, i, i === b.sel)).join('') : `<p class="sbw-empty">No heroes match this filter. Summon heroes at the Shrine.</p>`;
+      $$('.sbw-hcard canvas', b.grid).forEach(c => { const id = String(cards[+c.dataset.i]?.h?.id), old = portraits.get(id); if (old) { old.dataset.i = c.dataset.i; c.replaceWith(old); } else c.dataset.sbwHero = id; });
       $$('.sbw-hcard', b.grid).forEach(el => el.addEventListener('click', ev => { const k = ev.target.dataset && ev.target.dataset.k; const c = heroCards()[+el.dataset.i]; if (!c) return; if (k) { ev.stopPropagation(); const n = c[k]; if (n && !n.disabled) n.click(); b.sig = ''; return; } b.sel = +el.dataset.i; b.sig = ''; }));
     }
     $$('.sbw-hcard canvas', b.grid).forEach(c => { const card = cards[+c.dataset.i]; drawHero(c, card && card.h, 2.7, now, 2); });
@@ -506,6 +535,7 @@
     const dsig = c ? [c.idx, c.lvl, c.ch, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled].join(',') : 'none';
     if (dsig !== b.dsig) {
       b.dsig = dsig;
+      const portrait = $('.sbw-h2-port canvas', b.det);
       if (!c) b.det.innerHTML = '<p class="sbw-empty">Select a hero.</p>';
       else {
         const h = c.h || {}, r = h.r || 0, [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0), pl = c.perkList || [];
@@ -525,6 +555,9 @@
             <button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>
           </div></div>`;
         const n = $('h3', b.det); if (n) fitText(n);
+        const fresh = $('.sbw-h2-port canvas', b.det);
+        if (portrait?.dataset.sbwHero === String(h.id)) fresh.replaceWith(portrait);
+        else fresh.dataset.sbwHero = String(h.id);
       }
     }
     drawCentered($('.sbw-h2-port canvas', b.det), c && c.h, now, 6);
@@ -561,7 +594,7 @@
   };
   // Native data-maphero is a persistent hero ID, not an array index. Overlay
   // metadata must not use data-hero: the game's renderer reserves it for canvases.
-  function teamCards() { const heroes = (gs() && gs().h) || []; return [...document.querySelectorAll('#p0 article.map-hero')].filter(a => !a.closest('#sbwLayer')).map(a => ({ a, idx: heroes.findIndex(h => h.id === +a.dataset.maphero), deployed: a.dataset.deployed === 'true', cv: a.querySelector('canvas') })); }
+  function teamCards() { const heroes = new Map(((gs() && gs().h) || []).map((h, i) => [h.id, i])); return [...document.querySelectorAll('#p0 article.map-hero')].filter(a => !a.closest('#sbwLayer')).map(a => ({ a, idx: heroes.get(+a.dataset.maphero), deployed: a.dataset.deployed === 'true' })); }
   function advInfo() { const t = ((document.querySelector('.adventure-mobile-status') || {}).textContent || '').replace(/\s+/g, ' '); return { stage: num(t, /Stage\s*(\d+)/i), name: ((document.querySelector('.adventure-stage-name') || {}).textContent || '').trim(), enemies: (t.match(/ENEMIES\s*([\d]+\s*\/\s*[\d]+)/i) || [, ''])[1], gained: (t.match(/GAINED\s*([+\-]?[\d,]+)/i) || [, '0'])[1] }; }
   PAINT.adventure = (b, now) => {
     const a = advInfo(), st = +a.stage || 1;
@@ -574,24 +607,19 @@
       const c = cards[i], h = c && heroAt(c.idx);
       if (!c || !h) { if (e.dataset.k !== 'empty') { e.dataset.k = 'empty'; e.className = 'sbw-at-card empty'; e.style.removeProperty('--rc'); e.innerHTML = `<b>+</b><div><strong>Empty slot ${i + 1}</strong><span>Deploy a battle-ready hero</span></div>`; } return; }
       const a2 = c.a, meta = ((a2.querySelector('.roster-hero-meta') || {}).textContent || '').replace(/\s+/g, ' ').trim(), bar = ((a2.querySelector('.bar i') || {}).style || {}).width || '0%', btn = a2.querySelector('.roster-team-action'), el = a2.querySelector('.roster-element-icon');
-      const k = [c.idx, h.lv, meta, bar, btn && btn.textContent, c.deployed].join('|');
+      const k = [c.idx, h.id, h.r, h.lv, meta, bar, btn && btn.textContent, btn && btn.disabled, c.deployed].join('|');
       if (e.dataset.k !== k) {
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
         e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
         e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">✦ ${esc(RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
-        if (keep && e.dataset.sbwHero === String(h.id)) { const n = e.querySelector('canvas'); try { n.getContext('2d').drawImage(keep, 0, 0); } catch {} }
+        if (keep && e.dataset.sbwHero === String(h.id)) e.querySelector('canvas').replaceWith(keep);
         e.dataset.sbwHero = String(h.id);
       }
+      paintPortrait(e.querySelector('canvas'), h, 63, 119, 2.85, now);
     });
   };
   MIRROR.adventure = b => {
     mirror(b.map, document.getElementById('cv'), 'contain', .5);
-    b.tick = (b.tick || 0) + 1; if (b.tick % 2) return; /* the game's own team-card portrait (same model and tier aura), ~30 fps */
-    const cards = teamCards(); b.slots.forEach((e, i) => {
-      const c = cards[i], d = e.querySelector('canvas'); if (!c || !c.cv || !d || !c.cv.width) return;
-      try { const px = c.cv.getContext('2d', { willReadFrequently: true }).getImageData(c.cv.width >> 1, c.cv.height >> 2, 1, c.cv.height >> 1).data; let ink = false; for (let k = 3; k < px.length; k += 4) if (px[k]) { ink = true; break; } if (!ink) return; } catch { return; }
-      const g = d.getContext('2d'); g.clearRect(0, 0, d.width, d.height); try { g.drawImage(c.cv, 0, 0, d.width, d.height); } catch {}
-    });
   };
   MODS.adventure = {
     stage: () => notice('Stages', 'Stages advance automatically as your team clears each map. Eight battlefields rotate as you progress.'),
@@ -727,6 +755,7 @@
   function setText(e, t) { if (e && e.textContent !== t) { e.textContent = t; fitText(e); } }
   function fitText(e) { const base = +e.dataset.fs; if (!base) return; let fs = base; e.style.fontSize = fs + 'px'; while (e.scrollWidth > e.clientWidth + 1 && fs > 8) { fs -= 1; e.style.fontSize = fs + 'px'; } }
   function refresh(now = performance.now()) {
+    if (document.hidden) return;
     const b = cur && built[cur]; if (!b) return;
     const l = ledger(), a = account(), pend = chestPending();
     const hb = HDR || b;
@@ -741,6 +770,7 @@
 
   /* ---------- show/hide over the matching game page ---------- */
   function fit() {
+    geometryRevision++;
     const b = cur && built[cur]; if (!b) return;
     const vw = innerWidth, vh = innerHeight;
     if (HDR) {
@@ -806,11 +836,13 @@
     addEventListener('shinobi-beta-wallet', () => refresh());
     addEventListener('shinobi-chest', () => refresh());
     addEventListener('resize', fit);
+    motionPreference.addEventListener('change', event => { RM = event.matches; refresh(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
     const nt = document.getElementById('toast'); if (nt) new MutationObserver(() => { if (cur && nt.textContent.trim()) toast(nt.textContent.trim()); }).observe(nt, { childList: true, characterData: true, subtree: true });
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('click', e => { const g = e.target.closest('#sbwLayer .gt'); if (!g) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.innerHTML = `<h2>${esc(g.dataset.t)}</h2><img class="sbw-lb" src="${g.dataset.src}" alt="${esc(g.dataset.t)}"><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`; $('button', dlg).onclick = () => dlg.close(); dlg.showModal(); });
     setInterval(() => { sync(); placeTrigger(); }, 700);
-    let last = 0; const loop = now => { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+    let last = 0; const loop = now => { if (!document.hidden) { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     sync();
     window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync };
   }

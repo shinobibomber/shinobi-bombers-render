@@ -110,7 +110,8 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-hc-top{display:flex;justify-content:space-between;align-items:center}
 #sbwLayer .sbw-hc-top b{font:800 15px Rajdhani,sans-serif;color:var(--rc)}
 #sbwLayer .sbw-hc-top i{font:700 10px Rajdhani,sans-serif;font-style:normal;padding:1px 6px;border:1px solid #8a7ac8;border-radius:4px;background:#120b2e;color:#e8e0ff}
-#sbwLayer .sbw-hcard canvas{width:170px;height:138px;align-self:center;border-radius:6px;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--rc) 35%,#1a1040),#0a0620 70%)}
+#sbwLayer .sbw-hcard>:not(canvas){flex-shrink:0}
+#sbwLayer .sbw-hcard canvas{width:170px;height:120px;min-height:0;flex:1 1 120px;align-self:center;border-radius:6px;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--rc) 35%,#1a1040),#0a0620 70%)}
 #sbwLayer .sbw-hc-name{font:800 16px Rajdhani,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-hc-sub{display:flex;gap:8px;font:600 12px Rajdhani,sans-serif;color:#cfd8ee}
 #sbwLayer .sbw-hc-sub span{color:#ff8ad8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

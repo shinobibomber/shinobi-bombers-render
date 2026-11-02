@@ -3,7 +3,7 @@
   const sprites = ShinobiSprites, previousReady = sprites.ready;
   const root = new URL('.', document.currentScript.src), images = new Map(), cuts = new Map(), frames = new Map();
   const events = new Map(), impacts = [];
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
   let manifest, baseHero;
   const durations = { idle: 1200, walk: 800, run: 650, melee: 650, ranged: 550, skill: 1000, hurt: 400, die: 1100, bomb: 750, victory: 1400 };
   const api = window.CharacterAnimations = {
@@ -40,7 +40,11 @@
     return null;
   }
   function play(hero, state, now = performance.now()) {
-    if (!durations[state]) return;
+    if (!hero || !durations[state]) return;
+    // Expiry cannot depend on a hero being drawn again: sold/fused heroes and
+    // one-off previews would otherwise leave entries behind for the whole session.
+    for (const [id, event] of events) if (now - event.started >= event.duration) events.delete(id);
+    if (!events.has(hero.id) && events.size >= 128) events.delete(events.keys().next().value);
     events.set(hero.id, { state, started: now, duration: durations[state] });
   }
   function token(state, phase) { return 'clip:' + state + ':' + phase; }
@@ -50,13 +54,13 @@
     if (event) {
       const cells = manifest.models[modelIndex(hero)].rows[event.state]?.actors || [];
       const phase = Math.min(Math.max(0, cells.length - 1), Math.floor((now - event.started) / event.duration * cells.length));
-      return token(event.state, reduced ? 0 : phase);
+      return token(event.state, motion.matches ? 0 : phase);
     }
     if (context.attackAge < 550) return token('ranged', 0);
     const state = context.moving ? (Number(hero.sp) >= 8 ? 'run' : 'walk') : 'idle';
     const count = manifest.models[modelIndex(hero)].rows[state].actors.length;
-    const phase = context.moving ? Math.floor(context.phase || now / 110) : Math.floor(now / 280 + (hero.id || 0) * .37);
-    return token(state, reduced ? 0 : ((phase % count) + count) % count);
+    const phase = context.moving ? Math.floor(Number.isFinite(context.phase) ? context.phase : now / 110) : Math.floor(now / 280 + (hero.id || 0) * .37);
+    return token(state, motion.matches ? 0 : ((phase % count) + count) % count);
   }
   function frameInfo(hero, pose = 'i0', direction) {
     const model = modelIndex(hero), data = manifest.models[model];
@@ -79,11 +83,17 @@
     return { model, state, phase, direction: direction || 'front', data, cell: cells[phase], key: [model, state, phase, direction || 'front'].join('.') };
   }
   function heroFrame(hero, pose = 'i0', blink, direction) {
-    if (pose === 's0') return baseHero(hero, pose, blink, direction);
+    if (pose === 's0') return PlayerModels.presentationFrame?.(hero, pose, direction) || baseHero(hero, pose, blink, direction);
+    const info = frameInfo(hero, pose, direction);
+    // The optional HD renderer replaces locomotion presentation only. Resolve
+    // real action events first so attack/skill/hurt/victory clips remain intact.
+    if (['idle', 'walk', 'run'].includes(info.state)) {
+      const presentation = PlayerModels.presentationFrame?.(hero, token(info.state, motion.matches ? 0 : info.phase), direction);
+      if (presentation) return presentation;
+    }
     // The action sheets do not contain back-facing action cycles. Keep the exact
     // supplied back-view base frames instead of mirroring or inventing a back view.
-    if (direction === 'back') return baseHero(hero, pose.startsWith('w') ? pose : 'i0', blink, direction);
-    const info = frameInfo(hero, pose, direction);
+    if (direction === 'back') return baseHero(hero, ['walk', 'run'].includes(info.state) ? 'w' + (motion.matches ? 0 : info.phase) : 'i0', blink, direction);
     if (frames.has(info.key)) return frames.get(info.key);
     const texture = crop(info.data.file, info.cell, false);
     const idle = info.data.rows.idle.actors[0];
@@ -185,6 +195,7 @@
   newMap = function () {
     const result = previousMap.apply(this, arguments);
     impacts.length = 0;
+    events.clear();
     if (api.loaded && S.map > observedStage) S.h.filter(hero => hero.on).forEach(hero => play(hero, 'victory'));
     observedStage = S.map;
     return result;

@@ -274,10 +274,13 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
   await withGame(async ({ p, f, errors, assert }) => {
     f.holdAdventure = false;
     f.fulfillPurchase = fulfillWithRolls([9999, 100, 200, 300, 400]);
-    await ready(p); await login(p);
-    assert.equal(await p.evaluate(() => RevealModels.status), 'idle', 'optional HD art is not downloaded during startup');
+    await ready(p);
+    assert.equal(await p.evaluate(() => RevealModels.status), 'idle', 'optional HD art is not downloaded during unauthenticated startup');
     const failArt = route => route.abort();
     await p.route('**/reveal-models-hd.png', failArt);
+    // Signed-in Home now shares the atlas with reveal and collection portraits.
+    // Install failure interception before that first visible portrait can request it.
+    await login(p);
     await p.evaluate(() => { go(2); Combat.quantity(5); Combat.summonBatch(); });
     await p.waitForSelector('#tokenCheckoutDialog[open]');
     await p.locator('#checkoutConfirm').click();

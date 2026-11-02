@@ -2,7 +2,7 @@
 (() => {
   const root = new URL('.', document.currentScript.src), previousReady = ShinobiSprites.ready;
   const images = [], aligned = new WeakSet(), reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  let manifest;
+  let manifest, projectedMap = null, projection = null;
   const api = window.MapDesign = { loaded: false, ready: null, maps: [], activeLayout, project, alignGrid, blocked, drawFloor, drawAtmosphere };
   const sources = fetch(new URL('maps.json', root)).then(response => { if (!response.ok) throw Error('Map design manifest unavailable.'); return response.json(); }).then(async data => {
     if (data.version !== 1 || data.maps.length !== 8) throw Error('Map design manifest changed.');
@@ -23,7 +23,17 @@
   api.ready.catch(error => console.error('Original map designs could not load:', error));
   function activeLayout(map = S.map) { return manifest?.maps[((Math.max(1, Number(map) || 1) - 1) % 8 + 8) % 8]; }
   function sourcePoint(x, y, map = S.map) { const [left, top, width, height] = activeLayout(map).bounds; return [left + x * width / W, top + y * height / H]; }
-  function project(x, y, z = 0) { const p = sourcePoint(x, y); return [p[0] * 1240 / 1536, (p[1] - 225) * 465 / 575 - z * .9]; }
+  function project(x, y, z = 0) {
+    // Actor/projectile rendering calls this many times per frame. Keep the same
+    // source coordinates, with one output array and no repeated manifest lookup.
+    if (projectedMap !== S.map || !projection) {
+      const [left, top, width, height] = activeLayout().bounds;
+      projection = { x: left * 1240 / 1536, y: (top - 225) * 465 / 575,
+        dx: width / W * 1240 / 1536, dy: height / H * 465 / 575 };
+      projectedMap = S.map;
+    }
+    return [projection.x + x * projection.dx, projection.y + y * projection.dy - z * .9];
+  }
   function blocked(x, y, map = S.map) {
     if (x < 0 || y < 0 || x >= W || y >= H) return true;
     const p = sourcePoint(x + .5, y + .5, map);
@@ -57,11 +67,14 @@
   }
   function drawAtmosphere(context, now) {
     if (!api.loaded || reduced.matches) return;
+    const quality = window.Arena3D?.cfg.fx ?? 1;
+    if (quality === 0) return;
     const layout = activeLayout(), mode = layout.weather;
     context.save(); context.globalCompositeOperation = 'screen';
-    for (let i = 0; i < 18; i++) {
+    context.fillStyle = mode === 'embers' ? '#ff9b47' : mode === 'snow' ? '#e7fbff' : mode === 'wisps' ? '#b668ff' : '#f8b9ef';
+    for (let i = 0; i < (quality === 1 ? 9 : 18); i++) {
       const speed = mode === 'snow' ? .009 : .014, x = ((i * 137.7 + Math.sin(now / 1800 + i) * 20) % 1240), y = ((i * 59 + now * speed) % 465);
-      context.globalAlpha = .12 + .08 * Math.sin(now / 600 + i); context.fillStyle = mode === 'embers' ? '#ff9b47' : mode === 'snow' ? '#e7fbff' : mode === 'wisps' ? '#b668ff' : '#f8b9ef';
+      context.globalAlpha = .12 + .08 * Math.sin(now / 600 + i);
       context.beginPath(); context.ellipse(x, y, mode === 'snow' ? 1.3 : 2, mode === 'snow' ? 1.3 : .8, now / 2500 + i, 0, Math.PI * 2); context.fill();
     }
     context.restore();

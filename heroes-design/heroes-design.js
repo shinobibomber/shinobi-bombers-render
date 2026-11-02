@@ -164,13 +164,21 @@
       resize();
     }
     function paint(now) {
+      // The website collection paints directly from the shared source. Keep
+      // native labels/actions live without repainting canvases covered by it.
+      const covered = document.hidden || window.LoginScreen?.active || window.GameLoading?.active ||
+        (document.body.classList.contains('sbw-active') && window.WebsiteDesign?.current() === 'heroes');
       for (const card of cards) {
         if (card.hidden) continue;
-        const hero = heroOf(card), canvas = card.querySelector('[data-hero]'), context = canvas.getContext('2d');
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
-        const density = Number(canvas.dataset.portraitDensity) || 1;
-        PlayerModels.drawPortrait(context, hero, canvas.width / 2, canvas.height - 13 * density, 4.0 * density, now);
+        const hero = heroOf(card);
+        if (!hero) continue;
+        if (!covered) {
+          const canvas = card.querySelector('[data-hero]'), context = canvas.getContext('2d');
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
+          const density = Number(canvas.dataset.portraitDensity) || 1;
+          PlayerModels.drawPortrait(context, hero, canvas.width / 2, canvas.height - 13 * density, 4.0 * density, now);
+        }
         const value = card.querySelector('.hero-energy b'); if (value) value.textContent = Math.floor(hero.en) + ' / ' + Math.floor(hero.st * 50);
         const fill = card.querySelector('.hero-energy .bar i'); if (fill) fill.style.width = Math.min(100, hero.en / (hero.st * 50) * 100) + '%';
         if (!card.classList.contains('hero-reserve')) card.querySelector('.hero-status').textContent = hero.on ? 'DEPLOYED' : 'RESTING';

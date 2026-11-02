@@ -7,7 +7,7 @@
     },
     {
       "path": "adventure-design/adventure-design.js",
-      "sha256": "5eb556453cb16dec4773306d6c283ce1332861b6f1adb2f9ba029ddd48d0a66e"
+      "sha256": "14624693baec3d884a707d6dc2ac55ce903a25534b750c3a2b427cbbe7b453fa"
     },
     {
       "path": "adventure-design/adventure-mode.png",
@@ -47,7 +47,7 @@
     },
     {
       "path": "character-animations/character-animations.js",
-      "sha256": "44501be7875f689ee63e39f86555f647bb8c0f052277e24755a47981af21ebbd"
+      "sha256": "7333e4f4514a21ca533f82ca1f3ff8eaa0a065b1f2f9e37114f1f10bea58dc0d"
     },
     {
       "path": "character-animations/manifest.json",
@@ -103,7 +103,7 @@
     },
     {
       "path": "heroes-design/heroes-design.js",
-      "sha256": "73ece4c2826843c28e1a8c448ac69cf116803557766caba5462bfc919b600498"
+      "sha256": "a43c876933394b86db2b1bc6978d09831468189857b4558b81b11d0e487c59a0"
     },
     {
       "path": "heroes-design/heroes-menu.png",
@@ -143,7 +143,7 @@
     },
     {
       "path": "map-design/map-design.js",
-      "sha256": "d16bf5da34d985dcf9911e6a289566573fdbdb2ec0a111b3bc6c011ddbe083df"
+      "sha256": "b1d8cb3976116f4532f15eda1a3bacf7f650cd069416298242bf74a0bdac090a"
     },
     {
       "path": "map-design/map1.webp",
@@ -187,7 +187,7 @@
     },
     {
       "path": "player-models/player-models.js",
-      "sha256": "1201c380a5d26da4af09fa28d4152016641ab57110fe8c6aa781fd49d96dafd2"
+      "sha256": "b7d82b6e792ec485e7bbbae4e117ce6a69c11972aa2ea0dcad7907ce17d9f722"
     },
     {
       "path": "player-models/playermodel.png",
@@ -223,7 +223,7 @@
     },
     {
       "path": "roster-design/roster-design.js",
-      "sha256": "519afa33bb1fb7ba05a020a87f960cc733245262acce8fea6de58d09e8a11584"
+      "sha256": "55c646f10b8bbf6f0f27f27546e819a315dfe93179a80c9cfbedf5eb7d2eb8d9"
     },
     {
       "path": "roster-design/source.png",
@@ -320,6 +320,14 @@
     {
       "path": "reveal-design/reveal-models-hd.png",
       "sha256": "f990903f650b80de8da807ee5916a847815261f5d5c53746adb1649aca41f9a9"
+    },
+    {
+      "path": "player-models/hero-motion.js",
+      "sha256": "a1019f5050e193b322f6752c0bb3724736d27af971d9157e7f106b2769991770"
+    },
+    {
+      "path": "player-models/hero-directions-hd.png",
+      "sha256": "b409dc873fb0b9f4a4fe139485b1f037b62e13ed9147676edf17421760d4dedf"
     }
   ],
   "inlineScripts": [

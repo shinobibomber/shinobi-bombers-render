@@ -45,7 +45,7 @@ function applyWebsiteDesign(appDir = path.join(__dirname, 'app'), siteDir = path
   // from the Guild header). Each screen's own header hotspots, Chest button and Ryo label are removed; hdrH records
   // where the screen's own header ends so the runtime can tuck it under the shared header.
   const isHdr = h => h.id === 'logo' || h.id === 'wallet' || h.id === 'ryoplus' || h.id.startsWith('nav-');
-  for (const f of ['shared-header.webp']) fs.copyFileSync(path.join(__dirname, 'website-design', f), path.join(out, 'art', f));
+  for (const f of ['shared-header.webp', 'adventure-tr-patch.webp']) fs.copyFileSync(path.join(__dirname, 'website-design', f), path.join(out, 'art', f));
   const g = data.guild;
   const header = { img: 'art/shared-header.webp', W: 1536, H: 124, body: 112, hs: g.hs.filter(isHdr), chest: g.chest, hdr: g.hdr, live: g.live.filter(l => l.id === 'ryo') };
   const bottom = s => Math.max(s.chest ? s.chest.r[3] : 0, ...s.hs.filter(isHdr).map(h => h.r[3])) + 4;

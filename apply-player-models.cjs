@@ -4,6 +4,7 @@ const path = require('node:path');
 const headMarker = '<!-- exact-player-models -->';
 const directionMarker = '/* exact-player-models-direction */';
 const scriptTag = '<script defer src="assets/player-models/player-models.js"></script>';
+const motionScriptTag = '<script defer src="assets/player-models/hero-motion.js"></script>';
 const patches = [
   [
     'a={px:h.x,py:h.y,face:1,phase:0,atk:-9999,born:now,seen:false,moving:false};',
@@ -35,15 +36,17 @@ function patchHtml(html) {
   if (headCount !== directionCount || headCount > 1) fail('partial or duplicate player-model patch.');
   const applied = headCount === 1;
   if (occurrences(html, scriptTag) !== (applied ? 1 : 0)) fail('player-model script marker is inconsistent.');
+  const motionCount = occurrences(html, motionScriptTag);
+  if (motionCount > 1 || (!applied && motionCount)) fail('hero-motion script marker is inconsistent.');
   for (const [original, replacement] of patches) {
     if (occurrences(html, original) !== (applied ? 0 : 1) ||
         occurrences(html, replacement) !== (applied ? 1 : 0)) {
       fail('arena renderer changed or was only partly patched.');
     }
   }
-  if (applied) return html;
+  if (applied) return motionCount ? html : html.replace(scriptTag, scriptTag + '\n' + motionScriptTag);
   for (const [original, replacement] of patches) html = html.replace(original, replacement);
-  return html.replace('</head>', headMarker + '\n' + scriptTag + '\n</head>');
+  return html.replace('</head>', headMarker + '\n' + scriptTag + '\n' + motionScriptTag + '\n</head>');
 }
 
 function applyPlayerModels(appDir = path.join(__dirname, 'app')) {
@@ -52,7 +55,7 @@ function applyPlayerModels(appDir = path.join(__dirname, 'app')) {
   const html = fs.readFileSync(index, 'utf8');
   // Validate the complete patch before touching generated application files.
   const patched = patchHtml(html);
-  const files = ['player-models.js', 'frames.json', 'playermodel.png'];
+  const files = ['player-models.js', 'hero-motion.js', 'hero-directions-hd.png', 'frames.json', 'playermodel.png'];
   for (const file of files) {
     if (!fs.statSync(path.join(__dirname, 'player-models', file)).isFile()) {
       throw new Error('Cannot apply player models: missing source asset ' + file);
