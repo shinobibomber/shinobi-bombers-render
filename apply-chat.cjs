@@ -5,12 +5,12 @@ const chatPatches=[
  ["window.RyoPayments={","window.RyoPayments={chat:(action,body={})=>{if(action!=='chat-list'&&action!=='chat-send')throw Error('Unknown chat action.');return api(action,body)},"]
 ];
 const serviceHook=["if(action==='presence')return store.presence(wallet,token,body.active===true);","if(action==='chat-list'||action==='chat-send')return require('./chat.cjs').handle(store,wallet,action,body);\n  if(action==='presence')return store.presence(wallet,token,body.active===true);"];
-const schema=`
--- Global chat (apply-chat.cjs). Only the newest messages per channel are kept.
-CREATE TABLE IF NOT EXISTS ryo_chat (id BIGSERIAL PRIMARY KEY,scope TEXT NOT NULL,channel TEXT NOT NULL,wallet TEXT NOT NULL,name TEXT NOT NULL,text TEXT NOT NULL,created BIGINT NOT NULL);
-CREATE INDEX IF NOT EXISTS ryo_chat_channel ON ryo_chat(scope,channel,id);
-CREATE INDEX IF NOT EXISTS ryo_chat_sender ON ryo_chat(scope,wallet,created);
-`;
+// Explicit \n joins: the generated schema.sql is hash-checked, so it must not depend on checkout line endings.
+const schema=['',
+ '-- Global chat (apply-chat.cjs). Only the newest messages per channel are kept.',
+ 'CREATE TABLE IF NOT EXISTS ryo_chat (id BIGSERIAL PRIMARY KEY,scope TEXT NOT NULL,channel TEXT NOT NULL,wallet TEXT NOT NULL,name TEXT NOT NULL,text TEXT NOT NULL,created BIGINT NOT NULL);',
+ 'CREATE INDEX IF NOT EXISTS ryo_chat_channel ON ryo_chat(scope,channel,id);',
+ 'CREATE INDEX IF NOT EXISTS ryo_chat_sender ON ryo_chat(scope,wallet,created);',''].join('\n');
 function replaceOne(text,[before,after],label){if(text.includes(after))return text;const count=text.split(before).length-1;if(count!==1)throw Error('Chat patch mismatch: '+label+' ('+count+')');return text.replace(before,after)}
 function applyChat(appDir=path.join(__dirname,'app')){
  const patch=(file,fn)=>{const name=path.join(appDir,file),before=fs.readFileSync(name,'utf8'),after=fn(before);if(before!==after)fs.writeFileSync(name,after)};
