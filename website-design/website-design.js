@@ -487,14 +487,15 @@
     const scale = Math.min((surface.w - 2 * pad) / 40, (surface.h - 2 * pad) / 44);
     paintPortrait(c, h, surface.w / 2, surface.h - pad, scale, now);
   }
-  function mirror(dst, src, fit = 'contain', anchorY = .5) {
+  // Copy a live game canvas pixel-for-pixel; CSS object-fit/object-position on the element does the
+  // single display scaling and crop. Opaque cached contexts skip clears and alpha blending.
+  const mirrorContexts = new WeakMap();
+  function mirror(dst, src) {
     if (!dst || !src || !src.width) return;
-    // Retain native map pixels until the final CSS display scaling. The previous
-    // 1240 -> 1250 copy blurred fine enemy edges before the browser scaled again.
-    if (dst.width !== src.width || dst.height !== src.height) { dst.width = src.width; dst.height = src.height; }
-    const g = dst.getContext('2d'), W = dst.width, H = dst.height, sw = src.width, sh = src.height;
-    const s = fit === 'cover' ? Math.max(W / sw, H / sh) : Math.min(W / sw, H / sh), w = sw * s, h = sh * s;
-    g.clearRect(0, 0, W, H); try { g.drawImage(src, (W - w) / 2, (H - h) * anchorY, w, h); } catch {}
+    if (dst.width !== src.width || dst.height !== src.height) { dst.width = src.width; dst.height = src.height; mirrorContexts.delete(dst); }
+    let g = mirrorContexts.get(dst);
+    if (!g) { g = dst.getContext('2d', { alpha: false }); mirrorContexts.set(dst, g); }
+    try { g.drawImage(src, 0, 0); } catch {}
   }
   const num = (t, re) => { const m = re.exec(t || ''); return m ? m[1] : ''; };
   function pressIn(root, test) { if (!root) return false; const e = [...root.querySelectorAll('button')].find(test); if (e && !e.disabled) { e.click(); return true; } return false; }
@@ -612,14 +613,15 @@
   /* The team panel keeps the game's own 10-slot Adventure team (same cards, portraits and Deploy buttons), restyled in
      the website theme. Deployed Elite and Legend heroes get an animated aura. */
   INIT.adventure = b => {
-    // Layout: the stage list is gone, the stage banner sits 18px higher, and the battlefield uses the
-    // freed width (x 22–1522) above a full-width team panel. A dark backdrop hides the artwork's
-    // stage cards and old banner position; the map keeps its proportions (object-fit: contain).
+    // Layout: the stage list is gone, the stage banner sits 18px higher, and the battlefield fills the
+    // freed width (x 22–1522) above a full-width team panel. A dark backdrop hides the artwork's stage
+    // cards and old banner position. The map fills its box (object-fit: cover, top-anchored): the grid
+    // ends 90+ canvas px above the bottom on every map, so only front-wall scenery is trimmed.
     place(mk('div', 'sbw-abackdrop', b.st), 270, 200, 1256, 812); place(mk('div', 'sbw-abackdrop', b.st), 14, 207, 256, 805);
     ['st0', 'st1', 'st2', 'st3', 'st4'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
     const banner = $('.hs[data-sbwid="banner"]', b.st); if (banner) banner.style.top = (152 - 18) + 'px';
     for (const id of ['stitle', 'enemies', 'reward']) if (b.live[id]) b.live[id].style.top = (parseFloat(b.live[id].style.top) - 18) + 'px';
-    b.map = place(mk('canvas', 'sbw-mirror', b.st), 22, 210, 1500, 520); b.map.width = 1240; b.map.height = 465;
+    b.map = place(mk('canvas', 'sbw-mirror', b.st), 22, 210, 1500, 520); b.map.width = 1240; b.map.height = 465; b.map.style.objectPosition = '50% 0';
     /* the game has no difficulty setting: the Difficulty / Stage Info box is removed (inpainted scenery patch) */
     const patch = place(mk('img', 'sbw-patch', b.st), 1150, 128, 386, 72); patch.style.objectFit = 'cover'; patch.style.objectPosition = 'top'; patch.src = BASE + 'art/adventure-tr-patch.webp'; patch.alt = '';
     ['diff', 'sinfo'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
@@ -656,7 +658,7 @@
     });
   };
   MIRROR.adventure = b => {
-    mirror(b.map, document.getElementById('cv'), 'contain', .5);
+    mirror(b.map, document.getElementById('cv'));
   };
   MODS.adventure = {
     stage: () => notice('Stages', 'Stages advance automatically as your team clears each map. Eight battlefields rotate as you progress.'),
@@ -712,7 +714,7 @@
   /* ---------- Boss Hunt (game page 8): the real sanctuary canvas inside your frame ---------- */
   const GUARD = ['Akuma · Fallen Shinobi', 'Yuki Onna · Frozen Moon', 'Raijin · Thunder Lord', 'Daichi · Ancient Golem', 'Orochi · Serpent King', 'Shadow Emperor'];
   INIT['boss-hunt'] = b => {
-    b.arena = place(mk('canvas', 'sbw-mirror', b.st), 222, 346, 770, 368); b.arena.width = 770; b.arena.height = 368;
+    b.arena = place(mk('canvas', 'sbw-mirror', b.st), 222, 346, 770, 368); b.arena.width = 770; b.arena.height = 368; b.arena.style.objectPosition = '50% 62%';
     b.world = cov(b, 50, 218, 160, 20, '#0d0407', 14, '#e9dcff', 'sbw-left');
     b.name = cov(b, 50, 234, 520, 42, '#0d0407', 28, '#ffffff', 'sbw-left'); b.name.style.fontWeight = '800';
     b.badge = cov(b, 806, 214, 176, 26, '#2a1a05', 15, '#ffd257');
@@ -746,7 +748,7 @@
     setText(b.chal, x.chal.toUpperCase());
     const ms = x.mech + cl; if (ms !== b.ms) { b.ms = ms; b.mech.innerHTML = `<p>⏱ 90 seconds · 1 chakra per projectile · Adventure pauses during the hunt.</p><p>⚡ ${esc(x.mech || 'Shockwaves drain chakra every 8 seconds.')}</p><p>🔥 Below 35% HP the guardian enrages: waves every 5 seconds drain 3 chakra.</p>`; b.recp.innerHTML = `<span>Highest damage<b>—</b></span><span>Best rank<b>—</b></span><span>Hunts cleared<b>${cl}</b></span>`; }
   };
-  MIRROR['boss-hunt'] = b => mirror(b.arena, document.getElementById('bossHuntMap'), 'cover', .62);
+  MIRROR['boss-hunt'] = b => mirror(b.arena, document.getElementById('bossHuntMap'));
   MODS['boss-hunt'] = {
     challenge: () => { if (!pressOnclick('#p8', 'V2.startBoss()')) toast('Deploy a rested hero first.'); },
     team: () => go(1),

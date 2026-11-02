@@ -35,7 +35,9 @@
     return [projection.x + x * projection.dx, projection.y + y * projection.dy - z * .9];
   }
   function blocked(x, y, map = S.map) {
-    if (x < 0 || y < 0 || x >= W || y >= H) return true;
+    // The outermost columns lie on each artwork's side walls, fences or trees, so heroes and
+    // enemies there overlapped the boundary. Keep them out of play on every map.
+    if (x <= 0 || y < 0 || x >= W - 1 || y >= H) return true;
     const p = sourcePoint(x + .5, y + .5, map);
     return activeLayout(map).solids.some(([left, top, width, height]) => p[0] >= left && p[0] <= left + width && p[1] >= top && p[1] <= top + height);
   }

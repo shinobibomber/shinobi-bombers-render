@@ -158,7 +158,7 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 .sbw-dialog .sbw-small{font-size:13px;color:#a99ad8}
 /* ---------- Phase 3: Heroes, Adventure, Market, Boss Hunt, Guild/Chat previews ---------- */
 #sbwLayer .sbw-cv{position:absolute;z-index:12;font:600 14px Rajdhani,sans-serif;color:#f1ecff}
-#sbwLayer .sbw-mirror{position:absolute;z-index:6;pointer-events:none;object-fit:contain;background:radial-gradient(ellipse at center,#14103a,#05030f 75%);border-radius:6px}
+#sbwLayer .sbw-mirror{position:absolute;z-index:6;pointer-events:none;object-fit:cover;background:radial-gradient(ellipse at center,#14103a,#05030f 75%);border-radius:6px}
 #sbwLayer .sbw-abackdrop{position:absolute;z-index:5;pointer-events:none;background:linear-gradient(#0a0722,#05030f)}
 #sbwLayer .sbw-bar{height:6px;border-radius:3px;background:#1b2140;overflow:hidden}
 #sbwLayer .sbw-bar>i{display:block;height:100%;background:linear-gradient(90deg,#b45cff,#ff6ad5)}

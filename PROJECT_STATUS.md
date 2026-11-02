@@ -108,6 +108,12 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 Adventure edges and fill (owner request): `MapDesign.blocked` treats the outermost
+  columns (x 0 and W-1) as solid on every map, since they lie on the artwork's side walls, fences
+  or trees; heroes and enemies no longer stand on walls. The Adventure and Boss Hunt mirrors copy
+  the live canvas pixel-for-pixel into opaque cached contexts, and CSS object-fit: cover does the
+  scaling (Adventure top-anchored: only front-wall scenery is trimmed, no black side bars).
+
 - 2026-11-03 Adventure layout and enemy placement (owner request): the stage list is removed,
   the stage banner sits 18px higher, and the battlefield mirror spans x 22–1522 (about 11% larger,
   object-fit: contain) above a full-width team panel; a dark backdrop hides the artwork's stage
