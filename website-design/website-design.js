@@ -538,7 +538,9 @@
     b.team = t; b.grid = t.querySelector('.sbw-at-grid'); b.count = t.querySelector('strong');
     b.slots = Array.from({ length: 10 }, (_, i) => { const e = mk('div', 'sbw-at-card empty', b.grid); e.dataset.i = i; e.addEventListener('click', ev => { const n = teamCards()[i]; if (!n) return go(1); const btn = n.a.querySelector('.roster-team-action'); if (ev.target.closest('button') && btn && !btn.disabled) { btn.click(); e.dataset.k = ''; } }); return e; });
   };
-  function teamCards() { return [...document.querySelectorAll('#p0 article.map-hero')].filter(a => !a.closest('#sbwLayer')).map(a => ({ a, idx: +a.dataset.maphero, deployed: a.dataset.deployed === 'true', cv: a.querySelector('canvas') })); }
+  // Native data-maphero is a persistent hero ID, not an array index. Overlay
+  // metadata must not use data-hero: the game's renderer reserves it for canvases.
+  function teamCards() { const heroes = (gs() && gs().h) || []; return [...document.querySelectorAll('#p0 article.map-hero')].filter(a => !a.closest('#sbwLayer')).map(a => ({ a, idx: heroes.findIndex(h => h.id === +a.dataset.maphero), deployed: a.dataset.deployed === 'true', cv: a.querySelector('canvas') })); }
   function advInfo() { const t = ((document.querySelector('.adventure-mobile-status') || {}).textContent || '').replace(/\s+/g, ' '); return { stage: num(t, /Stage\s*(\d+)/i), name: ((document.querySelector('.adventure-stage-name') || {}).textContent || '').trim(), enemies: (t.match(/ENEMIES\s*([\d]+\s*\/\s*[\d]+)/i) || [, ''])[1], gained: (t.match(/GAINED\s*([+\-]?[\d,]+)/i) || [, '0'])[1] }; }
   PAINT.adventure = (b, now) => {
     const a = advInfo(), st = +a.stage || 1;
@@ -556,8 +558,8 @@
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
         e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
         e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">✦ ${esc(RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
-        if (keep && e.dataset.hero === String(c.idx)) { const n = e.querySelector('canvas'); try { n.getContext('2d').drawImage(keep, 0, 0); } catch {} }
-        e.dataset.hero = String(c.idx);
+        if (keep && e.dataset.sbwHero === String(h.id)) { const n = e.querySelector('canvas'); try { n.getContext('2d').drawImage(keep, 0, 0); } catch {} }
+        e.dataset.sbwHero = String(h.id);
       }
     });
   };

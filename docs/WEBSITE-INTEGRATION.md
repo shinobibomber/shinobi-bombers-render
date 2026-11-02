@@ -132,7 +132,14 @@ The preservation suite reverses only these exact reviewed presentation hooks bef
 original inline game modules. No wallet, server, balance or probability code is changed.
 
 Rank comes from the actual hero, while element artwork follows the existing model independently.
-NEW denotes a newly recruited server-owned hero, not a first-ever archetype claim. The game has no
-separate star-rating field, so cards show level, power and stamina. Existing local reveal progress
+NEW! denotes the first model missing from the same owner's pre-batch collection; duplicate models
+and already-owned models are not marked. Stars visualize rarity rank (1–5), alongside real level,
+power and stamina. Reveal One opens the next actual result; Summon Again displays a native read-only
+quote and obtains fresh confirmation at checkout. Existing local reveal progress
 recovers after refresh for the same account; there is no new cross-device reveal history service.
 See `reveal-design/README.md` and `tests/summon-reveal.cjs` for details and fixture verification.
+
+The Adventure overlay reserves `data-sbw-hero` for its own metadata. Native `data-hero` is exclusively
+for the game's hero canvases; reusing it on an overlay DIV caused the Heroes renderer to throw on
+Adventure → Heroes navigation. Adventure roster `data-maphero` values are resolved as hero IDs,
+not collection array indices. `tests/heroes-navigation.cjs` covers both regressions.

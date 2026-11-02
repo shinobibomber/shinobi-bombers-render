@@ -40,6 +40,8 @@ function applyRevealDesign(appDir = path.join(__dirname, 'app')) {
   const files = ['reveal-design.js', 'reveal-design.css', 'reveal-design.png'];
   for (const file of files) if (!fs.statSync(path.join(source, file)).isFile()) throw Error('Missing original reveal asset ' + file);
   fs.mkdirSync(dest, { recursive: true }); for (const file of files) fs.copyFileSync(path.join(source, file), path.join(dest, file));
+  // Reuse the website's original scroll artwork for the sealed and opening states.
+  for (const file of ['rv-scroll.webp', 'rv-open.webp']) fs.copyFileSync(path.join(__dirname, 'website/assets', file), path.join(dest, file));
   if (patched !== original) fs.writeFileSync(index, patched);
   console.log('Original reveal design applied to persisted reveal batches.');
 }

@@ -1,7 +1,9 @@
 # Cinematic summon reveal
 
-The reveal presentation reuses the existing moonlit village background and all eight
-`PlayerModels` bases. The Summoning Shrine menu, wallet, server and game economy are unchanged.
+The reveal presentation reuses the existing moonlit village background, original website
+scroll artwork and all eight `PlayerModels` bases. Card portraits crop the larger artwork
+already supplied at the top of `playermodel.png`, with the native sprite as a loading fallback.
+The Summoning Shrine menu, wallet, server and game economy are unchanged.
 
 ## Native state and actions
 
@@ -9,13 +11,16 @@ The reveal presentation reuses the existing moonlit village background and all e
   presentation code creates heroes, rolls rarity, changes balances, or writes a second save.
 - `Experience.reveal` owns each revealed flag and calls the game's existing `save()`.
   `RevealDesign.open` supplies only the short visual wait. The native busy/batch guards
-  protect individual clicks and Reveal All, including while Skip Animation is pressed.
+  protect individual clicks, Reveal One and Reveal All, including while Skip Animation is pressed.
 - The build helper permits individual cards in any order and replaces legacy rare
   animation waits/particles with the scoped cinematic presentation. Its exact new hooks
   are exported for the preservation test to reverse before checking original inline hashes.
 - Continue uses `Experience.finishReveal`. Summon Again finishes that same native batch,
   selects its original quantity, and calls `Combat.summonBatch` to open the existing
   quote and Pay confirmation. It never purchases automatically.
+- Completed results display the total from a read-only native `RyoPayments.quote` for the
+  batch quantity. A rebuild reuses that quote; checkout always requests its own fresh quote.
+  An unavailable quote shows “Cost shown at checkout” and leaves Continue available.
 - Failed or pending purchases remain handled by the existing checkout. Only confirmed,
   delivered heroes can become reveal cards.
 
@@ -30,11 +35,16 @@ Rank is taken from `hero.r`: Genin gray, Chunin green, Jonin blue, Elite purple,
 Element labels, icons and aura colors follow the existing model identity
 (`PlayerModels.modelFor`), independently of rank. They are visual identities, not added
 combat attributes. Names, level, power and stamina come from the actual hero.
-No separate star-rating field exists, so no star values are invented.
+Stars visualize the existing rank (one for Genin through five for Legend), as in the
+original reveal. They are labelled as rarity rank, not a new or randomized hero statistic.
 
-NEW means a newly recruited hero from this actual server-owned summon, or an explicit
-`isNew` supplied on a legacy record. It does not claim a first-ever model/archetype unlock.
-The final rarity summary counts the actual revealed records.
+NEW! marks the first copy of a model absent from the account's current collection before
+this batch. The calculation excludes every batch output by its real token ID and compares
+only heroes with the same owner. Repeated copies of that model are not marked NEW, and a
+different rarity of an already owned model is not a new model. This uses existing collection
+data and survives refresh without a separate ledger. It does not claim lifetime collection
+history after heroes have been sold/fused. Legacy rescue/fusion records require an explicit
+`isNew`. The final rarity summary counts the actual revealed records.
 
 Native buttons support keyboard and touch. Reveal progress and rare announcements use
 live regions. Animations use CSS transforms/opacity, limited decorative particles and
@@ -56,8 +66,10 @@ source of ownership. Cross-device animation progress is not provided.
 
 `npm run build:local` assembles the generated `app/`; never edit that folder directly.
 `npm test` includes `tests/summon-reveal.cjs`, using isolated server/wallet fixtures.
-It checks real checkout delivery, duplicate prevention, individual/Reveal All/Skip flows,
-reload and account changes, failed purchases, responsive geometry and reduced motion.
+It checks real checkout delivery, duplicate prevention, individual/Reveal One/Reveal All/Skip
+flows, reload and account changes, first-model badges, rank stars, price quotes, failed purchases,
+responsive geometry and reduced motion. `tests/heroes-navigation.cjs` checks Adventure-to-Heroes
+navigation and correct roster identity while preserving inventory and balance.
 Screenshots are written to `tests/out/`.
 
 Run `npm start` and open http://localhost:10000/play/. A signed-in account is required

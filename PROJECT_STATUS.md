@@ -6,8 +6,8 @@ _Development copy created 2026-11-01 (Asia/Singapore)._
 | --- | --- |
 | **This folder** | `D:\Projects\Shinobi-Bombers-Development` — the working copy for Claude and OpenAI Codex |
 | **Source** | GitHub `shinobibomber/shinobi-bombers-render`, branch `main`, commit `11eddc8`. Full history (29 commits, branch `origin/v3/integrated-redesign-2026-11-01`, tag `v3-reference-beta`) attaches with the one-time git setup below |
-| **Latest work** | Live: `dafe3e4` (deployed 2026-11-01) — shared header on every menu, Dojo Services landing + Upgrades/Sensei from reference designs (`website-src/ref/`), polished Heroes detail. Nothing pending |
-| **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Running `dafe3e4` |
+| **Latest work** | Cinematic reveal refinements and Adventure → Heroes crash fix (2026-11-02); see Handoff notes. Manual deployment required after push. |
+| **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Last verified deployment: `d839583` (2026-11-02) |
 | **Original local copy** | `D:\shinobi-bombers-render` — untouched. It is an older clone at `a68984b`, 3 commits behind `main`, with no local edits |
 
 ## How to run (Windows, Node 22)
@@ -107,6 +107,16 @@ that they are unavailable.
    run `npm test` before pushing, commit + push to `main`, then Render → Manual Deploy.
 
 ## Handoff notes (Claude ↔ Codex)
+
+- 2026-11-02 follow-up: reveal uses original scroll artwork and larger portraits from the existing
+  eight-model sheet, Reveal One, rank stars, first-model NEW! badges, and native quoted Ryo cost.
+  Adventure → Heroes crash fixed by isolating overlay metadata from native canvas selectors;
+  Adventure roster hero IDs now resolve to the correct collection entry. Regression coverage:
+  `tests/heroes-navigation.cjs` and `tests/summon-reveal.cjs`. No wallet/server/economy changes.
+  Verified: `npm run build:local`, `npm test` (9 game suites + 17 website checks), and
+  `npm run test:visual -- HEAD` (24 unchanged website screenshots on the isolated rerun;
+  the first run had an 11-pixel Chat rendering discrepancy). Reveal screenshots include
+  sealed, Legend opening, desktop, tablet and mobile results in `tests/out/summon-*.png`.
 
 - 2026-11-02: cinematic scroll reveal work is scoped to `reveal-design/` and its build helper.
   The existing shrine menu is unchanged. Real persisted batches support individual opening,

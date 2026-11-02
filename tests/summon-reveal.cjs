@@ -50,10 +50,13 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
   await withGame(async ({ p, f, errors, account, assert }) => {
     f.holdAdventure = false;
     f.balance = 1000000;
+    const economy = require('../app/server/economy.cjs');
+    f.profile = economy.fulfill(f.profile, economy.quote(f.profile, 'summon', { quantity: 1 })).profile;
     f.fulfillPurchase = fulfillWithRolls([9999, 9700, 9200, 8200, 100, 200, 300, 400, 500, 600]);
     await ready(p);
     await login(p);
     const originalIds = (await snapshot(p)).ids;
+    const priorModels = await p.evaluate(() => S.h.filter(h => h.tokenOwner === RyoPayments.state.account).map(h => PlayerModels.modelFor(h).key));
     await p.evaluate(() => { go(2); Combat.quantity(10); });
     f.holdQuote = true;
     await p.evaluate(() => { Combat.summonBatch(); Combat.summonBatch(); });
@@ -91,6 +94,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     await p.keyboard.press('Enter');
     await p.waitForSelector('#summonReveal.legend-opening');
     assert.match(await p.locator('.cinematic-announcement').textContent(), /LEGEND AWAKENED/);
+    await p.screenshot({ path: path.join(output, 'summon-opening-desktop.png'), scale: 'css' });
     // A server refresh rebuilds the native modal during its presentation wait.
     await p.evaluate(() => Experience.refreshReveal());
     await p.waitForFunction(index => S.v2.revealBatch[index].revealed, legendIndex);
@@ -122,6 +126,12 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     await p.waitForSelector('#summonReveal[open]');
     assert.deepEqual((await snapshot(p)).ids, saved.ids, 'disconnect leaves collection ownership intact');
 
+    // Reveal One opens just the next saved result, even with rapid duplicate clicks.
+    await p.evaluate(() => { const one = document.querySelector('#revealOne'); one.click(); one.click(); });
+    await p.waitForFunction(() => S.v2.revealBatch.filter(item => item.revealed).length === 2 && !document.querySelector('#revealOne').disabled);
+    assert.equal(await revealedCount(p), 2);
+    assert.equal(count(f, 'purchase'), 1, 'Reveal One is presentation only');
+
     // Reveal All and Skip may arrive in the same frame or during an opening.
     await p.locator('#revealAll').click();
     await p.waitForSelector('.reveal-card.is-opening');
@@ -135,8 +145,18 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert.equal(completed.balance, saved.balance);
     assert.equal(count(f, 'purchase'), 1);
     assert.equal(f.purchases.length, 1);
-    assert.equal(await p.locator('.cinematic-new:visible').count(), 10, 'NEW identifies newly recruited real output records');
-    assert.equal(await p.locator('.cinematic-stars').count(), 0, 'unsupported star ratings are not invented');
+    const newModels = await p.locator('.reveal-card:has(.cinematic-new:not([hidden]))').evaluateAll(cards => cards.map(card => card.dataset.element));
+    const batchModels = await p.locator('.reveal-card').evaluateAll(cards => cards.map(card => card.dataset.element));
+    assert.deepEqual(newModels.slice().sort(), [...new Set(batchModels)].filter(model => !priorModels.includes(model)).sort(), 'NEW marks only the first copy of a model absent from the previous collection');
+    assert.equal(new Set(newModels).size, newModels.length, 'duplicate models within one batch are not all NEW');
+    const starRanks = await p.locator('.reveal-card').evaluateAll(cards => cards.map(card => ({ rank: +card.dataset.rank, stars: card.querySelector('.cinematic-stars').textContent, label: card.querySelector('.cinematic-stars').getAttribute('aria-label') })));
+    for (const card of starRanks) { assert.equal(card.stars, '★'.repeat(card.rank + 1)); assert.match(card.label, new RegExp('rank ' + (card.rank + 1) + ' of 5')); }
+    await p.waitForFunction(() => document.querySelector('.cinematic-cost')?.textContent === '255,000 Ryo' && !RyoPayments.state.busy);
+    assert.equal(count(f, 'quote'), 2, 'the results cost is one read-only native quote');
+    assert.equal(count(f, 'purchase'), 1, 'displaying the price cannot purchase');
+    await p.evaluate(() => Experience.refreshReveal());
+    assert.deepEqual(await p.locator('.reveal-card:has(.cinematic-new:not([hidden]))').evaluateAll(cards => cards.map(card => card.dataset.element)), newModels, 'NEW classification survives presentation rebuilds');
+    assert.equal(count(f, 'quote'), 2, 'rebuilding the results reuses its cached quote');
     const expectedCounts = [0, 1, 2, 3, 4].map(rank => expected.filter(hero => hero.rank === rank).length);
     assert.deepEqual(await p.locator('.cinematic-summary b').allTextContents(), expectedCounts.map(String));
     const cards = await p.locator('[data-reveal]').evaluateAll(elements => elements.map(element => ({
@@ -177,7 +197,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert.equal(await p.locator('#summonReveal').evaluate(dialog => dialog.getAnimations({ subtree: true }).filter(animation => animation.playState === 'running').length), 0, 'reduced motion stops all reveal/ambient effects');
     await p.locator('#revealAgain').click();
     await p.waitForSelector('#tokenCheckoutDialog[open]');
-    assert.equal(count(f, 'quote'), 2, 'Summon Again uses the real quotation path');
+    assert.equal(count(f, 'quote'), 3, 'Summon Again obtains a fresh native checkout quote');
     assert.equal(count(f, 'purchase'), 1, 'Summon Again still requires explicit payment confirmation');
     assert.equal(f.balance, 745000);
     await p.locator('#checkoutCancel').click();
@@ -189,6 +209,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     await p.locator('#checkoutConfirm').click();
     await p.waitForSelector('#summonReveal[open]');
     await p.waitForFunction(() => S.v2.revealBatch.length === 1 && !RyoPayments.state.busy);
+    f.quoteError = true;
     const motionResult = await p.evaluate(async () => {
       const started = performance.now();
       await Experience.reveal(0);
@@ -198,6 +219,8 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert(motionResult.revealed);
     assert(motionResult.elapsed < 200, 'reduced-motion opening does not wait for cinematic timers');
     assert.equal(motionResult.animations, 0);
+    await p.waitForFunction(() => document.querySelector('.cinematic-cost')?.textContent === 'Cost shown at checkout');
+    assert.equal(count(f, 'purchase'), 2, 'a failed price lookup has no purchase side effects');
     await p.locator('#revealContinue').click();
     await p.waitForSelector('#summonReveal', { state: 'hidden' });
     assert.equal(await p.evaluate(() => S.v2.revealBatch.length), 0);
@@ -206,7 +229,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert.equal(count(f, 'purchase'), 2, 'Continue never triggers another purchase');
     assert.equal(f.balance, 719500, 'single summon retains its existing price and fee');
     assert.deepEqual(errors, []);
-    console.log('PASS: actual ten-result checkout, duplicate guards, any-card reveal, mid-animation refresh/disconnect, same-browser recovery, Reveal All/Skip, independent elemental/rank styling, responsive 5×2/2-column layout and reduced motion.');
+    console.log('PASS: actual checkout, duplicate guards, Reveal One/All/Skip, refresh/disconnect recovery, first-model NEW badges, rank stars, quoted cost, independent element/rank styling, responsive layout and reduced motion.');
   });
 
   await withGame(async ({ p, f, errors, assert }) => {
