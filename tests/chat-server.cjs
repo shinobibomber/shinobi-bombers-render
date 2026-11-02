@@ -50,7 +50,34 @@ const {Store}=require(path.join(root,'store.cjs')),chat=require(path.join(root,'
  const kept=(await db.query("SELECT COUNT(*)::int AS n FROM ryo_chat WHERE scope='test-retention'")).rows[0].n;assert.equal(kept,chat.KEEP,'older messages are pruned');
  const page=(await chat.handle(busy,alice,'chat-list',{channel:'global'})).messages;assert.equal(page.length,chat.PAGE);assert.equal(page.at(-1).text,'message '+(chat.KEEP+24),'the page ends with the newest message');
 
+ // Legend summons: posted to System once, only when the real order settles as confirmed.
+ const economy=require(path.join(root,'economy.cjs')),crypto=require('node:crypto'),originalRandom=crypto.randomInt;
+ const shop=new Store(pool,'test-legend',()=>clock),buyer='BuyerWa11etCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC';
+ await shop.transaction(async c=>{await shop.locked(c,buyer);await c.query('UPDATE ryo_accounts SET balance=1000000 WHERE scope=$1 AND wallet=$2',[shop.scope,buyer]);await shop.profileLocked(c,buyer)});
+ clock+=3000;await chat.handle(shop,buyer,'chat-send',{channel:'global',text:'wish me luck',name:'Hikari'});
+ const buy=async(id,rolls)=>{const q=economy.quote(await shop.profile(buyer),'summon',{quantity:rolls.length});crypto.randomInt=(...args)=>args.length===1&&args[0]===10000?rolls.shift():originalRandom(...args);
+  try{return await shop.purchase(buyer,id,'summon',{quantity:q.params.quantity},q.total,async()=>({signature:'sig-'+id,wire:'wire',lastHeight:1}))}finally{crypto.randomInt=originalRandom}};
+ const systemFeed=async()=>(await chat.handle(shop,alice,'chat-list',{channel:'global',systemAfter:0})).system;
+ await buy('legend-order-0001',[9950,100,9999,200,300]);
+ assert.deepEqual(await systemFeed(),[],'a pending order announces nothing');
+ const settled=await shop.settlePurchase(buyer,'legend-order-0001','confirmed');assert.equal(settled.status,'confirmed');
+ let feed=await systemFeed();assert.equal(feed.length,1,'a confirmed order is announced once');
+ const legends=settled.result.outputs.filter(h=>h.rank===4).map(h=>h.name);assert.equal(legends.length,2);
+ assert.equal(feed[0].text,'⭐ Hikari (Buye…CCCC) summoned 2 LEGENDS: '+legends.join(', ')+'!','names the player, short wallet and every Legend');
+ assert.deepEqual({name:feed[0].name,from:feed[0].from,mine:feed[0].mine},{name:'System',from:'',mine:false});
+ await shop.settlePurchase(buyer,'legend-order-0001','confirmed');
+ await shop.transaction(c=>chat.announceLegends(shop,c,buyer,settled));
+ assert.equal((await systemFeed()).length,1,'repeated settlement or announcement never duplicates');
+ await buy('legend-order-0002',[9990]);await shop.settlePurchase(buyer,'legend-order-0002','refunded');
+ await buy('plain-order-00003',[100]);await shop.settlePurchase(buyer,'plain-order-00003','confirmed');
+ feed=await systemFeed();assert.equal(feed.length,1,'refunded Legends and ordinary summons are not announced');
+ await buy('legend-order-0004',[9900]);await shop.settlePurchase(buyer,'legend-order-0004','confirmed');
+ feed=await systemFeed();assert.equal(feed.length,2);assert.match(feed[1].text,/^⭐ Hikari \(Buye…CCCC\) summoned a LEGEND: .+!$/);
+ assert.deepEqual((await chat.handle(shop,alice,'chat-list',{channel:'global',systemAfter:feed[0].id})).system.map(m=>m.id),[feed[1].id],'System polling is incremental');
+ assert.equal((await chat.handle(shop,alice,'chat-list',{channel:'system'})).messages.length,2,'the System channel can be read directly');
+ await assert.rejects(chat.handle(shop,buyer,'chat-send',{channel:'system',text:'fake legend'}),/Unknown chat channel/,'players cannot post to System');
+ assert.equal((await chat.handle(shop,alice,'chat-list',{channel:'global'})).system,undefined,'System is only included when asked');
  // Concurrency: send() takes the same per-wallet account row lock (store.locked) as deposits and
  // purchases. This single-connection PGlite pool cannot exercise row locks, so it is not asserted here.
- console.log('PASS: chat send/list, sanitizing, link blocking, names, rate limits, polling, scope isolation, and retention.');
+ console.log('PASS: chat send/list, sanitizing, link blocking, names, rate limits, polling, scope isolation, retention and once-only Legend summon announcements.');
 })().catch(error=>{console.error(error);process.exitCode=1});

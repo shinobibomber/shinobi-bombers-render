@@ -56,10 +56,18 @@ const collection = async p => {
     await p.waitForFunction(() => /Links are not allowed/.test(document.querySelector('.sbw-cp-note').textContent));
     assert.equal(await chatInput.inputValue(), 'visit evil.xyz now', 'a rejected message stays editable');
     assert.equal(await p.locator('.sbw-cp-msg').count(), 1, 'rejected messages are never shown');
+    // A finalized Legend summon (written by the real settlement announcement) reaches the System tab.
+    const chat = require('../app/server/chat.cjs');
+    await f.chatStore.transaction(c => chat.announceLegends(f.chatStore, c, 'OtherPlayerWa11etDDDDDDDDDDDDDDDDDDDDDDDDDD', { product: 'summon', request_id: 'legend-order', result: { outputs: [{ rank: 4, name: 'Ren of Hidden Leaf' }] } }));
+    await p.waitForSelector('[role="tab"].sbw-cp-unread', { timeout: 8000 });
+    await p.getByRole('tab', { name: /System/ }).click();
+    assert.equal(await p.locator('.sbw-cp-legend').count(), 1, 'the System tab shows the Legend announcement');
+    assert.match(await p.locator('.sbw-cp-legend').textContent(), /summoned a LEGEND: Ren of Hidden Leaf!/);
+    assert.equal(await p.locator('[role="tab"].sbw-cp-unread').count(), 0, 'viewing System clears its unread marker');
     await p.keyboard.press('Escape');
     assert.equal(await p.locator('.sbw-chatpop').isVisible(), false, 'Escape closes the chat pop-up');
-    await p.waitForFunction(() => /Hello/.test(document.querySelector('.sbw-chatline')?.textContent || ''));
-    assert.equal(await p.locator('.sbw-chatline').isVisible(), true, 'the Home chat bar shows the newest real message');
+    await p.waitForFunction(() => /LEGEND/.test(document.querySelector('.sbw-chatline')?.textContent || ''));
+    assert.equal(await p.locator('.sbw-chatline').isVisible(), true, 'the Home chat bar shows the newest message, here the Legend announcement');
     await collection(p);
     await p.waitForTimeout(600);
     const portraits = await p.evaluate(() => {

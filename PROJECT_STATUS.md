@@ -108,6 +108,11 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 Legend summon announcements (owner request): when a summon order settles as
+  confirmed with Legend heroes, `store.settlePurchase` (hooked by `apply-chat.cjs`) posts one
+  System chat message in the same transaction (`ref` unique per order). The chat pop-up's
+  System tab shows them with an unread dot; Home's bar shows the newest message.
+
 - 2026-11-03 live Global chat (owner request): `chat/` + `apply-chat.cjs` add a server-backed
   chat to the existing Ryo API (`chat-list` / `chat-send`, table `ryo_chat`, created by
   `db:init`). Home's chat bar opens it as a pop-up and shows the newest message. Server rules:

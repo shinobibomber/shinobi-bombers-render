@@ -1,7 +1,7 @@
 # Global chat
 
 Live Global chat for signed-in wallets. It opens as a pop-up from the chat bar on Home, and
-the bar itself shows the newest message.
+the bar itself shows the newest message. The read-only System tab announces Legend summons.
 
 ## Pieces
 
@@ -11,6 +11,8 @@ the bar itself shows the newest message.
   during `npm run build`), routes the two actions in `service.cjs`, and adds
   `RyoPayments.chat(action, body)` to the game client. That client hook is exported as
   `chatPatches` so `tests/preservation.cjs` can reverse it before hashing the original modules.
+  It also hooks `store.settlePurchase` so a confirmed summon with Legend heroes posts a System
+  announcement in the same transaction.
 - `website-design/website-design.js` renders the pop-up and the Home bar line.
 
 No new environment variables, services or ports. Chat uses the same database, session tokens
@@ -29,10 +31,22 @@ and `/.netlify/functions/ryo` endpoint as the rest of the game.
 - The newest 200 messages per channel are kept; older ones are deleted on each send.
   A page is the newest 50 messages; polling asks only for messages after the last seen ID.
 
+## Legend announcements
+
+- Posted by the server only, inside the purchase settlement transaction, when a summon order is
+  confirmed (finalized). Pending and refunded orders, fusion and ordinary summons post nothing.
+- One message per order, naming every Legend: "⭐ Hikari (7jY9…3D6X) summoned a LEGEND: Ren of
+  Hidden Leaf!". The player's name is their latest Global chat name, otherwise "A shinobi".
+- `ref = summon:<order>` with a unique index makes re-settlement or retries a no-op.
+- Players cannot post to the `system` channel. `chat-list` returns new System messages when the
+  client sends `systemAfter`, so one request serves both tabs.
+
 ## Client
 
 The pop-up polls every 3 seconds while open; Home polls every 20 seconds for the bar line.
-Nothing polls while signed out, while the tab is hidden, or on other screens. Messages are
+Nothing polls while signed out, while the tab is hidden, or on other screens.
+A new announcement puts a gold dot on the System tab, and the Home bar shows whichever of the
+newest Global message and System announcement is more recent. Messages are
 inserted with `textContent`, never as HTML.
 
 ## Not included yet

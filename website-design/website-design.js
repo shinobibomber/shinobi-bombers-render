@@ -169,8 +169,10 @@
   PAINT.home = (b, now) => {
     const nickName = (gs() && gs().nick) || 'Shinobi', mine = owned(), dep = deployed();
     setText(b.name, nickName); setText(b.line, `${mine.length} Shinobi · ${dep.length}/10 deployed`);
-    const last = chatMsgs.at(-1); b.chat.hidden = !last;
-    if (last) { setText(b.chat.children[1], last.name + ':'); setText(b.chat.children[2], last.text); }
+    // Message IDs share one sequence, so the higher ID is the newer of Global and System.
+    const said = chatMsgs.at(-1), told = sysMsgs.at(-1), last = !told || (said && said.id > told.id) ? said : told;
+    b.chat.hidden = !last; b.chat.classList.toggle('sbw-chatline-sys', last === told && !!told);
+    if (last) { setText(b.chat.children[0], last === told ? '[System]' : '[Global]'); setText(b.chat.children[1], last === told ? '' : last.name + ':'); setText(b.chat.children[2], last.text); }
     let ready = 0; try { ready = BattleRoster.list().length; } catch {}
     setText(b.row, `Battle-ready ${ready} / 50`);
     const draw = (cv, h, cx, by, sc) => paintPortrait(cv, h, cx, by, sc, now);
@@ -865,17 +867,22 @@
   /* ---------- chat pop-up (Home chat bar) ---------- */
   // Global chat through the game's authenticated API (RyoPayments.chat → chat.cjs). Messages are
   // rendered as text only. It polls every 3s while open and every 20s for Home's chat bar.
-  let chatPop = null, chatTab = 'Global', chatAfter = 0, chatOwner = null, chatTimer = 0, chatFetching = false, chatSending = false;
-  const chatMsgs = [], CHAT_KEEP = 50, WELCOME = 'Welcome to Shinobi Bombers! Forge your ninja way!';
+  // The same request returns new System announcements (Legend summons) for the System tab.
+  let chatPop = null, chatTab = 'Global', chatAfter = 0, sysAfter = 0, sysPrimed = false, sysUnread = false, chatOwner = null, chatTimer = 0, chatFetching = false, chatSending = false;
+  const chatMsgs = [], sysMsgs = [], CHAT_KEEP = 50, WELCOME = 'Welcome to Shinobi Bombers! Forge your ninja way!';
   function chatBar() { return cur && built[cur] ? built[cur].sec.querySelector('[data-sbwid="chatbar"]') : null; }
   const chatReady = () => !!(window.RyoPayments?.chat && RyoPayments.state.authenticated);
   function chatNote(text, isError = false) { if (!chatPop) return; const n = $('.sbw-cp-note', chatPop); n.textContent = text; n.classList.toggle('sbw-cp-error', isError); n.setAttribute('role', isError ? 'alert' : 'status'); }
-  function chatLine(cls, label, text) { const p = document.createElement('p'); p.className = cls; mk('i', '', p).textContent = label; p.append(text); return p; }
+  function chatLine(cls, label, text, created) {
+    const p = document.createElement('p'); p.className = cls; mk('i', '', p).textContent = label; p.append(text);
+    if (created) { const d = new Date(created), t = mk('time', '', p); t.dateTime = d.toISOString(); t.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+    return p;
+  }
   function renderChat() {
     if (!chatPop || chatPop.hidden) return;
     const log = $('.sbw-cp-log', chatPop), stick = log.scrollHeight - log.scrollTop - log.clientHeight < 40, nodes = [];
     if (chatTab === 'Guild') { const p = document.createElement('p'); p.className = 'sbw-cp-empty'; p.textContent = 'Guild chat opens when guilds launch.'; nodes.push(p); }
-    else if (chatTab === 'System') nodes.push(chatLine('sbw-cp-sys', '[System]', WELCOME));
+    else if (chatTab === 'System') { nodes.push(chatLine('sbw-cp-sys', '[System]', WELCOME)); for (const m of sysMsgs) nodes.push(chatLine('sbw-cp-sys sbw-cp-legend', '[System]', m.text, m.created)); sysUnread = false; }
     else {
       nodes.push(chatLine('sbw-cp-sys', '[Global]', WELCOME));
       for (const m of chatMsgs) {
@@ -886,16 +893,25 @@
       }
     }
     log.replaceChildren(...nodes); if (stick) log.scrollTop = log.scrollHeight;
+    const sysTab = $$('[role="tab"]', chatPop)[2]; sysTab.classList.toggle('sbw-cp-unread', sysUnread); sysTab.setAttribute('aria-label', sysUnread ? 'System, new announcement' : 'System');
     const input = $('input', chatPop), on = chatTab === 'Global' && chatReady();
     input.disabled = !on; $('button[type="submit"]', chatPop).disabled = !on || chatSending;
     input.placeholder = chatTab !== 'Global' ? 'Switch to Global to chat' : chatReady() ? 'Type your message…' : 'Sign in to chat';
   }
-  function mergeChat(list) {
+  function addMessages(target, list) {
+    const seen = new Set(target.map(m => m.id)), added = (list || []).filter(m => !seen.has(m.id));
+    target.push(...added); target.sort((a, b) => a.id - b.id); if (target.length > CHAT_KEEP) target.splice(0, target.length - CHAT_KEEP);
+    return added.length;
+  }
+  function mergeChat(list, system) {
     const account = RyoPayments.state.account;
-    if (account !== chatOwner) { chatOwner = account; chatMsgs.length = 0; chatAfter = 0; }
-    const seen = new Set(chatMsgs.map(m => m.id));
-    for (const m of list || []) if (!seen.has(m.id)) { chatMsgs.push(m); chatAfter = Math.max(chatAfter, m.id); }
-    chatMsgs.sort((a, b) => a.id - b.id); if (chatMsgs.length > CHAT_KEEP) chatMsgs.splice(0, chatMsgs.length - CHAT_KEEP);
+    if (account !== chatOwner) { chatOwner = account; chatMsgs.length = sysMsgs.length = 0; chatAfter = sysAfter = 0; sysPrimed = sysUnread = false; }
+    addMessages(chatMsgs, list); chatAfter = chatMsgs.at(-1)?.id || chatAfter;
+    if (system) {
+      // Announcements already present at first load are history, not new.
+      if (addMessages(sysMsgs, system) && sysPrimed && !(chatPop && !chatPop.hidden && chatTab === 'System')) sysUnread = true;
+      sysAfter = sysMsgs.at(-1)?.id || sysAfter; sysPrimed = true;
+    }
     renderChat(); refresh();
   }
   async function pollChat() {
@@ -904,7 +920,8 @@
       chatFetching = true;
       try {
         if (RyoPayments.state.account !== chatOwner) mergeChat([]);
-        mergeChat((await RyoPayments.chat('chat-list', { channel: 'global', after: chatAfter })).messages);
+        const feed = await RyoPayments.chat('chat-list', { channel: 'global', after: chatAfter, systemAfter: sysAfter });
+        mergeChat(feed.messages, feed.system);
         if (open && !chatSending && $('.sbw-cp-note', chatPop).classList.contains('sbw-cp-error')) chatNote('');
       } catch { if (open) chatNote('Chat is temporarily unavailable. Retrying…', true); }
       finally { chatFetching = false; }

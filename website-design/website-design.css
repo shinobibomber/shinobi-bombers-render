@@ -86,6 +86,14 @@ body.sbw-active .gc-header .gc-tools>div>strong{display:none}
 #sbwLayer .sbw-cp-mine b{color:#ffd447}
 #sbwLayer .sbw-cp-count{align-self:center;color:#8f86b8;font-size:12px;white-space:nowrap}
 #sbwLayer .sbw-cp-rules{margin:0;color:#8f86b8;font-size:12px}
+/* System announcements (Legend summons) and the unread marker on the System tab. */
+#sbwLayer .sbw-cp-sys{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:2px}
+#sbwLayer .sbw-cp-sys time{margin-left:auto;padding-left:8px;color:#b9a4e8;font-size:12px}
+#sbwLayer .sbw-cp-legend{border-color:#ffcf63;background:linear-gradient(90deg,#5a3a08,#2a1a04 70%);box-shadow:0 0 10px #ffb02a55;color:#fff3cf;font-weight:700}
+#sbwLayer .sbw-cp-tabs button{position:relative}
+#sbwLayer .sbw-cp-tabs button.sbw-cp-unread::after{content:'';position:absolute;top:-4px;right:-4px;width:9px;height:9px;border-radius:50%;background:#ffcf63;box-shadow:0 0 6px #ffb02a}
+#sbwLayer .sbw-chatline-sys i{color:#ffcf63}
+#sbwLayer .sbw-chatline-sys span{color:#ffe7a8}
 #sbwLayer .sbw-chatline{position:absolute;z-index:8;display:flex;align-items:center;gap:8px;overflow:hidden;background:#000b19;color:#e6ecff;font:600 17px Rajdhani,sans-serif;white-space:nowrap;pointer-events:none}
 #sbwLayer .sbw-chatline i{font-style:normal;font-weight:800;color:#cfd8ee}
 #sbwLayer .sbw-chatline b{color:#9fd8ff}
