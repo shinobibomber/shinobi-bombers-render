@@ -188,6 +188,10 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert(modelDraws.canvases >= 10 && modelDraws.draws <= modelDraws.canvases * 4, 'one coalesced hero + aura draw per changed visible canvas');
     assert.equal(modelDraws.images, 0, 'results show the actual game models, not separate artwork');
     assert(modelDraws.auras.length >= modelDraws.canvases && modelDraws.matched, 'every result shows the aura of its own rarity');
+    const glow = await p.locator('[data-reveal]').evaluateAll(cards => cards.map(card => ({ rank: Number(card.dataset.rank),
+      filter: getComputedStyle(card.querySelector('.cinematic-model canvas')).filter, halo: getComputedStyle(card.querySelector('.cinematic-model'), '::before').content })));
+    assert(glow.some(card => card.rank >= 3), 'fixture includes Elite/Legend results');
+    for (const card of glow) assert.equal(card.rank >= 3, card.filter.includes('drop-shadow') && card.halo !== 'none', 'only Elite/Legend portraits glow (rank ' + card.rank + ')');
     assert(await p.locator('.cinematic-model canvas').evaluateAll(canvases => canvases.every(canvas => canvas.width === Math.round(canvas.clientWidth * 2) && canvas.height === Math.round(canvas.clientHeight * 2))), 'canvas backing matches high-density display size');
     assert(await p.locator('.cinematic-model canvas').evaluateAll(canvases => canvases.some(canvas => canvas.getAnimations().some(animation => animation.playState === 'running'))), 'models retain smooth compositor idle motion');
     await p.evaluate(() => { revealModelDraws.length = 0; });

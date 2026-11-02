@@ -31,6 +31,12 @@
   /* ---------- live game state (read-only) ---------- */
   function ledger() { return window.RyoPayments ? RyoPayments.state : {}; }
   function account() { const l = ledger(); return l.authenticated ? l.account : null; }
+  // Header wallet pill: the game's own Disconnect (which returns to its sign-in screen),
+  // or that sign-in screen when signed out. No wallet logic of its own.
+  function walletButton() {
+    if (account()) { const native = document.getElementById('betaDisconnect'); if (native && !native.disabled) native.click(); }
+    else window.LoginScreen?.show();
+  }
   function chestPending() { const c = window.AdventureChest && AdventureChest.snapshot; const a = account(); return c && a && c.owner === a && c.chest ? Number(c.chest.pending) : null; }
   /* same hero list the game's own menus count (server-owned and local practice heroes) */
   /* the game's save object is a script-level binding (let S), not a window property */
@@ -85,7 +91,7 @@
     if (t === 'go') return goScreen(arg);
     if (t === 'gcat') return k === 'guild' ? MODS.guild.x() : goScreen('guild');
     if (t === 'chest' || t === 'deposit') return openChest();
-    if (t === 'wallet') return window.ShinobiBetaUI ? ShinobiBetaUI.open() : openChest();
+    if (t === 'wallet') return walletButton();
     if (t === 'codex') return go(3);
     if (t === 'soon') return notice(arg, arg + ' is coming soon.');
     if (t === 'toast') return toast(arg);
@@ -759,14 +765,16 @@
     sl(mk('i', 'sl', cb), c.r); const label = place(mk('span', 'cbt sbw-chest', cb), c.tx, c.ty, c.tw, c.th); label.style.fontSize = c.fs + 'px'; label.dataset.fs = c.fs;
     const dot = place(mk('i', 'cdot', cb), c.dx, c.dy, c.ds, c.ds); dot.hidden = true; cb.addEventListener('click', openChest);
     const live = {}; H.live.forEach(l => { const e = mk('span', 'lv', st); place(e, l.x, l.y, l.w, l.h); e.style.fontSize = l.fs + 'px'; e.dataset.fs = l.fs; e.style.color = l.c; live[l.id] = e; });
-    const covers = {}; for (const key of ['wallet']) { const t = H.hdr[key]; const e = place(mk('span', 'sbw-cover', st), t.x, t.y, t.w, t.h); e.style.background = t.bg; e.style.fontSize = t.fs + 'px'; e.dataset.fs = t.fs; covers[key] = e; }
+    // The wallet pill artwork (icon, address, chevron) becomes one Connect/Disconnect button.
+    const covers = {}, walletLabel = place(mk('span', 'sbw-walletbtn', st), 1303, 58, 203, 49); walletLabel.dataset.fs = 20; covers.wallet = walletLabel;
+    const walletSpot = st.querySelector('[data-sbwid="wallet"]');
     // The artwork's gem pill shows the game's real presence count; its "+" becomes a
     // gear over which the game's own Tools menu (sound, community links) is placed.
     const online = place(mk('span', 'sbw-online', st), 1352, 15, 92, 29); online.title = 'Signed-in players active in the last 90 seconds';
     mk('small', '', online).textContent = 'PLAYERS ONLINE'; const count = mk('b', '', online); count.textContent = '—';
     const gear = place(mk('span', 'sbw-gear', st), 1455, 14, 31, 31); gear.setAttribute('aria-hidden', 'true');
     gear.innerHTML = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>';
-    HDR = { el, st, nav, navhl, label, dot, chestEl: cb, live, covers, online: count, gear };
+    HDR = { el, st, nav, navhl, label, dot, chestEl: cb, live, covers, online: count, gear, walletSpot };
   }
   function markNav() {
     if (!HDR) return; const id = NAVOF[cur]; for (const k in HDR.nav) { const on = k === id; HDR.nav[k].classList.toggle('sbw-on', on); if (on) HDR.nav[k].setAttribute('aria-current', 'page'); else HDR.nav[k].removeAttribute('aria-current'); }
@@ -792,7 +800,11 @@
     if (hb.live.ryo) setText(hb.live.ryo, a && Number.isFinite(Number(l.balance)) ? fmt(Number(l.balance)) + ' Ryo' : '— Ryo');
     if (hb.label) setText(hb.label, pend != null && Number.isFinite(pend) ? 'Chest : ' + fmt(pend) : 'Chest');
     if (hb.dot) hb.dot.hidden = !(pend >= 1);
-    if (hb.covers.wallet) setText(hb.covers.wallet, a ? a.slice(0, 4) + '...' + a.slice(-4) : 'Sign in');
+    if (hb.walletSpot) {
+      setText(hb.covers.wallet, a ? 'Disconnect' : 'Connect Wallet'); hb.covers.wallet.classList.toggle('sbw-connect', !a);
+      const name = a ? 'Disconnect wallet ' + a.slice(0, 4) + '…' + a.slice(-4) : 'Connect wallet';
+      if (hb.walletSpot.getAttribute('aria-label') !== name) { hb.walletSpot.setAttribute('aria-label', name); hb.walletSpot.title = name; }
+    } else if (hb.covers.wallet) setText(hb.covers.wallet, a ? a.slice(0, 4) + '...' + a.slice(-4) : 'Sign in');
     if (hb.online) { const players = (document.getElementById('onlinePlayers')?.textContent || '').match(/\d[\d,]*/); setText(hb.online, a && players ? players[0] : '—'); }
     else if (hb.covers.gems) setText(hb.covers.gems, '⚙ Tools');
     for (const id of ['ltimer', 'btimer', 'cost', 'slabel', 'fcount', 'stitle', 'enemies', 'reward', 'team', 'upcost', 'trainlbl']) if (b.live[id]) b.live[id].hidden = true;

@@ -38,7 +38,9 @@ const collection = async p => {
     assert(summary.x <= gear.x && summary.x + summary.width >= gear.x + gear.width - .5 && Math.abs(summary.height - gear.height) < 1, 'the Tools hit area covers the gear without overhanging the header');
     await p.mouse.click(gear.x + gear.width / 2, gear.y + gear.height / 2);
     assert.equal(await p.evaluate(() => document.querySelector('.gc-tools').open), true, 'the gear opens the game Tools menu');
+    assert.equal(await p.locator('.gc-tools > div > strong').isVisible(), false, 'the menu does not repeat the pill\'s player count');
     await p.keyboard.press('Escape');
+    assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'Disconnect', 'the signed-in wallet pill is a Disconnect button');
     await collection(p);
     await p.waitForTimeout(600);
     const portraits = await p.evaluate(() => {
@@ -103,6 +105,11 @@ const collection = async p => {
     await p.evaluate(() => { window.__hiddenPortraitPaints = 0; });
     await p.waitForTimeout(600);
     assert.equal(await p.evaluate(() => window.__hiddenPortraitPaints), 0, 'covered native Adventure portraits do not repaint');
+    // Disconnect uses the game's own wallet disconnect, which returns to its sign-in screen.
+    await p.locator('.sbw-hdr [data-sbwid="wallet"]').click();
+    await p.waitForFunction(() => !RyoPayments.state.authenticated && LoginScreen.active);
+    await login(p);
+    assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'Disconnect', 'signing back in restores the Disconnect button');
     assert.deepEqual(errors, [], 'portrait rendering and navigation remain error-free');
   });
   console.log('PASS: eight original animated portraits, pose-keyed repaint, no HD downloads and hidden-paint suppression.');

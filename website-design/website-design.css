@@ -55,6 +55,13 @@ body.sbw-active .gc-header [data-gc-chest]:focus-visible{outline:3px solid #33c8
 #sbwLayer .sbw-online b::before{content:'';width:7px;height:7px;border-radius:50%;background:#3ee87a;box-shadow:0 0 6px #3ee87a}
 #sbwLayer .sbw-gear{position:absolute;z-index:8;display:grid;place-items:center;border-radius:6px;background:linear-gradient(#021133,#010e33);color:#71b3fa;pointer-events:none}
 #sbwLayer .sbw-gear svg{width:22px;height:22px;filter:drop-shadow(0 0 3px #3b8cff)}
+/* The pill already shows the count, so the Tools menu drops its own "Players online" line. */
+body.sbw-active .gc-header .gc-tools>div>strong{display:none}
+/* Wallet pill: a single Connect / Disconnect button over the artwork. The hotspot beneath takes the click. */
+#sbwLayer .sbw-walletbtn{position:absolute;z-index:8;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:2px solid #9a6bff;border-radius:10px;
+  background:linear-gradient(#2b1660,#120931);box-shadow:0 0 10px #8a4dff88,inset 0 1px 0 #ffffff26;color:#efe6ff;font:800 20px Rajdhani,sans-serif;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;pointer-events:none;transition:filter .15s}
+#sbwLayer .sbw-walletbtn.sbw-connect{border-color:#ffc13a;background:linear-gradient(#5a3a08,#2a1a04);box-shadow:0 0 10px #ffb02a88,inset 0 1px 0 #ffffff33;color:#fff1c2}
+#sbwLayer .hs[data-sbwid="wallet"]:hover~.sbw-walletbtn{filter:brightness(1.25)}
 body.sbw-active .gc-header .gc-tools{visibility:visible;position:fixed!important;left:var(--sbw-tools-x,0);top:var(--sbw-tools-y,0);width:var(--sbw-tools-w,0);height:var(--sbw-tools-h,0);margin:0!important;z-index:1}
 body.sbw-active .gc-header .gc-tools>summary{position:absolute;inset:0;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;
   background:none!important;border:0!important;box-shadow:none!important;color:transparent!important;cursor:pointer;border-radius:10px;list-style:none}
