@@ -40,15 +40,17 @@ async function send(store,wallet,body){
  });
 }
 async function prune(store,c,ch){await c.query('DELETE FROM ryo_chat WHERE scope=$1 AND channel=$2 AND id<=(SELECT id FROM ryo_chat WHERE scope=$1 AND channel=$2 ORDER BY id DESC OFFSET $3 LIMIT 1)',[store.scope,ch,KEEP])}
-// Called inside the purchase settlement transaction, so only finalized summons are announced,
-// and the per-order ref makes a repeated settlement a no-op.
+// Called inside the purchase settlement transaction, so only finalized summons and fusions are
+// announced (a failed fusion attempt produces no hero), and the per-order ref makes a repeated
+// settlement a no-op.
+const VERB={summon:'summoned',fusion:'fused'};
 async function announceLegends(store,c,wallet,row){
- const legends=row?.product==='summon'?(row.result?.outputs||[]).filter(hero=>hero&&hero.rank===4):[];
+ const verb=VERB[row?.product],legends=verb?(row.result?.outputs||[]).filter(hero=>hero&&hero.rank===4):[];
  if(!legends.length)return;
  const last=(await c.query("SELECT name FROM ryo_chat WHERE scope=$1 AND wallet=$2 AND channel='global' ORDER BY id DESC LIMIT 1",[store.scope,wallet])).rows[0];
  const who=(last?.name||'A shinobi')+' ('+short(wallet)+')',names=legends.map(hero=>String(hero.name).slice(0,40)).join(', ');
- const text=legends.length===1?'⭐ '+who+' summoned a LEGEND: '+names+'!':'⭐ '+who+' summoned '+legends.length+' LEGENDS: '+names+'!';
- await c.query("INSERT INTO ryo_chat(scope,channel,wallet,name,text,created,ref) VALUES($1,'system',$2,'System',$3,$4,$5) ON CONFLICT DO NOTHING",[store.scope,wallet,text,store.now(),'summon:'+row.request_id]);
+ const text=legends.length===1?'⭐ '+who+' '+verb+' a LEGEND: '+names+'!':'⭐ '+who+' '+verb+' '+legends.length+' LEGENDS: '+names+'!';
+ await c.query("INSERT INTO ryo_chat(scope,channel,wallet,name,text,created,ref) VALUES($1,'system',$2,'System',$3,$4,$5) ON CONFLICT DO NOTHING",[store.scope,wallet,text,store.now(),row.product+':'+row.request_id]);
  await prune(store,c,'system');
 }
 function handle(store,wallet,action,body){return action==='chat-send'?send(store,wallet,body):list(store,wallet,body)}

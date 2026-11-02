@@ -294,7 +294,7 @@
     const maxBtn = nativeEl('#p6', e => (e.getAttribute('onclick') || '') === `V2.fuseBatch(${rank},0)`);
     setText(b.max, maxBtn ? maxBtn.textContent.trim() : 'Fuse Max (0)');
     const success = (nativeText('#p6', /\d+% success/) || '90% success');
-    setText(b.lineTop, `Combine the weakest ${RNAME[rank]} heroes · 3 → 1 each · Reserve heroes only · ${success}`);
+    setText(b.lineTop, `Combine the weakest ${RNAME[rank]} heroes · 3 → 1 each · ${rank === 3 ? 'Lv 10 Elites only' : 'Reserve heroes only'} · ${success}`);
     setText(b.lineFoot, nativeText('#p6', /Up to \d+ attempts[^\n]*/) || 'Failed attempts consume heroes and charge the fee');
     setText(b.note, `The resulting hero will be a ${RNAME[rank + 1]} with improved base stats and a guaranteed rank jutsu.`);
     setText(b.rarity, RNAME[rank + 1]); b.rarity.style.color = RCOL[rank + 1];
@@ -303,7 +303,8 @@
     const sig = rank + '|' + rows.map(r => r.id + (r.checked ? '*' : '') + (r.disabled ? '!' : '')).join('|');
     if (sig !== b.sig) {
       b.sig = sig;
-      b.list.innerHTML = rows.length ? rows.map((r, i) => `<button type="button" class="sbw-frow${r.checked ? ' on' : ''}" data-i="${i}" ${r.disabled ? 'disabled' : ''} aria-pressed="${r.checked}" aria-label="Select ${esc(r.name)}"><i>${r.checked ? '✓' : ''}</i><canvas width="72" height="78" data-id="${r.id}"></canvas><span class="sbw-fname"><b>${esc(r.name)}</b><small style="color:${RCOL[rank]}">${esc(r.info)}</small></span>${r.stats.map(v => `<em>${esc(v)}</em>`).join('')}<span class="sbw-fj">${esc(r.jutsu)}</span></button>`).join('')
+      const locked = r => /Lv 10 needed/.test(r.info), eligible = rows.filter(r => !locked(r)).length;
+      b.list.innerHTML = rows.length ? (rank === 3 && eligible < 3 ? `<p class="sbw-fnote">Elite → Legend fusion needs three level 10 Elites (${eligible} ready). Train Elites to level 10 in the Dojo.</p>` : '') + rows.map((r, i) => `<button type="button" class="sbw-frow${r.checked ? ' on' : ''}${locked(r) ? ' locked' : ''}" data-i="${i}" ${r.disabled ? 'disabled' : ''} aria-pressed="${r.checked}" aria-label="${locked(r) ? esc(r.name) + ', level 10 needed' : 'Select ' + esc(r.name)}"><i>${r.checked ? '✓' : locked(r) ? '🔒' : ''}</i><canvas width="72" height="78" data-id="${r.id}"></canvas><span class="sbw-fname"><b>${esc(r.name)}</b><small style="color:${RCOL[rank]}">${esc(r.info)}</small></span>${r.stats.map(v => `<em>${esc(v)}</em>`).join('')}<span class="sbw-fj">${esc(r.jutsu)}</span></button>`).join('')
         : `<p class="sbw-fempty">No ${RNAME[rank]} heroes in Reserve. Move heroes to Reserve in Heroes, or summon more Shinobi.</p>`;
       $$('.sbw-frow', b.list).forEach(btn => btn.onclick = () => { const r = fusionRows()[+btn.dataset.i]; if (r && !r.input.disabled) { r.input.click(); b.sig = ''; refresh(); } });
     }
@@ -826,10 +827,14 @@
     const b = cur && built[cur]; if (!b) return;
     const vw = innerWidth, vh = innerHeight;
     if (HDR) {
-      const H = D.header, hs = Math.min(vw / H.W, (vh * 0.14) / H.body), Hh = H.body * hs, hx = (vw - H.W * hs) / 2;
-      HDR.st.style.transform = `translate(${hx}px,0) scale(${hs})`; HDR.el.style.height = (H.body * hs) + 'px';
+      // Content starts at row 100, where the header art's left 70% ends (its clip-path hides another
+      // page's fragments below). Only the wallet/Chest column, clipped at row 107, overhangs the
+      // content, so no empty black strip is left between the header and the screen.
+      const H = D.header, hs = Math.min(vw / H.W, (vh * 0.14) / H.body), Hh = 100 * hs, hx = (vw - H.W * hs) / 2;
+      HDR.st.style.transform = `translate(${hx}px,0) scale(${hs})`; HDR.el.style.height = (107 * hs) + 'px';
       let noticeHeight = 0;
-      if (b.previewNotice) { b.previewNotice.style.top = (Hh + 6) + 'px'; noticeHeight = b.previewNotice.offsetHeight + 12; }
+      // A full-width preview notice sits below the wallet column's overhang, not just the left art.
+      if (b.previewNotice) { b.previewNotice.style.top = (107 * hs + 6) + 'px'; noticeHeight = b.previewNotice.offsetHeight + 12 + 7 * hs; }
       const contentTop = Hh + noticeHeight, top = b.s.hdrH || 0;
       const s = Math.min(vw / b.s.W, (vh - contentTop) / (b.s.H - top));
       // Crop the former per-screen header out of its own viewport. It must not

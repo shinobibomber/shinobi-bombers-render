@@ -108,6 +108,14 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 Fusion, hero limit, header seam (owner request): Fusion lists every Reserve hero of
+  the rank; Elites below level 10 stay listed but locked ("Lv 10 needed", explained above the
+  list) because the Elite → Legend level 10 rule is kept. Collections are capped at 500 heroes:
+  the server summon quote refuses summons past 500 and tells players to fuse (`MAX_HEROES` in
+  `apply-gameplay-options.cjs`). Legend fusions are announced in System chat like summons. The
+  shared header now ends where its art's left part ends (row 100), removing the black strip.
+  New suite: `fusion-limits.cjs`.
+
 - 2026-11-03 Legend summon announcements (owner request): when a summon order settles as
   confirmed with Legend heroes, `store.settlePurchase` (hooked by `apply-chat.cjs`) posts one
   System chat message in the same transaction (`ref` unique per order). The chat pop-up's

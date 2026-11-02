@@ -26,7 +26,10 @@ const output = path.join(__dirname, 'out');
           const crop = parseFloat(stage.style.clipPath.match(/[\d.]+/)[0]);
           const scale = stageRect.width / stage.offsetWidth;
           const notice = document.querySelector('.sbw-scr.on .sbw-preview');
-          return { headerBottom: headerRect.bottom, contentTop: stageRect.top + crop * scale,
+          // Titles sit on the left, below the header art's left part (row 100 of 124); only the
+          // wallet column overhangs further, so full-width notices must clear the whole header.
+          const art = header.querySelector('.sbw-hdr-img').getBoundingClientRect();
+          return { headerBottom: art.top + art.height * 100 / 124, fullHeaderBottom: headerRect.bottom, contentTop: stageRect.top + crop * scale,
             noticeTop: notice?.getBoundingClientRect().top, noticeBottom: notice?.getBoundingClientRect().bottom,
             headerClipped: getComputedStyle(header).overflow === 'hidden',
             decorationClipped: getComputedStyle(document.querySelector('.sbw-hdr-img')).clipPath !== 'none',
@@ -36,7 +39,7 @@ const output = path.join(__dirname, 'out');
         assert(geometry.contentTop >= geometry.headerBottom - 1, `${screen}: title starts below the shared header`);
         assert.equal(geometry.overflow, false, `${screen}: no horizontal overflow`);
         if (screen === 'guild') {
-          assert(geometry.noticeTop >= geometry.headerBottom, 'Guild notice starts below navigation');
+          assert(geometry.noticeTop >= geometry.fullHeaderBottom, 'Guild notice starts below navigation and the wallet column');
           assert(geometry.noticeBottom <= geometry.contentTop, 'Guild notice has space above the original title');
         }
         if (screen === 'summon') {

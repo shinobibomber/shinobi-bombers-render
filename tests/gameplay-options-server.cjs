@@ -32,5 +32,11 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
  for(const percent of [49,91,NaN,50.5,'50'])await assert.rejects(saveSenseiSettings(store,wallet,{returnPercent:percent,enabled:true}),/50% to 90%/);
  await saveSenseiSettings(store,wallet,{returnPercent:50,enabled:false,active:false});assert.equal((await store.profile(wallet)).senseiEnabled,false);clock+=3600000;
  await saveSenseiSettings(store,wallet,{returnPercent:80,enabled:true,active:false});const saved=await store.profile(wallet);assert.equal(saved.senseiReturnPercent,80);assert.equal(saved.senseiEnabledSince,clock);assert(economy.senseiActive(saved,clock));
- await db.close();console.log('PASS: fusion odds/boundaries, level 10, failure consumption+fees, partial batches, two-hero minimum, persisted idempotent settlement, validated Sensei settings and online/offline thresholds.');
+ // 500-hero collection limit: summons that would exceed it are refused; fusion frees room.
+ const full=n=>make(n);
+ assert.equal(economy.quote(full(499),'summon',{quantity:1}).params.quantity,1,'the 500th hero can be summoned');
+ assert.throws(()=>economy.quote(full(500),'summon',{quantity:1}),/holds 500 of 500 heroes. Fuse heroes to free 1 slot/);
+ assert.throws(()=>economy.quote(full(498),'summon',{quantity:5}),/holds 498 of 500 heroes. Fuse heroes to free 3 slot/);
+ assert.equal(economy.quote(full(500),'fusion',{heroIds:ids(full(500))}).product,'fusion','a full collection can still fuse');
+ await db.close();console.log('PASS: fusion odds/boundaries, level 10, failure consumption+fees, partial batches, two-hero minimum, persisted idempotent settlement, validated Sensei settings, online/offline thresholds and the 500-hero limit.');
 })().catch(e=>{crypto.randomInt=originalRandom;console.error(e);process.exitCode=1});

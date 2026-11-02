@@ -1,9 +1,26 @@
 const fs=require('node:fs'),path=require('node:path');
 const marker='<!-- gameplay-options-v1 -->';
-function replaceOne(text,before,after,label){if(text.includes(after))return text;const count=text.split(before).length-1;if(count!==1)throw Error('Gameplay options patch mismatch: '+label+' ('+count+')');return text.replace(before,after)}
+// A collection holds at most this many heroes; summons beyond it are refused until heroes are fused.
+const MAX_HEROES=500;
+// Fusion list: every Reserve hero of the rank is listed. Elites below level 10 stay visible but
+// locked, since Elite → Legend needs three level 10 Elites. Exported so preservation can reverse them.
+const fusionListPatches=[
+ ["const heroes=S.h.filter(h=>h.r===rank&&(h.r!==3||h.lv===10)&&!BattleRoster.eligible(h)&&h.tokenId&&h.tokenOwner===window.RyoPayments?.state.account).sort((a,b)=>a.pw-b.pw||a.lv-b.lv),next=rank+1;",
+  "const listed=S.h.filter(h=>h.r===rank&&!BattleRoster.eligible(h)&&h.tokenId&&h.tokenOwner===window.RyoPayments?.state.account).sort((a,b)=>(a.r===3&&a.lv!==10)-(b.r===3&&b.lv!==10)||a.pw-b.pw||a.lv-b.lv),heroes=listed.filter(h=>h.r!==3||h.lv===10),next=rank+1;"],
+ ['<tbody>${heroes.map(h=>`<tr class="${selected.includes(h.id)?\'picked\':\'\'}">',
+  '<tbody>${listed.map(h=>`<tr class="${selected.includes(h.id)?\'picked\':\'\'}${h.r===3&&h.lv!==10?\' locked\':\'\'}">'],
+ ["${selected.length>=3&&!selected.includes(h.id)?'disabled':''}",
+  "${(selected.length>=3&&!selected.includes(h.id))||(h.r===3&&h.lv!==10)?'disabled':''}"],
+ ["${R[h.r][0]} · Lv ${h.lv} · Reserve</small>",
+  "${R[h.r][0]} · Lv ${h.lv} · ${h.r===3&&h.lv!==10?'Lv 10 needed':'Reserve'}</small>"],
+ ["${!heroes.length?'<p class=\"fusion-empty\">No heroes of this rank yet. Summon more shinobi to begin.</p>':''}",
+  "${!listed.length?'<p class=\"fusion-empty\">No heroes of this rank yet. Summon more shinobi to begin.</p>':rank===3&&heroes.length<3?'<p class=\"fusion-empty\">Elite → Legend fusion needs three level 10 Elites. Train Elites to level 10 in the Dojo.</p>':''}"]
+];
+function replaceOne(text,before,after,label){if(text.includes(after))return text;const count=text.split(before).length-1;if(count!==1)throw Error('Gameplay options patch mismatch: '+label+' ('+count+')');return text.replace(before,()=>after)}
 function applyGameplayOptions(appDir=path.join(__dirname,'app')){
  const patch=(file,fn)=>{const name=path.join(appDir,file),before=fs.readFileSync(name,'utf8'),after=fn(before);if(before!==after)fs.writeFileSync(name,after)};
  patch('server/economy.cjs',s=>{
+  s=replaceOne(s,"if(![1,5,10,15].includes(params.quantity))fail('Choose 1, 5, 10 or 15 summons.');","if(![1,5,10,15].includes(params.quantity))fail('Choose 1, 5, 10 or 15 summons.');if(profile.heroes.length+params.quantity>"+MAX_HEROES+")fail('Your collection holds '+profile.heroes.length+' of "+MAX_HEROES+" heroes. Fuse heroes to free '+(profile.heroes.length+params.quantity-"+MAX_HEROES+")+' slot(s) before summoning '+params.quantity+'.',409);",'hero limit');
   s=replaceOne(s,'function normalizeProfile(profile){','function normalizeProfile(profile){if(!Number.isInteger(profile.senseiReturnPercent)||profile.senseiReturnPercent<50||profile.senseiReturnPercent>90)profile.senseiReturnPercent=90;if(typeof profile.senseiEnabled!=="boolean")profile.senseiEnabled=true;','Sensei defaults');
   s=replaceOne(s,'return profile.sensei===true||Number(profile.senseiRentalUntil||0)>now','return profile.senseiEnabled!==false&&(profile.sensei===true||Number(profile.senseiRentalUntil||0)>now)','Sensei enabled');
   s=replaceOne(s,"if(profile.heroes.length-list.length+list.length/3<2)fail('Keep at least two heroes in the server token collection after fusion.');","if(list[0].rank===3&&list.some(h=>h.level!==10))fail('Elite to Legend fusion requires three level 10 Elite heroes.');\n  if(profile.heroes.length-list.length<2)fail('Keep at least two heroes even if every fusion attempt fails.');",'fusion eligibility');
@@ -37,7 +54,8 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
   s=replaceOne(s,'hud();if(S.v2.revealBatch?.length)Experience.refreshReveal();','hud();if(S.v2.revealBatch?.length)Experience.refreshReveal();window.GameplayOptions?.presentFusionOutcome();','show settled result');
   return s.replace('</head>',marker+'\n<link rel="stylesheet" href="assets/gameplay-options/options.css">\n<script defer src="assets/gameplay-options/options.js"></script>\n</head>');
  });
+ patch('public/index.html',s=>fusionListPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'fusion list '+i),s));
  const dest=path.join(appDir,'public/assets/gameplay-options');fs.mkdirSync(dest,{recursive:true});for(const name of ['options.js','options.css'])fs.copyFileSync(path.join(__dirname,'gameplay-options',name),path.join(dest,name));
  console.log('Server-enforced fusion odds and persisted Sensei preferences applied.');
 }
-module.exports={applyGameplayOptions};if(require.main===module)applyGameplayOptions();
+module.exports={applyGameplayOptions,fusionListPatches,MAX_HEROES};if(require.main===module)applyGameplayOptions();

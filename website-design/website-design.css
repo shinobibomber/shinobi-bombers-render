@@ -128,6 +128,9 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-frow{display:grid;grid-template-columns:26px 44px minmax(0,2.2fr) .6fr .6fr .6fr minmax(0,1.2fr);align-items:center;gap:10px;width:100%;height:60px;padding:0 26px 0 12px;border:0;border-bottom:1px solid #1d2448;background:transparent;color:#fff;font:600 17px Rajdhani,sans-serif;text-align:left;cursor:pointer}
 #sbwLayer .sbw-frow:hover{background:rgba(120,170,255,.10)}
 #sbwLayer .sbw-frow:disabled{opacity:.45;cursor:not-allowed}
+#sbwLayer .sbw-frow.locked i{border-color:#4d4470;font-size:12px}
+#sbwLayer .sbw-frow.locked small{color:#ffcf63!important}
+#sbwLayer .sbw-fnote{margin:6px 12px 8px;padding:8px 12px;border:1px solid #7b4dff;border-radius:6px;background:linear-gradient(90deg,#2a1560,#140a36);color:#e6dcff;font:600 14px Rajdhani,sans-serif}
 #sbwLayer .sbw-frow i{width:22px;height:22px;border-radius:4px;border:2px solid #6a5aa8;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:900;color:#241000}
 #sbwLayer .sbw-frow.on{background:rgba(255,190,60,.10)}
 #sbwLayer .sbw-frow.on i{background:#ffb81f;border-color:#ffb81f;box-shadow:0 0 10px #ffb81f}
@@ -334,11 +337,11 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-perks span{overflow:hidden;text-overflow:ellipsis;font:600 12.5px Rajdhani,sans-serif;color:#dfe6ff}
 #sbwLayer .sbw-dbtn.blue,#sbwLayer .sbw-dbtn.green{font-size:21px;gap:8px}
 /* ---------- shared header: identical on every menu ---------- */
-#sbwLayer .sbw-hdr{position:absolute;left:0;top:0;width:100%;z-index:40;background:#05030f;overflow:hidden}
+#sbwLayer .sbw-hdr{position:absolute;left:0;top:0;width:100%;z-index:40;background:none;overflow:hidden}
 #sbwLayer .sbw-hdr-stage{position:absolute;left:0;top:0;transform-origin:0 0}
 /* The source header includes the beginning of the Guild title below navigation.
    Clip only that decoration; preserve the taller Chest and wallet controls. */
-#sbwLayer .sbw-hdr-img{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;user-select:none;clip-path:polygon(0 0,100% 0,100% 90.32258%,70% 90.32258%,70% 80.64516%,0 80.64516%)}
+#sbwLayer .sbw-hdr-img{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;user-select:none;clip-path:polygon(0 0,100% 0,100% 86.29032%,70% 86.29032%,70% 80.64516%,0 80.64516%)}
 #sbwLayer .sbw-navhl{position:absolute;top:0;height:86px;z-index:6;pointer-events:none;border-radius:0 0 6px 6px;mix-blend-mode:screen;
   background:linear-gradient(180deg,rgba(150,60,255,.95),rgba(96,22,200,.9));box-shadow:inset 0 -3px 0 #ff7ad0,0 0 18px rgba(170,80,255,.85)}
 #sbwLayer .sbw-navhl::after{content:"";position:absolute;inset:0;border:1px solid rgba(220,170,255,.7);border-top:0;border-radius:inherit}

@@ -77,7 +77,21 @@ const {Store}=require(path.join(root,'store.cjs')),chat=require(path.join(root,'
  assert.equal((await chat.handle(shop,alice,'chat-list',{channel:'system'})).messages.length,2,'the System channel can be read directly');
  await assert.rejects(chat.handle(shop,buyer,'chat-send',{channel:'system',text:'fake legend'}),/Unknown chat channel/,'players cannot post to System');
  assert.equal((await chat.handle(shop,alice,'chat-list',{channel:'global'})).system,undefined,'System is only included when asked');
+ // Legend fusions: a confirmed successful Elite → Legend fusion is announced; a failed attempt is not.
+ const forge=new Store(pool,'test-fusion',()=>clock),fuser='FuserWa11etEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE';
+ const elites=economy.normalizeProfile({dojo:0,sensei:true,battleReady:[],heroes:Array.from({length:8},(_,i)=>({tokenId:'elite-'+i,rank:3,level:10,name:'Elite '+i,baseStats:{pw:10,sp:10,st:10}}))});
+ await forge.transaction(async c=>{await forge.locked(c,fuser);await c.query('UPDATE ryo_accounts SET balance=1000000 WHERE scope=$1 AND wallet=$2',[forge.scope,fuser]);await forge.profileLocked(c,fuser);await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[forge.scope,fuser,JSON.stringify(elites)])});
+ const fuse=async(id,ids,roll)=>{const q=economy.quote(await forge.profile(fuser),'fusion',{heroIds:ids});crypto.randomInt=(...args)=>args.length===1&&args[0]===100?roll:originalRandom(...args);
+  try{await forge.purchase(fuser,id,'fusion',{...q.params,fusionRulesAccepted:1},q.total,async()=>({signature:'sig-'+id,wire:'wire',lastHeight:1}))}finally{crypto.randomInt=originalRandom}
+  return forge.settlePurchase(fuser,id,'confirmed')};
+ const fusionFeed=async()=>(await chat.handle(forge,alice,'chat-list',{channel:'system'})).messages;
+ const failed=await fuse('fusion-order-001',['elite-0','elite-1','elite-2'],99);assert.equal(failed.result.outputs.length,0);
+ assert.deepEqual(await fusionFeed(),[],'a failed fusion attempt announces nothing');
+ const won=await fuse('fusion-order-002',['elite-3','elite-4','elite-5'],0),legend=won.result.outputs[0];assert.equal(legend.rank,4);
+ const fused=await fusionFeed();assert.equal(fused.length,1);
+ assert.equal(fused[0].text,'⭐ A shinobi (Fuse…EEEE) fused a LEGEND: '+legend.name+'!','a successful Legend fusion is announced');
+ await forge.settlePurchase(fuser,'fusion-order-002','confirmed');assert.equal((await fusionFeed()).length,1,'re-settling a fusion never duplicates');
  // Concurrency: send() takes the same per-wallet account row lock (store.locked) as deposits and
  // purchases. This single-connection PGlite pool cannot exercise row locks, so it is not asserted here.
- console.log('PASS: chat send/list, sanitizing, link blocking, names, rate limits, polling, scope isolation, retention and once-only Legend summon announcements.');
+ console.log('PASS: chat send/list, sanitizing, link blocking, names, rate limits, polling, scope isolation, retention and once-only Legend summon and fusion announcements.');
 })().catch(error=>{console.error(error);process.exitCode=1});

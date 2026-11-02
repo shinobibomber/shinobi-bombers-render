@@ -1,7 +1,8 @@
 # Global chat
 
 Live Global chat for signed-in wallets. It opens as a pop-up from the chat bar on Home, and
-the bar itself shows the newest message. The read-only System tab announces Legend summons.
+the bar itself shows the newest message. The read-only System tab announces Legend summons
+and Legend fusions.
 
 ## Pieces
 
@@ -33,11 +34,12 @@ and `/.netlify/functions/ryo` endpoint as the rest of the game.
 
 ## Legend announcements
 
-- Posted by the server only, inside the purchase settlement transaction, when a summon order is
-  confirmed (finalized). Pending and refunded orders, fusion and ordinary summons post nothing.
+- Posted by the server only, inside the purchase settlement transaction, when a summon or fusion
+  order is confirmed (finalized) and produced a Legend. Pending and refunded orders, failed fusion
+  attempts and lower ranks post nothing. Fusions read "fused a LEGEND".
 - One message per order, naming every Legend: "⭐ Hikari (7jY9…3D6X) summoned a LEGEND: Ren of
   Hidden Leaf!". The player's name is their latest Global chat name, otherwise "A shinobi".
-- `ref = summon:<order>` with a unique index makes re-settlement or retries a no-op.
+- `ref = <summon|fusion>:<order>` with a unique index makes re-settlement or retries a no-op.
 - Players cannot post to the `system` channel. `chat-list` returns new System messages when the
   client sends `systemAfter`, so one request serves both tabs.
 
