@@ -435,6 +435,14 @@
   }
   function paintPortrait(c, h, x, y, scale, now) {
     if (!c) return;
+    const port = c.closest('.sbw-hc-portrait, .sbw-h2-port, .sbw-at-port');
+    if (port) {
+      const rank = h && h.r >= 3 ? String(h.r) : '';
+      if (port.dataset.aura !== rank) port.dataset.aura = rank;
+      if (rank && !port.querySelector('.sbw-portrait-energy')) {
+        const energy = mk('i', 'sbw-portrait-energy', port); energy.setAttribute('aria-hidden', 'true');
+      }
+    }
     const surface = portraitSurface(c), PM = window.PlayerModels;
     if (!surface) return;
     const phase = RM || PM?.hdReady ? 0 : Math.floor((now || 0) / 180);
@@ -460,7 +468,11 @@
     paintPortrait(c, h, surface.w / 2, surface.h - pad, scale, now);
   }
   function mirror(dst, src, fit = 'contain', anchorY = .5) {
-    if (!dst || !src || !src.width) return; const g = dst.getContext('2d'), W = dst.width, H = dst.height, sw = src.width, sh = src.height;
+    if (!dst || !src || !src.width) return;
+    // Retain native map pixels until the final CSS display scaling. The previous
+    // 1240 -> 1250 copy blurred fine enemy edges before the browser scaled again.
+    if (dst.width !== src.width || dst.height !== src.height) { dst.width = src.width; dst.height = src.height; }
+    const g = dst.getContext('2d'), W = dst.width, H = dst.height, sw = src.width, sh = src.height;
     const s = fit === 'cover' ? Math.max(W / sw, H / sh) : Math.min(W / sw, H / sh), w = sw * s, h = sh * s;
     g.clearRect(0, 0, W, H); try { g.drawImage(src, (W - w) / 2, (H - h) * anchorY, w, h); } catch {}
   }
@@ -505,7 +517,7 @@
     const btn = (k, label, cls = '', dis) => `<button type="button" class="sbw-hb ${cls}" data-k="${k}" data-i="${i}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
     return `<div class="sbw-hcard${on ? ' on' : ''}" data-i="${i}" style="--rc:${col}">
       <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
-      <canvas width="170" height="120" data-i="${i}"></canvas>
+      <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas></div>
       <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
       <div class="sbw-hc-ch"><span>CHAKRA</span><span>${esc(c.ch.replace(/\s/g, ' '))}</span></div><div class="sbw-bar"><i style="width:${pct}%"></i></div>
@@ -754,7 +766,15 @@
   /* ---------- live refresh ---------- */
   function setText(e, t) { if (e && e.textContent !== t) { e.textContent = t; fitText(e); } }
   function fitText(e) { const base = +e.dataset.fs; if (!base) return; let fs = base; e.style.fontSize = fs + 'px'; while (e.scrollWidth > e.clientWidth + 1 && fs > 8) { fs -= 1; e.style.fontSize = fs + 'px'; } }
+  function syncEffects() {
+    if (!layer) return;
+    const paused = String(document.hidden || RM || window.Arena3D?.cfg.fx === 0);
+    const quality = String(window.Arena3D?.cfg.fx ?? 1);
+    if (layer.dataset.effectsPaused !== paused) layer.dataset.effectsPaused = paused;
+    if (layer.dataset.effectsQuality !== quality) layer.dataset.effectsQuality = quality;
+  }
   function refresh(now = performance.now()) {
+    syncEffects();
     if (document.hidden) return;
     const b = cur && built[cur]; if (!b) return;
     const l = ledger(), a = account(), pend = chestPending();
@@ -837,7 +857,7 @@
     addEventListener('shinobi-chest', () => refresh());
     addEventListener('resize', fit);
     motionPreference.addEventListener('change', event => { RM = event.matches; refresh(); });
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
+    document.addEventListener('visibilitychange', () => { syncEffects(); if (!document.hidden) sync(); });
     const nt = document.getElementById('toast'); if (nt) new MutationObserver(() => { if (cur && nt.textContent.trim()) toast(nt.textContent.trim()); }).observe(nt, { childList: true, characterData: true, subtree: true });
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('click', e => { const g = e.target.closest('#sbwLayer .gt'); if (!g) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.innerHTML = `<h2>${esc(g.dataset.t)}</h2><img class="sbw-lb" src="${g.dataset.src}" alt="${esc(g.dataset.t)}"><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`; $('button', dlg).onclick = () => dlg.close(); dlg.showModal(); });

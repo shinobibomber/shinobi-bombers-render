@@ -108,6 +108,17 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 Elite/Legend auras and map floors (Codex pass finished by Claude):
+  tier auras isolate the supplied sheet with smooth alpha, drop stray specks and
+  no longer clip at the frame edge. Elite and Legend add an animated energy ring
+  drawn behind the cached body (24 phases, at most 48 cached frames; static for
+  effects quality 0, reduced motion and hidden tabs). Menu portraits replace the
+  spinning/filter CSS auras with light `data-aura` layers that pause and degrade
+  with effects quality. `MapDesign.drawFloor` reuses identical native floors, and
+  Adventure mirrors keep native resolution. Frozen hashes updated for
+  `map-design.js`, `player-models.js`, `tier-auras.js`. New suites:
+  `aura-rendering.cjs`, `map-render-quality.cjs`. Rendering only: no gameplay,
+  economy or wallet changes.
 - 2026-11-03 hero quality and Adventure rendering: Heroes/Home/Fusion/Adventure
   portraits reuse the eight-model reveal atlas directly at display resolution.
   Added matching side/rear artwork and an optional HD locomotion renderer, with

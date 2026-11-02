@@ -110,8 +110,9 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-hc-top{display:flex;justify-content:space-between;align-items:center}
 #sbwLayer .sbw-hc-top b{font:800 15px Rajdhani,sans-serif;color:var(--rc)}
 #sbwLayer .sbw-hc-top i{font:700 10px Rajdhani,sans-serif;font-style:normal;padding:1px 6px;border:1px solid #8a7ac8;border-radius:4px;background:#120b2e;color:#e8e0ff}
-#sbwLayer .sbw-hcard>:not(canvas){flex-shrink:0}
-#sbwLayer .sbw-hcard canvas{width:170px;height:120px;min-height:0;flex:1 1 120px;align-self:center;border-radius:6px;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--rc) 35%,#1a1040),#0a0620 70%)}
+#sbwLayer .sbw-hcard>:not(.sbw-hc-portrait){flex-shrink:0}
+#sbwLayer .sbw-hc-portrait{position:relative;width:170px;height:120px;min-height:0;flex:1 1 120px;align-self:center;border-radius:6px;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--rc) 35%,#1a1040),#0a0620 70%)}
+#sbwLayer .sbw-hcard canvas{position:relative;z-index:1;display:block;width:100%;height:100%;border-radius:6px}
 #sbwLayer .sbw-hc-name{font:800 16px Rajdhani,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-hc-sub{display:flex;gap:8px;font:600 12px Rajdhani,sans-serif;color:#cfd8ee}
 #sbwLayer .sbw-hc-sub span{color:#ff8ad8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -227,37 +228,31 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-at-card>button:hover{border-color:#ffc13a;box-shadow:0 0 8px rgba(255,193,58,.7)}
 #sbwLayer .sbw-at-card.deployed>button{border-color:#2fd35a;background:linear-gradient(#1f7a3a,#0f4a22)}
 #sbwLayer .sbw-at-card>button:disabled{opacity:.45;cursor:not-allowed}
-/* auras: deployed Elite (purple) and Legend (gold) */
+/* Shared rarity energy: cached portrait pixels stay still; only thin light layers move.
+   No animated canvas filters or box shadows, and no particles over a hero's face. */
 #sbwLayer .sbw-at-aura{display:none}
-#sbwLayer .sbw-at-card.aura-elite,#sbwLayer .sbw-at-card.aura-legend{border-color:transparent;animation:sbw-auraPulse 2.2s ease-in-out infinite}
-#sbwLayer .sbw-at-card.aura-elite .sbw-at-aura,#sbwLayer .sbw-at-card.aura-legend .sbw-at-aura{display:block;position:absolute;inset:-60%;z-index:-2;pointer-events:none;
-  background:conic-gradient(from 0deg,transparent 0 15%,var(--rc) 25%,#fff 28%,var(--rc) 31%,transparent 42% 65%,var(--rc) 75%,#fff 78%,var(--rc) 81%,transparent 92%);animation:sbw-auraSpin 3.6s linear infinite}
-#sbwLayer .sbw-at-card.aura-elite::before,#sbwLayer .sbw-at-card.aura-legend::before{content:"";position:absolute;inset:3px;z-index:-1;border-radius:7px;pointer-events:none;
-  background:radial-gradient(circle at 17% 58%,color-mix(in srgb,var(--rc) 55%,transparent),transparent 38%),linear-gradient(135deg,#1a0b42,#08051c 70%)}
-#sbwLayer .sbw-at-card.aura-elite::after,#sbwLayer .sbw-at-card.aura-legend::after{content:"";position:absolute;left:8px;top:8px;width:96px;height:96px;z-index:-1;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle,color-mix(in srgb,var(--rc) 70%,transparent) 0,transparent 65%);animation:sbw-auraBreath 1.8s ease-in-out infinite}
-#sbwLayer .sbw-at-card.aura-legend{--rc:#ffc13a}
-#sbwLayer .sbw-at-card.aura-legend .sbw-at-info strong{background:linear-gradient(#fff6c8,#ffc13a);-webkit-background-clip:text;background-clip:text;color:transparent}
-@keyframes sbw-auraSpin{to{transform:rotate(360deg)}}
-@keyframes sbw-auraPulse{0%,100%{box-shadow:0 0 12px var(--rc),0 0 26px color-mix(in srgb,var(--rc) 55%,transparent),inset 0 0 14px color-mix(in srgb,var(--rc) 40%,transparent)}50%{box-shadow:0 0 22px var(--rc),0 0 48px color-mix(in srgb,var(--rc) 80%,transparent),inset 0 0 22px color-mix(in srgb,var(--rc) 60%,transparent)}}
-@keyframes sbw-auraBreath{0%,100%{transform:scale(.85);opacity:.6}50%{transform:scale(1.15);opacity:1}}
-@media (prefers-reduced-motion:reduce){#sbwLayer .sbw-at-card .sbw-at-aura,#sbwLayer .sbw-at-card::after,#sbwLayer .sbw-at-card.aura-elite,#sbwLayer .sbw-at-card.aura-legend{animation:none}}
 #sbwLayer .sbw-patch{position:absolute;z-index:6;pointer-events:none;user-select:none}
-/* brighter animated glow for deployed Elite / Legend portraits in the Adventure team */
-#sbwLayer .sbw-at-card.aura-elite .sbw-at-port,#sbwLayer .sbw-at-card.aura-legend .sbw-at-port{isolation:isolate}
-#sbwLayer .sbw-at-card.aura-elite .sbw-at-port::before,#sbwLayer .sbw-at-card.aura-legend .sbw-at-port::before{content:"";position:absolute;inset:-14px;z-index:-1;border-radius:50%;pointer-events:none;
-  background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--rc) 85%,#fff) 0 6deg,transparent 6deg 24deg);
-  -webkit-mask:radial-gradient(circle,#000 22%,transparent 68%);mask:radial-gradient(circle,#000 22%,transparent 68%);animation:sbw-auraSpin 6s linear infinite,sbw-raysPulse 1.6s ease-in-out infinite}
-#sbwLayer .sbw-at-card.aura-elite .sbw-at-port::after,#sbwLayer .sbw-at-card.aura-legend .sbw-at-port::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
-  background:radial-gradient(circle at 20% 30%,#fff 0 1.5px,transparent 2.5px),radial-gradient(circle at 78% 22%,#fff 0 1.5px,transparent 2.5px),radial-gradient(circle at 70% 75%,#fff 0 2px,transparent 3px),radial-gradient(circle at 28% 80%,#fff 0 1.5px,transparent 2.5px),radial-gradient(circle at 50% 10%,#fff 0 1px,transparent 2px);
-  filter:drop-shadow(0 0 3px var(--rc)) drop-shadow(0 0 6px var(--rc));animation:sbw-sparkle 1.4s ease-in-out infinite}
-#sbwLayer .sbw-at-card.aura-elite .sbw-at-port canvas,#sbwLayer .sbw-at-card.aura-legend .sbw-at-port canvas{animation:sbw-portGlow 1.6s ease-in-out infinite}
-#sbwLayer .sbw-at-card.aura-legend .sbw-at-port::before{background:repeating-conic-gradient(from 0deg,#fff3b0 0 7deg,transparent 7deg 20deg);animation-duration:4.5s,1.3s}
-@keyframes sbw-portGlow{0%,100%{filter:drop-shadow(0 0 4px var(--rc)) drop-shadow(0 0 10px var(--rc)) brightness(1.08)}50%{filter:drop-shadow(0 0 8px #fff) drop-shadow(0 0 18px var(--rc)) drop-shadow(0 0 30px var(--rc)) brightness(1.3)}}
-@keyframes sbw-raysPulse{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.12)}}
-@keyframes sbw-sparkle{0%,100%{opacity:.2;transform:translateY(2px) scale(.9)}50%{opacity:1;transform:translateY(-3px) scale(1.08)}}
-@media (prefers-reduced-motion:reduce){#sbwLayer .sbw-at-card .sbw-at-port::before,#sbwLayer .sbw-at-card .sbw-at-port::after,#sbwLayer .sbw-at-card .sbw-at-port canvas{animation:none}}
-
+#sbwLayer .sbw-at-card.aura-elite,#sbwLayer .sbw-at-card.aura-legend{box-shadow:0 0 14px color-mix(in srgb,var(--rc) 65%,transparent),inset 0 0 12px color-mix(in srgb,var(--rc) 20%,transparent)}
+#sbwLayer .sbw-at-card.aura-legend .sbw-at-info strong{color:#fff0b2}
+#sbwLayer [data-aura="3"]{--aura:#d76bff;--aura-light:#f6d9ff;--aura-cycle:3.6s}
+#sbwLayer [data-aura="4"]{--aura:#ffca45;--aura-light:#fff3bd;--aura-cycle:2.8s}
+#sbwLayer [data-aura="3"],#sbwLayer [data-aura="4"]{isolation:isolate}
+#sbwLayer [data-aura="3"]::before,#sbwLayer [data-aura="4"]::before{content:"";position:absolute;z-index:0;pointer-events:none;inset:15% 3% 0;border-radius:50%;background:radial-gradient(ellipse at 50% 85%,color-mix(in srgb,var(--aura) 55%,transparent),transparent 69%);opacity:.7;animation:sbw-energy-breathe var(--aura-cycle) ease-in-out infinite}
+#sbwLayer .sbw-portrait-energy{display:none}
+#sbwLayer [data-aura="3"]>.sbw-portrait-energy,#sbwLayer [data-aura="4"]>.sbw-portrait-energy{display:block;position:absolute;z-index:2;left:8%;right:8%;bottom:1%;height:26%;pointer-events:none;border-radius:50%;border:1px solid color-mix(in srgb,var(--aura-light) 70%,transparent);box-shadow:0 0 7px var(--aura),inset 0 0 6px color-mix(in srgb,var(--aura) 65%,transparent);transform:scaleY(.6);animation:sbw-seal-breathe var(--aura-cycle) ease-in-out infinite}
+#sbwLayer .sbw-portrait-energy::before{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid transparent;border-left-color:var(--aura-light);border-right-color:var(--aura);transform:rotate(-8deg);animation:sbw-seal-orbit calc(var(--aura-cycle) * 1.7) ease-in-out infinite}
+#sbwLayer .sbw-portrait-energy::after{content:"";position:absolute;left:11%;bottom:14%;width:4px;height:10px;border-radius:60% 40%;background:var(--aura-light);box-shadow:65px -9px 0 -1px var(--aura),15px -28px 0 -1px var(--aura-light),48px -38px 0 -1px var(--aura);transform:scaleY(1.66);opacity:.6;animation:sbw-energy-rise 2.8s ease-in-out infinite}
+#sbwLayer [data-aura="4"]>.sbw-portrait-energy::before{border-top-color:color-mix(in srgb,var(--aura) 55%,transparent);inset:-7px;border-width:2px}
+#sbwLayer [data-aura="4"]>.sbw-portrait-energy::after{border-radius:0;clip-path:polygon(45% 0,100% 0,66% 39%,100% 39%,0 100%,32% 51%,0 51%);width:6px;height:18px;animation-duration:3.4s}
+#sbwLayer .sbw-at-port canvas,#sbwLayer .sbw-h2-port canvas{position:relative;z-index:1}
+#sbwLayer[data-effects-quality="1"] .sbw-portrait-energy::after{display:none}
+#sbwLayer[data-effects-paused="true"] [data-aura]::before,#sbwLayer[data-effects-paused="true"] .sbw-portrait-energy,#sbwLayer[data-effects-paused="true"] .sbw-portrait-energy::before,#sbwLayer[data-effects-paused="true"] .sbw-portrait-energy::after{animation-play-state:paused}
+#sbwLayer[data-effects-quality="0"] .sbw-portrait-energy{display:none}
+@keyframes sbw-energy-breathe{0%,100%{opacity:.5;transform:scale(.95)}50%{opacity:.85;transform:scale(1.04)}}
+@keyframes sbw-seal-breathe{0%,100%{opacity:.72;transform:scaleY(.6) scaleX(.96)}50%{opacity:1;transform:scaleY(.64) scaleX(1.03)}}
+@keyframes sbw-seal-orbit{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
+@keyframes sbw-energy-rise{0%,100%{opacity:.25;transform:scaleY(1.66) translateY(1px)}50%{opacity:.85;transform:scaleY(1.66) translateY(-12px)}}
+@media(prefers-reduced-motion:reduce){#sbwLayer [data-aura]::before,#sbwLayer .sbw-portrait-energy,#sbwLayer .sbw-portrait-energy::before,#sbwLayer .sbw-portrait-energy::after{animation:none}}
 /* Heroes: card buttons (Deploy/Rest hero + Make Battle-ready/Move to Reserve) and the big detail buttons */
 #sbwLayer .sbw-hb{height:28px;border-radius:7px;border:1px solid rgba(255,255,255,.18);font:800 13px Rajdhani,sans-serif;letter-spacing:.3px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 6px rgba(0,0,0,.45);transition:filter .15s,transform .15s}

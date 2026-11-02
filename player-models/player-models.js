@@ -130,11 +130,7 @@
     context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
     if (hero.z) context.globalAlpha *= .68;
     if (window.TierAuras?.loaded) {
-      const effect = TierAuras.frame(hero.r);
-      sprites.blit(context, effect, x, y, scale, false);
-      context.save(); context.globalCompositeOperation = 'screen';
-      context.globalAlpha *= .28 + Math.max(0, Math.min(4, hero.r)) * .035;
-      sprites.blit(context, effect, x, y, scale, false); context.restore();
+      TierAuras.draw(context, hero, x, y, scale);
     }
     if (artwork) {
       const [sx, sy, sw, sh] = artwork.rect;

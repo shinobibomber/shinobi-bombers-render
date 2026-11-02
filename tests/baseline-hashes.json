@@ -143,7 +143,7 @@
     },
     {
       "path": "map-design/map-design.js",
-      "sha256": "b1d8cb3976116f4532f15eda1a3bacf7f650cd069416298242bf74a0bdac090a"
+      "sha256": "ddf7143f16b9c05be3fdfb045d8f76ef663f2908f24e22a422181c85cf3fa4cf"
     },
     {
       "path": "map-design/map1.webp",
@@ -187,7 +187,7 @@
     },
     {
       "path": "player-models/player-models.js",
-      "sha256": "b7d82b6e792ec485e7bbbae4e117ce6a69c11972aa2ea0dcad7907ce17d9f722"
+      "sha256": "de0961a51d4b614b7f5c5ecda12e28813ea6c8c0d941bd536ecbd7fbe2a6a72d"
     },
     {
       "path": "player-models/playermodel.png",
@@ -255,7 +255,7 @@
     },
     {
       "path": "tier-auras/tier-auras.js",
-      "sha256": "d5e493cc48aeb4905b645dd6004fc1d65fc1d81f6e65d641d3b175468b66d774"
+      "sha256": "87e56906505cef3310ce9547c7e038f82a5dcf960016952ef280ff1649a3b77f"
     },
     {
       "path": "app/server/adventure.cjs",
