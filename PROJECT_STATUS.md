@@ -108,6 +108,12 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 Adventure layout and enemy placement (owner request): the stage list is removed,
+  the stage banner sits 18px higher, and the battlefield mirror spans x 22–1522 (about 11% larger,
+  object-fit: contain) above a full-width team panel; a dark backdrop hides the artwork's stage
+  cards. `MapDesign.alignGrid` no longer places enemies on a cell or the two cells above a solid
+  footprint (obstacle art rises above it); collision is unchanged. Tested in map-render-quality.cjs.
+
 - 2026-11-03 Fusion, hero limit, header seam (owner request): Fusion lists every Reserve hero of
   the rank; Elites below level 10 stay listed but locked ("Lv 10 needed", explained above the
   list) because the Elite → Legend level 10 rule is kept. Collections are capped at 500 heroes:

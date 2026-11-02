@@ -54,7 +54,11 @@
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) G[y][x] = { k: playable.has(y * W + x) ? 0 : 1, hp: 0 };
     // Keep the original target objects, HP, rewards and prison state. Only their
     // placement changes to respect the supplied map's visible solid scenery.
-    const slots = largest.slice(); for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
+    // Obstacle art rises up to two cells above its solid footprint, so a target placed just above
+    // a solid cell looks like it stands on the obstacle. Use only cells clear of that when enough
+    // remain; collision and walking are unchanged.
+    const clear = largest.filter(([x, y]) => !blocked(x, y + 1) && !blocked(x, y + 2)), pool = clear.length >= targets.length + 10 ? clear : largest;
+    const slots = pool.slice(); for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
     targets.forEach((target, i) => { const [x, y] = slots[i]; G[y][x] = target; });
     for (const hero of S.h) { hero.p = []; if (hero.on) { hero.x = -9; hero.y = -9; place(hero); } }
     aligned.add(G); api.walkable = largest.map(([x, y]) => [x, y]); api.targetCount = targets.length;

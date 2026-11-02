@@ -59,5 +59,22 @@ const { withGame } = require('./harness.cjs');
     assert.deepEqual(errors, []);
     assert.equal(f.purchases.length, 0);
   });
-  console.log('PASS: all eight original maps remain pixel-exact, opaque and aligned; identical floor rebuilds perform zero redraws.');
+  // Enemies never spawn on an obstacle: their cell, and the two cells below it (an obstacle's art
+  // rises above its solid footprint), are open on every map, across many random layouts.
+  await withGame(async ({ p, f, errors, assert }) => {
+    f.holdAdventure = false;
+    await p.locator('#loginPhantom').click();
+    await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.MapDesign?.loaded);
+    const bad = await p.evaluate(() => {
+      const found = [], original = S.map;
+      for (let map = 1; map <= 8; map++) for (let round = 0; round < 6; round++) {
+        S.map = map; newMap();
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (G[y][x].k > 1 && (MapDesign.blocked(x, y) || MapDesign.blocked(x, y + 1) || MapDesign.blocked(x, y + 2))) found.push(map + ':' + x + ',' + y);
+      }
+      S.map = original; newMap(); return found;
+    });
+    assert.deepEqual(bad, [], 'no enemy is placed on or directly above an obstacle');
+    assert.deepEqual(errors, []);
+  });
+  console.log('PASS: all eight original maps remain pixel-exact, opaque and aligned; identical floor rebuilds perform zero redraws; enemies never spawn on obstacles.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

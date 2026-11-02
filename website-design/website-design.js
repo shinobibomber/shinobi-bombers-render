@@ -612,12 +612,18 @@
   /* The team panel keeps the game's own 10-slot Adventure team (same cards, portraits and Deploy buttons), restyled in
      the website theme. Deployed Elite and Legend heroes get an animated aura. */
   INIT.adventure = b => {
-    b.map = place(mk('canvas', 'sbw-mirror', b.st), 272, 222, 1250, 469); b.map.width = 1250; b.map.height = 469;
-    b.stages = [0, 1, 2, 3, 4].map(i => cv(b, 24, 216 + i * 115, 236, 98, 'sbw-astage'));
+    // Layout: the stage list is gone, the stage banner sits 18px higher, and the battlefield uses the
+    // freed width (x 22–1522) above a full-width team panel. A dark backdrop hides the artwork's
+    // stage cards and old banner position; the map keeps its proportions (object-fit: contain).
+    place(mk('div', 'sbw-abackdrop', b.st), 270, 200, 1256, 812); place(mk('div', 'sbw-abackdrop', b.st), 14, 207, 256, 805);
+    ['st0', 'st1', 'st2', 'st3', 'st4'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
+    const banner = $('.hs[data-sbwid="banner"]', b.st); if (banner) banner.style.top = (152 - 18) + 'px';
+    for (const id of ['stitle', 'enemies', 'reward']) if (b.live[id]) b.live[id].style.top = (parseFloat(b.live[id].style.top) - 18) + 'px';
+    b.map = place(mk('canvas', 'sbw-mirror', b.st), 22, 210, 1500, 520); b.map.width = 1240; b.map.height = 465;
     /* the game has no difficulty setting: the Difficulty / Stage Info box is removed (inpainted scenery patch) */
-    const patch = place(mk('img', 'sbw-patch', b.st), 1150, 128, 386, 108); patch.src = BASE + 'art/adventure-tr-patch.webp'; patch.alt = '';
+    const patch = place(mk('img', 'sbw-patch', b.st), 1150, 128, 386, 72); patch.style.objectFit = 'cover'; patch.style.objectPosition = 'top'; patch.src = BASE + 'art/adventure-tr-patch.webp'; patch.alt = '';
     ['diff', 'sinfo'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
-    const t = cv(b, 272, 696, 1250, 310, 'sbw-ateam');
+    const t = cv(b, 22, 736, 1500, 270, 'sbw-ateam');
     t.innerHTML = `<div class="sbw-at-head"><i class="sbw-at-icon">⚔</i><div><b>ADVENTURE TEAM</b><span>Deploy your shinobi and start bombing!</span></div>
       <button type="button" data-a="manage">Manage heroes</button><button type="button" data-a="work">Work All</button><button type="button" data-a="rest">Rest All</button><em>Deployed <strong>0 / 10</strong></em></div><div class="sbw-at-grid"></div>`;
     t.querySelector('.sbw-at-head').addEventListener('click', e => { const a = e.target.closest('button'); if (!a) return; ({ manage: () => go(1), work: () => MODS.adventure.work(), rest: () => MODS.adventure.rest() })[a.dataset.a](); });
@@ -633,7 +639,6 @@
     if (b.live.stitle) { b.live.stitle.hidden = false; setText(b.live.stitle, `Stage ${st} · ${a.name || ''}`); }
     if (b.live.enemies) { b.live.enemies.hidden = false; setText(b.live.enemies, a.enemies || '—'); }
     if (b.live.reward) { b.live.reward.hidden = false; setText(b.live.reward, `${a.gained || '+0'} Ryo`); }
-    const ssig = st + a.name; if (ssig !== b.ssig) { b.ssig = ssig; b.stages.forEach((e, i) => { e.classList.toggle('on', i === 0); const n2 = st + i; e.innerHTML = i === 0 ? `<b>Stage ${st}</b><span>${esc(a.name)}</span><em>CURRENT</em>` : `<b>Stage ${n2}</b><span class="lock">🔒 Clear stage ${n2 - 1} to unlock</span>`; }); }
     const cards = teamCards(); b.count.textContent = `${cards.filter(c => c.deployed).length} / 10`;
     b.slots.forEach((e, i) => {
       const c = cards[i], h = c && heroAt(c.idx);

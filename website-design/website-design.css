@@ -158,7 +158,8 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 .sbw-dialog .sbw-small{font-size:13px;color:#a99ad8}
 /* ---------- Phase 3: Heroes, Adventure, Market, Boss Hunt, Guild/Chat previews ---------- */
 #sbwLayer .sbw-cv{position:absolute;z-index:12;font:600 14px Rajdhani,sans-serif;color:#f1ecff}
-#sbwLayer .sbw-mirror{position:absolute;z-index:6;pointer-events:none;background:radial-gradient(ellipse at center,#14103a,#05030f 75%);border-radius:6px}
+#sbwLayer .sbw-mirror{position:absolute;z-index:6;pointer-events:none;object-fit:contain;background:radial-gradient(ellipse at center,#14103a,#05030f 75%);border-radius:6px}
+#sbwLayer .sbw-abackdrop{position:absolute;z-index:5;pointer-events:none;background:linear-gradient(#0a0722,#05030f)}
 #sbwLayer .sbw-bar{height:6px;border-radius:3px;background:#1b2140;overflow:hidden}
 #sbwLayer .sbw-bar>i{display:block;height:100%;background:linear-gradient(90deg,#b45cff,#ff6ad5)}
 #sbwLayer .sbw-empty{grid-column:1/-1;margin:auto;padding:40px;text-align:center;color:#cfc4f5;font:600 18px Rajdhani,sans-serif}
@@ -203,12 +204,6 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-hdtab{padding:6px 10px;border-radius:8px;background:#070b26;font:600 15px Rajdhani,sans-serif;color:#dfe6ff}
 #sbwLayer .sbw-hdtab p{margin:0}
 /* Adventure */
-#sbwLayer .sbw-astage{display:flex;flex-direction:column;justify-content:center;padding:0 12px 0 16px;border:1px solid #2a3166;border-radius:8px;background:linear-gradient(90deg,#0a0d2c,#070a20)}
-#sbwLayer .sbw-astage.on{border:2px solid #b45cff;box-shadow:0 0 14px #8b3dff;background:linear-gradient(90deg,#2a0d5a,#0d0a2c)}
-#sbwLayer .sbw-astage b{font:800 20px Rajdhani,sans-serif;color:#fff}
-#sbwLayer .sbw-astage span{font:600 14px Rajdhani,sans-serif;color:#cfd8ee}
-#sbwLayer .sbw-astage em{margin-top:2px;font:700 11px Rajdhani,sans-serif;font-style:normal;color:#ffd257}
-#sbwLayer .sbw-astage .lock{font-size:12px;color:#7d86a8}
 #sbwLayer .sbw-cover small{display:block;font-size:11px;color:#ffb3c6}
 #sbwLayer .sbw-acard,#sbwLayer .sbw-aadd{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:2px solid var(--rc,#2a3a6a);border-radius:9px;background:linear-gradient(180deg,color-mix(in srgb,var(--rc,#2a3a6a) 25%,#0a0726),#05041a);box-shadow:0 0 10px color-mix(in srgb,var(--rc,#2a3a6a) 50%,transparent);text-align:center;cursor:default}
 #sbwLayer .sbw-acard canvas{width:90px;height:72px}
@@ -257,10 +252,10 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-preview b{color:#ffd257;margin-right:6px}
 
 /* Phase 3: decorative live panels let clicks reach the screen's own hotspots underneath */
-#sbwLayer .sbw-acard,#sbwLayer .sbw-aadd,#sbwLayer .sbw-astage,#sbwLayer .sbw-blist,#sbwLayer .sbw-btile,#sbwLayer .sbw-mech,#sbwLayer .sbw-hp,#sbwLayer .sbw-recpanel,#sbwLayer .sbw-soonpanel{pointer-events:none}
+#sbwLayer .sbw-acard,#sbwLayer .sbw-aadd,#sbwLayer .sbw-blist,#sbwLayer .sbw-btile,#sbwLayer .sbw-mech,#sbwLayer .sbw-hp,#sbwLayer .sbw-recpanel,#sbwLayer .sbw-soonpanel{pointer-events:none}
 /* Adventure team: the game's 10-slot team in the website theme, with auras for deployed Elite / Legend heroes */
-#sbwLayer .sbw-ateam{display:flex;flex-direction:column;gap:8px;padding:8px 10px 10px;border:2px solid #f6a823;border-radius:12px;background:linear-gradient(180deg,rgba(26,8,48,.96),rgba(6,4,22,.97));box-shadow:0 0 18px rgba(246,168,35,.45),inset 0 0 30px rgba(139,61,255,.25)}
-#sbwLayer .sbw-at-head{display:flex;align-items:center;gap:10px;height:44px}
+#sbwLayer .sbw-ateam{display:flex;flex-direction:column;gap:8px;padding:6px 10px 8px;border:2px solid #f6a823;border-radius:12px;background:linear-gradient(180deg,rgba(26,8,48,.96),rgba(6,4,22,.97));box-shadow:0 0 18px rgba(246,168,35,.45),inset 0 0 30px rgba(139,61,255,.25)}
+#sbwLayer .sbw-at-head{display:flex;align-items:center;gap:10px;height:40px}
 #sbwLayer .sbw-at-icon{font:normal 34px/1 system-ui;color:#ffc13a;text-shadow:0 0 10px #ff8a1a}
 #sbwLayer .sbw-at-head div{display:flex;flex-direction:column;margin-right:auto}
 #sbwLayer .sbw-at-head div b{font:italic 900 26px/1 Rajdhani,sans-serif;letter-spacing:.5px;background:linear-gradient(#fff2b0,#ffb02a 55%,#ff7a1a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #4a1a00)}
@@ -277,8 +272,8 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-at-card.empty strong{display:block;font:700 16px Rajdhani,sans-serif;color:#fff}
 #sbwLayer .sbw-at-card.empty span{font:600 12px Rajdhani,sans-serif;color:#9aa6c8}
 #sbwLayer .sbw-at-card.empty:hover{border-color:#ffc13a;box-shadow:0 0 12px rgba(255,193,58,.6)}
-#sbwLayer .sbw-at-port{position:relative;z-index:1;flex:0 0 96px;height:96px}
-#sbwLayer .sbw-at-port canvas{width:96px;height:96px}
+#sbwLayer .sbw-at-port{position:relative;z-index:1;flex:0 0 88px;height:88px}
+#sbwLayer .sbw-at-port canvas{width:88px;height:88px}
 #sbwLayer .sbw-at-info{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;align-self:flex-start;padding-top:6px}
 #sbwLayer .sbw-at-info strong{font:800 19px/1.1 Rajdhani,sans-serif;color:#fff}
 #sbwLayer .sbw-at-rank{align-self:flex-start;padding:0 7px;border:1px solid var(--rc);border-radius:5px;background:color-mix(in srgb,var(--rc) 18%,#0a0726);font:700 11px Rajdhani,sans-serif;color:var(--rc)}
