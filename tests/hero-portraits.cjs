@@ -38,7 +38,7 @@ const collection = async p => {
       const sleeping = PlayerModels.portraitPose({ id: 1, z: true }, 520);
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
       let visible = 0; for (let i = 3; i < pixels.length; i += 4) if (pixels[i]) visible++;
-      return { hd, textures: sources.size, poses, sleeping, visible, reveal: RevealModels.status,
+      return { hd, textures: sources.size, poses, sleeping, visible,
         requests: performance.getEntriesByType('resource').filter(r => /reveal-models-hd|hero-directions-hd|hero-motion/.test(r.name)).length };
     });
     assert.equal(portraits.hd, 0, 'portraits draw the original native source cells, not HD artwork');
@@ -49,8 +49,7 @@ const collection = async p => {
       assert.equal(a, c, 'idle portraits cycle the two original idle poses');
     }
     assert.equal(portraits.sleeping, 's0', 'sleeping heroes keep the still sleep pose');
-    assert.equal(portraits.reveal, 'idle', 'menus never download the summon HD atlas');
-    assert.equal(portraits.requests, 0, 'retired HD locomotion assets are never requested');
+    assert.equal(portraits.requests, 0, 'retired HD artwork is never requested');
 
     // A displayed portrait repaints only when its idle pose flips, never per paint tick.
     await p.evaluate(() => {

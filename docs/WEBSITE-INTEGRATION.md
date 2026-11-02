@@ -211,17 +211,16 @@ and 24 unchanged desktop/mobile website screenshots. `tests/menu-layout.cjs` che
 live pack captions (including hover), native quantity selection and menu/notice geometry;
 loading and reveal tests cover initial paint, true progress and model-loop cleanup.
 
-## Sharper reveal models (2026-11-02)
+## Reveal models (updated 2026-11-03)
 
-The reveal now uses `reveal-design/reveal-models-hd.png`, a transparent full-body atlas
-derived from the same eight references. Its model cells provide about 550px of source
-height instead of the 56–60px combat animation cells. This is new presentation artwork,
-not a change to gameplay models; provenance and prompts are in `reveal-design/ARTWORK.md`.
-`reveal-models.js` downloads it only for revealed results, with decode validation, timeout
-and retry. On failure, native models remain available and Continue is never blocked.
+Result cards show the actual in-game hero with its rarity aura, drawn by
+`PlayerModels.drawPortrait` exactly as the menus draw it. The earlier HD reveal
+atlas (`reveal-models.js`, `reveal-models-hd.png`) was retired on request; it
+remains in git history before the "Show actual heroes with auras in summon reveal"
+commit. No extra artwork is downloaded.
 
-Visible canvases draw directly at display resolution. CSS provides idle motion with no
-continuous canvas redraws; resize/scroll/art-ready updates coalesce into one frame.
+Visible canvases draw once per hero and display size at device resolution. CSS provides
+idle motion with no continuous canvas redraws; resize/scroll updates coalesce into one frame.
 Refresh batches NEW classification and synchronization, and Legend backdrop cleanup
 is owned by the current opening. Native result IDs, persistence and checkout remain unchanged.
 Missing optional loader JavaScript also falls back without disrupting the native reveal.

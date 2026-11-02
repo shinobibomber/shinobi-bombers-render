@@ -53,12 +53,8 @@
 #summonReveal.cinematic-reveal .reveal-card.is-revealed .cinematic-face{opacity:1;transform:none}
 #summonReveal.cinematic-reveal .cinematic-portrait{position:relative;display:block;min-height:0;width:100%;height:100%;overflow:hidden;border-radius:4px}
 #summonReveal.cinematic-reveal .cinematic-portrait canvas{all:unset;position:relative;z-index:2;display:block;width:100%;height:100%;min-height:0;image-rendering:auto}
-#summonReveal.cinematic-reveal .cinematic-aura{position:absolute;z-index:0;left:8%;right:8%;bottom:4%;height:26%;border:2px solid var(--element-color);border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--element-color) 27%,transparent),transparent 70%);box-shadow:0 0 10px color-mix(in srgb,var(--element-color) 72%,transparent),inset 0 0 14px color-mix(in srgb,var(--element-color) 35%,transparent);transform:scaleY(.65);opacity:.85}
-#summonReveal.cinematic-reveal .cinematic-aura::before{content:'';position:absolute;inset:6px;border:1px dashed var(--element-color);border-radius:50%}
-#summonReveal.cinematic-reveal .cinematic-aura::after{content:'';position:absolute;left:-10%;right:-10%;bottom:-20%;height:330%;background:radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--element-color) 27%,transparent),transparent 67%);transform:scaleY(1.5);transform-origin:bottom;pointer-events:none}
 #summonReveal.cinematic-reveal .cinematic-sparks{position:absolute;z-index:3;inset:16% 10%;opacity:0;background:radial-gradient(circle at 12% 28%,var(--element-color) 0 1px,transparent 2px),radial-gradient(circle at 84% 16%,var(--element-color) 0 2px,transparent 3px),radial-gradient(circle at 90% 67%,var(--element-color) 0 1px,transparent 3px),radial-gradient(circle at 23% 79%,var(--element-color) 0 1px,transparent 3px);pointer-events:none}
 #summonReveal.cinematic-reveal .is-revealed .cinematic-sparks{animation:sb-element-motes 3.8s ease-in-out infinite}
-#summonReveal.cinematic-reveal .is-revealed .cinematic-aura{animation:sb-element-breathe 4s ease-in-out infinite}
 #summonReveal.cinematic-reveal .cinematic-element{display:block;color:var(--element-color);font:750 12px/1.3 Rajdhani,system-ui,sans-serif;letter-spacing:1px;text-transform:uppercase}
 #summonReveal.cinematic-reveal .cinematic-name{display:block;min-height:19px;max-width:100%;color:#fff4dc;font:800 clamp(12px,1vw,15px)/1.25 Rajdhani,system-ui,sans-serif;overflow-wrap:anywhere;text-wrap:balance}
 #summonReveal.cinematic-reveal .cinematic-stats{display:block;color:#bdc5d7;font:500 10px/1.35 Rajdhani,system-ui,sans-serif;font-variant-numeric:tabular-nums;text-wrap:balance}
@@ -90,7 +86,6 @@
 @keyframes sb-scroll-unseal{0%{transform:rotate(-8deg) scale(1)}60%{transform:rotate(0) scale(1.07)}100%{transform:rotate(0) scaleX(1.3) scaleY(1.03)}}
 @keyframes sb-element-motes{0%,100%{opacity:.15;transform:translateY(5px)}50%{opacity:.8;transform:translateY(-8px)}}
 @keyframes sb-seal-motes{0%{opacity:0;transform:translateY(12px) scale(.8)}45%{opacity:.9}100%{opacity:.25;transform:translateY(-12px) scale(1.12)}}
-@keyframes sb-element-breathe{0%,100%{opacity:.55;transform:scale(.95,.62)}50%{opacity:.95;transform:scale(1.03,.7)}}
 @keyframes sb-elite-pulse{from{transform:scale(.92);opacity:.2}65%{transform:scale(1.04);opacity:.8}to{transform:scale(1);opacity:.5}}
 @keyframes sb-legend-burst{from{transform:scale(.88);opacity:0}35%{opacity:.85}to{transform:scale(1.1);opacity:.1}}
 @keyframes sb-sakura-drift{0%{opacity:0;transform:translate3d(0,0,0) rotate(0)}10%,85%{opacity:.55}100%{opacity:0;transform:translate3d(-90px,110vh,0) rotate(230deg)}}
@@ -120,13 +115,7 @@
 #summonReveal.cinematic-reveal .cinematic-model{background:radial-gradient(ellipse at 50% 72%,color-mix(in srgb,var(--element-color) 13%,transparent),transparent 65%)}
 #summonReveal.cinematic-reveal .cinematic-model canvas{mask-image:none;filter:none}
 #summonReveal.cinematic-reveal .is-revealed.model-visible .cinematic-model canvas{animation:sb-model-idle 3.6s ease-in-out infinite}
-#summonReveal.cinematic-reveal .model-loading .cinematic-model::after{content:'Preparing model…';position:absolute;inset:0;display:grid;place-items:center;color:#d3d9ed;font:600 12px/1.3 system-ui,sans-serif}
-#summonReveal.cinematic-reveal .cinematic-art-status{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;color:#d3d9ed;font:500 12px/1.3 system-ui,sans-serif}
-#summonReveal.cinematic-reveal .cinematic-art-status button{min-height:44px;padding:6px 12px;border:1px solid #c5a262;border-radius:5px;background:#11152d;color:#ffe4a3;cursor:pointer}
 @keyframes sb-model-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-#summonReveal.cinematic-reveal .cinematic-aura{z-index:3;bottom:1%;left:4%;right:4%;height:16%;box-shadow:0 0 9px var(--element-color),inset 0 0 9px var(--element-color)}
-#summonReveal.cinematic-reveal .cinematic-aura::before{inset:4px;border-width:2px}
-#summonReveal.cinematic-reveal .cinematic-aura::after{height:210%;background:radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--element-color) 15%,transparent),transparent 65%)}
 #summonReveal.cinematic-reveal .cinematic-element{font-size:12px;text-shadow:0 0 9px color-mix(in srgb,var(--element-color) 55%,transparent)}
 #summonReveal.cinematic-reveal .cinematic-name{font-size:13px;min-height:17px}
 #summonReveal.cinematic-reveal .cinematic-stars{color:#ffcf4a;font:800 18px/1.1 Georgia,serif;letter-spacing:1px;text-shadow:0 0 8px #ffaa3080}

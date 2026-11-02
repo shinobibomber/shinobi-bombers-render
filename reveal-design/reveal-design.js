@@ -13,7 +13,7 @@
   };
   const motion = matchMedia('(prefers-reduced-motion: reduce)'), timers = new Set();
   const quotes = new WeakMap(), drawnModels = new WeakMap();
-  let oneBusy = false, modelFrame = 0, modelRequest = null;
+  let oneBusy = false, modelFrame = 0;
   let dialog, scene, currentBatch, opening = null, backdropOwner = null, skipAnimations = false, againBusy = false, focusKey = null;
   const api = window.RevealDesign = { loaded: false, ready: null, refresh, paint, open, sync, skip, canReveal };
   const batch = () => S.v2.revealBatch || [];
@@ -47,19 +47,6 @@
     if (modelFrame) cancelAnimationFrame(modelFrame);
     modelFrame = 0;
   }
-  function loadModels(retry = false) {
-    if (modelRequest && !retry) return;
-    if (!window.RevealModels) { updateModelStatus(); return; }
-    modelRequest = window.RevealModels.load(retry).then(() => {
-      if (!dialog?.open || !canReveal()) return;
-      updateModelStatus(); scheduleModels();
-    });
-    updateModelStatus();
-  }
-  function updateModelStatus() {
-    const notice = $('.cinematic-art-status');
-    if (notice) notice.hidden = (window.RevealModels?.status || 'error') !== 'error';
-  }
   function scheduleModels() {
     if (modelFrame || !dialog?.open || document.hidden || !canReveal()) return;
     modelFrame = requestAnimationFrame(() => {
@@ -73,7 +60,6 @@
         return { card, canvas, width: canvas?.clientWidth, height: canvas?.clientHeight,
           visible: bounds.bottom > viewport.top && bounds.top < viewport.bottom && bounds.right > viewport.left && bounds.left < viewport.right };
       });
-      if (entries.length) loadModels();
       for (const entry of entries) {
         entry.card.classList.toggle('model-visible', entry.visible);
         if (entry.visible) drawModel(entry, batch()[Number(entry.card.dataset.reveal)]?.hero);
@@ -143,11 +129,6 @@
       const again = document.createElement('button'); again.type = 'button'; again.id = 'revealAgain';
       again.innerHTML = '<span>Summon Again</span><small class="cinematic-cost">Checking cost…</small>'; again.onclick = summonAgain;
       actions.append(again, $('#revealContinue')); $('.reveal-footer').append(actions);
-      const artStatus = document.createElement('div'); artStatus.className = 'cinematic-art-status'; artStatus.hidden = true;
-      artStatus.innerHTML = '<span role="status">High-resolution art unavailable. Showing game models.</span>';
-      const retryArt = document.createElement('button'); retryArt.type = 'button'; retryArt.textContent = 'Retry art';
-      retryArt.hidden = !window.RevealModels;
-      retryArt.onclick = () => loadModels(true); artStatus.append(retryArt); $('.reveal-footer').append(artStatus);
       const atmosphere = document.createElement('div'); atmosphere.className = 'cinematic-atmosphere';
       atmosphere.setAttribute('aria-hidden', 'true'); atmosphere.innerHTML = '<i></i>'.repeat(8); scene.prepend(atmosphere);
     }
@@ -159,7 +140,7 @@
     batch().forEach((_, index) => paint(index, newModels, true));
     resize?.disconnect(); resize?.observe($('.reveal-grid'));
     dialog.querySelectorAll('.cinematic-model').forEach(element => resize?.observe(element));
-    updateModelStatus(); sync(); scheduleModels();
+    sync(); scheduleModels();
     if (restoreFocus && dialog.open) $(restoreFocus)?.focus({ preventScroll: true });
   }
 
@@ -181,7 +162,7 @@
       const seal = document.createElement('span'); seal.className = 'cinematic-seal';
       seal.innerHTML = '<span class="cinematic-scroll" aria-hidden="true"><i class="cinematic-scroll-cap top"></i><span class="cinematic-scroll-body"><b>忍</b></span><i class="cinematic-scroll-cap bottom"></i></span><b>SEALED SCROLL</b><small>Tap to reveal</small>';
       const face = document.createElement('span'); face.className = 'cinematic-face';
-      face.innerHTML = '<span class="cinematic-portrait cinematic-model"><i class="cinematic-aura" aria-hidden="true"></i><canvas aria-hidden="true"></canvas><i class="cinematic-sparks" aria-hidden="true"></i></span><span class="cinematic-element"></span><strong class="cinematic-name"></strong><span class="cinematic-stars"></span><span class="cinematic-stats"></span><span class="cinematic-rank"></span><span class="cinematic-new">NEW!</span>';
+      face.innerHTML = '<span class="cinematic-portrait cinematic-model"><canvas aria-hidden="true"></canvas><i class="cinematic-sparks" aria-hidden="true"></i></span><span class="cinematic-element"></span><strong class="cinematic-name"></strong><span class="cinematic-stars"></span><span class="cinematic-stats"></span><span class="cinematic-rank"></span><span class="cinematic-new">NEW!</span>';
       card.append(seal, face);
     }
     const face = card.querySelector('.cinematic-face');
@@ -207,26 +188,19 @@
 
   function drawModel({ card, canvas, width, height }, hero) {
     if (!hero || !canvas || !width || !height || !card.isConnected || !dialog.open) return;
-    const hd = window.RevealModels?.frame(hero), pending = window.RevealModels?.status === 'loading';
-    card.classList.toggle('model-loading', pending);
-    if (!hd && pending) return;
     const density = Math.min(2, devicePixelRatio || 1);
     const pixelWidth = Math.round(width * density), pixelHeight = Math.round(height * density);
-    const frame = hd ? hd.image : PlayerModels.heroFrame(hero, 'i0');
-    const model = PlayerModels.modelFor(hero).index;
-    const previous = drawnModels.get(canvas);
-    if (previous?.frame === frame && previous.model === model && previous.width === pixelWidth && previous.height === pixelHeight) return;
+    // Draw once per hero and display size; CSS supplies the idle motion.
+    const key = [hero.id, hero.r, hero.z, pixelWidth, pixelHeight].join('|');
+    if (drawnModels.get(canvas) === key) return;
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
     const context = canvas.getContext('2d'); if (!context) return;
     context.setTransform(density, 0, 0, density, 0, 0);
     context.clearRect(0, 0, width, height);
     context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
-    if (hd) {
-      const [x, y, w, h] = hd.rect, scale = Math.min(width * .96 / w, height * .94 / h);
-      // One source-to-display sample at device resolution, with no enlarged intermediate.
-      context.drawImage(frame, x, y, w, h, (width - w * scale) / 2, height * .96 - h * scale, w * scale, h * scale);
-    } else sprites.blit(context, frame, width / 2, height * .9, Math.min(width / 40, height / 45) * .97, false);
-    drawnModels.set(canvas, { frame, model, width: pixelWidth, height: pixelHeight });
+    // The actual in-game hero and its rarity aura, drawn exactly as the menus draw them.
+    PlayerModels.drawPortrait(context, hero, width / 2, height * .92, Math.min(width / 40, height / 50) * .97, 0);
+    drawnModels.set(canvas, key);
   }
 
   function newModelFlags() {

@@ -108,6 +108,13 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 summon reveal shows actual heroes (owner request): result cards draw the
+  in-game hero with its rank aura via `PlayerModels.drawPortrait`, once per hero and
+  display size (CSS keeps the idle motion). Retired the HD reveal atlas
+  (`reveal-models.js`, `reveal-models-hd.png`, `ARTWORK.md`), its Retry-art notice and
+  the element-coloured CSS ring that would have doubled the aura. Nothing in the game
+  downloads HD hero artwork any more.
+
 - 2026-11-03 original hero animations restored (owner request): menus and Adventure
   use the original animated sprites again. Removed the HD locomotion layer
   (`hero-motion.js`, `hero-directions-hd.png`, `HD-ARTWORK.md`, `hero-motion.cjs`)

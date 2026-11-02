@@ -167,24 +167,27 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert(sameModel.length, 'ten sequential model IDs exercise the same model at independent ranks');
     for (const [a, b] of sameModel) { assert.equal(a.aura, b.aura); assert.notEqual(a.rarity, b.rarity); }
 
-    // Observe source-to-display drawing at DPR2. Detail must come from the new
-    // full-body atlas, not an enlarged 56px combat pose or a 320px intermediate.
-    await p.waitForFunction(() => RevealModels.status === 'ready');
+    // Observe source-to-display drawing at DPR2: the actual in-game model and its
+    // rarity aura, drawn straight into each result canvas.
     await p.evaluate(() => {
       window.revealModelDraws = [];
       const drawImage = CanvasRenderingContext2D.prototype.drawImage;
       CanvasRenderingContext2D.prototype.drawImage = function (source, ...args) {
         if (this.canvas.closest?.('.cinematic-model')) {
-          revealModelDraws.push({ src: source.src, sourceWidth: source.naturalWidth, cropHeight: args[3], args: args.length });
+          revealModelDraws.push({ canvas: this.canvas, image: source instanceof HTMLImageElement, aura: source.tierAura?.rank ?? null,
+            rank: Number(this.canvas.closest('[data-reveal]').dataset.rank) });
         }
         return drawImage.call(this, source, ...args);
       };
     });
     await p.evaluate(() => { Object.defineProperty(window, 'devicePixelRatio', { configurable: true, value: 2 }); dispatchEvent(new Event('resize')); });
     await p.waitForTimeout(150);
-    const modelDraws = await p.evaluate(() => revealModelDraws);
-    assert(modelDraws.length >= 10 && modelDraws.length <= 20, 'one coalesced draw per changed visible canvas');
-    assert(modelDraws.every(frame => frame.src?.endsWith('/reveal-models-hd.png') && frame.sourceWidth === 1254 && frame.cropHeight === 550 && frame.args === 8), 'full-size transparent model cells are sampled directly into the final canvas');
+    const modelDraws = await p.evaluate(() => ({ draws: revealModelDraws.length, canvases: new Set(revealModelDraws.map(draw => draw.canvas)).size,
+      images: revealModelDraws.filter(draw => draw.image).length, auras: revealModelDraws.filter(draw => draw.aura !== null),
+      matched: revealModelDraws.filter(draw => draw.aura !== null).every(draw => draw.aura === draw.rank) }));
+    assert(modelDraws.canvases >= 10 && modelDraws.draws <= modelDraws.canvases * 4, 'one coalesced hero + aura draw per changed visible canvas');
+    assert.equal(modelDraws.images, 0, 'results show the actual game models, not separate artwork');
+    assert(modelDraws.auras.length >= modelDraws.canvases && modelDraws.matched, 'every result shows the aura of its own rarity');
     assert(await p.locator('.cinematic-model canvas').evaluateAll(canvases => canvases.every(canvas => canvas.width === Math.round(canvas.clientWidth * 2) && canvas.height === Math.round(canvas.clientHeight * 2))), 'canvas backing matches high-density display size');
     assert(await p.locator('.cinematic-model canvas').evaluateAll(canvases => canvases.some(canvas => canvas.getAnimations().some(animation => animation.playState === 'running'))), 'models retain smooth compositor idle motion');
     await p.evaluate(() => { revealModelDraws.length = 0; });
@@ -268,17 +271,13 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert.equal(count(f, 'purchase'), 2, 'Continue never triggers another purchase');
     assert.equal(f.balance, 719500, 'single summon retains its existing price and fee');
     assert.deepEqual(errors, []);
-    console.log('PASS: actual checkout, duplicate guards, reveal/recovery flows, NEW/rank/cost, direct high-resolution DPR2 rendering, zero idle redraws, hidden/closed/reduced-motion cleanup and responsive layout.');
+    console.log('PASS: actual checkout, duplicate guards, reveal/recovery flows, NEW/rank/cost, actual game models with rarity auras at DPR2, zero idle redraws, hidden/closed/reduced-motion cleanup and responsive layout.');
   });
 
   await withGame(async ({ p, f, errors, assert }) => {
     f.holdAdventure = false;
     f.fulfillPurchase = fulfillWithRolls([9999, 100, 200, 300, 400]);
     await ready(p);
-    assert.equal(await p.evaluate(() => RevealModels.status), 'idle', 'optional HD art is not downloaded during unauthenticated startup');
-    const failArt = route => route.abort();
-    await p.route('**/reveal-models-hd.png', failArt);
-    // Install failure interception before the reveal can request the atlas.
     await login(p);
     await p.evaluate(() => { go(2); Combat.quantity(5); Combat.summonBatch(); });
     await p.waitForSelector('#tokenCheckoutDialog[open]');
@@ -305,12 +304,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert.equal(nextOpening.darkened, false, 'previous Legend darkening cannot leak into the next ordinary reveal');
     await p.evaluate(() => window.nextOrdinaryReveal);
     assert.equal(await revealedCount(p), 2);
-    await p.waitForFunction(() => RevealModels.status === 'error');
-    assert(await p.locator('.cinematic-art-status').isVisible(), 'optional art failure has readable feedback and does not block real results');
-    await p.unroute('**/reveal-models-hd.png', failArt);
-    await p.getByRole('button', { name: 'Retry art', exact: true }).click();
-    await p.waitForFunction(() => RevealModels.status === 'ready');
-    assert.equal(await p.locator('.cinematic-art-status').isVisible(), false, 'art retry recovers without another summon');
+    assert.equal(await p.evaluate(() => performance.getEntriesByType('resource').filter(r => /reveal-models/.test(r.name)).length), 0, 'the reveal needs no separate artwork download');
 
     // Repeated native delivery/modal refreshes can replace every card while an
     // opening is pending. They must settle once without stranding native busy.
@@ -338,26 +332,6 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     await p.waitForSelector('#summonReveal', { state: 'hidden' });
     assert.deepEqual(errors, [], 'rapid reveal/rebuild/close lifecycle has no runtime errors');
     console.log('PASS: immediate Legend-to-ordinary opening, rapid native rebuilds and duplicate Reveal All preserve actual results, balance and one purchase.');
-  });
-
-  await withGame(async ({ p, f, errors, assert }) => {
-    f.holdAdventure = false;
-    await p.route('**/reveal-models.js', route => route.abort());
-    await p.reload(); await ready(p); await login(p);
-    assert.equal(await p.evaluate(() => typeof RevealModels), 'undefined', 'simulate missing optional model-loader script');
-    await p.evaluate(() => { go(2); Combat.quantity(1); Combat.summonBatch(); });
-    await p.waitForSelector('#tokenCheckoutDialog[open]');
-    await p.locator('#checkoutConfirm').click();
-    await p.waitForFunction(() => S.v2.revealBatch?.length === 1 && !RyoPayments.state.busy);
-    await p.locator('#revealSkip').click();
-    await p.waitForFunction(() => S.v2.revealBatch.every(item => item.revealed) && !document.getElementById('revealContinue').disabled);
-    assert(await p.locator('.cinematic-art-status').isVisible(), 'missing optional script still uses game models and reports the fallback');
-    await p.locator('#revealContinue').click();
-    await p.waitForSelector('#summonReveal', { state: 'hidden' });
-    assert.equal(f.purchases.length, 1);
-    assert.equal(f.balance, 474500, 'fallback reveal retains the original single price and fee');
-    assert.deepEqual(errors, [], 'missing optional art script cannot crash the game/reveal');
-    console.log('PASS: missing optional HD loader script preserves native model fallback, results, Continue and the original charge.');
   });
 
   await withGame(async ({ p, f, errors, assert }) => {

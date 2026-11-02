@@ -30,15 +30,16 @@ function patchHtml(html) {
     if (applied) { if (count(html, to) !== 1) throw Error('Reveal design hooks are partial or upstream source changed.'); }
     else if (count(html, from) !== 1 || html.includes(to)) throw Error('Reveal design hook does not match upstream source.');
   }
+  // Retired HD atlas loader; earlier generated builds may still include it.
   const modelsScript = '<script defer src="assets/reveal-design/reveal-models.js"></script>';
-  if (applied) return html.includes(modelsScript) ? html : html.replace(script, modelsScript + '\n' + script);
+  if (applied) return html.replace(modelsScript + '\n', '').replace(modelsScript, '');
   for (const [from, to] of patches) html = html.replace(from, to);
-  return html.replace('</head>', marker + '\n<link rel="stylesheet" href="assets/reveal-design/reveal-design.css">\n' + modelsScript + '\n' + script + '\n</head>');
+  return html.replace('</head>', marker + '\n<link rel="stylesheet" href="assets/reveal-design/reveal-design.css">\n' + script + '\n</head>');
 }
 function applyRevealDesign(appDir = path.join(__dirname, 'app')) {
   const index = path.join(appDir, 'public/index.html'), original = fs.readFileSync(index, 'utf8'), patched = patchHtml(original);
   const source = path.join(__dirname, 'reveal-design'), dest = path.join(appDir, 'public/assets/reveal-design');
-  const files = ['reveal-design.js', 'reveal-design.css', 'reveal-design.png', 'reveal-models.js', 'reveal-models-hd.png'];
+  const files = ['reveal-design.js', 'reveal-design.css', 'reveal-design.png'];
   for (const file of files) if (!fs.statSync(path.join(source, file)).isFile()) throw Error('Missing original reveal asset ' + file);
   fs.mkdirSync(dest, { recursive: true }); for (const file of files) fs.copyFileSync(path.join(source, file), path.join(dest, file));
   // Reuse the website's original scroll artwork for the sealed and opening states.

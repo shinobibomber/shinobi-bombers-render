@@ -1,12 +1,10 @@
 # Cinematic summon reveal
 
 The reveal presentation reuses the existing moonlit village background, original website
-scroll artwork and all eight established character identities. Results use transparent
-high-resolution full-body redraws derived from those original models, documented in
-`ARTWORK.md`. The original 56–60px combat poses were too small for result cards.
-`reveal-models.js` lazily loads one 1254×1254 atlas; model identity still comes from
-`PlayerModels.modelFor`, independently of rank. Native models remain the network-error
-fallback. Original gameplay artwork is unchanged; no cropped torso portraits are used.
+scroll artwork and all eight established character identities. Each result shows the
+actual in-game hero with its rarity aura, drawn by `PlayerModels.drawPortrait` exactly as
+the Heroes and Adventure menus draw it. Model identity comes from `PlayerModels.modelFor`,
+independently of rank; the aura follows the hero's rank. No separate artwork is downloaded.
 The native shrine purchase flow, wallet, server and game economy are unchanged.
 
 ## Native state and actions
@@ -36,7 +34,7 @@ padding batches with fake heroes. Tablet uses three or four columns; mobile uses
 vertical scrolling inside the dialog.
 
 Rank is taken from `hero.r`: Genin gray, Chunin green, Jonin blue, Elite purple, Legend gold.
-Element labels, icons and aura colors follow the existing model identity
+Element labels, icons and spark colors follow the existing model identity
 (`PlayerModels.modelFor`), independently of rank. They are visual identities, not added
 combat attributes. Names, level, power and stamina come from the actual hero.
 Stars visualize the existing rank (one for Genin through five for Legend), as in the
@@ -55,8 +53,7 @@ live regions. Animations use CSS transforms/opacity, limited decorative particle
 gentle CSS model motion. One coalesced animation-frame callback draws changed visible
 canvases directly from the source at device-pixel resolution (capped at 2×). There is no
 continuous canvas redraw loop. Layout reads precede drawing, offscreen cards are skipped,
-and hidden/closed screens stop work. A failed optional atlas shows native models and a
-Retry art control; it cannot block Continue or alter results. Refresh batches NEW checks
+and hidden/closed screens stop work. Refresh batches NEW checks
 and UI synchronization, and each Legend owns its own backdrop cleanup.
 Reduced motion shows a still model, and reduced-motion preferences and Skip Animation bypass the
 visual waits. The existing sound preference remains in control.
@@ -78,8 +75,8 @@ source of ownership. Cross-device animation progress is not provided.
 `npm test` includes `tests/summon-reveal.cjs`, using isolated server/wallet fixtures.
 It checks real checkout delivery, duplicate prevention, individual/Reveal One/Reveal All/Skip
 flows, reload and account changes, first-model badges, rank stars, price quotes, failed purchases,
-responsive geometry, reduced motion, direct high-resolution DPR2 drawing, zero idle redraws,
-art failure/retry and rapid reveal/rebuild sequences. `tests/heroes-navigation.cjs` checks Adventure-to-Heroes
+responsive geometry, reduced motion, actual models with rank-matched auras at DPR2, zero idle
+redraws and rapid reveal/rebuild sequences. `tests/heroes-navigation.cjs` checks Adventure-to-Heroes
 navigation and correct roster identity while preserving inventory and balance.
 Screenshots are written to `tests/out/`.
 
