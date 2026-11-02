@@ -199,15 +199,15 @@
     },
     {
       "path": "reveal-design/README.md",
-      "sha256": "d37b6bd1fff69937dd049eb3d6ec23af765ce3c485c44387e86f91239a4ce66b"
+      "sha256": "2f2aea2ccbf575f5ca77829c6ac7fe19e7f71e46c23aafdb824523c2b478a706"
     },
     {
       "path": "reveal-design/reveal-design.css",
-      "sha256": "62521cb10d1f0f6b63adc41a61ec0839541c1a93664b4091430ed1d67fad6d1c"
+      "sha256": "e79bb5f126829ad391f2c7db60cb13018cce68204e6affc9376385563d303948"
     },
     {
       "path": "reveal-design/reveal-design.js",
-      "sha256": "8bfee39fbf1aa14fe6b6aef0da06b245e3809b5bc215f1e14e653336112c3358"
+      "sha256": "72b61a913dc20549758da56839d1703b2306c6336690bb4789f3433bdddf5e92"
     },
     {
       "path": "reveal-design/reveal-design.png",
@@ -312,6 +312,14 @@
     {
       "path": "loading-design/loading-reference.png",
       "sha256": "fcdca38ba5926100306824e0e372258f69f3d72bc8815e708423aa7a3515c3e7"
+    },
+    {
+      "path": "reveal-design/reveal-models.js",
+      "sha256": "d2c79bbd8f34403c1f50f24be481ef03c73716074c211536fd05c391514b2c67"
+    },
+    {
+      "path": "reveal-design/reveal-models-hd.png",
+      "sha256": "f990903f650b80de8da807ee5916a847815261f5d5c53746adb1649aca41f9a9"
     }
   ],
   "inlineScripts": [

@@ -13,8 +13,8 @@
   };
   const motion = matchMedia('(prefers-reduced-motion: reduce)'), timers = new Set();
   const quotes = new WeakMap(), drawnModels = new WeakMap();
-  let oneBusy = false, modelFrame = 0, modelTimer = 0;
-  let dialog, scene, currentBatch, opening = null, skipAnimations = false, againBusy = false, focusKey = null;
+  let oneBusy = false, modelFrame = 0, modelRequest = null;
+  let dialog, scene, currentBatch, opening = null, backdropOwner = null, skipAnimations = false, againBusy = false, focusKey = null;
   const api = window.RevealDesign = { loaded: false, ready: null, refresh, paint, open, sync, skip, canReveal };
   const batch = () => S.v2.revealBatch || [];
   const $ = selector => dialog?.querySelector(selector);
@@ -35,27 +35,49 @@
     for (const timer of timers) clearTimeout(timer);
     timers.clear();
     stopModels();
-    dialog?.classList.remove('legend-opening');
+    clearBackdrop();
     dialog?.querySelectorAll('.is-opening,.cinematic-elite,.cinematic-legend').forEach(card => card.classList.remove('is-opening', 'cinematic-elite', 'cinematic-legend'));
+  }
+  function clearBackdrop(owner) {
+    if (owner && backdropOwner !== owner) return;
+    backdropOwner = null;
+    dialog?.classList.remove('legend-opening');
   }
   function stopModels() {
     if (modelFrame) cancelAnimationFrame(modelFrame);
-    if (modelTimer) clearTimeout(modelTimer);
-    modelFrame = modelTimer = 0;
+    modelFrame = 0;
+  }
+  function loadModels(retry = false) {
+    if (modelRequest && !retry) return;
+    if (!window.RevealModels) { updateModelStatus(); return; }
+    modelRequest = window.RevealModels.load(retry).then(() => {
+      if (!dialog?.open || !canReveal()) return;
+      updateModelStatus(); scheduleModels();
+    });
+    updateModelStatus();
+  }
+  function updateModelStatus() {
+    const notice = $('.cinematic-art-status');
+    if (notice) notice.hidden = (window.RevealModels?.status || 'error') !== 'error';
   }
   function scheduleModels() {
-    if (modelFrame || modelTimer || !dialog?.open || document.hidden || !canReveal()) return;
-    modelFrame = requestAnimationFrame(now => {
+    if (modelFrame || !dialog?.open || document.hidden || !canReveal()) return;
+    modelFrame = requestAnimationFrame(() => {
       modelFrame = 0;
       if (!dialog.open || document.hidden || !canReveal()) return;
-      const viewport = $('.reveal-grid').getBoundingClientRect();
-      let visible = false;
-      dialog.querySelectorAll('.is-revealed[data-reveal]').forEach(card => {
-        visible = drawModel(card, batch()[Number(card.dataset.reveal)]?.hero, now, viewport) || visible;
+      const grid = $('.reveal-grid'); if (!grid) return;
+      const viewport = grid.getBoundingClientRect();
+      // Read all layout first, then paint. No recurring canvas redraw loop.
+      const entries = [...grid.querySelectorAll('.is-revealed[data-reveal]')].map(card => {
+        const bounds = card.getBoundingClientRect(), canvas = card.querySelector('.cinematic-model canvas');
+        return { card, canvas, width: canvas?.clientWidth, height: canvas?.clientHeight,
+          visible: bounds.bottom > viewport.top && bounds.top < viewport.bottom && bounds.right > viewport.left && bounds.left < viewport.right };
       });
-      // One capped scheduler for the whole collection. Cached idle frames are
-      // redrawn only when their pose or display size changes, not every RAF.
-      if (visible && !motion.matches) modelTimer = setTimeout(() => { modelTimer = 0; scheduleModels(); }, 1000 / 12);
+      if (entries.length) loadModels();
+      for (const entry of entries) {
+        entry.card.classList.toggle('model-visible', entry.visible);
+        if (entry.visible) drawModel(entry, batch()[Number(entry.card.dataset.reveal)]?.hero);
+      }
     });
   }
   const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(scheduleModels) : null;
@@ -68,7 +90,9 @@
     });
     dialog.addEventListener('close', () => { if (!dialog.open) { cleanup(); resize?.disconnect(); } });
     dialog.addEventListener('scroll', scheduleModels, { capture: true, passive: true });
+    addEventListener('resize', scheduleModels, { passive: true });
     addEventListener('pagehide', cleanup);
+    addEventListener('pageshow', scheduleModels);
     document.addEventListener('visibilitychange', () => {
       document.body.classList.toggle('cinematic-paused', document.hidden);
       if (document.hidden) { opening?.finish(); stopModels(); }
@@ -119,18 +143,27 @@
       const again = document.createElement('button'); again.type = 'button'; again.id = 'revealAgain';
       again.innerHTML = '<span>Summon Again</span><small class="cinematic-cost">Checking cost…</small>'; again.onclick = summonAgain;
       actions.append(again, $('#revealContinue')); $('.reveal-footer').append(actions);
+      const artStatus = document.createElement('div'); artStatus.className = 'cinematic-art-status'; artStatus.hidden = true;
+      artStatus.innerHTML = '<span role="status">High-resolution art unavailable. Showing game models.</span>';
+      const retryArt = document.createElement('button'); retryArt.type = 'button'; retryArt.textContent = 'Retry art';
+      retryArt.hidden = !window.RevealModels;
+      retryArt.onclick = () => loadModels(true); artStatus.append(retryArt); $('.reveal-footer').append(artStatus);
       const atmosphere = document.createElement('div'); atmosphere.className = 'cinematic-atmosphere';
       atmosphere.setAttribute('aria-hidden', 'true'); atmosphere.innerHTML = '<i></i>'.repeat(8); scene.prepend(atmosphere);
     }
     $('#revealProgress').setAttribute('role', 'status');
     $('.reveal-grid').setAttribute('aria-label', 'Shinobi summoning scrolls');
-    batch().forEach((_, index) => paint(index));
+    // Native delivery rebuilds the whole grid. Classify collection badges and
+    // synchronize the controls once, instead of rescanning them for each card.
+    const newModels = newModelFlags();
+    batch().forEach((_, index) => paint(index, newModels, true));
     resize?.disconnect(); resize?.observe($('.reveal-grid'));
-    sync(); scheduleModels();
+    dialog.querySelectorAll('.cinematic-model').forEach(element => resize?.observe(element));
+    updateModelStatus(); sync(); scheduleModels();
     if (restoreFocus && dialog.open) $(restoreFocus)?.focus({ preventScroll: true });
   }
 
-  function paint(index) {
+  function paint(index, newModels, deferSync = false) {
     if (!api.loaded || !canReveal()) return;
     const item = batch()[index], card = $('[data-reveal="' + index + '"]');
     if (!item?.hero || !card) return;
@@ -162,55 +195,70 @@
     const number = value => Number.isFinite(Number(value)) ? Number(value).toLocaleString('en-US', { maximumFractionDigits: 1 }) : '—';
     face.querySelector('.cinematic-stats').textContent = 'Lv. ' + number(hero.lv) + ' · Power ' + number(hero.pw) + ' · Stamina ' + number(hero.st);
     face.querySelector('.cinematic-rank').textContent = ranks[rank];
-    const badge = face.querySelector('.cinematic-new'); badge.hidden = !isNewModel(index);
+    const badge = face.querySelector('.cinematic-new'); badge.hidden = !(newModels || newModelFlags())[index];
     badge.title = 'First ' + model.label + ' in your current collection';
     if (item.revealed && opening?.item === item) {
       card.classList.remove('is-opening');
       const revealedOpening = opening;
-      later(() => { card.classList.remove('cinematic-elite', 'cinematic-legend'); if (opening === revealedOpening) dialog.classList.remove('legend-opening'); }, skipAnimations || motion.matches ? 0 : 420);
+      later(() => { card.classList.remove('cinematic-elite', 'cinematic-legend'); clearBackdrop(revealedOpening); }, skipAnimations || motion.matches ? 0 : 420);
     }
-    scheduleModels(); sync();
+    if (!deferSync) { scheduleModels(); sync(); }
   }
 
-  function drawModel(card, hero, now, viewport) {
-    if (!hero || !card.isConnected || !dialog.open) return false;
-    const bounds = card.getBoundingClientRect();
-    if (bounds.bottom <= viewport.top || bounds.top >= viewport.bottom || bounds.right <= viewport.left || bounds.left >= viewport.right) return false;
-    const canvas = card.querySelector('.cinematic-portrait canvas'), width = canvas.clientWidth, height = canvas.clientHeight;
-    if (!width || !height) return false;
+  function drawModel({ card, canvas, width, height }, hero) {
+    if (!hero || !canvas || !width || !height || !card.isConnected || !dialog.open) return;
+    const hd = window.RevealModels?.frame(hero), pending = window.RevealModels?.status === 'loading';
+    card.classList.toggle('model-loading', pending);
+    if (!hd && pending) return;
     const density = Math.min(2, devicePixelRatio || 1);
     const pixelWidth = Math.round(width * density), pixelHeight = Math.round(height * density);
-    const phase = motion.matches ? 0 : Math.floor(now / 280 + (hero.id || 0) * .37);
-    // Use the same transparent full-body idle clips as the game. Explicit idle
-    // tokens avoid changing or borrowing any live combat animation state.
-    const frame = window.CharacterAnimations?.loaded
-      ? CharacterAnimations.heroFrame(hero, 'clip:idle:' + phase, false, 'front')
-      : PlayerModels.heroFrame(hero, 'i' + (phase % 4));
+    const frame = hd ? hd.image : PlayerModels.heroFrame(hero, 'i0');
+    const model = PlayerModels.modelFor(hero).index;
     const previous = drawnModels.get(canvas);
-    if (previous?.frame === frame && previous.width === pixelWidth && previous.height === pixelHeight) return true;
+    if (previous?.frame === frame && previous.model === model && previous.width === pixelWidth && previous.height === pixelHeight) return;
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
-    const context = canvas.getContext('2d'); context.setTransform(density, 0, 0, density, 0, 0);
+    const context = canvas.getContext('2d'); if (!context) return;
+    context.setTransform(density, 0, 0, density, 0, 0);
     context.clearRect(0, 0, width, height);
     context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
-    sprites.blit(context, frame, width / 2, height * .9, Math.min(width / 40, height / 45) * .97, false);
-    drawnModels.set(canvas, { frame, width: pixelWidth, height: pixelHeight });
-    return true;
+    if (hd) {
+      const [x, y, w, h] = hd.rect, scale = Math.min(width * .96 / w, height * .94 / h);
+      // One source-to-display sample at device resolution, with no enlarged intermediate.
+      context.drawImage(frame, x, y, w, h, (width - w * scale) / 2, height * .96 - h * scale, w * scale, h * scale);
+    } else sprites.blit(context, frame, width / 2, height * .9, Math.min(width / 40, height / 45) * .97, false);
+    drawnModels.set(canvas, { frame, model, width: pixelWidth, height: pixelHeight });
   }
 
-  function isNewModel(index) {
-    const records = batch(), item = records[index];
-    if (!item?.hero || S.v2.revealSource !== 'summon') return item?.isNew === true || item?.hero?.isNew === true;
-    const hero = item.hero, model = PlayerModels.modelFor(hero).key;
+  function newModelFlags() {
+    const records = batch();
+    if (S.v2.revealSource !== 'summon') return records.map(item => item?.isNew === true || item?.hero?.isNew === true);
     const identity = h => h.tokenId ? 'token:' + h.tokenOwner + ':' + h.tokenId : 'local:' + h.id;
-    const resultIds = new Set(records.map(record => identity(record.hero)));
-    const previouslyOwned = S.h.some(h => h.tokenOwner === hero.tokenOwner && !resultIds.has(identity(h)) && PlayerModels.modelFor(h).key === model);
-    return !previouslyOwned && !records.slice(0, index).some(record => PlayerModels.modelFor(record.hero).key === model);
+    const resultIds = new Set(records.filter(record => record?.hero).map(record => identity(record.hero)));
+    const owned = new Map(), seen = new Set();
+    for (const hero of S.h) {
+      if (!hero || resultIds.has(identity(hero))) continue;
+      let models = owned.get(hero.tokenOwner);
+      if (!models) { models = new Set(); owned.set(hero.tokenOwner, models); }
+      models.add(PlayerModels.modelFor(hero).key);
+    }
+    // This is a snapshot for one paint/refresh, never a second collection cache.
+    // Individual paints recalculate it so ledger changes cannot leave stale NEWs.
+    return records.map(item => {
+      if (!item?.hero) return item?.isNew === true;
+      const hero = item.hero, model = PlayerModels.modelFor(hero).key;
+      const isNew = !owned.get(hero.tokenOwner)?.has(model) && !seen.has(model);
+      seen.add(model);
+      return isNew;
+    });
   }
 
   function open(index) {
     const item = batch()[index], card = $('[data-reveal="' + index + '"]');
     if (!item || !card || !canReveal() || item.revealed) return Promise.resolve();
     const rank = Number(item.hero.r);
+    // Each opening owns its own backdrop. Starting a common/Elite scroll must
+    // retire a previous Legend, and its delayed cleanup must not dim a new one.
+    clearBackdrop();
     if (!skipAnimations && !motion.matches && !document.hidden) {
       card.classList.add('is-opening');
       if (rank === 3) card.classList.add('cinematic-elite');
@@ -223,6 +271,7 @@
     return new Promise(resolve => {
       const record = { item, finish() { if (record.done) return; record.done = true; clearTimeout(record.timer); timers.delete(record.timer); resolve(); } };
       opening = record;
+      if (dialog.classList.contains('legend-opening')) backdropOwner = record;
       if (skipAnimations || motion.matches || document.hidden) record.finish();
       else record.timer = later(record.finish, rank === 4 ? 950 : rank === 3 ? 800 : 650);
     });
@@ -285,7 +334,7 @@
   async function skip() {
     if (!canReveal()) return;
     skipAnimations = true; opening?.finish();
-    dialog.classList.remove('legend-opening');
+    clearBackdrop();
     dialog.querySelectorAll('.is-opening,.cinematic-elite,.cinematic-legend').forEach(card => card.classList.remove('is-opening', 'cinematic-elite', 'cinematic-legend'));
     // Allow the native handler to leave busy before asking it to reveal the rest.
     // Native batchRun keeps an already-running Reveal All singular.

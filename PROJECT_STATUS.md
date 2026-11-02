@@ -6,7 +6,7 @@ _Development copy created 2026-11-01 (Asia/Singapore)._
 | --- | --- |
 | **This folder** | `D:\Projects\Shinobi-Bombers-Development` — the working copy for Claude and OpenAI Codex |
 | **Source** | GitHub `shinobibomber/shinobi-bombers-render`, branch `main`, commit `11eddc8`. Full history (29 commits, branch `origin/v3/integrated-redesign-2026-11-01`, tag `v3-reference-beta`) attaches with the one-time git setup below |
-| **Latest work** | Loading first-paint cleanup, animated summon models and menu/price display fixes (2026-11-02); see Handoff notes. Manual deployment required after push. |
+| **Latest work** | Sharper summon-result models and reveal lifecycle/performance fixes (2026-11-02); see Handoff notes. Manual deployment required after push. |
 | **Live site** | https://shinobi-bombers-beta.onrender.com — website at `/`, game at `/play/`. Last verified deployment: `d839583` (2026-11-02) |
 | **Original local copy** | `D:\shinobi-bombers-render` — untouched. It is an older clone at `a68984b`, 3 commits behind `main`, with no local edits |
 
@@ -107,6 +107,19 @@ that they are unavailable.
    run `npm test` before pushing, commit + push to `main`, then Render → Manual Deploy.
 
 ## Handoff notes (Claude ↔ Codex)
+
+- 2026-11-02 reveal quality follow-up: source action poses were only 56–60px tall.
+  Added a reveal-only transparent HD atlas derived from the same eight model references;
+  original gameplay models remain unchanged. See `reveal-design/ARTWORK.md` for provenance.
+  Results sample the atlas directly into DPR-aware canvases and animate with CSS, removing
+  the recurring canvas redraw loop. Optional art failure falls back to native models with
+  Retry art; actual results and Continue remain usable. Batched NEW/UI updates reduce repeat
+  work, and Legend backdrop ownership prevents stale darkening between reveals.
+  Verified: `npm run build:local` (including TypeScript), lint, `npm test` (11 suites
+  + 17 website checks) and `npm run test:visual -- HEAD` (24 unchanged website screens).
+  Reveal tests cover DPR2 direct drawing, zero idle redraws, missing art/loader fallback,
+  retry, rapid modal rebuilds, duplicate Reveal All, account recovery and original charges.
+  Updated desktop/mobile previews: `tests/out/summon-results-*.png`.
 
 - 2026-11-02 presentation cleanup: enhanced loading markup/styles are present in the first
   HTML response, removing the legacy loader flash; progress uses a transform and actual

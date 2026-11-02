@@ -118,7 +118,12 @@
 #summonReveal.cinematic-reveal .cinematic-face{inset:5px;grid-template-rows:minmax(0,1fr) auto auto auto auto auto;gap:3px}
 #summonReveal.cinematic-reveal .cinematic-portrait{margin:0 auto;isolation:isolate}
 #summonReveal.cinematic-reveal .cinematic-model{background:radial-gradient(ellipse at 50% 72%,color-mix(in srgb,var(--element-color) 13%,transparent),transparent 65%)}
-#summonReveal.cinematic-reveal .cinematic-model canvas{mask-image:none;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--element-color) 50%,transparent))}
+#summonReveal.cinematic-reveal .cinematic-model canvas{mask-image:none;filter:none}
+#summonReveal.cinematic-reveal .is-revealed.model-visible .cinematic-model canvas{animation:sb-model-idle 3.6s ease-in-out infinite}
+#summonReveal.cinematic-reveal .model-loading .cinematic-model::after{content:'Preparing model…';position:absolute;inset:0;display:grid;place-items:center;color:#d3d9ed;font:600 12px/1.3 system-ui,sans-serif}
+#summonReveal.cinematic-reveal .cinematic-art-status{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;color:#d3d9ed;font:500 12px/1.3 system-ui,sans-serif}
+#summonReveal.cinematic-reveal .cinematic-art-status button{min-height:44px;padding:6px 12px;border:1px solid #c5a262;border-radius:5px;background:#11152d;color:#ffe4a3;cursor:pointer}
+@keyframes sb-model-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 #summonReveal.cinematic-reveal .cinematic-aura{z-index:3;bottom:1%;left:4%;right:4%;height:16%;box-shadow:0 0 9px var(--element-color),inset 0 0 9px var(--element-color)}
 #summonReveal.cinematic-reveal .cinematic-aura::before{inset:4px;border-width:2px}
 #summonReveal.cinematic-reveal .cinematic-aura::after{height:210%;background:radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--element-color) 15%,transparent),transparent 65%)}

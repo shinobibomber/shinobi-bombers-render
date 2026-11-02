@@ -183,3 +183,20 @@ Verified with the local build/typecheck, lint, all 11 game suites, 17 website ch
 and 24 unchanged desktop/mobile website screenshots. `tests/menu-layout.cjs` checks
 live pack captions (including hover), native quantity selection and menu/notice geometry;
 loading and reveal tests cover initial paint, true progress and model-loop cleanup.
+
+## Sharper reveal models (2026-11-02)
+
+The reveal now uses `reveal-design/reveal-models-hd.png`, a transparent full-body atlas
+derived from the same eight references. Its model cells provide about 550px of source
+height instead of the 56–60px combat animation cells. This is new presentation artwork,
+not a change to gameplay models; provenance and prompts are in `reveal-design/ARTWORK.md`.
+`reveal-models.js` downloads it only for revealed results, with decode validation, timeout
+and retry. On failure, native models remain available and Continue is never blocked.
+
+Visible canvases draw directly at display resolution. CSS provides idle motion with no
+continuous canvas redraws; resize/scroll/art-ready updates coalesce into one frame.
+Refresh batches NEW classification and synchronization, and Legend backdrop cleanup
+is owned by the current opening. Native result IDs, persistence and checkout remain unchanged.
+Missing optional loader JavaScript also falls back without disrupting the native reveal.
+Verified: local build/typecheck, lint, 11 game suites + 17 website checks, and 24 unchanged
+website screenshots. Reveal screenshots were reviewed separately on desktop and mobile.

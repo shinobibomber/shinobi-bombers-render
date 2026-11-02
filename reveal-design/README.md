@@ -1,9 +1,12 @@
 # Cinematic summon reveal
 
 The reveal presentation reuses the existing moonlit village background, original website
-scroll artwork and all eight existing character models. Results draw the game's cached
-`CharacterAnimations` idle frames directly onto transparent canvases, with the native
-model frame as fallback. No separate portrait image or top-of-sheet panel is loaded.
+scroll artwork and all eight established character identities. Results use transparent
+high-resolution full-body redraws derived from those original models, documented in
+`ARTWORK.md`. The original 56–60px combat poses were too small for result cards.
+`reveal-models.js` lazily loads one 1254×1254 atlas; model identity still comes from
+`PlayerModels.modelFor`, independently of rank. Native models remain the network-error
+fallback. Original gameplay artwork is unchanged; no cropped torso portraits are used.
 The native shrine purchase flow, wallet, server and game economy are unchanged.
 
 ## Native state and actions
@@ -49,8 +52,12 @@ history after heroes have been sold/fused. Legacy rescue/fusion records require 
 
 Native buttons support keyboard and touch. Reveal progress and rare announcements use
 live regions. Animations use CSS transforms/opacity, limited decorative particles and
-one shared model scheduler capped at 12 frames per second. Only changed poses or canvas
-sizes are redrawn; offscreen cards are skipped and hidden/closed screens stop the scheduler.
+gentle CSS model motion. One coalesced animation-frame callback draws changed visible
+canvases directly from the source at device-pixel resolution (capped at 2×). There is no
+continuous canvas redraw loop. Layout reads precede drawing, offscreen cards are skipped,
+and hidden/closed screens stop work. A failed optional atlas shows native models and a
+Retry art control; it cannot block Continue or alter results. Refresh batches NEW checks
+and UI synchronization, and each Legend owns its own backdrop cleanup.
 Reduced motion shows a still model, and reduced-motion preferences and Skip Animation bypass the
 visual waits. The existing sound preference remains in control.
 
@@ -71,7 +78,8 @@ source of ownership. Cross-device animation progress is not provided.
 `npm test` includes `tests/summon-reveal.cjs`, using isolated server/wallet fixtures.
 It checks real checkout delivery, duplicate prevention, individual/Reveal One/Reveal All/Skip
 flows, reload and account changes, first-model badges, rank stars, price quotes, failed purchases,
-responsive geometry and reduced motion. `tests/heroes-navigation.cjs` checks Adventure-to-Heroes
+responsive geometry, reduced motion, direct high-resolution DPR2 drawing, zero idle redraws,
+art failure/retry and rapid reveal/rebuild sequences. `tests/heroes-navigation.cjs` checks Adventure-to-Heroes
 navigation and correct roster identity while preserving inventory and balance.
 Screenshots are written to `tests/out/`.
 
