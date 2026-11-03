@@ -331,7 +331,7 @@ that they are unavailable.
 2. Optional: open `/play/` on the website Home design before sign-in, with its wallet pill starting the real game
    sign-in.
 3. Polish requests from review (e.g. more Adventure/Heroes styling) as small commits.
-4. Reconnect Render auto-deploy. (2026-11-04: Render GitHub app reconnected by the owner; verifying that a push deploys on its own.)
+4. ~~Reconnect Render auto-deploy.~~ Done 2026-11-04: pushes to main now deploy automatically (verified: commit 5664cad deployed with trigger new_commit, live in ~80s).
 5. Keep `SCREENS` in `apply-website-design.cjs` and `docs/WEBSITE-INTEGRATION.md` up to date with each phase.
 
 ## Rules for Claude and Codex in this folder
