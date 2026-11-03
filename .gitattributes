@@ -13,3 +13,5 @@ character-animations/character-animations.js text eol=lf
 heroes-design/heroes-design.js text eol=lf
 roster-design/roster-design.js text eol=lf
 tier-auras/tier-auras.js text eol=lf
+map-design/maps.json text eol=lf
+tier-auras/manifest.json text eol=lf
