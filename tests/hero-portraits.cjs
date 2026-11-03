@@ -40,7 +40,7 @@ const collection = async p => {
     assert.equal(await p.evaluate(() => document.querySelector('.gc-tools').open), true, 'the gear opens the game Tools menu');
     assert.equal(await p.locator('.gc-tools > div > strong').isVisible(), false, 'the menu does not repeat the pill\'s player count');
     await p.keyboard.press('Escape');
-    assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'Disconnect', 'the signed-in wallet pill is a Disconnect button');
+    assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'GO OFFLINE', 'the signed-in wallet pill is the GO OFFLINE button');
     // The Home chat bar pops up a chat panel in place instead of switching screens.
     await p.locator('.sbw-scr.on [data-sbwid="chatbar"]').click();
     assert.equal(await p.locator('.sbw-chatpop').isVisible(), true, 'the chat bar opens the chat pop-up');
@@ -132,11 +132,17 @@ const collection = async p => {
     await p.evaluate(() => { window.__hiddenPortraitPaints = 0; });
     await p.waitForTimeout(600);
     assert.equal(await p.evaluate(() => window.__hiddenPortraitPaints), 0, 'covered native Adventure portraits do not repaint');
-    // Disconnect uses the game's own wallet disconnect, which returns to its sign-in screen.
+    // GO OFFLINE (no Sensei here): a warning, then the game's own wallet disconnect and sign-in screen.
     await p.locator('.sbw-hdr [data-sbwid="wallet"]').click();
+    await p.waitForSelector('.sbw-offline[open]');
+    assert.match(await p.locator('.sbw-offline .sbw-off-warn').textContent(), /No Sensei is hired/);
+    await p.locator('.sbw-offline [data-k="go"]').click();
     await p.waitForFunction(() => !RyoPayments.state.authenticated && LoginScreen.active);
     await login(p);
-    assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'Disconnect', 'signing back in restores the Disconnect button');
+    assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'GO OFFLINE', 'signing back in restores the GO OFFLINE button');
+    await p.waitForSelector('.sbw-dialog[open]');
+    assert.match(await p.locator('.sbw-dialog[open]').textContent(), /Welcome back!.*No Sensei was hired/s, 'coming back explains why nothing was earned');
+    await p.keyboard.press('Escape');
     assert.deepEqual(errors, [], 'portrait rendering and navigation remain error-free');
   });
   console.log('PASS: eight original animated portraits, pose-keyed repaint, no HD downloads and hidden-paint suppression.');

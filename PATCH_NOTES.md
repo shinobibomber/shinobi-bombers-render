@@ -20,6 +20,16 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Update)**
+
+**✨ New**
+• **GO OFFLINE** — the Disconnect button is now GO OFFLINE. It saves your latest kills to your Chest, hands your team to your Sensei for up to 12 hours of offline earning, then disconnects your wallet. If your Sensei is off or not hired, it tells you first and can turn it on for you.
+• **Welcome back** — when you sign in again, you'll see exactly how much Ryo your Sensei earned while you were away.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Hotfix)**
 
 **🛠️ Fixes**

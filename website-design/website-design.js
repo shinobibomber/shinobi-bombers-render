@@ -34,8 +34,56 @@
   // Header wallet pill: the game's own Disconnect (which returns to its sign-in screen),
   // or that sign-in screen when signed out. No wallet logic of its own.
   function walletButton() {
-    if (account()) { const native = document.getElementById('betaDisconnect'); if (native && !native.disabled) native.click(); }
+    if (account()) goOffline();
     else window.LoginScreen?.show();
+  }
+  // GO OFFLINE: save the battle's pending kills to the Chest, tell the server the player is offline
+  // from now (active=false), then disconnect with the game's own button. The server pays Sensei
+  // offline time on the next sign-in; Welcome back reports it.
+  const OFFLINE_KEY = 'shinobi-offline-v1';
+  function goOffline() {
+    const d = dojoState();
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    const status = !d.hired ? '<p class="sbw-off-warn">No Sensei is hired, so your heroes will not earn while you are offline. Hire or rent one in Dojo → Sensei.</p>'
+      : !d.on ? '<p class="sbw-off-warn">Your Sensei is hired, but rotation is off, so it will not earn while you are offline.</p>'
+      : `<p>Your Sensei keeps your team fighting for up to 12 hours${d.rental ? ' (rental: ' + timeLeft(d.left) + ')' : ''}. Earnings go straight to your Chest.</p>`;
+    const go = !d.hired ? '<button type="button" class="sbw-btn" data-k="sensei">Go to Sensei</button><button type="button" class="sbw-btn sbw-alt" data-k="go">Go offline anyway</button>'
+      : !d.on ? '<button type="button" class="sbw-btn" data-k="on">Turn on Sensei &amp; go offline</button><button type="button" class="sbw-btn sbw-alt" data-k="go">Go offline anyway</button>'
+      : '<button type="button" class="sbw-btn" data-k="go">Go offline</button>';
+    dlg.className = 'sbw-dialog sbw-offline'; dlg.onclick = null;
+    dlg.innerHTML = `<h2>Go offline?</h2>${status}<p class="sbw-small">Your latest kills are saved to your Chest first, then your wallet is disconnected.</p><p class="sbw-off-msg" role="alert" hidden></p><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="stay">Stay online</button>${go}</div>`;
+    dlg.addEventListener('close', () => dlg.classList.remove('sbw-offline'), { once: true });
+    dlg.onclick = async e => {
+      const k = e.target.dataset && e.target.dataset.k; if (!k) return;
+      if (k === 'stay') return dlg.close();
+      if (k === 'sensei') { dlg.close(); return MODS.dojo.focus('sen'); }
+      const buttons = $$('.sbw-acts button', dlg), msg = $('.sbw-off-msg', dlg);
+      buttons.forEach(b => b.disabled = true); e.target.textContent = 'Saving…';
+      try {
+        if (k === 'on') await RyoPayments.senseiSettings(d.pct, true);
+        const owner = account(), chest = await RyoPayments.adventure(false, false);
+        try { localStorage.setItem(OFFLINE_KEY, JSON.stringify({ account: owner, lifetime: Number(chest.pending || 0) + Number(chest.claimed || 0), at: Date.now() })); } catch {}
+        dlg.close();
+        const native = document.getElementById('betaDisconnect'); if (native && !native.disabled) native.click();
+      } catch (err) {
+        // Stay signed in so nothing is lost; the player can retry.
+        msg.hidden = false; msg.textContent = (err && err.message) || 'Could not save your progress. Check your connection and try again.';
+        buttons.forEach(b => b.disabled = false); e.target.textContent = 'Try again';
+      }
+    };
+    if (!dlg.open) dlg.showModal();
+  }
+  // Welcome back: the first verified Chest sync after signing in includes the Sensei's offline earnings.
+  function welcomeBack() {
+    let saved; try { saved = JSON.parse(localStorage.getItem(OFFLINE_KEY) || 'null'); } catch { return; }
+    const snap = window.AdventureChest && AdventureChest.snapshot, a = account();
+    if (!saved || !a || saved.account !== a || !snap || snap.busy || !snap.chest || snap.owner !== a) return;
+    try { localStorage.removeItem(OFFLINE_KEY); } catch {}
+    const earned = Math.max(0, Number(snap.chest.pending || 0) + Number(snap.chest.claimed || 0) - Number(saved.lifetime || 0));
+    const mins = Math.max(0, Math.round((Date.now() - Number(saved.at || Date.now())) / 60000)), away = mins >= 60 ? Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm' : mins + 'm';
+    const d = dojoState();
+    notice('Welcome back!', earned >= 1 ? `Your Sensei earned ${fmt(earned)} Ryo while you were offline for ${away}. It is in your Chest.`
+      : `You were offline for ${away}. ${!d.hired ? 'No Sensei was hired, so your heroes rested.' : !d.on ? 'Sensei rotation was off, so nothing was earned.' : 'Your team earned nothing this time (short break or no chakra).'}`);
   }
   // Count a number up to its new value over 0.7s (Chest, Session gained). Decreases (a claim) and
   // reduced motion jump straight to the new value.
@@ -893,8 +941,8 @@
     if (hb.label) { if (pend != null && Number.isFinite(pend)) countTo(hb.label, pend, v => 'Chest : ' + fmt(v)); else { counters.delete(hb.label); setText(hb.label, 'Chest'); } }
     if (hb.dot) hb.dot.hidden = !(pend >= 1);
     if (hb.walletSpot) {
-      setText(hb.covers.wallet, a ? 'Disconnect' : 'Connect Wallet'); hb.covers.wallet.classList.toggle('sbw-connect', !a);
-      const name = a ? 'Disconnect wallet ' + a.slice(0, 4) + '…' + a.slice(-4) : 'Connect wallet';
+      setText(hb.covers.wallet, a ? 'GO OFFLINE' : 'Connect Wallet'); hb.covers.wallet.classList.toggle('sbw-connect', !a);
+      const name = a ? 'Go offline: Sensei keeps your team earning · wallet ' + a.slice(0, 4) + '…' + a.slice(-4) : 'Connect wallet';
       if (hb.walletSpot.getAttribute('aria-label') !== name) { hb.walletSpot.setAttribute('aria-label', name); hb.walletSpot.title = name; }
     } else if (hb.covers.wallet) setText(hb.covers.wallet, a ? a.slice(0, 4) + '...' + a.slice(-4) : 'Sign in');
     if (hb.online) { const players = (document.getElementById('onlinePlayers')?.textContent || '').match(/\d[\d,]*/); setText(hb.online, a && players ? players[0] : '—'); }
@@ -1083,7 +1131,7 @@
     addEventListener('shinobi-navigation', sync);
     addEventListener('shinobi-ryo-ledger', () => refresh());
     addEventListener('shinobi-beta-wallet', () => refresh());
-    addEventListener('shinobi-chest', () => refresh());
+    addEventListener('shinobi-chest', () => { refresh(); welcomeBack(); });
     // Defeats trigger verified Chest syncs in gameplay-options/options.js (KillReport).
     addEventListener('resize', fit);
     motionPreference.addEventListener('change', event => { RM = event.matches; refresh(); });

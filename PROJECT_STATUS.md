@@ -108,6 +108,12 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-04 GO OFFLINE (owner request): the header wallet button reads GO OFFLINE. `goOffline()` in
+  website-design.js shows the Sensei status (offers `RyoPayments.senseiSettings(pct,true)` when rotation
+  is off), runs a final `RyoPayments.adventure(false,false)` (saves KillReport kills, marks the server
+  offline), stores `shinobi-offline-v1`, then clicks the native `#betaDisconnect`. `welcomeBack()` reports
+  the Sensei's offline earnings on the next sign-in. No server changes. Covered in live-rewards.cjs.
+
 - 2026-11-04 Adventure during Boss Hunt (owner request): the game's V2 tick ran either the hunt or
   Adventure, so a hunt froze Adventure for every hero. `bossTeamPatches` now moves the 5 hunt heroes
   off the Adventure map (the Adventure tick skips off-map heroes), runs Adventure for everyone else

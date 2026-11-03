@@ -499,3 +499,8 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .hs.noscale:active>.sl{filter:brightness(.95)}
 @keyframes sbw-glow{50%{filter:brightness(1.18) drop-shadow(0 0 8px rgba(255,180,40,.75))}}
 @media (prefers-reduced-motion:reduce){#sbwLayer .hs.noscale.pu>.sl{animation:none}}
+/* GO OFFLINE dialog */
+.sbw-dialog.sbw-offline{max-width:min(520px,92vw)}
+.sbw-offline .sbw-off-warn{padding:8px 12px;border:1px solid #ffb02a;border-radius:8px;background:#2a1a05;color:#ffe2a8}
+.sbw-offline .sbw-off-msg{color:#ff9a9a}
+.sbw-offline .sbw-acts{flex-wrap:wrap}
