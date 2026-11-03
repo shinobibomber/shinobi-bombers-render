@@ -1,6 +1,7 @@
 /* Same-origin host for the website + the unmodified Shinobi Bombers game.
  *
- *   /                     → your website (website/)               – static, design unchanged
+ *   /                     → redirects to /play/ (the game is the home page; 302 so it can be undone)
+ *   /index.html, /assets… → your website (website/)               – static, design unchanged
  *   /site-config.js       → generated from env (GAME_URL, GAME_EMBED_PREVIEW)
  *   /play/…               → the complete game page and its assets   – served by the GAME'S OWN server code
  *   /.netlify/functions/ryo, /api/ryo, /beta-config.json, /healthz
@@ -79,6 +80,7 @@ const server = http.createServer((req, res) => {
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   if (game) {
     if (GAME_ROOT_PATHS.has(name)) return game.listener(req, res);
+    if (name === '/') { res.writeHead(302, { Location: MOUNT + '/' + url.search, 'Cache-Control': 'no-store', ...SITE_HEADERS }); return res.end(); }
     if (name === MOUNT) { res.writeHead(308, { Location: MOUNT + '/' + url.search }); return res.end(); }
     if (url.pathname.startsWith(MOUNT + '/')) { req.url = url.pathname.slice(MOUNT.length) + url.search; return game.listener(req, res); }
   } else if (name === MOUNT || name.startsWith(MOUNT + '/') || GAME_ROOT_PATHS.has(name)) {

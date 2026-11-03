@@ -20,6 +20,15 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Straight into the game)**
+
+**🔄 Changes**
+• **The website now opens the game directly** — visiting our home page takes you straight to the game at /play, with no extra click. Old links and bookmarks still work.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Rewards protection)**
 
 **🔄 Changes**

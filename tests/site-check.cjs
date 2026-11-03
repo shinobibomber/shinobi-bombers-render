@@ -45,6 +45,7 @@ async function startServer() {
     const srv = await startServer();
     try {
       const p = await page(); const url = srv.url;
+      await check('live: the home page opens the game at /play/ (website kept at /index.html)', async () => { const r = await fetch(url + '/?ref=x', { redirect: 'manual' }); assert.equal(r.status, 302); assert.equal(r.headers.get('location'), '/play/?ref=x'); assert.equal(r.headers.get('cache-control'), 'no-store'); const g = await page(); await g.goto(url + '/'); assert.equal(new URL(g.url()).pathname, '/play/'); assert.match(await g.title(), /Shinobi Bombers/); await g.close(); assert.equal((await fetch(url + '/index.html')).status, 200); });
       await check('live: site-config served from environment points at /play/', async () => { const r = await (await fetch(url + '/site-config.js')).text(); assert.match(r, /"gameUrl":"\/play\/"/); });
       await check('live: game health, API and config reach the game server at root paths', async () => {
         assert.equal((await fetch(url + '/healthz')).status, 200);
@@ -53,7 +54,7 @@ async function startServer() {
         assert.equal((await fetch(url + '/play/../server/service.cjs')).status, 404); });
       await check('live: real game page loads at /play/ (Canvas game, own login)', async () => { const g = await page(); await g.goto(url + '/play/'); await g.waitForTimeout(2500); assert.match(await g.title(), /Shinobi Bombers/); assert.ok(await g.locator('canvas').count() > 0); await g.close(); });
       await check('live: header shows no demo account values', async () => {
-        await p.goto(url + '/#home'); await p.waitForTimeout(400);
+        await p.goto(url + '/index.html#home'); await p.waitForTimeout(400);
         assert.equal(await p.locator('.scr.on .lv-ryo').textContent(), '— Ryo'); assert.equal(await p.locator('.scr.on .lv-chest').textContent(), 'Chest');
         assert.deepEqual(await p.locator('.scr.on .sbg-cover').allTextContents(), ['Sign in', '—']); });
       await check('live: Chest button hands off to the game (no website Chest, link = /play/)', async () => {
@@ -61,21 +62,21 @@ async function startServer() {
         assert.equal(await p.locator('.md [data-sbg-open]').getAttribute('href'), url + '/play/'); await p.keyboard.press('Escape'); });
       await check('live: Summon / Fuse / Train / Dojo upgrade / Work All hand off instead of simulating', async () => {
         for (const [r, id] of [['summon', 'go'], ['fusion', 'fuse'], ['heroes', 'dtrain'], ['dojo', 'upg'], ['adventure', 'wa'], ['boss-hunt', 'ch']]) {
-          await p.goto(url + '/#' + r); await hs(p, id).click(); await p.waitForSelector('.md [data-sbg-open]', { timeout: 3000 }); assert.equal(await p.locator('.rev,.cine').count(), 0, r + ' must not run a demo'); await p.keyboard.press('Escape'); await p.waitForSelector('.md', { state: 'detached' }); } });
+          await p.goto(url + '/index.html#' + r); await hs(p, id).click(); await p.waitForSelector('.md [data-sbg-open]', { timeout: 3000 }); assert.equal(await p.locator('.rev,.cine').count(), 0, r + ' must not run a demo'); await p.keyboard.press('Escape'); await p.waitForSelector('.md', { state: 'detached' }); } });
       await check('live: Guild and Chat actions report the missing service honestly', async () => {
-        await p.goto(url + '/#guild'); await hs(p, 'qg2').click(); await p.waitForTimeout(200); assert.match(await p.locator('#toast').textContent(), /Guild isn't available yet/); assert.equal(await p.locator('.md').count(), 0);
-        await p.goto(url + '/#chat'); await p.locator('.chin').fill('hello'); await hs(p, 'send').click(); await p.waitForTimeout(200); assert.match(await p.locator('#toast').textContent(), /Chat isn't available yet/); assert.equal(await p.locator('.cmsg.me').count(), 0); });
-      await check('live: demo Adventure does not credit a fake Chest', async () => { await p.goto(url + '/#adventure'); await p.waitForTimeout(4000); assert.equal(await p.locator('.apop').count(), 0); assert.equal(await p.locator('.scr.on .lv-chest').textContent(), 'Chest'); });
+        await p.goto(url + '/index.html#guild'); await hs(p, 'qg2').click(); await p.waitForTimeout(200); assert.match(await p.locator('#toast').textContent(), /Guild isn't available yet/); assert.equal(await p.locator('.md').count(), 0);
+        await p.goto(url + '/index.html#chat'); await p.locator('.chin').fill('hello'); await hs(p, 'send').click(); await p.waitForTimeout(200); assert.match(await p.locator('#toast').textContent(), /Chat isn't available yet/); assert.equal(await p.locator('.cmsg.me').count(), 0); });
+      await check('live: demo Adventure does not credit a fake Chest', async () => { await p.goto(url + '/index.html#adventure'); await p.waitForTimeout(4000); assert.equal(await p.locator('.apop').count(), 0); assert.equal(await p.locator('.scr.on .lv-chest').textContent(), 'Chest'); });
       await check('live: design-only interactions still work (filters, tabs, galleries)', async () => {
-        await p.goto(url + '/#market'); await hs(p, 'dd1').click(); await p.waitForSelector('.dd'); await p.keyboard.press('Escape');
-        await p.goto(url + '/#codex'); await hs(p, 'cs5').click(); await p.waitForSelector('.cxp:not([hidden])'); });
+        await p.goto(url + '/index.html#market'); await hs(p, 'dd1').click(); await p.waitForSelector('.dd'); await p.keyboard.press('Escape');
+        await p.goto(url + '/index.html#codex'); await hs(p, 'cs5').click(); await p.waitForSelector('.cxp:not([hidden])'); });
       await check('live: #play page links to the game and the optional same-origin preview loads it', async () => {
-        await p.goto(url + '/#dojo'); await hs(p, 'wallet').click(); await p.waitForSelector('.sbg-play:not([hidden])');
+        await p.goto(url + '/index.html#dojo'); await hs(p, 'wallet').click(); await p.waitForSelector('.sbg-play:not([hidden])');
         assert.match(await p.locator('.sbg-status').textContent(), /Game connected/); assert.equal(await p.locator('.sbg-actions a').first().getAttribute('href'), url + '/play/');
         await p.locator('.sbg-play summary').click(); const f = p.frameLocator('.sbg-frame'); await f.locator('canvas').first().waitFor({ timeout: 8000 });
         await p.locator('.sbg-x').click(); await p.waitForSelector('.sbg-play', { state: 'hidden' }); assert.equal(await p.evaluate(() => location.hash), '#dojo'); });
       await check('live: #play page fits a 390×844 phone without horizontal scrolling', async () => {
-        const m = await page({ width: 390, height: 844 }); await m.goto(url + '/#play'); await m.waitForSelector('.sbg-play:not([hidden])');
+        const m = await page({ width: 390, height: 844 }); await m.goto(url + '/index.html#play'); await m.waitForSelector('.sbg-play:not([hidden])');
         assert.ok(await m.evaluate(() => document.querySelector('.sbg-panel').scrollWidth <= document.querySelector('.sbg-panel').clientWidth + 1)); await m.screenshot({ path: path.join(ROOT, 'tests', 'out', 'play-mobile.png') }); await m.close(); });
       await check('live: no page errors', async () => assert.deepEqual(errors, []));
       await p.close();
