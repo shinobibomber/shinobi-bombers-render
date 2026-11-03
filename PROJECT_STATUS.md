@@ -108,6 +108,14 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 Adventure kill credit (owner request): online Adventure now pays the kills the player's
+  battle reports instead of the server's separate kill sequence (which credited about half of what
+  the battle showed). `gameplay-options/options.js` (`KillReport`) sends cumulative per-session kill
+  totals by tier and Fortune bonus with every Chest sync; `gameplay-options/server.cjs`
+  (`creditKills`) pays them at the server tier table within 1.5× the team's computed damage (+4,000 HP
+  carry), replay-safe, stage floored at one per 100 kills. Offline Sensei time still uses the server
+  sequence. Hooks: `apply-gameplay-options.cjs` (adventure.cjs, service.cjs, index.html).
+
 - 2026-11-03 live Chest (owner request): the game fires `shinobi-enemy-defeated` on each defeat
   (`rewardPatches`); the website then calls `AdventureChest.refresh()` 0.6s later, at most every 3s,
   so the server-verified Chest and Session gained update during battle. `countTo` animates both.

@@ -1084,13 +1084,7 @@
     addEventListener('shinobi-ryo-ledger', () => refresh());
     addEventListener('shinobi-beta-wallet', () => refresh());
     addEventListener('shinobi-chest', () => refresh());
-    // Each defeated enemy asks the server for the verified Chest soon after (0.6s, then at most once
-    // every 3s while enemies keep falling), so Chest and Session gained follow the battle live.
-    let killSync = 0, lastKillSync = 0;
-    addEventListener('shinobi-enemy-defeated', () => {
-      if (killSync || !window.AdventureChest || !window.RyoPayments?.state.authenticated) return;
-      killSync = setTimeout(() => { killSync = 0; lastKillSync = performance.now(); AdventureChest.refresh(); }, Math.max(600, lastKillSync + 3000 - performance.now()));
-    });
+    // Defeats trigger verified Chest syncs in gameplay-options/options.js (KillReport).
     addEventListener('resize', fit);
     motionPreference.addEventListener('change', event => { RM = event.matches; refresh(); });
     document.addEventListener('visibilitychange', () => { syncEffects(); if (!document.hidden) sync(); });

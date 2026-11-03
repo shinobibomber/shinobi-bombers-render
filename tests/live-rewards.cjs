@@ -37,5 +37,25 @@ const economy = require('../app/server/economy.cjs');
     await p.waitForFunction(() => window.__defeats > 0, null, { timeout: 30000 });
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: each defeat fetches the verified Chest within seconds (throttled), the Chest and Session gained count up live, and the banner reads SESSION GAINED.');
+  // End to end with the real server Adventure code: every kill the battle makes is credited, and
+  // the Chest equals the sum of the "+X Ryo" rewards shown over the defeated enemies.
+  await withGame(async ({ p, f, errors, assert }) => {
+    f.holdAdventure = false; f.realAdventure = { rate: 60 };
+    const heroes = [0, 1, 2, 3, 4].map(i => ({ tokenId: 'e2e-' + i, rank: i, level: 1, name: 'E ' + i, baseStats: { pw: [2, 4.5, 7.5, 10.5, 13.5][i], sp: [2, 4.5, 7.5, 10.5, 13.5][i], st: [2, 4.5, 7.5, 10.5, 13.5][i] } }));
+    f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
+    await p.locator('#loginPhantom').click();
+    await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready);
+    await p.evaluate(() => { go(0); Experience.workAll(); window.__k = []; addEventListener('shinobi-enemy-defeated', e => { if (e.detail.kind <= 5) __k.push(e.detail); }); });
+    await p.waitForFunction(() => __k.length >= 12, null, { timeout: 90000 });
+    // Stop the battle so no kill lands after the comparison, then let the final sync settle.
+    await p.evaluate(() => Experience.restAll());
+    await p.waitForTimeout(1500);
+    await p.waitForFunction(() => KillReport.pending === 0 && !AdventureChest.snapshot.busy, null, { timeout: 10000 });
+    await p.waitForTimeout(1000);
+    const r = await p.evaluate(() => ({ kills: __k.length, shown: __k.reduce((n, e) => n + e.reward, 0), chest: AdventureChest.snapshot.chest.pending }));
+    assert.equal(f.advData.reportedKills, r.kills, `every defeated enemy is credited by the server (bank ${Math.round(f.advData.reportBudget || 0)} HP)`);
+    assert(Math.abs(r.chest - r.shown) < 1, `the Chest (${r.chest}) equals the rewards shown over the enemies (${r.shown})`);
+    assert.deepEqual(errors, []);
+  });
+  console.log('PASS: each defeat fetches the verified Chest within seconds (throttled), the Chest and Session gained count up live, the banner reads SESSION GAINED, and the server credits every battle kill (Chest = rewards shown).');
 })().catch(error => { console.error(error); process.exitCode = 1; });

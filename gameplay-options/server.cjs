@@ -16,3 +16,30 @@ async function saveSenseiSettings(store,wallet,body){
  });
 }
 module.exports={saveSenseiSettings};
+
+/* Adventure kill credit. The browser battle reports its cumulative kills per page session
+   (tier × Fortune bonus); the server credits them at its own reward table, but only within the
+   damage the deployed heroes could have dealt online (hero power, speed, rank and chakra), with
+   1.5× slack for splash hits and sync timing. Totals are cumulative, so a retried or replayed
+   request never pays twice, and kills over budget wait until budget accrues. */
+const KILL_HP=[100,213,1000,1625],KILL_PAY=[35625,81250,406250,812500],KILL_SLACK=1.5,KILL_CARRY=4000,KILL_SESSIONS=4;
+function killReport(r){
+ if(!r||typeof r.killSession!=='string'||!/^[-a-zA-Z0-9_]{8,64}$/.test(r.killSession)||!Array.isArray(r.killTotals)||r.killTotals.length!==8||!r.killTotals.every(n=>Number.isSafeInteger(n)&&n>=0&&n<=1e7))return null;
+ return {id:r.killSession,totals:r.killTotals,stage:Number.isSafeInteger(r.killStage)&&r.killStage>=1&&r.killStage<=1e6?r.killStage:1};
+}
+function creditKills(d,tally,budget,rate,now){
+ if(!d.reports||typeof d.reports!=='object')d.reports={};
+ const done=(d.reports[tally.id]?.t||[0,0,0,0,0,0,0,0]).slice();
+ // A stage can only be under-reported down to one stage per 100 credited kills (the payout taper).
+ const stage=Math.max(tally.stage,Math.floor((d.reportedKills||0)/100)+1),taper=Math.max(.35,1-.1*Math.floor(stage/100));
+ let room=(d.reportBudget||0)+budget*KILL_SLACK;
+ for(let i=0;i<8;i++){const kind=i>>1,bonus=i&1;
+  while(done[i]<tally.totals[i]&&room>=KILL_HP[kind]){room-=KILL_HP[kind];done[i]++;d.pending+=Math.floor(KILL_PAY[kind]*taper*rate*(bonus?1.15:1));d.kills++;d.reportedKills=(d.reportedKills||0)+1}
+ }
+ d.reportBudget=Math.min(KILL_CARRY,room);d.map=stage;d.lastReport=now;d.reports[tally.id]={t:done,at:now};
+ for(const id of Object.keys(d.reports).sort((a,b)=>d.reports[b].at-d.reports[a].at).slice(KILL_SESSIONS))delete d.reports[id];
+}
+// Online damage while a client is reporting but this call carries no report (e.g. a roster change):
+// bank it for the next report instead of paying the server's own kill sequence a second time.
+function bankKills(d,budget){d.reportBudget=Math.min(KILL_CARRY,(d.reportBudget||0)+budget*KILL_SLACK)}
+module.exports.killReport=killReport;module.exports.creditKills=creditKills;module.exports.bankKills=bankKills;

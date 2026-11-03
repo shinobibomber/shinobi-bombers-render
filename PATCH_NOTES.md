@@ -20,6 +20,17 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix 2)**
+
+**🛠️ Fixes**
+• **Every kill now counts** — the Ryo shown over each defeated enemy is exactly what goes into your Chest. Previously the Chest used a separate estimate that could miss many of your battle's kills.
+• **Live Chest** — your Chest and Session Gained update within seconds of each kill.
+• Fortune heroes' +15% kill bonus is now paid into the Chest too.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix)**
 
 **🔄 Changes**

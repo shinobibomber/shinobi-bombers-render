@@ -38,5 +38,26 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
  assert.throws(()=>economy.quote(full(500),'summon',{quantity:1}),/holds 500 of 500 heroes. Fuse heroes to free 1 slot/);
  assert.throws(()=>economy.quote(full(498),'summon',{quantity:5}),/holds 498 of 500 heroes. Fuse heroes to free 3 slot/);
  assert.equal(economy.quote(full(500),'fusion',{heroIds:ids(full(500))}).product,'fusion','a full collection can still fuse');
- await db.close();console.log('PASS: fusion odds/boundaries, level 10, failure consumption+fees, partial batches, two-hero minimum, persisted idempotent settlement, validated Sensei settings, online/offline thresholds and the 500-hero limit.');
+ // Adventure kill reports: the server pays the battle's reported kills within the heroes' damage.
+ {
+  const team=make(5,4,10);team.heroes.forEach(h=>h.baseStats={pw:15,sp:15,st:15});team.battleReady=team.heroes.map(h=>h.tokenId);const t0=1_900_000_000_000,report=(totals,stage=1,id='session-aaaa-1111')=>({killSession:id,killTotals:totals,killStage:stage});
+  let d=adventure.advance(undefined,team,t0,true,60,report([0,0,0,0,0,0,0,0]));
+  d=adventure.advance(d,team,t0+5000,true,60,report([3,0,1,0,0,0,1,0]));
+  assert.equal(d.reportedKills,5,'every reported kill within budget is credited');
+  assert.equal(d.pending,3*Math.floor(35625*.6)+Math.floor(81250*.6)+Math.floor(812500*.6),'paid at the server tier table and loot rate');
+  const paid=d.pending;d=adventure.advance(d,team,t0+10000,true,60,report([3,0,1,0,0,0,1,0]));
+  assert.equal(d.reportedKills,5,'replaying the same totals pays nothing more');
+  d=adventure.advance(d,team,t0+15000,true,60,report([3,1,1,0,0,0,1,0]));
+  assert.equal(d.pending-paid>=Math.floor(35625*.6*1.15),true,'the Fortune bonus pays 15% more');
+  // Fabricated totals are capped by the damage the team could deal, then wait for more budget.
+  const before=d.reportedKills;d=adventure.advance(d,team,t0+20000,true,60,report([3,1,1,0,0,0,100000,0]));
+  const capacity=team.heroes.reduce((n,h)=>n+5/Math.max(.6,1.6-h.baseStats.sp*.05)*(h.rank+1)*h.baseStats.pw,0)*1.5+4000;
+  assert(((d.reportedKills-before)*1625)<=capacity,'a fake diamond flood is limited to the team damage');
+  assert(d.reportedKills-before<100000,'most of the fake kills are not paid');
+  // Malformed reports fall back to the server's own battle; under-reported stages are floored.
+  assert.equal(require(path.join(root,'gameplay-options.cjs')).killReport({killSession:'x',killTotals:[1]}),null);
+  const floor=adventure.advance({...structuredClone(d),reportedKills:25000},team,t0+25000,true,60,report([3,1,1,0,0,0,100000,0],1));
+  assert(floor.map>=251,'a client cannot report stage 1 to dodge the payout taper');
+ }
+ await db.close();console.log('PASS: fusion odds/boundaries, level 10, failure consumption+fees, partial batches, two-hero minimum, persisted idempotent settlement, validated Sensei settings, online/offline thresholds, the 500-hero limit and verified Adventure kill reports.');
 })().catch(e=>{crypto.randomInt=originalRandom;console.error(e);process.exitCode=1});

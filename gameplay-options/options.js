@@ -1,6 +1,15 @@
 /* Live preferences and explicit fusion outcomes; entitlement changes remain server-owned. */
 (() => {
  const api=window.GameplayOptions={presentFusionOutcome,refresh:()=>{}},rates=[90,80,70,60];
+ // Adventure kill totals for the server (gameplay-options.cjs creditKills). Totals are cumulative for
+ // this page session, so a retried or lost request never double-counts. Each defeat asks for the
+ // verified Chest 0.6s later (at most every 3s), and kills that land during a sync get one more.
+ const tally={id:null,owner:null,totals:[0,0,0,0,0,0,0,0],seen:0,sent:0,timer:0,last:0};
+ function own(){if(tally.owner!==RyoPayments.state.account){tally.id=crypto.randomUUID();tally.owner=RyoPayments.state.account;tally.totals=[0,0,0,0,0,0,0,0];tally.seen=tally.sent=0}}
+ window.KillReport={payload(){if(!RyoPayments.state.authenticated)return {};own();tally.sent=tally.seen;return {killSession:tally.id,killTotals:tally.totals.slice(),killStage:Math.max(1,Math.floor(Number(S.map))||1)}},get pending(){return tally.seen-tally.sent}};
+ function syncSoon(){if(tally.timer||!RyoPayments.state.authenticated||!window.AdventureChest)return;tally.timer=setTimeout(()=>{tally.timer=0;tally.last=performance.now();AdventureChest.refresh()},Math.max(600,tally.last+3000-performance.now()))}
+ addEventListener('shinobi-enemy-defeated',event=>{const kind=event.detail?.kind;if(!(kind>=2&&kind<=5)||!RyoPayments.state.authenticated)return;own();tally.totals[(kind-2)*2+(event.detail.bonus?1:0)]++;tally.seen++;syncSoon()});
+ addEventListener('shinobi-chest',()=>{if(!window.AdventureChest?.snapshot.busy&&tally.seen>tally.sent)syncSoon()});
  const outcomeDialog=document.createElement('dialog');outcomeDialog.id='fusionOutcomeDialog';outcomeDialog.setAttribute('aria-labelledby','fusionOutcomeTitle');document.body.append(outcomeDialog);
  outcomeDialog.innerHTML='<h2 id="fusionOutcomeTitle">Fusion result</h2><p class="fusion-outcome-copy"></p><button class="b">Continue</button>';
  function finishOutcome(){if(S.v2.fusionOutcome){S.v2.fusionOutcome.seen=true;save()}outcomeDialog.close()}

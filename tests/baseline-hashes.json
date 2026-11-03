@@ -91,11 +91,11 @@
     },
     {
       "path": "gameplay-options/options.js",
-      "sha256": "aae86d352253102fe93b6db0d29a13650315f8de5e2ac117b3db8cd0adc9ac00"
+      "sha256": "39b8e9090bd0f6b87bb62d6229891e6f3db0c3fa593e6a3bdc60e35a037a7b13"
     },
     {
       "path": "gameplay-options/server.cjs",
-      "sha256": "efe0b9b7a5608d8afbff1150e54af035f32e87beaf28e9715de91a843dfa04be"
+      "sha256": "09bc8e2f00f439e3f60e6c044a68465bd40fbb89b29990102e4b3d8e6045f364"
     },
     {
       "path": "heroes-design/heroes-design.css",
@@ -259,7 +259,7 @@
     },
     {
       "path": "app/server/adventure.cjs",
-      "sha256": "be3cc855b5153aff956e793689a6ab7d58b9b1d2523140f257861f715d13333e"
+      "sha256": "1be10f9ee0cacdb8f69fa93bedd571770a6fddacb1aa1c1e20c26a603b27b1cb"
     },
     {
       "path": "app/server/create-treasury.cjs",
@@ -275,7 +275,7 @@
     },
     {
       "path": "app/server/gameplay-options.cjs",
-      "sha256": "efe0b9b7a5608d8afbff1150e54af035f32e87beaf28e9715de91a843dfa04be"
+      "sha256": "09bc8e2f00f439e3f60e6c044a68465bd40fbb89b29990102e4b3d8e6045f364"
     },
     {
       "path": "app/server/init-db.cjs",
@@ -295,7 +295,7 @@
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "85915fb01ca50875cef071884b1e4847bb13208c5360da2855896b8ffcdc3398"
+      "sha256": "a1933b18eb3d438c2cb0bfb4478fc73a54a65d2c428746cc4499624302f82804"
     },
     {
       "path": "app/server/store.cjs",

@@ -30,7 +30,9 @@ const bossTeamPatches=[
 const rewardPatches=[
  ["s:window.RyoPayments?.state.authenticated?'TARGET CLEARED':'+'+Math.floor(reward).toLocaleString()}","s:'+'+(reward<100?Math.floor(reward*10)/10:Math.floor(reward)).toLocaleString()+' Ryo'}"],
  // Announce each defeat so the website can fetch the server-verified Chest right away.
- ["c.k=0;S.ryo=GameBalance.money(S.ryo+reward);","c.k=0;S.ryo=GameBalance.money(S.ryo+reward);dispatchEvent(new CustomEvent('shinobi-enemy-defeated',{detail:{kind,reward}}));"]
+ ["c.k=0;S.ryo=GameBalance.money(S.ryo+reward);","c.k=0;S.ryo=GameBalance.money(S.ryo+reward);dispatchEvent(new CustomEvent('shinobi-enemy-defeated',{detail:{kind,reward,bonus:!!(h&&has(h,0))}}));"],
+ // Every Chest sync carries the battle's cumulative kill totals (gameplay-options/options.js).
+ ["const data=await api(claim?'claim-adventure':'adventure',{active});","const data=await api(claim?'claim-adventure':'adventure',{active,...(window.KillReport?.payload()||{})});"]
 ];
 function replaceOne(text,before,after,label){if(text.includes(after))return text;const count=text.split(before).length-1;if(count!==1)throw Error('Gameplay options patch mismatch: '+label+' ('+count+')');return text.replace(before,()=>after)}
 function applyGameplayOptions(appDir=path.join(__dirname,'app')){
@@ -47,7 +49,15 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
  });
  patch('server/store.cjs',s=>replaceOne(s,"q=economy.quote(profile,product,params);if(q.total!==expectedTotal)","q=economy.quote(profile,product,params);if(product==='fusion'&&(params.fusionRulesVersion!==1||params.fusionRulesAccepted!==1))fail('Fusion rules changed. Refresh and review the success chance and consumption terms before paying.',409);if(q.total!==expectedTotal)",'reviewed fusion rules'));
  patch('server/service.cjs',s=>replaceOne(s,"if(action==='hero-mode'){","if(action==='sensei-settings'){await require('./gameplay-options.cjs').saveSenseiSettings(store,wallet,body);return state(wallet)}\n  if(action==='hero-mode'){",'authenticated settings action'));
+ patch('server/service.cjs',s=>replaceOne(s,"adventure(store,wallet,{active:body.active===true,claim},available)","adventure(store,wallet,{active:body.active===true,claim,report:{killSession:body.killSession,killTotals:body.killTotals,killStage:body.killStage}},available)",'kill report body'));
  patch('server/adventure.cjs',s=>{
+  // Online Adventure pays the kills the player's battle reports (gameplay-options.cjs creditKills).
+  s=replaceOne(s,'function advance(data,profile,now,active,ratePercent=50){','function advance(data,profile,now,active,ratePercent=50,report=null){','kill report parameter');
+  s=replaceOne(s,'const online=active&&d.active&&gap<=45000;',"const tally=require('./gameplay-options.cjs').killReport(report),reporting=!!tally||(Number(d.lastReport)>0&&now-Number(d.lastReport)<120000),online=active&&d.active&&gap<=(tally?120000:45000);let budget=0;",'reported online window');
+  s=replaceOne(s,'  while(damage>=d.hp){','  if(reporting&&online){budget+=damage;return}\n  while(damage>=d.hp){','damage budget');
+  s=replaceOne(s,' d.team=heroes.map(h=>h.tokenId);d.last=now;',"if(online&&tally)require('./gameplay-options.cjs').creditKills(d,tally,budget,rate,now);else if(online&&reporting)require('./gameplay-options.cjs').bankKills(d,budget);\n d.team=heroes.map(h=>h.tokenId);d.last=now;",'credit reported kills');
+  s=replaceOne(s,'async function adventure(store,wallet,{active=false,claim=false},custodyTokens){','async function adventure(store,wallet,{active=false,claim=false,report=null},custodyTokens){','adventure report');
+  s=replaceOne(s,'const d=advance(old,profile,store.now(),active,rewardRatePercent(pool));','const d=advance(old,profile,store.now(),active,rewardRatePercent(pool),report);','pass report');
   s=replaceOne(s,'offlineStart=Math.max(last,since)','offlineStart=Math.max(last,since,Number(profile.senseiEnabledSince||0))','no retroactive earnings');
   s=replaceOne(s,'offlineEnd=Math.min(now,until,last+OFFLINE_CAP_MS)','offlineEnd=profile.senseiEnabled===false?last:Math.min(now,until,last+OFFLINE_CAP_MS)','offline disabled');
   return replaceOne(s,'d.energy[h.tokenId]>=45*h.baseStats.st','d.energy[h.tokenId]>=50*h.baseStats.st*profile.senseiReturnPercent/100','server return threshold');
