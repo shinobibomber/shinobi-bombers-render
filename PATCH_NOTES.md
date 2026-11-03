@@ -20,6 +20,16 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Rewards protection)**
+
+**🔄 Changes**
+• **Real-time rewards are now protected** — every future update is automatically checked before it goes live. If anything would delay or drop your kill rewards, the update is blocked and the current version keeps running.
+• **No lost rewards after a connection drop** — if your connection or the server drops for a few minutes while you keep playing, everything you defeated is added to your Chest the moment it reconnects.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Real-time rewards)**
 
 **🛠️ Fixes**

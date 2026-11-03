@@ -6,10 +6,11 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "npm run check:site && npm run build:local && npm --prefix app run db:init",
+    "build": "npm run check:site && npm run build:local && npm run check:rewards && npm --prefix app run db:init",
     "start": "node server/site-server.cjs",
     "start:game-only": "node app/server/render-server.cjs",
     "check:site": "node server/check-website.cjs",
+    "check:rewards": "node tests/realtime-rewards-guard.cjs",
     "build:ui": "npm --prefix chest-ui ci --include=dev && npm --prefix chest-ui run build",
     "build:local": "npm run build:ui && node unpack.cjs && npm --prefix app ci --omit=dev",
     "typecheck": "npm --prefix chest-ui run typecheck",

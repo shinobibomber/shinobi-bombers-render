@@ -259,7 +259,7 @@
     },
     {
       "path": "app/server/adventure.cjs",
-      "sha256": "03ef2e5712bdd886842294519583a5a4b12cd7c957ca206184fb29fd7c470cdf"
+      "sha256": "34dff921182bcd4a182b246dcc9a8cd501cec11eb004ca4de052ab609f067b6b"
     },
     {
       "path": "app/server/create-treasury.cjs",

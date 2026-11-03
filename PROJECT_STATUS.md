@@ -140,6 +140,14 @@ that they are unavailable.
   carry), replay-safe, stage floored at one per 100 kills. Offline Sensei time still uses the server
   sequence. Hooks: `apply-gameplay-options.cjs` (adventure.cjs, service.cjs, index.html).
 
+- 2026-11-04 REAL-TIME REWARDS GUARD (owner request: no future update may break it):
+  `tests/realtime-rewards-guard.cjs` runs in every Render build (`npm run build` → `check:rewards`)
+  and in `npm test`. A failure stops the deploy and the current version stays live. It locks the
+  battle formulas `teamDps` mirrors, the defeat → Chest sync wiring and timing, and replays every
+  rank at level 1/10 to require each kill credited on the next sync, also after 90s/5min sync gaps
+  (same kill session keeps a 10-minute online window; a new page keeps 2 minutes). If a balance
+  change trips it, update `teamDps` first, then the locked string. Never loosen it to pass.
+
 - 2026-11-04 real-time kill credit (owner request): the kill budget was computed from base level-1
   stats and the server's base stamina, so trained heroes out-killed it and their kills queued and
   arrived later. `teamDps` (gameplay-options/server.cjs) now budgets the 10 strongest battle-ready
