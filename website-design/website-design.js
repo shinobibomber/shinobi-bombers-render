@@ -37,6 +37,26 @@
     if (account()) { const native = document.getElementById('betaDisconnect'); if (native && !native.disabled) native.click(); }
     else window.LoginScreen?.show();
   }
+  // Count a number up to its new value over 0.7s (Chest, Session gained). Decreases (a claim) and
+  // reduced motion jump straight to the new value.
+  const counters = new WeakMap();
+  function countTo(el, value, format) {
+    if (!el) return;
+    let c = counters.get(el);
+    if (!c || !Number.isFinite(c.shown) || value < c.shown || RM || document.hidden) {
+      if (c) cancelAnimationFrame(c.raf);
+      counters.set(el, { shown: value, target: value, raf: 0 }); setText(el, format(value)); return;
+    }
+    if (c.target === value) return;
+    const from = c.shown, start = performance.now(); c.target = value; cancelAnimationFrame(c.raf);
+    el.classList.add('sbw-tick');
+    const step = t => {
+      const k = Math.min(1, (t - start) / 700); c.shown = from + (value - from) * (1 - (1 - k) ** 3);
+      if (k < 1) { el.textContent = format(c.shown); c.raf = requestAnimationFrame(step); }
+      else { el.classList.remove('sbw-tick'); setText(el, format(value)); fitText(el); }
+    };
+    c.raf = requestAnimationFrame(step);
+  }
   function chestPending() { const c = window.AdventureChest && AdventureChest.snapshot; const a = account(); return c && a && c.owner === a && c.chest ? Number(c.chest.pending) : null; }
   /* same hero list the game's own menus count (server-owned and local practice heroes) */
   /* the game's save object is a script-level binding (let S), not a window property */
@@ -659,6 +679,9 @@
     place(mk('div', 'sbw-abackdrop', b.st), 270, 200, 1256, 812); place(mk('div', 'sbw-abackdrop', b.st), 14, 207, 256, 805);
     ['st0', 'st1', 'st2', 'st3', 'st4'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
     const banner = $('.hs[data-sbwid="banner"]', b.st); if (banner) banner.style.top = (152 - 18) + 'px';
+    // The artwork's "POTENTIAL REWARD" label: the value shown there is the session's gained Ryo.
+    const bannerArt = banner && $('.sl', banner);
+    if (bannerArt) { const label = cov(b, 900 - 292, 166 - 152, 140, 20, '#03070c', 15, '#e6ecf5', 'sbw-left'); bannerArt.append(label); artMatch(b, label, 1045, 152); label.textContent = 'SESSION GAINED'; label.style.fontWeight = '700'; label.style.letterSpacing = '.6px'; }
     for (const id of ['stitle', 'enemies', 'reward']) if (b.live[id]) b.live[id].style.top = (parseFloat(b.live[id].style.top) - 18) + 'px';
     b.map = place(mk('canvas', 'sbw-mirror', b.st), 22, 210, 1500, 520); b.map.width = 1240; b.map.height = 465; b.map.style.objectPosition = '50% 0';
     /* the game has no difficulty setting: the Difficulty / Stage Info box is removed (inpainted scenery patch) */
@@ -679,7 +702,7 @@
     const a = advInfo(), st = +a.stage || 1;
     if (b.live.stitle) { b.live.stitle.hidden = false; setText(b.live.stitle, `Stage ${st} · ${a.name || ''}`); }
     if (b.live.enemies) { b.live.enemies.hidden = false; setText(b.live.enemies, a.enemies || '—'); }
-    if (b.live.reward) { b.live.reward.hidden = false; setText(b.live.reward, `${a.gained || '+0'} Ryo`); }
+    if (b.live.reward) { b.live.reward.hidden = false; countTo(b.live.reward, Math.floor(Number(window.SessionRyo?.gained) || 0), v => '+' + fmt(v) + ' Ryo'); }
     const cards = teamCards(); b.count.textContent = `${cards.filter(c => c.deployed).length} / 10`;
     b.slots.forEach((e, i) => {
       const c = cards[i], h = c && heroAt(c.idx);
@@ -867,7 +890,7 @@
     const l = ledger(), a = account(), pend = chestPending();
     const hb = HDR || b;
     if (hb.live.ryo) setText(hb.live.ryo, a && Number.isFinite(Number(l.balance)) ? fmt(Number(l.balance)) + ' Ryo' : '— Ryo');
-    if (hb.label) setText(hb.label, pend != null && Number.isFinite(pend) ? 'Chest : ' + fmt(pend) : 'Chest');
+    if (hb.label) { if (pend != null && Number.isFinite(pend)) countTo(hb.label, pend, v => 'Chest : ' + fmt(v)); else { counters.delete(hb.label); setText(hb.label, 'Chest'); } }
     if (hb.dot) hb.dot.hidden = !(pend >= 1);
     if (hb.walletSpot) {
       setText(hb.covers.wallet, a ? 'Disconnect' : 'Connect Wallet'); hb.covers.wallet.classList.toggle('sbw-connect', !a);
@@ -1061,6 +1084,13 @@
     addEventListener('shinobi-ryo-ledger', () => refresh());
     addEventListener('shinobi-beta-wallet', () => refresh());
     addEventListener('shinobi-chest', () => refresh());
+    // Each defeated enemy asks the server for the verified Chest soon after (0.6s, then at most once
+    // every 3s while enemies keep falling), so Chest and Session gained follow the battle live.
+    let killSync = 0, lastKillSync = 0;
+    addEventListener('shinobi-enemy-defeated', () => {
+      if (killSync || !window.AdventureChest || !window.RyoPayments?.state.authenticated) return;
+      killSync = setTimeout(() => { killSync = 0; lastKillSync = performance.now(); AdventureChest.refresh(); }, Math.max(600, lastKillSync + 3000 - performance.now()));
+    });
     addEventListener('resize', fit);
     motionPreference.addEventListener('change', event => { RM = event.matches; refresh(); });
     document.addEventListener('visibilitychange', () => { syncEffects(); if (!document.hidden) sync(); });

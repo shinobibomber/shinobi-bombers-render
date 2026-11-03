@@ -108,6 +108,11 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 live Chest (owner request): the game fires `shinobi-enemy-defeated` on each defeat
+  (`rewardPatches`); the website then calls `AdventureChest.refresh()` 0.6s later, at most every 3s,
+  so the server-verified Chest and Session gained update during battle. `countTo` animates both.
+  The banner's "POTENTIAL REWARD" label now reads SESSION GAINED. New suite: live-rewards.cjs.
+
 - 2026-11-03 Hero Aura System, board collisions, enemy spread and tier rewards (owner request):
   tier auras now come from `website/assets/aura-system.webp` (copied to `tier-auras/`, manifest v2):
   each rarity's own ground ring, wreath and particles, layered ground → behind-hero aura → hero →

@@ -28,7 +28,9 @@ const bossTeamPatches=[
 // Each defeated enemy shows the Ryo its tier pays (GameBalance.enemyReward: the server's tier
 // table at the live loot rate) instead of "TARGET CLEARED". The Chest stays server-verified.
 const rewardPatches=[
- ["s:window.RyoPayments?.state.authenticated?'TARGET CLEARED':'+'+Math.floor(reward).toLocaleString()}","s:'+'+(reward<100?Math.floor(reward*10)/10:Math.floor(reward)).toLocaleString()+' Ryo'}"]
+ ["s:window.RyoPayments?.state.authenticated?'TARGET CLEARED':'+'+Math.floor(reward).toLocaleString()}","s:'+'+(reward<100?Math.floor(reward*10)/10:Math.floor(reward)).toLocaleString()+' Ryo'}"],
+ // Announce each defeat so the website can fetch the server-verified Chest right away.
+ ["c.k=0;S.ryo=GameBalance.money(S.ryo+reward);","c.k=0;S.ryo=GameBalance.money(S.ryo+reward);dispatchEvent(new CustomEvent('shinobi-enemy-defeated',{detail:{kind,reward}}));"]
 ];
 function replaceOne(text,before,after,label){if(text.includes(after))return text;const count=text.split(before).length-1;if(count!==1)throw Error('Gameplay options patch mismatch: '+label+' ('+count+')');return text.replace(before,()=>after)}
 function applyGameplayOptions(appDir=path.join(__dirname,'app')){

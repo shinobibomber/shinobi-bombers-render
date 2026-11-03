@@ -20,6 +20,18 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix)**
+
+**🔄 Changes**
+• **Session Gained** — the Adventure banner now reads Session Gained and shows the Ryo you've earned this session.
+
+**🛠️ Fixes**
+• **Live rewards** — defeating enemies now updates your Chest and Session Gained within seconds, counting up as rewards land, instead of every 15 seconds.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026)**
 
 **✨ New**
