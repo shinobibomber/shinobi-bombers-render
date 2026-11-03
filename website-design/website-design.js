@@ -798,7 +798,7 @@
     if (chArt) { chArt.append(b.chal); artMatch(b, b.chal, 1392, 605); } else { place(b.chal, 1186, 618); artMatch(b, b.chal, 1392); }
     // Four single-line rows beside the artwork's four mechanic icons; no emoji duplicates.
     b.mech = [728, 758, 787, 817].map(y => artMatch(b, cov(b, 1062, y, 436, 26, '#04050f', 15, '#e1e6f7', 'sbw-left sbw-mechrow'), 1500));
-    [['90 seconds · 1 chakra per projectile · Adventure pauses'], ['Shockwaves drain chakra every 8 seconds'], ['Below 35% HP it enrages: waves every 5 s drain 3 chakra'], ['Elite and Legend heroes show an ultimate every 8th volley']].forEach(([t], i) => setText(b.mech[i], t));
+    [['90 seconds · 1 chakra per projectile · Adventure keeps going'], ['Shockwaves drain chakra every 8 seconds'], ['Below 35% HP it enrages: waves every 5 s drain 3 chakra'], ['Elite and Legend heroes show an ultimate every 8th volley']].forEach(([t], i) => setText(b.mech[i], t));
     b.rw = [1, 2, 3, 4, 5, 6, 7].map(i => { const h = b.s.hs.find(x => x.id === 'rw' + i); const e = cv(b, h.r[0], h.r[1], h.r[2] - h.r[0], h.r[3] - h.r[1], 'sbw-soon'); e.textContent = 'Not yet'; return e; });
     b.rw0 = artMatch(b, cov(b, 56, 834, 82, 22, '#2a1a05', 13, '#ffd257'), 136);
     // A garbled baked label sits just below the Legend Fragment tile.

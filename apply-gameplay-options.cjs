@@ -23,7 +23,16 @@ const bossTeamPatches=[
  ["const team=BattleRoster.list().filter(h=>h.on&&h.en>=1).slice(0,10);","const team="+BOSS_TEAM+";"],
  ["const team=b?b.team:S.h.filter(h=>h.on).slice(0,10).map((h,slot)=>({id:h.id,slot}));\n  const rows=","const team=b?b.team:"+BOSS_TEAM+".map((h,slot)=>({id:h.id,slot}));\n  const rows="],
  ["const team=b?b.team:S.h.filter(h=>h.on).slice(0,10).map((h,slot)=>({id:h.id,slot}));\n  for(const unit of team)","const team=b?b.team:"+BOSS_TEAM+".map((h,slot)=>({id:h.id,slot}));\n  for(const unit of team)"],
- ["Deploy up to 10 rested heroes.","Your 5 strongest rested deployed heroes join the hunt."]
+ ["Deploy up to 10 rested heroes.","Your 5 strongest rested deployed heroes join the hunt."],
+ // Adventure keeps running during a hunt: the hunt team leaves the Adventure map (off-map heroes are
+ // skipped by the Adventure tick) and is placed back when the hunt ends; everyone else keeps fighting.
+ ["const oldTick=tick;tick=function(dt){\r\n  if(window.GameLoading?.active||(S.v2.revealSource==='prison'","let huntAway=[];const oldTick=tick;tick=function(dt){\r\n  if(window.GameLoading?.active||(S.v2.revealSource==='prison'"],
+ ["   S.h.forEach(h=>{if(members.has(h.id)){if(h.en<1)h.en=Math.min(h.st*50,h.en+dt/60*(has(h,3)?1.5:1));return}const resting=!h.on||h.x<0;if(resting||h.en<1)h.en=Math.min(h.st*50,h.en+dt/60*(resting?GameBalance.dojoRecovery[S.dojo||0]:1)*(has(h,3)?1.5:1))});\r\n   bossTick(dt);\r\n  }else{oldTick(dt);",
+  "   const away=S.h.filter(h=>members.has(h.id)),chakra=away.map(h=>h.en);away.forEach(h=>{if(h.x>=0){h.x=-9;h.y=-9;h.p=[]}});huntAway=away.map(h=>h.id);\r\n   oldTick(dt);away.forEach((h,i)=>{h.en=chakra[i]<1?Math.min(h.st*50,chakra[i]+dt/60*(has(h,3)?1.5:1)):chakra[i]});if(S.earned>earned)count('ryo',S.earned-earned);if(S.map>map)count('maps',S.map-map);\r\n   bossTick(dt);\r\n  }else{if(huntAway.length){for(const id of huntAway){const h=S.h.find(h=>h.id===id);if(h&&h.on&&h.x<0)place(h)}huntAway=[]}oldTick(dt);"],
+ ["'The guardian awakens. Adventure is paused for this hunt.'","'The guardian awakens. Your other heroes keep fighting in Adventure.'"],
+ ["toast('Hunt '+stage+' started · Adventure paused')","toast('Hunt '+stage+' started · Adventure continues')"],
+ ["Adventure pauses while the hunt runs. Your team is chosen when you start.","Your other heroes keep fighting in Adventure. Your team is chosen when you start."],
+ ["' · Adventure paused: Boss Hunt'","' · Boss Hunt in progress'"]
 ];
 // Each defeated enemy shows the Ryo its tier pays (GameBalance.enemyReward: the server's tier
 // table at the live loot rate) instead of "TARGET CLEARED". The Chest stays server-verified.

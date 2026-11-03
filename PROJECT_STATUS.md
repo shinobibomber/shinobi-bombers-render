@@ -108,6 +108,12 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-04 Adventure during Boss Hunt (owner request): the game's V2 tick ran either the hunt or
+  Adventure, so a hunt froze Adventure for every hero. `bossTeamPatches` now moves the 5 hunt heroes
+  off the Adventure map (the Adventure tick skips off-map heroes), runs Adventure for everyone else
+  alongside `bossTick`, and places the hunt heroes back when the hunt ends; copy no longer says
+  Adventure pauses. Covered in boss-summon.cjs.
+
 - 2026-11-03 closing flush and per-visit Session gained (owner request): `KillReport` sends unsent
   kill totals on pagehide / tab hide with `fetch` keepalive (a `rewardPatches` hook on the game's
   `api`), and the server credits a report covering the online seconds since the last sync even when

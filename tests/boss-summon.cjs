@@ -68,5 +68,26 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     await p.evaluate(() => V2.retreat());
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: Summon History lists summoned heroes (owned, fused, pending, refunded); Boss Hunt fights with the 5 strongest rested heroes and its panels fit.');
+  // A running hunt no longer freezes Adventure: the 5 hunt heroes leave the map, the others keep
+  // defeating enemies, and the hunt heroes come back when the hunt ends.
+  await withGame(async ({ p, f, errors, assert }) => {
+    f.holdAdventure = false;
+    const heroes = [4, 4, 4, 4, 4, 3, 3, 3].map((r, i) => hero('hunt-' + i, r, r === 4 ? 13.5 : 10.5));
+    heroes.forEach(h => { h.baseStats.sp = h.baseStats.pw; h.baseStats.st = h.baseStats.pw; });
+    f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
+    await login(p);
+    await p.evaluate(() => { go(0); Experience.workAll(); });
+    await p.waitForFunction(() => S.h.filter(h => h.on && h.x >= 0).length === 8);
+    const team = await p.evaluate(() => { S.v2.bestBoss = 400; go(8); V2.startBoss(); go(0); return BattleRoster.list().filter(h => h.on && h.en >= 1).sort((a, c) => c.pw - a.pw).slice(0, 5).map(h => h.id); });
+    assert.equal(team.length, 5);
+    await p.evaluate(() => { window.__huntKills = 0; addEventListener('shinobi-enemy-defeated', () => { if (V2.isBossActive()) __huntKills++; }); });
+    await p.waitForFunction(() => __huntKills >= 2, null, { timeout: 60000 });
+    const during = await p.evaluate(team => ({ active: V2.isBossActive(), away: S.h.filter(h => team.includes(h.id)).every(h => h.x < 0), others: S.h.filter(h => h.on && !team.includes(h.id)).every(h => h.x >= 0) }), team);
+    assert.deepEqual(during, { active: true, away: true, others: true }, 'Adventure keeps fighting with the other heroes during the hunt');
+    await p.evaluate(() => V2.retreat());
+    await p.waitForFunction(team => S.h.filter(h => team.includes(h.id)).every(h => h.x >= 0), team, { timeout: 3000 });
+    assert.equal(await p.evaluate(() => document.getElementById('p8')?.innerText.includes('Adventure pauses')), false, 'no screen says Adventure pauses');
+    assert.deepEqual(errors, []);
+  });
+  console.log('PASS: Summon History lists summoned heroes (owned, fused, pending, refunded); Boss Hunt fights with the 5 strongest rested heroes, its panels fit, and Adventure keeps fighting during a hunt.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

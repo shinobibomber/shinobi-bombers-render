@@ -20,6 +20,15 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Hotfix)**
+
+**🛠️ Fixes**
+• **Adventure keeps fighting during a Boss Hunt** — starting a hunt no longer freezes the Adventure map. Your 5 hunt heroes head off to face the guardian, your other deployed heroes keep defeating enemies and earning Ryo, and the hunt team returns to Adventure when the hunt ends.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026)**
 
 **🔄 Changes**
