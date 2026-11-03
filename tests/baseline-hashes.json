@@ -91,7 +91,7 @@
     },
     {
       "path": "gameplay-options/options.js",
-      "sha256": "b9b5ad23e0e830ae0df38396be8a84db59783dc01058c50254c65984a1cb745a"
+      "sha256": "9cf39e9fe5273b558275cd31788674ef75c47ebe00c16d4b72983b83c759ea5b"
     },
     {
       "path": "gameplay-options/server.cjs",

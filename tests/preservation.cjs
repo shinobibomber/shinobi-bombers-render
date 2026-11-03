@@ -18,6 +18,8 @@ for(const [before,after]of fusionListPatches){assert.equal(html.split(after).len
 const {bossTeamPatches}=require('../apply-gameplay-options.cjs');
 for(const [before,after]of bossTeamPatches){assert.equal(html.split(after).length-1,1,'one exact boss team hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
 const {rewardPatches}=require('../apply-gameplay-options.cjs');
+const {chestPopupPatches}=require('../apply-gameplay-options.cjs');
+for(const [before,after]of chestPopupPatches){assert.equal(html.split(after).length-1,1,'one exact chest popup hook');html=html.replace(after,()=>before)}
 for(const [before,after]of rewardPatches.slice().reverse()){assert.equal(html.split(after).length-1,1,'one exact enemy reward hook');html=html.replace(after,()=>before)}
 const getter="get pendingDeposits(){return readPending().filter(record=>record&&record.kind==='deposit'&&record.network===NETWORK&&record.account===state.account&&record.tokenAddress===state.tokenAddress).length},";
 assert.equal(html.split(getter).length-1,1,'one reviewed read-only pending-deposit getter is present');

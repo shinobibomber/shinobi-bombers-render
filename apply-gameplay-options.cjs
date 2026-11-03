@@ -28,13 +28,18 @@ const bossTeamPatches=[
 // Each defeated enemy shows the Ryo its tier pays (GameBalance.enemyReward: the server's tier
 // table at the live loot rate) instead of "TARGET CLEARED". The Chest stays server-verified.
 const rewardPatches=[
- ["s:window.RyoPayments?.state.authenticated?'TARGET CLEARED':'+'+Math.floor(reward).toLocaleString()}","s:'+'+(reward<100?Math.floor(reward*10)/10:Math.floor(reward)).toLocaleString()+' Ryo'}"],
+ ["s:window.RyoPayments?.state.authenticated?'TARGET CLEARED':'+'+Math.floor(reward).toLocaleString()}","s:'+'+(reward<100?Math.floor(reward*10)/10:Math.floor(reward)).toLocaleString()+' Ryo → Chest'}"],
  // Announce each defeat so the website can fetch the server-verified Chest right away.
  ["c.k=0;S.ryo=GameBalance.money(S.ryo+reward);","c.k=0;S.ryo=GameBalance.money(S.ryo+reward);dispatchEvent(new CustomEvent('shinobi-enemy-defeated',{detail:{kind,reward,bonus:!!(h&&has(h,0))}}));"],
  // Every Chest sync carries the battle's cumulative kill totals (gameplay-options/options.js).
  ["const data=await api(claim?'claim-adventure':'adventure',{active});","const data=await api(claim?'claim-adventure':'adventure',{active,...(window.KillReport?.payload()||{})});"],
  ["cache:'no-store',signal:controller.signal}","cache:'no-store',keepalive:!!window.KillReport?.closing,signal:controller.signal}"],
  ["try{const saved=JSON.parse(sessionStorage.getItem(key));if(saved&&Number.isFinite(saved.gained)&&saved.gained>=0&&(saved.last===null||Number.isFinite(saved.last)))session=saved}catch(e){}","try{sessionStorage.removeItem(key)}catch(e){}"]
+];
+// The Chest-sync total popup shows only gains beyond kill rewards already shown over enemies. Applied
+// after apply-global-chest.cjs, which rewrites the native Chest sync on a fresh build.
+const chestPopupPatches=[
+ ["const gained=prior===null?0:Math.max(0,Number(chest.pending||0)+Number(chest.claimed||0)-prior);if(tab===0&&gained>=1)fl.push({x:W/2-2,y:H/2,t:1,s:'+'+fmt(gained)+' Ryo → Chest'});","const gained=prior===null?0:Math.max(0,Number(chest.pending||0)+Number(chest.claimed||0)-prior),extra=gained-(window.KillReport?.creditedShown(gained)||0);if(tab===0&&extra>=1)fl.push({x:W/2-2,y:H/2,t:1,s:'+'+fmt(extra)+' Ryo → Chest'});"]
 ];
 function replaceOne(text,before,after,label){if(text.includes(after))return text;const count=text.split(before).length-1;if(count!==1)throw Error('Gameplay options patch mismatch: '+label+' ('+count+')');return text.replace(before,()=>after)}
 function applyGameplayOptions(appDir=path.join(__dirname,'app')){
@@ -88,4 +93,5 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
  const dest=path.join(appDir,'public/assets/gameplay-options');fs.mkdirSync(dest,{recursive:true});for(const name of ['options.js','options.css'])fs.copyFileSync(path.join(__dirname,'gameplay-options',name),path.join(dest,name));
  console.log('Server-enforced fusion odds and persisted Sensei preferences applied.');
 }
-module.exports={applyGameplayOptions,fusionListPatches,bossTeamPatches,rewardPatches,BOSS_TEAM,MAX_HEROES};if(require.main===module)applyGameplayOptions();
+function applyAfterChest(appDir=path.join(__dirname,'app')){const name=path.join(appDir,'public/index.html'),before=fs.readFileSync(name,'utf8'),after=chestPopupPatches.reduce((html,[a,b],i)=>replaceOne(html,a,b,'chest popup '+i),before);if(before!==after)fs.writeFileSync(name,after)}
+module.exports={applyGameplayOptions,applyAfterChest,chestPopupPatches,fusionListPatches,bossTeamPatches,rewardPatches,BOSS_TEAM,MAX_HEROES};if(require.main===module)applyGameplayOptions();

@@ -20,6 +20,15 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026)**
+
+**🔄 Changes**
+• **Clearer rewards** — every defeated enemy now shows "+X Ryo → Chest", and that exact amount is added to your Chest. The separate Chest total pop-up only appears for other earnings, like Sensei rewards from while you were away.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix 5)**
 
 **🛠️ Fixes**
