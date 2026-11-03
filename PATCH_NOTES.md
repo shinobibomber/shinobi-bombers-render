@@ -24,6 +24,7 @@ Thanks for playing — see you on the battlefield! 🥷
 
 **🛠️ Fixes**
 • **Dojo Services** — the Sensei card's Auto Rotation ON / OFF now sits neatly under its label instead of floating.
+• The Dojo and Sensei cards no longer pulse or shimmer, so their text stays aligned, and the Enter Dojo / Manage Sensei buttons glow on hover instead of showing a double button.
 
 Thanks for playing — see you on the battlefield! 🥷
 

@@ -492,3 +492,10 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-dval{font-size:26px;color:#ffd84a}
 #sbwLayer .sbw-drot{box-sizing:border-box;padding:0 0 8px 9px;font-size:22px;letter-spacing:.4px;color:#9aa6c8}
 #sbwLayer .sbw-drot.on{color:#3ee07a;text-shadow:0 0 6px #3ee07a66,0 1px 2px #000c}
+/* Buttons that sit on a card's own printed button: brighten and glow, never scale, so no second copy shows. */
+#sbwLayer .hs.noscale>.sl,#sbwLayer .hs.noscale:hover>.sl,#sbwLayer .hs.noscale:focus-visible>.sl,#sbwLayer .hs.noscale:active>.sl{transform:none!important}
+#sbwLayer .hs.noscale.pu>.sl{animation:sbw-glow 2.4s ease-in-out infinite}
+#sbwLayer .hs.noscale:hover>.sl{animation:none;filter:brightness(1.18) drop-shadow(0 0 10px rgba(255,190,60,.85))}
+#sbwLayer .hs.noscale:active>.sl{filter:brightness(.95)}
+@keyframes sbw-glow{50%{filter:brightness(1.18) drop-shadow(0 0 8px rgba(255,180,40,.75))}}
+@media (prefers-reduced-motion:reduce){#sbwLayer .hs.noscale.pu>.sl{animation:none}}

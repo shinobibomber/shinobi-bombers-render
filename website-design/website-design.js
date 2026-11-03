@@ -388,6 +388,12 @@
   // Dojo Services (the hub page): each live value covers the artwork's printed example exactly, with
   // a background sampled from the artwork, so no old letters or flat boxes show around it.
   INIT.dojo = b => {
+    // Keep both cards still (no breathing or light sweep): their printed values are covered by fixed
+    // patches that must match the art behind them, and the card art
+    // contains the ENTER DOJO / MANAGE SENSEI buttons, so a breathing card made the values float
+    // and showed a second, offset button. The two buttons glow on hover/pulse instead of growing.
+    for (const id of ['dcard', 'scard']) $(`.hs[data-sbwid="${id}"]`, b.st)?.classList.remove('breathe', 'sh');
+    for (const id of ['enter', 'msen']) $(`.hs[data-sbwid="${id}"]`, b.st)?.classList.add('noscale');
     const fixed = (x, y, w, h, sx, cls = '') => { const e = place(mk('span', 'sbw-cover sbw-dsvc ' + cls, b.st), x, y, w, h); e.dataset.mapped = '1'; artMatch(b, e, sx); return e; };
     b.pill = fixed(104, 657, 128, 46, 240, 'sbw-dpill'); mk('b', '', b.pill);
     b.name = fixed(108, 704, 540, 38, 660, 'sbw-dname sbw-left');

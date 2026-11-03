@@ -15,6 +15,9 @@ const { withGame } = require('./harness.cjs');
         rot: q('sbw-drot').textContent, fit: [...document.querySelectorAll('.sbw-scr.on .sbw-dsvc')].filter(e => !fits(e)).map(e => e.className + ':' + e.scrollWidth + '/' + e.clientWidth).join() || true };
     });
     await p.waitForFunction(() => document.querySelector('.sbw-scr.on .sbw-drot')?.textContent.startsWith('ON'));
+    // Cards stay still so the value patches stay aligned; buttons never scale over the card's printed copy.
+    const motion = await p.evaluate(async () => { const seen = new Set(); for (let i = 0; i < 6; i++) { for (const id of ['dcard', 'scard', 'enter', 'msen']) seen.add(id + ':' + getComputedStyle(document.querySelector('.sbw-scr.on .hs[data-sbwid="' + id + '"] > .sl')).transform); await new Promise(r => setTimeout(r, 500)); } return [...seen]; });
+    assert.deepEqual(motion.sort(), ['dcard:none', 'enter:none', 'msen:none', 'scard:none'], 'Dojo cards and their buttons never move or scale');
     assert.deepEqual(await read(), { tier: 'TIER II', name: 'SHINOBI DOJO', rate: '5/min', lvl: '2/6', rot: 'ON · 3h left', fit: true });
     // The rental ends while the page stays open: it must flip without a profile refresh.
     await p.evaluate(() => { RyoPayments.state.profile.senseiRentalUntil = Date.now() + 1200; });
