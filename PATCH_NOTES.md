@@ -20,6 +20,15 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Sensei fix)**
+
+**🛠️ Fixes**
+• **Dojo → Sensei** — if you haven't hired a Sensei yet, the "Return to battle at" chakra selector no longer shows ghosted, overlapping text. It now shows a clean locked box with a 🔒 icon, and unlocks as soon as you hire or rent a Sensei.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Update)**
 
 **✨ New**

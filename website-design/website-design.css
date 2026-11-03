@@ -453,7 +453,7 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-dup:disabled{filter:grayscale(.6) brightness(.75);cursor:default}
 #sbwLayer .sbw-dsel{position:absolute;z-index:12;padding:0 40px 0 16px;border:2px solid #2d4f7a;border-radius:7px;background:#0b1830 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23fff' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;
   -webkit-appearance:none;appearance:none;color:#3ee07a;font:800 22px Rajdhani,sans-serif;cursor:pointer}
-#sbwLayer .sbw-dsel:disabled{color:#7d86a8;cursor:not-allowed}
+#sbwLayer .sbw-dsel:disabled{opacity:1;color:#8e97b8;border-color:#3a4258;cursor:not-allowed;background:#0b1830 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='16'%3E%3Crect x='1' y='7' width='12' height='8' rx='2' fill='%238e97b8'/%3E%3Cpath d='M4 7V5a3 3 0 0 1 6 0v2' stroke='%238e97b8' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center}
 #sbwLayer .sbw-dsel option{background:#0b1830;color:#fff}
 #sbwLayer .sbw-dsv{position:absolute;z-index:12;display:flex;align-items:center;justify-content:flex-end;font:800 21px Rajdhani,sans-serif;color:#fff;white-space:nowrap}
 #sbwLayer .sbw-dtg{position:absolute;z-index:12;display:flex;align-items:center;justify-content:space-between;padding:0 6px 0 14px;border:0;border-radius:22px;background:#2a3044;cursor:pointer;

@@ -22,6 +22,15 @@ const { withGame } = require('./harness.cjs');
     // The rental ends while the page stays open: it must flip without a profile refresh.
     await p.evaluate(() => { RyoPayments.state.profile.senseiRentalUntil = Date.now() + 1200; });
     await p.waitForFunction(() => document.querySelector('.sbw-scr.on .sbw-drot')?.textContent === 'NOT HIRED', null, { timeout: 4000 });
+    // Sensei page without a Sensei: the locked chakra selector stays opaque so the artwork's printed
+    // dropdown never ghosts through it (Chromium dims disabled selects to 70% by default).
+    await p.locator('.sbw-scr.on [data-sbwid="msen"]').click(); await p.waitForFunction(() => WebsiteDesign.current() === 'dojo-sen');
+    const locked = () => p.locator('.sbw-scr.on .sbw-dsel').evaluate(e => { const s = getComputedStyle(e); return { disabled: e.disabled, opacity: s.opacity, solid: /rgb\(11, 24, 48\)$/.test(s.backgroundColor), lock: /rect/.test(s.backgroundImage), hint: !!e.title }; });
+    assert.deepEqual(await locked(), { disabled: true, opacity: '1', solid: true, lock: true, hint: true }, 'an unhired Sensei shows an opaque locked selector');
+    await p.evaluate(() => { RyoPayments.state.profile.sensei = true; });
+    await p.waitForFunction(() => !document.querySelector('.sbw-scr.on .sbw-dsel').disabled);
+    assert.deepEqual(await locked(), { disabled: false, opacity: '1', solid: true, lock: false, hint: false }, 'hiring unlocks the selector');
+    await p.evaluate(() => { RyoPayments.state.profile.sensei = false; }); await p.locator('.sbw-scr.on .sbw-dback button').click(); await p.waitForFunction(() => WebsiteDesign.current() === 'dojo');
     // Permanent Sensei with rotation turned off, and a higher tier, from the next server profile.
     await p.evaluate(() => Object.assign(RyoPayments.state.profile, { sensei: true, senseiEnabled: false, dojo: 6 }));
     await p.waitForFunction(() => document.querySelector('.sbw-scr.on .sbw-drot')?.textContent === 'OFF');

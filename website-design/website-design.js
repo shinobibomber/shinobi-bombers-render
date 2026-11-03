@@ -497,7 +497,8 @@
   };
   PAINT['dojo-sen'] = b => {
     const { hired, on, pct, tier, rental } = dojoState();
-    if (document.activeElement !== b.sel && b.sel.value !== String(pct)) b.sel.value = String(pct); b.sel.disabled = !hired;
+    if (document.activeElement !== b.sel && b.sel.value !== String(pct)) b.sel.value = String(pct);
+    if (b.sel.disabled !== !hired) { b.sel.disabled = !hired; b.sel.title = hired ? '' : 'Hire or rent a Sensei to choose when rested heroes return'; }
     setText(b.svc, `${DOJO_NAMES[tier]} ✓`); setText(b.cnt, hired ? '1' : '0');
     b.tg.classList.toggle('on', hired && on); b.tg.setAttribute('aria-checked', String(hired && on)); b.tg.innerHTML = `<span>${hired && on ? 'ON' : 'OFF'}</span><i></i>`;
     const k = hired + '|' + on + '|' + rental;
