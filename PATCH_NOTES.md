@@ -20,6 +20,18 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Chest fix)**
+
+**🛠️ Fixes**
+• **Chest** — the treasure chest picture no longer shows as a pasted-on box with a stray red banner and blossoms over the village scene. It's now a clean chest that blends into the banner on desktop, tablet and phone.
+
+**🔄 Changes**
+• The Chest opens faster: the chest picture is now a 39 KB image instead of part of a 2.4 MB artwork sheet.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Sensei fix)**
 
 **🛠️ Fixes**

@@ -31,6 +31,6 @@ function applyGlobalChest(appDir=path.join(__dirname,'app')){
  }
  const destination=path.join(appDir,'public/assets/chest-ui');fs.mkdirSync(destination,{recursive:true});
  for(const name of ['global-chest.js','global-chest.css']){const source=path.join(__dirname,'chest-ui/dist',name);if(!fs.existsSync(source))throw Error('Build chest-ui first.');fs.copyFileSync(source,path.join(destination,name))}
- fs.copyFileSync(path.join(__dirname,'chest-ui/art/reference.png'),path.join(destination,'reference.png'));fs.writeFileSync(file,html);console.log('Design14 shared header and Chest connected; existing game systems preserved.');
+ for(const name of ['reference.png','chest.webp'])fs.copyFileSync(path.join(__dirname,'chest-ui/art',name),path.join(destination,name));fs.writeFileSync(file,html);console.log('Design14 shared header and Chest connected; existing game systems preserved.');
 }
 module.exports={applyGlobalChest};if(require.main===module)applyGlobalChest();
