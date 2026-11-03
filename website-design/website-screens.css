@@ -3,7 +3,7 @@
 #sbwLayer .base{position:absolute;inset:0;width:100%;height:100%;user-select:none;pointer-events:none}
 #sbwLayer .hs{position:absolute;cursor:pointer;outline:none;border-radius:8px;z-index:5;-webkit-tap-highlight-color:transparent}
 #sbwLayer .hs.nolink{cursor:default}
-#sbwLayer .hs>.sl{position:absolute;inset:0;border-radius:inherit;background-repeat:no-repeat;transition:transform .2s,filter .2s,box-shadow .2s;will-change:transform}
+#sbwLayer .hs>.sl{position:absolute;inset:0;border-radius:inherit;background-repeat:no-repeat;transition:transform .2s,filter .2s,box-shadow .2s}
 #sbwLayer .hs:not(.nolink):hover>.sl,#sbwLayer .hs:focus-visible>.sl{transform:scale(1.045);filter:brightness(1.2) drop-shadow(0 0 8px rgba(255,184,58,.9));z-index:2}
 #sbwLayer .hs:focus-visible{box-shadow:0 0 0 3px #33c8ff;z-index:30}
 #sbwLayer .hs:active>.sl{transform:scale(.97)}

@@ -16,6 +16,15 @@ const fusionListPatches=[
  ["${!heroes.length?'<p class=\"fusion-empty\">No heroes of this rank yet. Summon more shinobi to begin.</p>':''}",
   "${!listed.length?'<p class=\"fusion-empty\">No heroes of this rank yet. Summon more shinobi to begin.</p>':rank===3&&heroes.length<3?'<p class=\"fusion-empty\">Elite → Legend fusion needs three level 10 Elites. Train Elites to level 10 in the Dojo.</p>':''}"]
 ];
+// Boss Hunt: the 5 strongest rested deployed heroes fight (was the first 10). The preview uses the
+// same choice, so the screen shows exactly who will fight. Exported so preservation can reverse them.
+const BOSS_TEAM="BattleRoster.list().filter(h=>h.on&&h.en>=1).sort((a,c)=>c.pw-a.pw).slice(0,5)";
+const bossTeamPatches=[
+ ["const team=BattleRoster.list().filter(h=>h.on&&h.en>=1).slice(0,10);","const team="+BOSS_TEAM+";"],
+ ["const team=b?b.team:S.h.filter(h=>h.on).slice(0,10).map((h,slot)=>({id:h.id,slot}));\n  const rows=","const team=b?b.team:"+BOSS_TEAM+".map((h,slot)=>({id:h.id,slot}));\n  const rows="],
+ ["const team=b?b.team:S.h.filter(h=>h.on).slice(0,10).map((h,slot)=>({id:h.id,slot}));\n  for(const unit of team)","const team=b?b.team:"+BOSS_TEAM+".map((h,slot)=>({id:h.id,slot}));\n  for(const unit of team)"],
+ ["Deploy up to 10 rested heroes.","Your 5 strongest rested deployed heroes join the hunt."]
+];
 function replaceOne(text,before,after,label){if(text.includes(after))return text;const count=text.split(before).length-1;if(count!==1)throw Error('Gameplay options patch mismatch: '+label+' ('+count+')');return text.replace(before,()=>after)}
 function applyGameplayOptions(appDir=path.join(__dirname,'app')){
  const patch=(file,fn)=>{const name=path.join(appDir,file),before=fs.readFileSync(name,'utf8'),after=fn(before);if(before!==after)fs.writeFileSync(name,after)};
@@ -55,7 +64,8 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
   return s.replace('</head>',marker+'\n<link rel="stylesheet" href="assets/gameplay-options/options.css">\n<script defer src="assets/gameplay-options/options.js"></script>\n</head>');
  });
  patch('public/index.html',s=>fusionListPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'fusion list '+i),s));
+ patch('public/index.html',s=>bossTeamPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'boss team '+i),s));
  const dest=path.join(appDir,'public/assets/gameplay-options');fs.mkdirSync(dest,{recursive:true});for(const name of ['options.js','options.css'])fs.copyFileSync(path.join(__dirname,'gameplay-options',name),path.join(dest,name));
  console.log('Server-enforced fusion odds and persisted Sensei preferences applied.');
 }
-module.exports={applyGameplayOptions,fusionListPatches,MAX_HEROES};if(require.main===module)applyGameplayOptions();
+module.exports={applyGameplayOptions,fusionListPatches,bossTeamPatches,BOSS_TEAM,MAX_HEROES};if(require.main===module)applyGameplayOptions();

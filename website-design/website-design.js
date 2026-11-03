@@ -52,9 +52,33 @@
   /* ---------- dialogs ---------- */
   function notice(title, text) {
     if (!dlg) { dlg = mk('dialog', 'sbw-dialog', document.body); }
-    dlg.onclick = null; dlg.innerHTML = `<h2>${esc(title)}</h2><p>${esc(text)}</p><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`;
+    dlg.className = 'sbw-dialog'; dlg.onclick = null; dlg.innerHTML = `<h2>${esc(title)}</h2><p>${esc(text)}</p><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`;
     $('button', dlg).onclick = () => dlg.close();
     if (!dlg.open) dlg.showModal();
+  }
+  // Summon History: the server's last 100 purchases (RyoPayments.state.purchases) carry each
+  // confirmed summon's heroes. List those batches newest first with the heroes that came out.
+  function summonHistory() {
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    const summons = ((window.RyoPayments && RyoPayments.state.purchases) || []).filter(p => (p.product || p.quote?.product || p.result?.product) === 'summon');
+    const owned = new Map(((gs() && gs().h) || []).filter(h => h.tokenId).map(h => [h.tokenId, h])), counts = [0, 0, 0, 0, 0];
+    const stat = v => Number.isFinite(Number(v)) ? Number(v).toFixed(1) : '—';
+    const batches = summons.map((p, i) => {
+      const heroes = p.status === 'confirmed' && Array.isArray(p.result?.outputs) ? p.result.outputs : [];
+      heroes.forEach(h => counts[h.rank] = (counts[h.rank] || 0) + 1);
+      const qty = p.quote?.params?.quantity || heroes.length || '—', when = Number(p.created) ? new Date(Number(p.created)).toLocaleString() : '';
+      const state = p.status === 'confirmed' ? '' : p.status === 'refunded' ? 'Refunded · Ryo returned' : 'Settling…';
+      const chips = heroes.map((h, j) => `<div class="sbw-sh-hero${owned.has(h.tokenId) ? '' : ' gone'}" style="--rc:${RCOL[h.rank] || RCOL[0]}"><canvas data-b="${i}" data-h="${j}"></canvas><b>${esc(h.name)}</b><small>${esc(RNAME[h.rank] || '')}${owned.has(h.tokenId) ? '' : ' · no longer in collection'}</small><em title="Power · Speed · Stamina">PWR ${stat(h.baseStats?.pw)} · SPD ${stat(h.baseStats?.sp)} · STA ${stat(h.baseStats?.st)}</em></div>`).join('');
+      return `<section class="sbw-sh-batch"><header><b>×${esc(qty)} summon</b><span>${esc(when)}</span><span>${esc(fmt(Number(p.amount)))} Ryo</span>${state ? `<em>${esc(state)}</em>` : ''}</header>${chips ? `<div class="sbw-sh-grid">${chips}</div>` : ''}</section>`;
+    });
+    const total = counts.reduce((a, n) => a + n, 0);
+    dlg.className = 'sbw-dialog sbw-history'; dlg.onclick = null;
+    dlg.innerHTML = `<h2>Summon History</h2>${summons.length ? `<p class="sbw-sh-sum">${total} heroes from ${summons.length} summon${summons.length === 1 ? '' : 's'} · ${RNAME.map((n, r) => `<span style="color:${RCOL[r]}">${n} ${counts[r]}</span>`).join(' · ')}</p><div class="sbw-sh-list">${batches.join('')}</div>` : '<p>No summons yet. Summon heroes at the Shrine to see them here.</p>'}<div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`;
+    $('.sbw-acts button', dlg).onclick = () => dlg.close();
+    dlg.addEventListener('close', () => dlg.classList.remove('sbw-history'), { once: true });
+    if (!dlg.open) dlg.showModal();
+    // Owned heroes show their real model; fused or sold heroes keep a rank-coloured placeholder.
+    $$('.sbw-sh-hero canvas', dlg).forEach(c => { const h = summons[+c.dataset.b].result.outputs[+c.dataset.h], own = owned.get(h.tokenId); c.width = c.height = 128; if (own) drawHero(c, own, 2.4, 0, 6); });
   }
   function toast(t) { if (!toastEl) toastEl = mk('div', 'sbw-toast', document.body); toastEl.textContent = t; toastEl.classList.add('on'); clearTimeout(toastEl._t); toastEl._t = setTimeout(() => toastEl.classList.remove('on'), 2200); }
   function openChest() {
@@ -246,7 +270,7 @@
     qty: a => { if (QTY.includes(+a) && window.Combat) Combat.quantity(+a); refresh(); },
     pick: a => { if (QTY.includes(+a) && window.Combat) Combat.quantity(+a); refresh(); },
     summon: () => { if (!pressOnclick('#p2', 'Combat.summonBatch()')) toast(account() ? 'Summon is busy – try again in a moment.' : 'Sign in with your wallet to summon.'); },
-    gallery: () => go(1), history: () => openChest(),
+    gallery: () => go(1), history: () => summonHistory(),
     flashRates: () => { const r = $('.hs[data-sbwid="rates"]', built.summon.st); if (r) { r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash'); } toast('Rates: Genin 60% · Chunin 25% · Jonin 10% · Elite 4% · Legend 1%'); },
     legend: () => notice('Legend rate-up', 'No limited-time rate-up is active. Every summon uses the fixed rates: Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1%.'),
     featured: () => notice('Featured Shinobi', 'Featured heroes are not configured. Every summon uses the fixed rarity rates.'),
@@ -433,6 +457,21 @@
 
   /* ================= Phase 3: Heroes, Adventure, Market, Boss Hunt; Guild/Chat previews ================= */
   /* shared helpers */
+  // Paint a cover with the artwork's own vertical colour profile, sampled once from a text-free
+  // column (stage x = sx), so the patch is invisible and only the new text shows. oy offsets the
+  // element's top when it sits inside a hotspot slice rather than directly on the stage.
+  const artCanvases = new WeakMap();
+  function artMatch(b, el, sx, oy = 0) {
+    const img = $('.sbw-base', b.st), paint = () => {
+      let c = artCanvases.get(img);
+      if (!c) { c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d', { willReadFrequently: true }).drawImage(img, 0, 0); artCanvases.set(img, c); }
+      const y = Math.round(parseFloat(el.style.top) + oy), h = Math.round(parseFloat(el.style.height)), d = c.getContext('2d').getImageData(Math.round(sx), y, 1, h).data, stops = [];
+      for (let i = 0; i < h; i++) stops.push(`rgb(${d[i * 4]},${d[i * 4 + 1]},${d[i * 4 + 2]}) ${(i / h * 100).toFixed(2)}% ${((i + 1) / h * 100).toFixed(2)}%`);
+      el.style.background = `linear-gradient(${stops.join(',')})`;
+    };
+    if (img.complete && img.naturalWidth) paint(); else img.addEventListener('load', paint, { once: true });
+    return el;
+  }
   function cv(b, x, y, w, h, cls = '') { const c = place(mk('div', 'sbw-cv ' + cls, b.st), x, y, w, h); return c; }
   function cov(b, x, y, w, h, bg, fs, color, cls = '') { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; }
   function heroAt(i) { const g = gs(); return g && g.h ? g.h[i] || null : null; }
@@ -715,21 +754,33 @@
   const GUARD = ['Akuma · Fallen Shinobi', 'Yuki Onna · Frozen Moon', 'Raijin · Thunder Lord', 'Daichi · Ancient Golem', 'Orochi · Serpent King', 'Shadow Emperor'];
   INIT['boss-hunt'] = b => {
     b.arena = place(mk('canvas', 'sbw-mirror', b.st), 222, 346, 770, 368); b.arena.width = 770; b.arena.height = 368; b.arena.style.objectPosition = '50% 62%';
-    b.world = cov(b, 50, 218, 160, 20, '#0d0407', 14, '#e9dcff', 'sbw-left');
-    b.name = cov(b, 50, 234, 520, 42, '#0d0407', 28, '#ffffff', 'sbw-left'); b.name.style.fontWeight = '800';
+    b.world = artMatch(b, cov(b, 50, 218, 160, 20, '#0d0407', 14, '#e9dcff', 'sbw-left'), 300);
+    b.name = artMatch(b, cov(b, 50, 234, 520, 42, '#0d0407', 28, '#ffffff', 'sbw-left'), 600); b.name.style.fontWeight = '800';
     b.badge = cov(b, 806, 214, 176, 26, '#2a1a05', 15, '#ffd257');
-    b.rec = cov(b, 690, 254, 292, 22, '#05040d', 14, '#cfd8ee'); b.rec.style.justifyContent = 'flex-end';
-    b.hpbar = cv(b, 54, 282, 928, 22, 'sbw-hp'); b.hptext = cov(b, 52, 312, 300, 22, '#05040d', 15, '#ffffff', 'sbw-left');
+    b.rec = artMatch(b, cov(b, 690, 254, 292, 22, '#05040d', 14, '#cfd8ee'), 684); b.rec.style.justifyContent = 'flex-end';
+    b.hpbar = cv(b, 54, 282, 928, 22, 'sbw-hp'); b.hptext = artMatch(b, cov(b, 52, 312, 162, 22, '#05040d', 15, '#ffffff', 'sbw-left'), 214);
     b.list = [0, 1, 2, 3, 4].map(i => cv(b, 48, [353, 427, 499, 570, 642][i], 159, 69, 'sbw-blist'));
-    b.tpl = cov(b, 1092, 330, 300, 20, '#0c192d', 13, '#cfd8ee', 'sbw-left'); b.tpv = cov(b, 1092, 354, 260, 40, '#0c192d', 32, '#ffd257', 'sbw-left'); b.tpv.style.fontWeight = '800';
-    b.rcm = cov(b, 1300, 368, 200, 22, '#0c192d', 13, '#6ef294'); b.rcm.style.justifyContent = 'flex-end';
-    b.dep = cov(b, 1030, 420, 250, 24, '#060a19', 16, '#ffffff', 'sbw-left');
-    b.tiles = [1032, 1090, 1149, 1208, 1267, 1330, 1386, 1442].map((x, i) => cv(b, x, 452, 54, i < 5 ? 122 : 86, 'sbw-btile'));
-    b.chal = cov(b, 1180, 618, 290, 40, 'linear-gradient(#ffc13a,#f39a12)', 25, '#2a1000'); b.chal.style.fontWeight = '900';
-    b.mech = cv(b, 1052, 722, 450, 128, 'sbw-mech');
+    // The artwork says "Deploy up to 10 ninjas"; the hunt team is the 5 strongest rested heroes.
+    b.prep = artMatch(b, cov(b, 1030, 258, 450, 46, '#060a19', 16, '#e8ecf8', 'sbw-left sbw-wrap'), 1490);
+    b.prep.textContent = 'Your 5 strongest rested deployed heroes fight. Their attacks, jutsu and chakra are used in the battle.';
+    b.tpl = artMatch(b, cov(b, 1092, 330, 300, 20, '#0c192d', 13, '#cfd8ee', 'sbw-left'), 1270); b.tpv = artMatch(b, cov(b, 1092, 354, 240, 40, '#0c192d', 32, '#ffd257', 'sbw-left'), 1270); b.tpv.style.fontWeight = '800';
+    b.rcm = artMatch(b, cov(b, 1300, 368, 190, 22, '#0c192d', 13, '#6ef294'), 1322); b.rcm.style.justifyContent = 'flex-end';
+    b.dep = artMatch(b, cov(b, 1030, 420, 250, 24, '#060a19', 16, '#ffffff', 'sbw-left'), 1300);
+    b.tiles = [1032, 1090, 1149, 1208, 1267].map(x => cv(b, x, 452, 54, 122, 'sbw-btile'));
+    // The artwork's three extra "+" slots: a hunt takes at most five heroes.
+    b.cap = cv(b, 1328, 452, 170, 88, 'sbw-bcap'); b.cap.innerHTML = '<b>5-hero team</b><span>Strongest rested heroes fight</span>';
+    // Inside the CHALLENGE button's own artwork slice, so it pulses with the button.
+    const chArt = $('.hs[data-sbwid="ch"] > .sl', b.st);
+    b.chal = cov(b, 1186 - 1032, 618 - 605, 200, 40, 'linear-gradient(#ffc13a,#f39a12)', 25, '#2a1000'); b.chal.style.fontWeight = '900';
+    if (chArt) { chArt.append(b.chal); artMatch(b, b.chal, 1392, 605); } else { place(b.chal, 1186, 618); artMatch(b, b.chal, 1392); }
+    // Four single-line rows beside the artwork's four mechanic icons; no emoji duplicates.
+    b.mech = [728, 758, 787, 817].map(y => artMatch(b, cov(b, 1062, y, 436, 26, '#04050f', 15, '#e1e6f7', 'sbw-left sbw-mechrow'), 1500));
+    [['90 seconds · 1 chakra per projectile · Adventure pauses'], ['Shockwaves drain chakra every 8 seconds'], ['Below 35% HP it enrages: waves every 5 s drain 3 chakra'], ['Elite and Legend heroes show an ultimate every 8th volley']].forEach(([t], i) => setText(b.mech[i], t));
     b.rw = [1, 2, 3, 4, 5, 6, 7].map(i => { const h = b.s.hs.find(x => x.id === 'rw' + i); const e = cv(b, h.r[0], h.r[1], h.r[2] - h.r[0], h.r[3] - h.r[1], 'sbw-soon'); e.textContent = 'Not yet'; return e; });
-    b.rw0 = cov(b, 52, 838, 90, 18, '#2a1a05', 12, '#ffd257');
-    b.ranks = cv(b, 32, 920, 960, 82, 'sbw-soonpanel'); b.ranks.innerHTML = '<b>Daily rankings are not available yet</b><span>Rankings need a shared leaderboard service.</span>';
+    b.rw0 = artMatch(b, cov(b, 56, 834, 82, 22, '#2a1a05', 13, '#ffd257'), 136);
+    // A garbled baked label sits just below the Legend Fragment tile.
+    artMatch(b, cov(b, 160, 856, 98, 14, '#0a0f20', 10, '#0a0f20'), 150);
+    b.ranks = cv(b, 32, 930, 960, 72, 'sbw-soonpanel'); b.ranks.innerHTML = '<b>Daily rankings are not available yet</b><span>Rankings need a shared leaderboard service.</span>';
     b.recp = cv(b, 1018, 930, 490, 72, 'sbw-recpanel');
   };
   function bossInfo() { const t = ((document.querySelector('#p8') || {}).innerText || ''); return { hunt: num(t, /HUNT\s*(\d+)/), name: (t.match(/HUNT\s*\d+\s*\n\s*([^\n]+)/) || [, ''])[1].trim(), status: (() => { const L = t.split('\n').map(x => x.trim()).filter(Boolean), i = L.findIndex(x => /^HUNT\s*\d+$/i.test(x)); return i >= 0 && L[i + 2] && L[i + 2].length < 24 ? L[i + 2] : ''; })(), hp: (t.match(/([\d,]+)\s*\/\s*([\d,]+)\s*HP/) || []), secs: num(t, /HP\s*·\s*(\d+)s/), dmg: num(t, /Damage dealt:\s*([\d,]+)/), reward: num(t, /FIRST-CLEAR REWARD\s*\n?\s*([\d,]+)\s*Ryo/i), chal: (t.match(/CHALLENGE\s*·\s*\d+/) || ['CHALLENGE'])[0], mech: (t.match(/Shockwaves[^\n]*/) || [''])[0] }; }
@@ -742,11 +793,12 @@
     if (b.live.btimer) { b.live.btimer.hidden = false; setText(b.live.btimer, `${x.secs || 90}s`); }
     const lsig = hunt + x.name; if (lsig !== b.lsig) { b.lsig = lsig; b.list.forEach((e, i) => { const g = (cur + i) % GUARD.length; e.classList.toggle('on', i === 0); e.classList.toggle('lock', i > 0); e.innerHTML = `<b>${esc(GUARD[g].split(' · ')[0])}</b><span>${i === 0 ? 'Hunt ' + hunt : 'Hunt ' + (hunt + i)}</span>`; }); }
     setText(b.tpl, 'NEXT FIRST-CLEAR REWARD'); setText(b.tpv, `${x.reward || '—'} Ryo`); setText(b.rcm, 'Every 5th hunt: + Chunin hero'); setText(b.rw0, x.reward ? x.reward : '—');
-    let team = []; try { team = BattleRoster.list().filter(h => h.on); } catch { team = deployed(); }
-    setText(b.dep, `Deployed heroes (${team.length}/10)`);
+    // The same choice V2.startBoss makes: the 5 strongest rested deployed heroes.
+    let team = []; try { team = BattleRoster.list().filter(h => h.on && h.en >= 1).sort((p, q) => q.pw - p.pw).slice(0, 5); } catch { team = deployed().slice(0, 5); }
+    setText(b.dep, `Hunt team (${team.length}/5)`);
     b.tiles.forEach((e, i) => { const h = team[i]; e.classList.toggle('empty', !h); e.style.setProperty('--rc', h ? RCOL[h.r] : '#2a3a6a'); const k = h ? h.id + ',' + h.lv : 'x'; if (e.dataset.k !== k) { e.dataset.k = k; e.innerHTML = h ? `<canvas width="53" height="70"></canvas><span>Lv. ${h.lv}</span><small>${esc(RNAME[h.r])}</small>` : '<b>+</b><small>Empty</small>'; } if (h) drawHero($('canvas', e), h, 1, now, 2); });
     setText(b.chal, x.chal.toUpperCase());
-    const ms = x.mech + cl; if (ms !== b.ms) { b.ms = ms; b.mech.innerHTML = `<p>⏱ 90 seconds · 1 chakra per projectile · Adventure pauses during the hunt.</p><p>⚡ ${esc(x.mech || 'Shockwaves drain chakra every 8 seconds.')}</p><p>🔥 Below 35% HP the guardian enrages: waves every 5 seconds drain 3 chakra.</p>`; b.recp.innerHTML = `<span>Highest damage<b>—</b></span><span>Best rank<b>—</b></span><span>Hunts cleared<b>${cl}</b></span>`; }
+    if (cl !== b.ms) { b.ms = cl; b.recp.innerHTML = `<span>Highest damage<b>—</b></span><span>Best rank<b>—</b></span><span>Hunts cleared<b>${cl}</b></span>`; }
   };
   MIRROR['boss-hunt'] = b => mirror(b.arena, document.getElementById('bossHuntMap'));
   MODS['boss-hunt'] = {

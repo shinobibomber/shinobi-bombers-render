@@ -108,6 +108,14 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 Summon History, Boss Hunt (owner request): Summon History on the Summon screen opens
+  a panel of summoned heroes per batch from the server purchases the client already has (fused or
+  sold heroes show a placeholder; pending/refunded orders are labelled). Boss Hunt fights with the
+  5 strongest rested deployed heroes (`bossTeamPatches` in apply-gameplay-options.cjs, reversed by
+  preservation). Its overlay uses art-sampled covers (`artMatch`), four single-line mechanics rows,
+  opaque reward/ranking panels and a 5-hero team panel; `.hs>.sl` no longer uses will-change.
+  New suite: boss-summon.cjs.
+
 - 2026-11-03 Adventure edges and fill (owner request): `MapDesign.blocked` treats the outermost
   columns (x 0 and W-1) as solid on every map, since they lie on the artwork's side walls, fences
   or trees; heroes and enemies no longer stand on walls. The Adventure and Boss Hunt mirrors copy

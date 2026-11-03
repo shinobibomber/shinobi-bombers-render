@@ -156,6 +156,23 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-dtog.on{background:#17a34a;border-color:#4ef08a;color:#fff}
 #sbwLayer .sbw-dtl{position:absolute;z-index:12;display:flex;align-items:center;justify-content:center;border-radius:6px;background:linear-gradient(#ffd25a,#f2a01a);color:#2a1406;font:700 17px Rajdhani,sans-serif;pointer-events:none}
 .sbw-dialog .sbw-small{font-size:13px;color:#a99ad8}
+/* Summon History: summoned heroes per batch, newest first. */
+.sbw-dialog.sbw-history{width:min(860px,94vw);max-width:none;max-height:86vh;overflow:auto}
+.sbw-history .sbw-sh-sum{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:14px}
+.sbw-history .sbw-sh-list{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.sbw-history .sbw-sh-batch{padding:10px 12px;border:1px solid #3a2a78;border-radius:10px;background:#0d0828}
+.sbw-history .sbw-sh-batch header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:8px}
+.sbw-history .sbw-sh-batch header b{font:800 18px Rajdhani,sans-serif;color:#ffcf4a}
+.sbw-history .sbw-sh-batch header span{font-size:14px;color:#b9b0e0}
+.sbw-history .sbw-sh-batch header em{font-style:normal;font-size:14px;color:#ffb38a}
+.sbw-history .sbw-sh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.sbw-history .sbw-sh-hero{display:grid;grid-template-columns:56px 1fr;grid-template-rows:auto auto auto;column-gap:8px;align-items:center;padding:6px 8px;border:2px solid var(--rc);border-radius:8px;background:linear-gradient(160deg,color-mix(in srgb,var(--rc) 22%,#120a30),#0a0620)}
+.sbw-history .sbw-sh-hero canvas{grid-row:1/4;width:56px;height:56px;border-radius:6px;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--rc) 45%,#120a30),#0a0620 72%)}
+.sbw-history .sbw-sh-hero.gone canvas{background:radial-gradient(circle,color-mix(in srgb,var(--rc) 55%,transparent) 0 30%,#0a0620 72%)}
+.sbw-history .sbw-sh-hero b{font:800 15px Rajdhani,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbw-history .sbw-sh-hero small{font:700 12px Rajdhani,sans-serif;color:var(--rc)}
+.sbw-history .sbw-sh-hero em{font:600 12px Rajdhani,sans-serif;font-style:normal;color:#b9b0e0;white-space:nowrap}
+.sbw-history .sbw-sh-hero.gone{opacity:.7}
 /* ---------- Phase 3: Heroes, Adventure, Market, Boss Hunt, Guild/Chat previews ---------- */
 #sbwLayer .sbw-cv{position:absolute;z-index:12;font:600 14px Rajdhani,sans-serif;color:#f1ecff}
 #sbwLayer .sbw-mirror{position:absolute;z-index:6;pointer-events:none;object-fit:cover;background:radial-gradient(ellipse at center,#14103a,#05030f 75%);border-radius:6px}
@@ -223,7 +240,7 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-md h3{margin:0 0 10px;font:800 24px Rajdhani,sans-serif;color:#fff}
 #sbwLayer .sbw-md p{color:#cfd8ee;font-size:16px}
 #sbwLayer .sbw-note{margin-top:18px;padding:12px;border:1px solid #6a4aff;border-radius:8px;background:#0d0830;color:#d9d0ff;font:600 14px Rajdhani,sans-serif}
-#sbwLayer .sbw-soon{display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;border-radius:8px;background:rgba(4,4,16,.68);color:#cfd8ee;font:700 11px Rajdhani,sans-serif;pointer-events:none}
+#sbwLayer .sbw-soon{display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;border-radius:8px;background:linear-gradient(rgba(4,4,16,.6) 0 72%,#0b0f22 72%);color:#cfd8ee;font:700 12px Rajdhani,sans-serif;pointer-events:none}
 /* Boss Hunt */
 #sbwLayer .sbw-hp{border-radius:8px;background:#2a0d18;overflow:hidden}
 #sbwLayer .sbw-hp i{display:block;height:100%;background:linear-gradient(90deg,#ff3b5c,#ff8a4c)}
@@ -239,9 +256,12 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-btile span{font:700 11px Rajdhani,sans-serif;color:#fff}
 #sbwLayer .sbw-btile.empty{border-color:#3a4a6e;background:#0b1226}
 #sbwLayer .sbw-btile.empty b{font-size:24px;color:#9aa6c8}
-#sbwLayer .sbw-mech{padding:4px 6px;background:#04050f}
-#sbwLayer .sbw-mech p{margin:0 0 6px;font:600 14px Rajdhani,sans-serif;color:#e1e6f7}
-#sbwLayer .sbw-soonpanel{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;background:rgba(3,8,20,.92);text-align:center}
+#sbwLayer .sbw-soonpanel{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;background:#060b18;text-align:center}
+#sbwLayer .sbw-cover.sbw-wrap{white-space:normal;line-height:1.3}
+#sbwLayer .sbw-mechrow{font-weight:600}
+#sbwLayer .sbw-bcap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:2px dashed #3a4a6e;border-radius:6px;background:#0b1226;text-align:center}
+#sbwLayer .sbw-bcap b{font:800 15px Rajdhani,sans-serif;color:#ffd257}
+#sbwLayer .sbw-bcap span{font:600 11px Rajdhani,sans-serif;color:#9aa6c8;line-height:1.1}
 #sbwLayer .sbw-soonpanel b{font:800 18px Rajdhani,sans-serif;color:#fff}
 #sbwLayer .sbw-soonpanel span{font:600 13px Rajdhani,sans-serif;color:#9aa6c8}
 #sbwLayer .sbw-recpanel{display:grid;grid-template-columns:repeat(3,1fr);align-items:center;background:#0c1524;border-radius:6px;text-align:center}
@@ -252,7 +272,7 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-preview b{color:#ffd257;margin-right:6px}
 
 /* Phase 3: decorative live panels let clicks reach the screen's own hotspots underneath */
-#sbwLayer .sbw-acard,#sbwLayer .sbw-aadd,#sbwLayer .sbw-blist,#sbwLayer .sbw-btile,#sbwLayer .sbw-mech,#sbwLayer .sbw-hp,#sbwLayer .sbw-recpanel,#sbwLayer .sbw-soonpanel{pointer-events:none}
+#sbwLayer .sbw-acard,#sbwLayer .sbw-aadd,#sbwLayer .sbw-blist,#sbwLayer .sbw-btile,#sbwLayer .sbw-bcap,#sbwLayer .sbw-hp,#sbwLayer .sbw-recpanel,#sbwLayer .sbw-soonpanel{pointer-events:none}
 /* Adventure team: the game's 10-slot team in the website theme, with auras for deployed Elite / Legend heroes */
 #sbwLayer .sbw-ateam{display:flex;flex-direction:column;gap:8px;padding:6px 10px 8px;border:2px solid #f6a823;border-radius:12px;background:linear-gradient(180deg,rgba(26,8,48,.96),rgba(6,4,22,.97));box-shadow:0 0 18px rgba(246,168,35,.45),inset 0 0 30px rgba(139,61,255,.25)}
 #sbwLayer .sbw-at-head{display:flex;align-items:center;gap:10px;height:40px}
