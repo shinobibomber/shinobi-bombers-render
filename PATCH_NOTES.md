@@ -20,6 +20,16 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix 3)**
+
+**🛠️ Fixes**
+• **Dojo Services** — your Dojo tier, chakra recovery and Sensei status now always match your account, and update live. A rented Sensei shows the time left, and the card switches off the moment the rental ends.
+• Cleaned up the Dojo Services cards: no more leftover letters or dark boxes behind the numbers.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix 2)**
 
 **🛠️ Fixes**

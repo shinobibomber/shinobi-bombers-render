@@ -108,6 +108,12 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 Dojo Services (owner request): `dojoState()` in website-design.js reads tier and
+  Sensei (permanent, rental time left, expiry, rotation, return %) straight from the server profile,
+  so expired rentals no longer show as hired; the Upgrades and Sensei pages use it too. The hub's
+  live values sit in art-measured slots with art-sampled backgrounds; the old off-page covers from
+  the original combined layout are gone. New suite: dojo-services.cjs.
+
 - 2026-11-03 Adventure kill credit (owner request): online Adventure now pays the kills the player's
   battle reports instead of the server's separate kill sequence (which credited about half of what
   the battle showed). `gameplay-options/options.js` (`KillReport`) sends cumulative per-session kill

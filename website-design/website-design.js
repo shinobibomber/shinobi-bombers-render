@@ -371,44 +371,38 @@
   /* ---------- Dojo & Sensei (website screen ↔ DojoServices / TokenCheckout / game Sensei controls) ---------- */
   const DY = [160, 206, 251, 299, 348, 399, 450], ROMAN = ['–', 'I', 'II', 'III', 'IV', 'V', 'VI'];
   const DOJO_NAMES = ['Training Grounds', 'Apprentice Dojo', 'Shinobi Dojo', 'Veteran Dojo', 'Master Dojo', 'Grandmaster Dojo', 'Legendary Dojo'];
-  function senseiHired() { return !!(gs() && gs().butler); }
+  // Dojo and Sensei state straight from the signed-in server profile (the game's own copy updates
+  // only on profile changes, so a rental expiring mid-session kept showing as hired). Practice
+  // play without a wallet falls back to the local save.
+  function dojoState() {
+    const l = ledger(), p = l.authenticated ? l.profile : null, g = gs() || {}, v2 = g.v2 || {};
+    if (p) {
+      const until = Number(p.senseiRentalUntil || 0), permanent = p.sensei === true, left = permanent ? 0 : Math.max(0, until - Date.now());
+      return { tier: Math.max(0, Math.min(6, Number(p.dojo) || 0)), hired: permanent || left > 0, rental: !permanent && left > 0 ? until : 0, left, on: p.senseiEnabled !== false, pct: Number(p.senseiReturnPercent) || 90 };
+    }
+    return { tier: Math.max(0, Math.min(6, Number(g.dojo) || 0)), hired: !!g.butler, rental: 0, left: 0, on: v2.butlerEnabled !== false, pct: Number(v2.senseiReturnPercent) || 90 };
+  }
+  function senseiHired() { return dojoState().hired; }
+  const ROMAN_TIER = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI'];
+  function timeLeft(ms) { const h = Math.floor(ms / 3600000); return h >= 48 ? Math.floor(h / 24) + 'd left' : h >= 1 ? h + 'h left' : Math.max(1, Math.ceil(ms / 60000)) + 'm left'; }
+  // Dojo Services (the hub page): each live value covers the artwork's printed example exactly, with
+  // a background sampled from the artwork, so no old letters or flat boxes show around it.
   INIT.dojo = b => {
-    b.chips = DY.map(y => place(mk('div', 'sbw-dchip', b.st), 1552, y - 11, 64, 22));
-    const cover = (x, y, w, h, bg, fs, color, cls = '') => { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; };
-    b.rp = [748, 828, 908, 986, 1066].map((x, i) => place(mk('div', 'sbw-drp', b.st, (50 + i * 10) + '%'), x, 716, 70, 28));
-    b.hired = cover(628, 836, 92, 32, '#171822', 24, '#9aa6c8');
-    b.tog = place(mk('div', 'sbw-dtog', b.st), 1080, 808, 50, 18);
-    b.toff = place(mk('div', 'sbw-dtl', b.st), 1022, 838, 120, 30);
-    // current-tier facts on the Dojo cards and Sensei status (the artwork shows example values)
-    b.cards = [[70, 396, 46, 15, 65, 414, 168, 22, 102, 451, 42, 16, 354, 451, 28, 16, '#060606', '#050917', '#0c101e', '#0d1122', 13, 21],
-      [900, 302, 46, 14, 892, 322, 166, 21, 927, 366, 42, 15, 1131, 366, 36, 15, '#030507', '#000916', '#0f1326', '#0f1326', 12, 20]].map(c => ({
-      tier: cover(c[0], c[1], c[2], c[3], c[16], c[20], '#ffe08a'), name: cover(c[4], c[5], c[6], c[7], c[17], c[21], '#ffd84a', 'sbw-left'),
-      rate: cover(c[8], c[9], c[10], c[11], c[18], c[20] + 2, '#ffd84a', 'sbw-left'), lvl: cover(c[12], c[13], c[14], c[15], c[19], c[20] + 2, '#ffd84a', 'sbw-left') }));
-    b.cards.forEach(c => { c.name.style.fontWeight = '800'; c.name.style.letterSpacing = '.5px'; });
-    b.rot = cover(509, 507, 42, 15, '#031b25', 15, '#3ee07a', 'sbw-left');
-    b.inService = cover(930, 765, 198, 13, '#011827', 11, '#ffffff'); b.inService.style.justifyContent = 'flex-end';
-    b.hiredN = cover(1104, 788, 24, 12, '#011729', 11, '#ffffff'); b.hiredN.style.justifyContent = 'flex-end';
-    b.session = cover(1560, 672, 74, 12, '#041420', 11, '#ffffff'); b.session.style.justifyContent = 'flex-end';
-    b.last = cover(1330, 702, 74, 12, '#011729', 11, '#9aa6c8'); b.last.style.justifyContent = 'flex-end';
-    b.rotated = cover(1580, 702, 54, 12, '#011825', 11, '#9aa6c8'); b.rotated.style.justifyContent = 'flex-end';
-    b.status = cover(1270, 731, 134, 13, '#011729', 11, '#9aa6c8'); b.status.style.justifyContent = 'flex-end';
+    const fixed = (x, y, w, h, sx, cls = '') => { const e = place(mk('span', 'sbw-cover sbw-dsvc ' + cls, b.st), x, y, w, h); e.dataset.mapped = '1'; artMatch(b, e, sx); return e; };
+    b.pill = fixed(104, 657, 128, 46, 240, 'sbw-dpill'); mk('b', '', b.pill);
+    b.name = fixed(108, 704, 540, 38, 660, 'sbw-dname sbw-left');
+    b.rate = fixed(178, 766, 92, 34, 300, 'sbw-dval sbw-left');
+    b.lvl = fixed(630, 766, 70, 34, 702, 'sbw-dval sbw-left');
+    b.rot = fixed(914, 870, 112, 30, 1024, 'sbw-drot sbw-left');
+    for (const e of [b.name, b.rate, b.lvl, b.rot]) e.dataset.fs = { 'sbw-dname': 32, 'sbw-dval': 26, 'sbw-drot': 20 }[[...e.classList].find(c => /^sbw-d(name|val|rot)$/.test(c))];
   };
   PAINT.dojo = b => {
-    const tier = Number((gs() && gs().dojo) || 0), next = tier + 1, prices = (window.GameBalance && GameBalance.dojoPrices) || [];
-    if (b.live.upcost) { b.live.upcost.hidden = false; setText(b.live.upcost, next <= 6 ? `UPGRADE  -  ${fmt(prices[next])} Ryo` : 'MAX TIER REACHED'); }
-    b.chips.forEach((c, i) => { const st = i < tier ? ['Owned', 'own'] : i === tier ? ['Active', 'act'] : i === next ? ['Next', 'nxt'] : ['Locked', 'lck']; c.textContent = st[0]; c.className = 'sbw-dchip ' + st[1]; });
-    const hired = senseiHired(), v2 = (gs() && gs().v2) || {}, pct = Number(v2.senseiReturnPercent || 90), on = v2.butlerEnabled !== false;
-    b.rp.forEach((e, i) => e.classList.toggle('on', 50 + i * 10 === pct));
-    setText(b.hired, hired ? 'HIRED' : 'NOT HIRED'); b.hired.style.color = hired ? '#ffffff' : '#9aa6c8';
-    b.tog.textContent = hired && on ? 'ON' : 'OFF'; b.tog.classList.toggle('on', hired && on);
-    b.toff.textContent = !hired ? 'HIRE SENSEI' : on ? 'TURN OFF' : 'TURN ON';
-    const name = DOJO_NAMES[tier] || DOJO_NAMES[0], rate = ((window.GameBalance && GameBalance.dojoRecovery) || [])[tier];
-    b.cards.forEach(c => { setText(c.tier, 'TIER ' + ROMAN[tier].replace('–', '0')); setText(c.name, name.toUpperCase()); setText(c.rate, (rate || 1) + '/min'); setText(c.lvl, tier + '/6'); });
-    setText(b.rot, hired ? (on ? 'ON' : 'OFF') : 'NOT HIRED'); b.rot.style.color = hired && on ? '#3ee07a' : '#9aa6c8';
-    setText(b.inService, `${name} (Tier ${ROMAN[tier].replace('–', '0')})`); setText(b.hiredN, hired ? '1' : '0');
-    setText(b.session, document.hidden ? 'Offline' : 'Online now'); setText(b.last, '—'); setText(b.rotated, '—');
-    setText(b.status, !hired ? 'Sensei not hired' : on ? 'Ready when offline' : 'Rotation off');
-    const up = $('.hs[data-sbwid="upg"]', b.st); if (up) up.classList.toggle('dim', next > 6);
+    const d = dojoState(), name = DOJO_NAMES[d.tier] || DOJO_NAMES[0], rate = ((window.GameBalance && GameBalance.dojoRecovery) || [])[d.tier] || 1;
+    setText(b.pill.firstChild, 'TIER ' + ROMAN_TIER[d.tier]); setText(b.name, name.toUpperCase());
+    setText(b.rate, rate + '/min'); setText(b.lvl, d.tier + '/6');
+    const rot = !d.hired ? 'NOT HIRED' : !d.on ? 'OFF' : d.rental ? 'ON · ' + timeLeft(d.left) : 'ON';
+    setText(b.rot, rot); b.rot.classList.toggle('on', d.hired && d.on);
+    b.rot.title = !d.hired ? 'Hire or rent a Sensei to rotate heroes and earn offline.' : d.rental ? 'Rental active until ' + new Date(d.rental).toLocaleString() : d.on ? 'Permanent Sensei, rotation on' : 'Sensei hired, rotation turned off';
   };
   /* Dojo Upgrades and Sensei pages (your reference designs; live values and real controls drawn on top) */
   function dojoBack(b, title) {
@@ -428,7 +422,7 @@
     b.up = place(mk('button', 'sbw-dup', b.st), 78, 760, 480, 70); b.up.type = 'button'; b.up.onclick = () => MODS.dojo.upgrade();
   };
   PAINT['dojo-upg'] = b => {
-    const g = gs() || {}, tier = Number(g.dojo || 0), next = tier + 1, prices = (window.GameBalance && GameBalance.dojoPrices) || [], rec = (window.GameBalance && GameBalance.dojoRecovery) || [];
+    const tier = dojoState().tier, next = tier + 1, prices = (window.GameBalance && GameBalance.dojoPrices) || [], rec = (window.GameBalance && GameBalance.dojoRecovery) || [];
     setText(b.tier, 'TIER ' + (ROMAN[tier] === '–' ? '0' : ROMAN[tier])); setText(b.name, (DOJO_NAMES[tier] || '').toUpperCase());
     b.rate.innerHTML = `<b>${rec[tier] || 1}/min</b>`; b.lvl.innerHTML = `<b>${tier}/6</b>`;
     b.rowhl.style.top = (DROWY[tier] - 41) + 'px';
@@ -447,8 +441,7 @@
     b.btn = place(mk('button', 'sbw-dturn', b.st), 1346, 700, 222, 76); b.btn.type = 'button'; b.btn.onclick = () => MODS.dojo.hire();
   };
   PAINT['dojo-sen'] = b => {
-    const g = gs() || {}, v2 = g.v2 || {}, hired = senseiHired(), on = v2.butlerEnabled !== false, pct = Number(v2.senseiReturnPercent || 90), tier = Number(g.dojo || 0);
-    let rental = 0; try { const p = ledger().profile || {}; rental = !p.sensei && Number(p.senseiRentalUntil || 0); } catch {}
+    const { hired, on, pct, tier, rental } = dojoState();
     if (document.activeElement !== b.sel && b.sel.value !== String(pct)) b.sel.value = String(pct); b.sel.disabled = !hired;
     setText(b.svc, `${DOJO_NAMES[tier]} ✓`); setText(b.cnt, hired ? '1' : '0');
     b.tg.classList.toggle('on', hired && on); b.tg.setAttribute('aria-checked', String(hired && on)); b.tg.innerHTML = `<span>${hired && on ? 'ON' : 'OFF'}</span><i></i>`;
@@ -468,8 +461,8 @@
   }
   MODS.dojo = {
     focus: a => { dojoView = a === 'sen' ? 'dojo-sen' : a === 'upg' ? 'dojo-upg' : 'dojo'; if (window.DojoServices) DojoServices.open(a === 'sen' ? 'sensei' : a === 'upg' ? 'dojo' : 'hub'); sync(); },
-    tier: a => { const i = +a, tier = Number(gs().dojo || 0), prices = GameBalance.dojoPrices, rec = GameBalance.dojoRecovery; if (window.DojoServices) { DojoServices.open('dojo'); DojoServices.selectTier(i); } notice(DOJO_NAMES[i], `Recovery ${rec[i]} chakra per minute for every resting hero. Status: ${i < tier ? 'Owned' : i === tier ? 'Active' : i === tier + 1 ? 'Next – use Upgrade' : 'Locked'}. Price: ${prices[i] ? fmt(prices[i]) + ' Ryo' : 'Free'}.`); },
-    upgrade: () => { const tier = Number(gs().dojo || 0); if (tier >= 6) return toast('Your dojo is at the highest tier.'); DojoServices.open('dojo'); DojoServices.selectTier(tier + 1); if (!pressOnclick('#p4', 'DojoServices.upgrade()')) DojoServices.upgrade(); },
+    tier: a => { const i = +a, tier = dojoState().tier, prices = GameBalance.dojoPrices, rec = GameBalance.dojoRecovery; if (window.DojoServices) { DojoServices.open('dojo'); DojoServices.selectTier(i); } notice(DOJO_NAMES[i], `Recovery ${rec[i]} chakra per minute for every resting hero. Status: ${i < tier ? 'Owned' : i === tier ? 'Active' : i === tier + 1 ? 'Next – use Upgrade' : 'Locked'}. Price: ${prices[i] ? fmt(prices[i]) + ' Ryo' : 'Free'}.`); },
+    upgrade: () => { const tier = dojoState().tier; if (tier >= 6) return toast('Your dojo is at the highest tier.'); DojoServices.open('dojo'); DojoServices.selectTier(tier + 1); if (!pressOnclick('#p4', 'DojoServices.upgrade()')) DojoServices.upgrade(); },
     hire: () => { if (!senseiHired()) return hireSensei(); senseiPane(); if (!pressOnclick('#p4', 'V2.toggleButler()') && typeof V2 !== 'undefined') V2.toggleButler(); },
     ret: a => { if (!senseiHired()) return hireSensei(); const pct = 50 + 10 * +a; senseiPane(); setTimeout(() => { const sel = document.getElementById('senseiReturnPercent'); if (!sel || sel.disabled) return toast('Sensei settings are saving – try again in a moment.'); if (+sel.value === pct) return toast('Sensei already returns heroes at ' + pct + '% chakra.'); sel.value = String(pct); sel.dispatchEvent(new Event('change', { bubbles: true })); }, 80); },
     skin: () => toast('Sensei skins are not available yet.')
