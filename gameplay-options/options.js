@@ -10,6 +10,11 @@
  function syncSoon(){if(tally.timer||!RyoPayments.state.authenticated||!window.AdventureChest)return;tally.timer=setTimeout(()=>{tally.timer=0;tally.last=performance.now();AdventureChest.refresh()},Math.max(600,tally.last+3000-performance.now()))}
  addEventListener('shinobi-enemy-defeated',event=>{const kind=event.detail?.kind;if(!(kind>=2&&kind<=5)||!RyoPayments.state.authenticated)return;own();tally.totals[(kind-2)*2+(event.detail.bonus?1:0)]++;tally.seen++;syncSoon()});
  addEventListener('shinobi-chest',()=>{if(!window.AdventureChest?.snapshot.busy&&tally.seen>tally.sent)syncSoon()});
+ // Leaving or hiding the game sends the last kills at once; keepalive lets the request finish while
+ // the page unloads, so kills from the final seconds are still credited.
+ function flush(closing){if(!RyoPayments.state.authenticated||tally.seen===tally.sent)return;clearTimeout(tally.timer);tally.timer=0;window.KillReport.closing=closing;try{RyoPayments.adventure(false,false).catch(()=>{})}finally{window.KillReport.closing=false}}
+ addEventListener('pagehide',()=>flush(true));
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)flush(true)});
  const outcomeDialog=document.createElement('dialog');outcomeDialog.id='fusionOutcomeDialog';outcomeDialog.setAttribute('aria-labelledby','fusionOutcomeTitle');document.body.append(outcomeDialog);
  outcomeDialog.innerHTML='<h2 id="fusionOutcomeTitle">Fusion result</h2><p class="fusion-outcome-copy"></p><button class="b">Continue</button>';
  function finishOutcome(){if(S.v2.fusionOutcome){S.v2.fusionOutcome.seen=true;save()}outcomeDialog.close()}

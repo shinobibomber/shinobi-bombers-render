@@ -32,7 +32,9 @@ const rewardPatches=[
  // Announce each defeat so the website can fetch the server-verified Chest right away.
  ["c.k=0;S.ryo=GameBalance.money(S.ryo+reward);","c.k=0;S.ryo=GameBalance.money(S.ryo+reward);dispatchEvent(new CustomEvent('shinobi-enemy-defeated',{detail:{kind,reward,bonus:!!(h&&has(h,0))}}));"],
  // Every Chest sync carries the battle's cumulative kill totals (gameplay-options/options.js).
- ["const data=await api(claim?'claim-adventure':'adventure',{active});","const data=await api(claim?'claim-adventure':'adventure',{active,...(window.KillReport?.payload()||{})});"]
+ ["const data=await api(claim?'claim-adventure':'adventure',{active});","const data=await api(claim?'claim-adventure':'adventure',{active,...(window.KillReport?.payload()||{})});"],
+ ["cache:'no-store',signal:controller.signal}","cache:'no-store',keepalive:!!window.KillReport?.closing,signal:controller.signal}"],
+ ["try{const saved=JSON.parse(sessionStorage.getItem(key));if(saved&&Number.isFinite(saved.gained)&&saved.gained>=0&&(saved.last===null||Number.isFinite(saved.last)))session=saved}catch(e){}","try{sessionStorage.removeItem(key)}catch(e){}"]
 ];
 function replaceOne(text,before,after,label){if(text.includes(after))return text;const count=text.split(before).length-1;if(count!==1)throw Error('Gameplay options patch mismatch: '+label+' ('+count+')');return text.replace(before,()=>after)}
 function applyGameplayOptions(appDir=path.join(__dirname,'app')){
@@ -53,7 +55,7 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
  patch('server/adventure.cjs',s=>{
   // Online Adventure pays the kills the player's battle reports (gameplay-options.cjs creditKills).
   s=replaceOne(s,'function advance(data,profile,now,active,ratePercent=50){','function advance(data,profile,now,active,ratePercent=50,report=null){','kill report parameter');
-  s=replaceOne(s,'const online=active&&d.active&&gap<=45000;',"const tally=require('./gameplay-options.cjs').killReport(report),reporting=!!tally||(Number(d.lastReport)>0&&now-Number(d.lastReport)<120000),online=active&&d.active&&gap<=(tally?120000:45000);let budget=0;",'reported online window');
+  s=replaceOne(s,'const online=active&&d.active&&gap<=45000;',"const tally=require('./gameplay-options.cjs').killReport(report),reporting=!!tally||(Number(d.lastReport)>0&&now-Number(d.lastReport)<120000),online=(active||!!tally)&&d.active&&gap<=(tally?120000:45000);let budget=0;",'reported online window');
   s=replaceOne(s,'  while(damage>=d.hp){','  if(reporting&&online){budget+=damage;return}\n  while(damage>=d.hp){','damage budget');
   s=replaceOne(s,' d.team=heroes.map(h=>h.tokenId);d.last=now;',"if(online&&tally)require('./gameplay-options.cjs').creditKills(d,tally,budget,rate,now);else if(online&&reporting)require('./gameplay-options.cjs').bankKills(d,budget);\n d.team=heroes.map(h=>h.tokenId);d.last=now;",'credit reported kills');
   s=replaceOne(s,'async function adventure(store,wallet,{active=false,claim=false},custodyTokens){','async function adventure(store,wallet,{active=false,claim=false,report=null},custodyTokens){','adventure report');

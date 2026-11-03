@@ -108,6 +108,12 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 closing flush and per-visit Session gained (owner request): `KillReport` sends unsent
+  kill totals on pagehide / tab hide with `fetch` keepalive (a `rewardPatches` hook on the game's
+  `api`), and the server credits a report covering the online seconds since the last sync even when
+  the closing call is inactive. Session gained no longer restores from sessionStorage, so it starts
+  at 0 on every game load. Covered in live-rewards.cjs.
+
 - 2026-11-03 Dojo Services (owner request): `dojoState()` in website-design.js reads tier and
   Sensei (permanent, rental time left, expiry, rotation, return %) straight from the server profile,
   so expired rentals no longer show as hired; the Upgrades and Sensei pages use it too. The hub's

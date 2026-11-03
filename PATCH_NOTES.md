@@ -20,6 +20,16 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix 5)**
+
+**🛠️ Fixes**
+• **No missed rewards** — kills in your last seconds before closing or switching away from the game are now sent straight to your Chest.
+• **Session Gained** — now starts at 0 every time you open the game, so it shows exactly what you earned this visit.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix 4)**
 
 **🛠️ Fixes**

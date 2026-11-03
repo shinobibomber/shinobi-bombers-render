@@ -91,7 +91,7 @@
     },
     {
       "path": "gameplay-options/options.js",
-      "sha256": "39b8e9090bd0f6b87bb62d6229891e6f3db0c3fa593e6a3bdc60e35a037a7b13"
+      "sha256": "b9b5ad23e0e830ae0df38396be8a84db59783dc01058c50254c65984a1cb745a"
     },
     {
       "path": "gameplay-options/server.cjs",
@@ -259,7 +259,7 @@
     },
     {
       "path": "app/server/adventure.cjs",
-      "sha256": "1be10f9ee0cacdb8f69fa93bedd571770a6fddacb1aa1c1e20c26a603b27b1cb"
+      "sha256": "c62ad810b0ba9d22b0323a39cbef05716cdc17608ec221be575490ab47d5f097"
     },
     {
       "path": "app/server/create-treasury.cjs",

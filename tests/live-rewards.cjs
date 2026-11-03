@@ -57,5 +57,33 @@ const economy = require('../app/server/economy.cjs');
     assert(Math.abs(r.chest - r.shown) < 1, `the Chest (${r.chest}) equals the rewards shown over the enemies (${r.shown})`);
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: each defeat fetches the verified Chest within seconds (throttled), the Chest and Session gained count up live, the banner reads SESSION GAINED, and the server credits every battle kill (Chest = rewards shown).');
+  // Closing the game: kills from the last seconds are sent at once (keepalive) and still credited;
+  // Session gained starts again at 0 when the game is opened again.
+  await withGame(async ({ p, f, errors, assert }) => {
+    f.holdAdventure = false; f.realAdventure = { rate: 60 };
+    const heroes = [0, 1, 2, 3, 4].map(i => ({ tokenId: 'cls-' + i, rank: i, level: 1, name: 'C ' + i, baseStats: { pw: [2, 4.5, 7.5, 10.5, 13.5][i], sp: [2, 4.5, 7.5, 10.5, 13.5][i], st: [2, 4.5, 7.5, 10.5, 13.5][i] } }));
+    f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
+    const signIn = async () => { await p.locator('#loginPhantom').click(); await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready); };
+    await signIn();
+    await p.evaluate(() => { go(0); Experience.workAll(); window.__k = 0; addEventListener('shinobi-enemy-defeated', e => { if (e.detail.kind <= 5) __k++; }); });
+    await p.waitForFunction(() => __k >= 6, null, { timeout: 90000 });
+    // Stop the scheduled sync, then close the page the moment more kills are unsent.
+    await p.waitForFunction(() => KillReport.pending > 0, null, { timeout: 30000 });
+    const atClose = await p.evaluate(() => { Experience.restAll(); return { kills: __k, gained: SessionRyo.gained }; });
+    const before = f.requests.filter(r => r.action === 'adventure').length;
+    await p.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide')));
+    await p.waitForFunction(n => true, before);
+    await new Promise(r => setTimeout(r, 1500));
+    const closing = f.requests.filter(r => r.action === 'adventure').slice(before);
+    assert(closing.length >= 1 && closing.some(r => r.active === false && Array.isArray(r.killTotals)), 'leaving the game sends the final kill totals');
+    assert.equal(f.advData.reportedKills, atClose.kills, 'kills from the last seconds before closing are credited');
+    assert(atClose.gained > 0, 'Session gained counted this visit');
+    await p.reload(); await p.waitForFunction(() => window.GameLoading && !GameLoading.active);
+    await signIn();
+    await p.waitForFunction(() => AdventureChest.snapshot.chest && !AdventureChest.snapshot.busy);
+    assert.equal(await p.evaluate(() => SessionRyo.gained), 0, 'Session gained starts at 0 each time the game is opened');
+    assert(await p.evaluate(() => AdventureChest.snapshot.chest.pending) > 0, 'the Chest keeps every credited reward');
+    assert.deepEqual(errors, []);
+  });
+  console.log('PASS: each defeat fetches the verified Chest within seconds (throttled), the Chest and Session gained count up live, the banner reads SESSION GAINED, the server credits every battle kill (Chest = rewards shown), kills right before closing still count, and Session gained resets per visit.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
