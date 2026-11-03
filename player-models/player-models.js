@@ -129,6 +129,8 @@
       left = Math.round(left * a) / a; top = Math.round(top * d) / d;
     }
     context.drawImage(texture, left, top, texture.width * ratio, texture.height * ratio);
+    // Foreground aura particles sit in front of the hero (Hero Aura System layering).
+    if (window.TierAuras?.loaded) { context.imageSmoothingEnabled = true; TierAuras.drawFront(context, hero, x, y, scale); }
     context.restore();
   }
 

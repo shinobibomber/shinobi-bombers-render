@@ -43,9 +43,10 @@ const { withGame } = require('./harness.cjs');
         CanvasRenderingContext2D.prototype.drawImage = function (...args) { draws++; return oldDraw.apply(this, args); };
         try { for (let n = 0; n < 300; n++) TierAuras.animatedFrame(3 + n % 2, n * 83.333); }
         finally { CanvasRenderingContext2D.prototype.getImageData = oldRead; CanvasRenderingContext2D.prototype.drawImage = oldDraw; }
-        const low = TierAuras.animatedFrame(0, 0) === TierAuras.animatedFrame(0, 1000);
+        const low = [0, 1, 2].every(rank => TierAuras.animatedFrame(rank, 0) !== TierAuras.animatedFrame(rank, 600));
+        const fronts = [0, 1, 2, 3, 4].map(rank => hash(TierAuras.animatedFront(rank, 0)));
         Arena3D.setFx(0);
-        const disabled = [3, 4].every(rank => TierAuras.animatedFrame(rank, 200) === TierAuras.frame(rank));
+        const disabled = [0, 1, 2, 3, 4].every(rank => TierAuras.animatedFrame(rank, 200) === TierAuras.frame(rank) && TierAuras.animatedFront(rank, 200) === TierAuras.front(rank));
         // Aura colors follow rarity even when exactly the same Fire body is used.
         const body = PlayerModels.heroFrame({ id: 0, r: 0 }, 'i0');
         const elite = TierAuras.compose({ id: 0, r: 3 }, body), legend = TierAuras.compose({ id: 0, r: 4 }, body);
@@ -57,7 +58,7 @@ const { withGame } = require('./harness.cjs');
         const context = canvas.getContext('2d'); context.globalAlpha = .4;
         context.translate(7, 9); const before = context.getTransform().toString();
         ShinobiSprites.blit(context, elite, 160, 352, 8, true, .6);
-        return { checks, count, maximum: TierAuras.maxAnimationFrames, sizes, reads, draws, low, disabled, state,
+        return { checks, count, maximum: TierAuras.maxAnimationFrames, sizes, reads, draws, low, fronts, disabled, state,
           context: { alpha: context.globalAlpha, transform: context.getTransform().toString() === before }, image: sheet.toDataURL() };
       } finally { Arena3D.setFx(originalQuality); }
     });
@@ -68,17 +69,18 @@ const { withGame } = require('./harness.cjs');
         assert.equal(image.edge, 0, 'aura stays within its surface without clipped hard edges');
       }
     }
-    assert(result.count <= result.maximum && result.maximum === 48);
+    assert(result.count <= result.maximum && result.maximum === 80);
+    for (const image of result.fronts) { assert(image.visible > 200, 'every rarity has foreground particles'); assert.equal(image.edge, 0, 'particles stay inside the frame'); }
     assert.equal(result.reads, 0); assert.equal(result.draws, 0, 'warmed phases reuse surfaces without repaint');
-    assert(result.low && result.disabled);
+    assert(result.low, 'every rarity aura animates'); assert(result.disabled, 'effects off shows the still aura');
     assert.deepEqual(result.state, { eliteRank: 3, legendRank: 4, sameBody: true, model: 0 });
     assert.equal(result.context.transform, true); assert(Math.abs(result.context.alpha - .4) < 1e-6);
     await p.emulateMedia({ reducedMotion: 'reduce' });
-    assert.equal(await p.evaluate(() => [3, 4].every(rank => TierAuras.animatedFrame(rank, 200) === TierAuras.frame(rank))), true);
+    assert.equal(await p.evaluate(() => [0, 1, 2, 3, 4].every(rank => TierAuras.animatedFrame(rank, 200) === TierAuras.frame(rank))), true);
     await p.emulateMedia({ reducedMotion: 'no-preference' });
     assert.deepEqual(errors, []);
     const output = path.join(__dirname, 'out'); fs.mkdirSync(output, { recursive: true });
     fs.writeFileSync(path.join(output, 'elite-legend-aura-phases.png'), Buffer.from(result.image.split(',')[1], 'base64'));
-    console.log('PASS: animated Elite/Legend aura pixels, smooth unclipped edges, 48-frame bound, zero warm redraw/readback, native body identity and quality/reduced-motion switches.');
+    console.log('PASS: animated Elite/Legend aura pixels, smooth unclipped edges, 80-frame bound, all rarities animated with foreground particles, zero warm redraw/readback, native body identity and quality/reduced-motion switches.');
   });
 })().catch(error => { console.error(error); process.exitCode = 1; });

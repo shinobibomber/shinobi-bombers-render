@@ -143,7 +143,7 @@
     },
     {
       "path": "map-design/map-design.js",
-      "sha256": "5f6d8ccae48aa9b00c06293b46a04e513c16ac9842e3227eea8ad0729743039b"
+      "sha256": "c9a0a4dfa04c45a69be302e1d9677f8496a07c91ad417b41c3554c741d0dad66"
     },
     {
       "path": "map-design/map1.webp",
@@ -179,7 +179,7 @@
     },
     {
       "path": "map-design/maps.json",
-      "sha256": "9915e056d02f34f4ad932c91933a111f61a13bc8c49291ac5f6aacf38c7769f6"
+      "sha256": "61effe7287c68f01a38c1461458c1790873b915b5fb4429b605d75c7a09436c3"
     },
     {
       "path": "player-models/frames.json",
@@ -187,7 +187,7 @@
     },
     {
       "path": "player-models/player-models.js",
-      "sha256": "4456c2bade8e46a6cf439c4cb58ad1fd2319882bcfa4e34eb07ce02c8a039f13"
+      "sha256": "5d1f36dfd7637530008b6de865835a05bb06a1152a8d548aa0f4352f1b567c30"
     },
     {
       "path": "player-models/playermodel.png",
@@ -242,12 +242,12 @@
       "sha256": "22af9553a7b7548b511e43f034ed745d7795f858f726585e0a838344ffe615cd"
     },
     {
-      "path": "tier-auras/auras.png",
-      "sha256": "4ad01d5abcb7c2efe7233c5481d9421c62ca8961e0d77bd9943f0e6069431972"
+      "path": "tier-auras/aura-system.webp",
+      "sha256": "da23142868aa308b68fbf7320719f184813d26a7c3544a12fff877bbdf473864"
     },
     {
       "path": "tier-auras/manifest.json",
-      "sha256": "bedbc2f94b575b07a4d2f2aa10c10830841905bf82d0d62fa7585b97fa774715"
+      "sha256": "c67880276c9990ed9db5694ed54b526bd2f5e9c2e71114611bd6638c20cd0e61"
     },
     {
       "path": "tier-auras/README.md",
@@ -255,7 +255,7 @@
     },
     {
       "path": "tier-auras/tier-auras.js",
-      "sha256": "87e56906505cef3310ce9547c7e038f82a5dcf960016952ef280ff1649a3b77f"
+      "sha256": "f4895a164eb90f55c6886324855acac2d82b5dbf326c19a17327c7b0f9837a47"
     },
     {
       "path": "app/server/adventure.cjs",

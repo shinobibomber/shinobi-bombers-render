@@ -25,6 +25,11 @@ const bossTeamPatches=[
  ["const team=b?b.team:S.h.filter(h=>h.on).slice(0,10).map((h,slot)=>({id:h.id,slot}));\n  for(const unit of team)","const team=b?b.team:"+BOSS_TEAM+".map((h,slot)=>({id:h.id,slot}));\n  for(const unit of team)"],
  ["Deploy up to 10 rested heroes.","Your 5 strongest rested deployed heroes join the hunt."]
 ];
+// Each defeated enemy shows the Ryo its tier pays (GameBalance.enemyReward: the server's tier
+// table at the live loot rate) instead of "TARGET CLEARED". The Chest stays server-verified.
+const rewardPatches=[
+ ["s:window.RyoPayments?.state.authenticated?'TARGET CLEARED':'+'+Math.floor(reward).toLocaleString()}","s:'+'+(reward<100?Math.floor(reward*10)/10:Math.floor(reward)).toLocaleString()+' Ryo'}"]
+];
 function replaceOne(text,before,after,label){if(text.includes(after))return text;const count=text.split(before).length-1;if(count!==1)throw Error('Gameplay options patch mismatch: '+label+' ('+count+')');return text.replace(before,()=>after)}
 function applyGameplayOptions(appDir=path.join(__dirname,'app')){
  const patch=(file,fn)=>{const name=path.join(appDir,file),before=fs.readFileSync(name,'utf8'),after=fn(before);if(before!==after)fs.writeFileSync(name,after)};
@@ -64,8 +69,9 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
   return s.replace('</head>',marker+'\n<link rel="stylesheet" href="assets/gameplay-options/options.css">\n<script defer src="assets/gameplay-options/options.js"></script>\n</head>');
  });
  patch('public/index.html',s=>fusionListPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'fusion list '+i),s));
+ patch('public/index.html',s=>rewardPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'enemy reward '+i),s));
  patch('public/index.html',s=>bossTeamPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'boss team '+i),s));
  const dest=path.join(appDir,'public/assets/gameplay-options');fs.mkdirSync(dest,{recursive:true});for(const name of ['options.js','options.css'])fs.copyFileSync(path.join(__dirname,'gameplay-options',name),path.join(dest,name));
  console.log('Server-enforced fusion odds and persisted Sensei preferences applied.');
 }
-module.exports={applyGameplayOptions,fusionListPatches,bossTeamPatches,BOSS_TEAM,MAX_HEROES};if(require.main===module)applyGameplayOptions();
+module.exports={applyGameplayOptions,fusionListPatches,bossTeamPatches,rewardPatches,BOSS_TEAM,MAX_HEROES};if(require.main===module)applyGameplayOptions();

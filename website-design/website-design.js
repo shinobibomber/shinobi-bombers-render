@@ -73,8 +73,8 @@
     });
     const total = counts.reduce((a, n) => a + n, 0);
     dlg.className = 'sbw-dialog sbw-history'; dlg.onclick = null;
-    dlg.innerHTML = `<h2>Summon History</h2>${summons.length ? `<p class="sbw-sh-sum">${total} heroes from ${summons.length} summon${summons.length === 1 ? '' : 's'} · ${RNAME.map((n, r) => `<span style="color:${RCOL[r]}">${n} ${counts[r]}</span>`).join(' · ')}</p><div class="sbw-sh-list">${batches.join('')}</div>` : '<p>No summons yet. Summon heroes at the Shrine to see them here.</p>'}<div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`;
-    $('.sbw-acts button', dlg).onclick = () => dlg.close();
+    dlg.innerHTML = `<div class="sbw-sh-top"><h2>Summon History</h2><button type="button" class="sbw-btn">Close</button></div>${summons.length ? `<p class="sbw-sh-sum">${total} heroes from ${summons.length} summon${summons.length === 1 ? '' : 's'} · ${RNAME.map((n, r) => `<span style="color:${RCOL[r]}">${n} ${counts[r]}</span>`).join(' · ')}</p><div class="sbw-sh-list">${batches.join('')}</div>` : '<p>No summons yet. Summon heroes at the Shrine to see them here.</p>'}`;
+    $('.sbw-sh-top button', dlg).onclick = () => dlg.close();
     dlg.addEventListener('close', () => dlg.classList.remove('sbw-history'), { once: true });
     if (!dlg.open) dlg.showModal();
     // Owned heroes show their real model; fused or sold heroes keep a rank-coloured placeholder.

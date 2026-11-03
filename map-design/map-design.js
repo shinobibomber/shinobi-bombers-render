@@ -56,12 +56,20 @@
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) G[y][x] = { k: playable.has(y * W + x) ? 0 : 1, hp: 0 };
     // Keep the original target objects, HP, rewards and prison state. Only their
     // placement changes to respect the supplied map's visible solid scenery.
-    // Obstacle art rises up to two cells above its solid footprint, so a target placed just above
-    // a solid cell looks like it stands on the obstacle. Use only cells clear of that when enough
-    // remain; collision and walking are unchanged.
-    const clear = largest.filter(([x, y]) => !blocked(x, y + 1) && !blocked(x, y + 2)), pool = clear.length >= targets.length + 10 ? clear : largest;
-    const slots = pool.slice(); for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
-    targets.forEach((target, i) => { const [x, y] = slots[i]; G[y][x] = target; });
+    // Solids cover each object's full visible height; a target sprite standing directly above one still
+    // overlaps its top edge, so prefer cells clear of that when enough remain.
+    const shuffle = list => { for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; } return list; };
+    const clear = shuffle(largest.filter(([x, y]) => !blocked(x, y + 1))), overhung = shuffle(largest.filter(([x, y]) => blocked(x, y + 1)));
+    // Spread enemies out: no two targets touch, even diagonally. A crowded stage relaxes this step by
+    // step (edge contact only, then cells under an obstacle's overhang, then any free cell) so every
+    // target is still placed.
+    const taken = new Set(), key = (x, y) => y * W + x, spaced = [], near = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+    for (const [reach, cells] of [[8, clear], [4, clear], [8, overhung], [4, overhung], [0, clear], [0, overhung]]) for (const [x, y] of cells) {
+      if (spaced.length === targets.length) break;
+      if (taken.has(key(x, y)) || near.slice(0, reach).some(([dx, dy]) => taken.has(key(x + dx, y + dy)))) continue;
+      taken.add(key(x, y)); spaced.push([x, y]);
+    }
+    targets.forEach((target, i) => { const [x, y] = spaced[i]; G[y][x] = target; });
     for (const hero of S.h) { hero.p = []; if (hero.on) { hero.x = -9; hero.y = -9; place(hero); } }
     aligned.add(G); api.walkable = largest.map(([x, y]) => [x, y]); api.targetCount = targets.length;
   }

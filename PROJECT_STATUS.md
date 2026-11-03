@@ -108,6 +108,16 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-03 Hero Aura System, board collisions, enemy spread and tier rewards (owner request):
+  tier auras now come from `website/assets/aura-system.webp` (copied to `tier-auras/`, manifest v2):
+  each rarity's own ground ring, wreath and particles, layered ground → behind-hero aura → hero →
+  foreground particles (`TierAuras.drawFront`), keyed with feathered edges, 8 cached phases, all
+  rarities animate; `auras.png` retired. Every map's `solids` were re-traced from its board-sample
+  legend (solid blocks, non-walkable tiles, crates and physical props; hazards, runes, air currents
+  and concealment trees stay walkable), footprint only so each map stays one connected area.
+  Enemies no longer touch each other (tiered fallback for crowded stages). Defeated enemies show
+  their tier reward ("+X Ryo") again (`rewardPatches`). Summon History has Close at the top.
+
 - 2026-11-03 Summon History, Boss Hunt (owner request): Summon History on the Summon screen opens
   a panel of summoned heroes per batch from the server purchases the client already has (fused or
   sold heroes show a placeholder; pending/refunded orders are labelled). Boss Hunt fights with the

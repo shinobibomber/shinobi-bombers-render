@@ -158,6 +158,8 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 .sbw-dialog .sbw-small{font-size:13px;color:#a99ad8}
 /* Summon History: summoned heroes per batch, newest first. */
 .sbw-dialog.sbw-history{width:min(860px,94vw);max-width:none;max-height:86vh;overflow:auto}
+.sbw-history .sbw-sh-top{position:sticky;top:-16px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-16px -18px 6px;padding:14px 18px 8px;background:linear-gradient(#1a0b40,#160a38)}
+.sbw-history .sbw-sh-top h2{margin:0}
 .sbw-history .sbw-sh-sum{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:14px}
 .sbw-history .sbw-sh-list{display:flex;flex-direction:column;gap:12px;margin-top:8px}
 .sbw-history .sbw-sh-batch{padding:10px 12px;border:1px solid #3a2a78;border-radius:10px;background:#0d0828}

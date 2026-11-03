@@ -29,7 +29,7 @@ function patchHtml(html) {
 function applyTierAuras(appDir = path.join(__dirname, 'app')) {
   const index = path.join(appDir, 'public', 'index.html');
   const html = fs.readFileSync(index, 'utf8'), patched = patchHtml(html);
-  const files = ['tier-auras.js', 'manifest.json', 'auras.png'];
+  const files = ['tier-auras.js', 'manifest.json', 'aura-system.webp'];
   for (const name of files) if (!fs.statSync(path.join(__dirname, 'tier-auras', name)).isFile()) throw Error('Missing original aura asset ' + name);
   const dest = path.join(appDir, 'public', 'assets', 'tier-auras'); fs.mkdirSync(dest, { recursive: true });
   for (const name of files) fs.copyFileSync(path.join(__dirname, 'tier-auras', name), path.join(dest, name));
