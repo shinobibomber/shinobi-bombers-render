@@ -393,8 +393,9 @@
     b.name = fixed(108, 704, 540, 38, 660, 'sbw-dname sbw-left');
     b.rate = fixed(178, 766, 92, 34, 300, 'sbw-dval sbw-left');
     b.lvl = fixed(630, 766, 70, 34, 702, 'sbw-dval sbw-left');
-    b.rot = fixed(914, 870, 112, 30, 1024, 'sbw-drot sbw-left');
-    for (const e of [b.name, b.rate, b.lvl, b.rot]) e.dataset.fs = { 'sbw-dname': 32, 'sbw-dval': 26, 'sbw-drot': 20 }[[...e.classList].find(c => /^sbw-d(name|val|rot)$/.test(c))];
+    // Aligned to the artwork: "Auto Rotation" and its value both start at x 923; value caps span y 874–891.
+    b.rot = fixed(914, 868, 112, 36, 1024, 'sbw-drot sbw-left');
+    for (const e of [b.name, b.rate, b.lvl, b.rot]) e.dataset.fs = { 'sbw-dname': 32, 'sbw-dval': 26, 'sbw-drot': 22 }[[...e.classList].find(c => /^sbw-d(name|val|rot)$/.test(c))];
   };
   PAINT.dojo = b => {
     const d = dojoState(), name = DOJO_NAMES[d.tier] || DOJO_NAMES[0], rate = ((window.GameBalance && GameBalance.dojoRecovery) || [])[d.tier] || 1;

@@ -20,6 +20,15 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix 4)**
+
+**🛠️ Fixes**
+• **Dojo Services** — the Sensei card's Auto Rotation ON / OFF now sits neatly under its label instead of floating.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 3, 2026 · Hotfix 3)**
 
 **🛠️ Fixes**
