@@ -69,8 +69,8 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
  patch('server/adventure.cjs',s=>{
   // Online Adventure pays the kills the player's battle reports (gameplay-options.cjs creditKills).
   s=replaceOne(s,'function advance(data,profile,now,active,ratePercent=50){','function advance(data,profile,now,active,ratePercent=50,report=null){','kill report parameter');
-  s=replaceOne(s,'const online=active&&d.active&&gap<=45000;',"const tally=require('./gameplay-options.cjs').killReport(report),reporting=!!tally||(Number(d.lastReport)>0&&now-Number(d.lastReport)<120000),online=(active||!!tally)&&d.active&&gap<=(tally?120000:45000);let budget=0;",'reported online window');
-  s=replaceOne(s,'  while(damage>=d.hp){','  if(reporting&&online){budget+=damage;return}\n  while(damage>=d.hp){','damage budget');
+  s=replaceOne(s,'const online=active&&d.active&&gap<=45000;',"const tally=require('./gameplay-options.cjs').killReport(report),reporting=!!tally||(Number(d.lastReport)>0&&now-Number(d.lastReport)<120000),online=(active||!!tally)&&d.active&&gap<=(tally?120000:45000);let budget=0;const dps=reporting&&online?require('./gameplay-options.cjs').teamDps(roster):0;",'reported online window');
+  s=replaceOne(s,'  while(damage>=d.hp){','  if(reporting&&online){budget+=seconds*dps;return}\n  while(damage>=d.hp){','damage budget');
   s=replaceOne(s,' d.team=heroes.map(h=>h.tokenId);d.last=now;',"if(online&&tally)require('./gameplay-options.cjs').creditKills(d,tally,budget,rate,now);else if(online&&reporting)require('./gameplay-options.cjs').bankKills(d,budget);\n d.team=heroes.map(h=>h.tokenId);d.last=now;",'credit reported kills');
   s=replaceOne(s,'async function adventure(store,wallet,{active=false,claim=false},custodyTokens){','async function adventure(store,wallet,{active=false,claim=false,report=null},custodyTokens){','adventure report');
   s=replaceOne(s,'const d=advance(old,profile,store.now(),active,rewardRatePercent(pool));','const d=advance(old,profile,store.now(),active,rewardRatePercent(pool),report);','pass report');

@@ -140,8 +140,14 @@ that they are unavailable.
   carry), replay-safe, stage floored at one per 100 kills. Offline Sensei time still uses the server
   sequence. Hooks: `apply-gameplay-options.cjs` (adventure.cjs, service.cjs, index.html).
 
+- 2026-11-04 real-time kill credit (owner request): the kill budget was computed from base level-1
+  stats and the server's base stamina, so trained heroes out-killed it and their kills queued and
+  arrived later. `teamDps` (gameplay-options/server.cjs) now budgets the 10 strongest battle-ready
+  heroes at the battle's trained stats with best-perk allowance (×1.5 slack); sync is 0.3s after a
+  defeat, at most every 1.5s. Test: trained Genin team, every kill credited on the next sync.
+
 - 2026-11-03 live Chest (owner request): the game fires `shinobi-enemy-defeated` on each defeat
-  (`rewardPatches`); the website then calls `AdventureChest.refresh()` 0.6s later, at most every 3s,
+  (`rewardPatches`); the website then calls `AdventureChest.refresh()` 0.6s later, at most every 3s (now 0.3s / 1.5s),
   so the server-verified Chest and Session gained update during battle. `countTo` animates both.
   The banner's "POTENTIAL REWARD" label now reads SESSION GAINED. New suite: live-rewards.cjs.
 

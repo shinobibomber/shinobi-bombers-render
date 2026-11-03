@@ -20,6 +20,18 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Real-time rewards)**
+
+**🛠️ Fixes**
+• **Chest & Session gained now update in real time** — every enemy you defeat is added to your Chest and Session gained within about a second. Previously, trained (leveled) heroes defeated enemies faster than the server expected, so some rewards queued up and only arrived later.
+
+**🔄 Changes**
+• Rewards sync faster after each defeat, so the Chest counts up right alongside the "+Ryo → Chest" popups.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Chest fix)**
 
 **🛠️ Fixes**

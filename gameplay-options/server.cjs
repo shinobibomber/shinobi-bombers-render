@@ -19,8 +19,7 @@ module.exports={saveSenseiSettings};
 
 /* Adventure kill credit. The browser battle reports its cumulative kills per page session
    (tier × Fortune bonus); the server credits them at its own reward table, but only within the
-   damage the deployed heroes could have dealt online (hero power, speed, rank and chakra), with
-   1.5× slack for splash hits and sync timing. Totals are cumulative, so a retried or replayed
+   damage the team could have dealt online (teamDps), with 1.5× slack for sync timing. Totals are cumulative, so a retried or replayed
    request never pays twice, and kills over budget wait until budget accrues. */
 const KILL_HP=[100,213,1000,1625],KILL_PAY=[35625,81250,406250,812500],KILL_SLACK=1.5,KILL_CARRY=4000,KILL_SESSIONS=4;
 function killReport(r){
@@ -42,4 +41,14 @@ function creditKills(d,tally,budget,rate,now){
 // Online damage while a client is reporting but this call carries no report (e.g. a roster change):
 // bank it for the next report instead of paying the server's own kill sequence a second time.
 function bankKills(d,budget){d.reportBudget=Math.min(KILL_CARRY,(d.reportBudget||0)+budget*KILL_SLACK)}
-module.exports.killReport=killReport;module.exports.creditKills=creditKills;module.exports.bankKills=bankKills;
+// Top damage per second of the 10 strongest battle-ready heroes, using the battle's own trained
+// stats (GameBalance.recalculateHero: level 1→10 moves each stat from its base to the rank's top),
+// cooldown (rank+1 shots per max(.6,1.6-speed×.05)s) and the best perks (+1 damage, 15% faster).
+// Base stats and server stamina alone under-count trained heroes, so their kills used to queue.
+const STAT_BANDS=[[1,3],[3,6],[6,9],[9,12],[12,15]];
+function teamDps(roster){
+ return roster.map(h=>{const [lo,hi]=STAT_BANDS[h.rank]||STAT_BANDS[0],t=Math.max(0,Math.min(1,((Number(h.level)||1)-1)/9)),
+  stat=k=>{const base=Math.max(lo,Math.min(hi,Number(h.baseStats?.[k])||lo));return base+(hi-base)*t};
+  return (h.rank+1)*(Math.max(1,stat('pw'))+1)/(Math.max(.6,1.6-stat('sp')*.05)*.85)}).sort((a,b)=>b-a).slice(0,10).reduce((n,v)=>n+v,0);
+}
+module.exports.teamDps=teamDps;module.exports.killReport=killReport;module.exports.creditKills=creditKills;module.exports.bankKills=bankKills;

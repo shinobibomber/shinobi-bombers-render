@@ -51,13 +51,24 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
   assert.equal(d.pending-paid>=Math.floor(35625*.6*1.15),true,'the Fortune bonus pays 15% more');
   // Fabricated totals are capped by the damage the team could deal, then wait for more budget.
   const before=d.reportedKills;d=adventure.advance(d,team,t0+20000,true,60,report([3,1,1,0,0,0,100000,0]));
-  const capacity=team.heroes.reduce((n,h)=>n+5/Math.max(.6,1.6-h.baseStats.sp*.05)*(h.rank+1)*h.baseStats.pw,0)*1.5+4000;
+  const capacity=team.heroes.reduce((n,h)=>n+5/(Math.max(.6,1.6-h.baseStats.sp*.05)*.85)*(h.rank+1)*(h.baseStats.pw+1),0)*1.5+4000;
   assert(((d.reportedKills-before)*1625)<=capacity,'a fake diamond flood is limited to the team damage');
   assert(d.reportedKills-before<100000,'most of the fake kills are not paid');
   // Malformed reports fall back to the server's own battle; under-reported stages are floored.
   assert.equal(require(path.join(root,'gameplay-options.cjs')).killReport({killSession:'x',killTotals:[1]}),null);
   const floor=adventure.advance({...structuredClone(d),reportedKills:25000},team,t0+25000,true,60,report([3,1,1,0,0,0,100000,0],1));
   assert(floor.map>=251,'a client cannot report stage 1 to dodge the payout taper');
+ }
+ // Trained heroes: level 10 lifts each stat from its base to the rank's top, so the battle kills far
+ // faster than base stats suggest, and fights on after base stamina would be spent. Each sync must
+ // credit every kill made so far, not queue them for later.
+ {
+  const team=make(10,0,10);team.heroes.forEach(h=>h.baseStats={pw:1,sp:1,st:1});team.battleReady=team.heroes.map(h=>h.tokenId);
+  const t0=1_900_000_000_000,clientDps=10*3/(1.6-3*.05),report=k=>({killSession:'trained-genin-1',killTotals:[k,0,0,0,0,0,0,0],killStage:1});
+  let d=adventure.advance(undefined,team,t0,true,60,report(0)),behind=0;
+  for(let t=1500;t<=210000;t+=1500){const kills=Math.floor(t/1000*clientDps/100);d=adventure.advance(d,team,t0+t,true,60,report(kills));behind=Math.max(behind,kills-(d.reportedKills||0))}
+  assert.equal(behind,0,'trained heroes have every kill credited on the sync right after it');
+  assert(require(path.join(root,'gameplay-options.cjs')).teamDps(team.heroes)>=clientDps,"the budget covers the battle's trained damage");
  }
  await db.close();console.log('PASS: fusion odds/boundaries, level 10, failure consumption+fees, partial batches, two-hero minimum, persisted idempotent settlement, validated Sensei settings, online/offline thresholds, the 500-hero limit and verified Adventure kill reports.');
 })().catch(e=>{crypto.randomInt=originalRandom;console.error(e);process.exitCode=1});
