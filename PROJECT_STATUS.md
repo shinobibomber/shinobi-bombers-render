@@ -108,6 +108,19 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-04 SOL gas protection: `transaction-safety/gas-safety.js` is shared between
+  the native wallet and server via `apply-transaction-safety.cjs` (last in unpack).
+  It verifies exact-message fees, missing ATA rent/native create costs and a system-account
+  reserve using fresh RPC values. Wallet checks precede signing and, for wallet-added priority
+  fees, pending-record creation/broadcast. Server checks occur in signedTransaction before
+  signing and before Store debit/reservation. Explicit gas errors carry paymentNotSubmitted
+  through the handler/API, clear only the unsent request handle and leave Chest retryable.
+  Ambiguous failures/old pending records retain recovery. Claims/kill sync are unchanged.
+  New gas-preflight.cjs covers cost boundaries and real Chest UX/screenshots; wallet-vm and
+  financial-server cover no signature/broadcast/debit/pending row and fail-closed estimates.
+  Preservation reverses the five reviewed wallet/API hooks; only service.cjs and
+  netlify-handler.cjs pinned hashes changed. See transaction-safety/README.md for limits.
+
 - 2026-11-04 Ryo Observatory: `/admin/` is a standalone responsive developer dashboard,
   served by `server/site-server.cjs`; all data uses the existing signed-wallet Ryo API.
   Source: `economic-dashboard/`, assembled by `apply-economic-dashboard.cjs` at the end of

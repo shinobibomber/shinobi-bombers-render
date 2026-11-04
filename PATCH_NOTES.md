@@ -20,6 +20,17 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Gas fee protection)**
+
+**🛠️ Fixes**
+• **Payments check SOL first** — deposits stop before wallet signing if there is not enough Devnet SOL for network fees and any new token accounts. The signed transaction is checked again before sending, including wallet-added priority fees.
+• **No Ryo reserved for unfunded checkouts** — purchases and withdrawals stop if the game custody wallet cannot cover its SOL costs. Your Ryo stays available and no new pending transaction is created.
+• **Clear retry messages** — blocked payments explain which wallet needs SOL. Requests that were never submitted can be retried after funding; genuinely submitted transactions retain their existing recovery protection.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Economy observatory)**
 
 **✨ New**

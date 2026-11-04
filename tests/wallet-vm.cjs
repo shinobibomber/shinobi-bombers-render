@@ -4,15 +4,17 @@ const web3=require('../app/node_modules/@solana/web3.js'),spl=require('../app/no
 const GENESIS='EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',UNIT=1000000n;
 const owner=web3.Keypair.generate(),tester=web3.Keypair.generate(),other=web3.Keypair.generate(),studio=web3.Keypair.generate(),mints=new Map(),accounts=new Map(),receipts=new Map(),submitted=[];
 let genesis=GENESIS,reject=false,changeAfterSend=false,failNext=false,tamper=false,walletPriority=false,rpcFetchMode='ok',capturedRpcFetch;
+let solLamports=1000000000,feeUnavailable=false,gasRpcError=false,signCalls=0,solAfterSign=null;
 const storage=new Map(),localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v))};
 function mintInfo(mint){const value=mints.get(mint.toBase58());if(!value)return null;const data=Buffer.alloc(spl.MINT_SIZE);spl.MintLayout.encode({...value,mintAuthorityOption:value.authority?1:0,mintAuthority:value.authority||web3.PublicKey.default,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:web3.PublicKey.default},data);return {data,owner:spl.TOKEN_PROGRAM_ID,lamports:1000000,executable:false};}
 class Connection {
  constructor(url,options){capturedRpcFetch=options?.fetch}
  async getGenesisHash(){if(rpcFetchMode!=='ok')await capturedRpcFetch('https://example.test',{method:'POST'});return genesis}
- async getBalance(){return 1000000000}
+ async getBalance(){if(gasRpcError)throw Error('RPC balance unavailable');return solLamports}
+ async getFeeForMessage(message){return {value:feeUnavailable?null:message.header.numRequiredSignatures*5000+(message.accountKeys.some(k=>k.equals(web3.ComputeBudgetProgram.programId))?400:0)}}
  async getAccountInfo(address){return mints.has(address.toBase58())?mintInfo(address):accounts.has(address.toBase58())?{owner:spl.TOKEN_PROGRAM_ID}:null}
  async getTokenAccountBalance(address){return {value:{amount:accounts.get(address.toBase58()).amount.toString()}}}
- async getMinimumBalanceForRentExemption(){return 1461600}
+ async getMinimumBalanceForRentExemption(size){return size===0?890880:size===165?2039280:1461600}
  async getLatestBlockhash(){return {blockhash:web3.Keypair.generate().publicKey.toBase58(),lastValidBlockHeight:1000}}
  async getParsedTransaction(hash){return receipts.get(hash)||null}
  async sendRawTransaction(bytes){
@@ -38,19 +40,29 @@ class Connection {
   receipts.set(hash,receipt);if(changeAfterSend){changeAfterSend=false;phantom.publicKey=other.publicKey;phantom.emit('accountChanged',other.publicKey)}return hash;
  }
 }
-function wallet(signer){const handlers=new Map();return {publicKey:signer.publicKey,connect:async()=>{},disconnect:async()=>{},on:(name,fn)=>handlers.set(name,fn),removeListener:name=>handlers.delete(name),emit:(name,arg)=>handlers.get(name)?.(arg),async signTransaction(tx){if(reject){reject=false;throw Object.assign(Error('rejected'),{code:4001})}if(walletPriority)tx.instructions.unshift(web3.ComputeBudgetProgram.setComputeUnitLimit({units:400000}),web3.ComputeBudgetProgram.setComputeUnitPrice({microLamports:1000}));if(tamper){tamper=false;tx.add(web3.SystemProgram.transfer({fromPubkey:signer.publicKey,toPubkey:other.publicKey,lamports:1}))}tx.partialSign(signer);return tx}}}
+function wallet(signer){const handlers=new Map();return {publicKey:signer.publicKey,connect:async()=>{},disconnect:async()=>{},on:(name,fn)=>handlers.set(name,fn),removeListener:name=>handlers.delete(name),emit:(name,arg)=>handlers.get(name)?.(arg),async signTransaction(tx){signCalls++;if(reject){reject=false;throw Object.assign(Error('rejected'),{code:4001})}if(walletPriority)tx.instructions.unshift(web3.ComputeBudgetProgram.setComputeUnitLimit({units:400000}),web3.ComputeBudgetProgram.setComputeUnitPrice({microLamports:1000}));if(tamper){tamper=false;tx.add(web3.SystemProgram.transfer({fromPubkey:signer.publicKey,toPubkey:other.publicKey,lamports:1}))}tx.partialSign(signer);if(solAfterSign!==null){solLamports=solAfterSign;solAfterSign=null}return tx}}}
 const phantom=wallet(owner),solflare=wallet(tester);
+const gasSafety=require('../transaction-safety/gas-safety.js');
 const context={Buffer,console,URL,BigInt,AbortController,Response,clearTimeout,setTimeout:(fn,ms)=>setTimeout(fn,ms===15000?1:ms),fetch:async(input,options)=>{if(rpcFetchMode==='timeout')return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(Error('Aborted'))));return new Response('{}',{status:rpcFetchMode==='rate'?429:200})},crypto:crypto.webcrypto,location:{protocol:'file:'},localStorage,dispatchEvent:()=>{},CustomEvent:class{},ShinobiSolana:{...web3,...spl,...require('../app/server/transaction-review.cjs'),Connection},ShinobiBetaConfig:{network:'solana-devnet',tokenAddress:null,studioAddress:studio.publicKey.toBase58()},phantom:{solana:phantom},solflare};context.window=context;
+context.ShinobiGasSafety=gasSafety;
 const html=fs.readFileSync(require('node:path').join(__dirname,'../app/public/index.html'),'utf8'),walletSource=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).find(code=>code.includes('// SOURCE: beta-wallet.js'));assert(walletSource,'assembled native wallet source exists');vm.createContext(context);vm.runInContext(walletSource,context);
 (async()=>{
  const client=context.BetaWallet;await client.ready;await assert.rejects(client.connect('metamask'),/Phantom or Solflare/);await client.connect('phantom');
  genesis='mainnet';await assert.rejects(client.deploy(),/not Solana Devnet/);assert.equal(submitted.length,0);genesis=GENESIS;
+ solLamports=0;await assert.rejects(client.deploy(),e=>e.code==='SOL_GAS_INSUFFICIENT'&&e.paymentNotSubmitted===true);assert.equal(signCalls,0);assert.equal(submitted.length,0);assert.equal(storage.has('shinobi-solana-pending-v1'),false);
+ // Mint rent and signature fees alone are insufficient: both new associated token accounts count.
+ solLamports=890880+1461600+10000;await assert.rejects(client.deploy(),/enough Devnet SOL/);assert.equal(signCalls,0);solLamports=1000000000;
  await client.deploy();const mint=client.state.tokenAddress;assert.equal(client.state.verified,true);assert.equal(client.state.tokenBalance,(980000000n*UNIT).toString());assert.equal(mints.get(mint).authority,null);assert.equal(submitted[0].instructions.length,7);assert.equal(submitted[0].signatures.length,2);
  await client.distribute(tester.publicKey.toBase58());await client.connect('solflare');assert.equal(client.state.account,tester.publicKey.toBase58());assert.equal(client.state.tokenBalance,(980000n*UNIT).toString());
  const result=await client.redeem(100000);assert.equal(client.state.tokenBalance,(880000n*UNIT).toString());assert.equal(client.verifyRedemption(result.receipt,result.record),result.record);client.acknowledge(result.record.hash);assert.equal((await client.recoverPending()).length,0);
  const forged=structuredClone(result.receipt);forged.transaction.message.instructions[1].parsed='wrong memo';assert.throws(()=>client.verifyRedemption(forged,result.record));
  assert.throws(()=>client.verifyRedemption(result.receipt,{...result.record,account:owner.publicKey.toBase58()}));assert.throws(()=>client.verifyRedemption(result.receipt,{...result.record,amount:1000000}));
  const balance=client.state.tokenBalance;reject=true;await assert.rejects(client.redeem(100000),/rejected/);assert.equal(client.state.tokenBalance,balance);
+ const sentBeforeGas=submitted.length,signedBeforeGas=signCalls,pendingBeforeGas=storage.get('shinobi-solana-pending-v1');
+ solLamports=0;await assert.rejects(client.redeem(100000),/enough Devnet SOL/);assert.equal(signCalls,signedBeforeGas);assert.equal(submitted.length,sentBeforeGas);assert.equal(storage.get('shinobi-solana-pending-v1'),pendingBeforeGas);solLamports=1000000000;
+ feeUnavailable=true;await assert.rejects(client.redeem(100000),e=>e.code==='SOL_GAS_UNAVAILABLE');feeUnavailable=false;gasRpcError=true;await assert.rejects(client.redeem(100000),/could not be verified/);gasRpcError=false;assert.equal(signCalls,signedBeforeGas);
+ solAfterSign=0;await assert.rejects(client.redeem(100000),/enough Devnet SOL/);solLamports=1000000000;assert.equal(submitted.length,sentBeforeGas);assert.equal(storage.get('shinobi-solana-pending-v1'),pendingBeforeGas);
+ walletPriority=true;solLamports=890880+5000;await assert.rejects(client.redeem(100000),/enough Devnet SOL/);walletPriority=false;solLamports=1000000000;assert.equal(submitted.length,sentBeforeGas);assert.equal(storage.get('shinobi-solana-pending-v1'),pendingBeforeGas);
  tamper=true;await assert.rejects(client.redeem(100000),/differs/);assert.equal(client.state.tokenBalance,balance);
  failNext=true;await assert.rejects(client.redeem(100000),/failed/);assert.equal(accounts.get(spl.getAssociatedTokenAddressSync(new web3.PublicKey(mint),tester.publicKey).toBase58()).amount.toString(),balance);
  await client.connect('phantom');changeAfterSend=true;await assert.rejects(client.redeem(100000),/account changed/);phantom.publicKey=owner.publicKey;await client.connect('phantom');const recovered=await client.recoverPending();assert.equal(recovered.length,1);client.verifyRedemption(recovered[0].receipt,recovered[0].record);client.acknowledge(recovered[0].record.hash);assert.equal((await client.recoverPending()).length,0);
