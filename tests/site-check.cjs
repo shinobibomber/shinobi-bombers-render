@@ -45,6 +45,13 @@ async function startServer() {
     const srv = await startServer();
     try {
       const p = await page(); const url = srv.url;
+      await check('live: admin shell is isolated, protected by CSP, and never serves backend sources', async () => {
+        const r = await fetch(url + '/admin/'); assert.equal(r.status, 200); assert.match(await r.text(), /ryo-economic-dashboard-v1/);
+        assert.match(r.headers.get('content-security-policy'), /frame-ancestors 'none'/); assert.equal(r.headers.get('cache-control'), 'no-store');
+        assert.equal((await fetch(url + '/admin/server.cjs')).status, 404); assert.equal((await fetch(url + '/admin/schema.sql')).status, 404);
+        assert.equal((await fetch(url + '/admin/dashboard.js')).status, 200);
+        const blocked = await fetch(url + '/api/ryo', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://wrong.example' }, body: '{"action":"admin-snapshot"}' }); assert.equal(blocked.status, 403);
+      });
       await check('live: the home page opens the game at /play/ (website kept at /index.html)', async () => { const r = await fetch(url + '/?ref=x', { redirect: 'manual' }); assert.equal(r.status, 302); assert.equal(r.headers.get('location'), '/play/?ref=x'); assert.equal(r.headers.get('cache-control'), 'no-store'); const g = await page(); await g.goto(url + '/'); assert.equal(new URL(g.url()).pathname, '/play/'); assert.match(await g.title(), /Shinobi Bombers/); await g.close(); assert.equal((await fetch(url + '/index.html')).status, 200); });
       await check('live: site-config served from environment points at /play/', async () => { const r = await (await fetch(url + '/site-config.js')).text(); assert.match(r, /"gameUrl":"\/play\/"/); });
       await check('live: game health, API and config reach the game server at root paths', async () => {

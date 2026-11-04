@@ -108,6 +108,23 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-04 Ryo Observatory: `/admin/` is a standalone responsive developer dashboard,
+  served by `server/site-server.cjs`; all data uses the existing signed-wallet Ryo API.
+  Source: `economic-dashboard/`, assembled by `apply-economic-dashboard.cjs` at the end of
+  `unpack.cjs`. Additive tables capture transactional claim observations, reporting config,
+  independent approvals, emergency pauses and hash-chained audit records. `RYO_ADMIN_VIEWERS`,
+  `RYO_ADMIN_OPERATORS`, `RYO_ADMIN_APPROVERS` are comma-separated public-wallet allowlists;
+  default denies access. An approver has operator permissions but cannot approve their own
+  proposal. Two distinct wallets are needed for config approvals/resume. New-operation gates
+  cover purchase/withdraw/claim only; state recovery, persisted-order retries and normal kill
+  sync remain available. No balance/rate/combat changes. Reporting distinguishes historical
+  unassigned claims, unavailable NFT minting/circulation/lock verification and reviewed fiat
+  runway from verified ledger/chain data. See `economic-dashboard/README.md` for definitions,
+  evidence/coverage limits and setup. New suite `tests/economic-dashboard.cjs` covers actual
+  PGlite aggregates, auth/roles, self/stale approvals, pause/recovery, atomic claim records,
+  RPC failures, financial evidence and desktop/mobile screenshots. The only intentional pinned
+  runtime updates are service.cjs, adventure.cjs (claim insert), and schema.sql.
+
 - 2026-11-04 GO OFFLINE (owner request): the header wallet button reads GO OFFLINE. `goOffline()` in
   website-design.js shows the Sensei status (offers `RyoPayments.senseiSettings(pct,true)` when rotation
   is off), runs a final `RyoPayments.adventure(false,false)` (saves KillReport kills, marks the server

@@ -18,6 +18,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
 
 const ROOT = path.resolve(__dirname, '..');
 const SITE_DIR = fs.realpathSync(path.join(ROOT, 'website'));
+const ADMIN_DIR = path.join(ROOT, 'economic-dashboard');
 const GAME_DIR = path.resolve(process.env.GAME_RUNTIME_DIR || path.join(ROOT, 'app'));   // assembled by `npm run build`
 const MOUNT = '/play';
 const GAME_ROOT_PATHS = new Set(['/.netlify/functions/ryo', '/api/ryo', '/beta-config.json', '/healthz']);
@@ -78,6 +79,17 @@ const game = loadGame();
 const server = http.createServer((req, res) => {
   let url; try { url = new URL(req.url, 'http://localhost'); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
+  // Public login shell only. Every data read and mutation uses the wallet-authenticated Ryo API.
+  if (name === '/admin') { res.writeHead(308, { Location: '/admin/', 'Cache-Control': 'no-store' }); return res.end(); }
+  if (name.startsWith('/admin/')) {
+    if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
+    const file = { '/admin/': 'index.html', '/admin/dashboard.js': 'dashboard.js', '/admin/dashboard.css': 'dashboard.css' }[name];
+    if (!file) return sendSite(req, res, 404, 'Not found.');
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)], 'Cache-Control': 'no-store', ...SITE_HEADERS,
+      'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'" });
+    if (req.method === 'HEAD') return res.end();
+    fs.createReadStream(path.join(ADMIN_DIR, file)).on('error', () => res.destroy()).pipe(res); return;
+  }
   if (game) {
     if (GAME_ROOT_PATHS.has(name)) return game.listener(req, res);
     if (name === '/') { res.writeHead(302, { Location: MOUNT + '/' + url.search, 'Cache-Control': 'no-store', ...SITE_HEADERS }); return res.end(); }

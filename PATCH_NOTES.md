@@ -20,6 +20,20 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Economy observatory)**
+
+**✨ New**
+• **Ryo Observatory** — a restricted developer dashboard tracks verified token supply, vault balances, Ryo spending, reward recycling, treasury transfers, burns, summoning and fusion activity.
+• **Reward oversight** — season claim records, player reward concentration, pending liabilities and transaction review help the team monitor the game economy.
+• **Accountable controls** — configuration changes require an independent wallet approval and leave an audit record. Emergency pauses protect new checkouts, claims or withdrawals while existing transactions can still recover.
+
+**🔄 Changes**
+• Missing historical or on-chain evidence is labelled unavailable or partial. Operational runway uses reviewed financial records; no token-price assumptions are used.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Straight into the game)**
 
 **🔄 Changes**
