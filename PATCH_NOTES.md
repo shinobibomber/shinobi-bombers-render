@@ -20,6 +20,17 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Sensei fix)**
+
+**🛠️ Fixes**
+• **Sensei now really manages your team** — a hired or rented Sensei automatically fills every empty battle slot with your strongest rested battle-ready heroes, and swaps out every hero who runs out of chakra (not just one at a time). Previously, after you signed in, your team could sit idle even with a Sensei.
+• Heroes you rest by hand stay on the bench — the Sensei won't redeploy them until you do.
+• Turning the Sensei OFF gives you full manual control again.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Training rework)**
 
 **🔄 Changes**

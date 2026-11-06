@@ -108,6 +108,13 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-06 Sensei auto-deploy (owner request): the game's own Sensei swap only replaced one
+  exhausted hero per 2s and never filled empty slots, so a signed-in team (0 deployed after login)
+  sat idle with a hired/rented Sensei. gameplay-options/options.js wraps `tick`: every 2s an active
+  Sensei fills empty slots (up to 10) and swaps every exhausted on-map hero for the strongest rested
+  battle-ready heroes at the return threshold. Heroes rested by hand (`tog`) are `benched` until
+  deployed again; Boss Hunt members (off-map) are untouched; OFF does nothing. Test: sensei-rotation.
+
 - 2026-11-06 training rework (owner request): max level 5; each level-up is a stored, server-rolled
   +1 (`hero.bonus`): Genin/Chunin +1 Power, Jonin+ a random stat, Lv4→5 two +1s. Price = [10k,20k,
   40k,80k][level-1] × rank [1,1.5,2,2.5,3] + 2% fee. Rules live in gameplay-options/server.cjs

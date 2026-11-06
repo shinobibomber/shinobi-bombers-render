@@ -30,6 +30,25 @@
   if(!outcomeDialog.open&&!LoginScreen.active&&!GameLoading.active)outcomeDialog.showModal();
  }
  ShinobiSprites.ready.then(()=>{
+  // Sensei auto-deploy. The game's own swap only replaces one hero that ran out of chakra every 2s and
+  // never fills empty slots, so a hired or rented Sensei left a signed-in team idle. Every 2s an active
+  // Sensei now fills empty slots and swaps every exhausted hero on the map for the strongest rested
+  // battle-ready heroes at the return threshold. A hero the player rests by hand stays benched until
+  // it is deployed again; Boss Hunt members (off the map) are left alone.
+  let assistClock=0;
+  const assistTick=tick;tick=function(dt){assistTick(dt);assistClock+=dt;if(assistClock>=2){assistClock=0;senseiAssist()}};
+  const assistTog=tog;tog=function(i){const h=S.h[i],was=!!h?.on,result=assistTog.apply(this,arguments);if(h&&was!==!!h.on)h.benched=!h.on;return result};
+  function senseiAssist(){
+   if(!S.butler||S.v2?.butlerEnabled===false||!RyoPayments.state.authenticated||window.GameLoading?.active||window.LoginScreen?.active)return;
+   for(const h of S.h)if(h.on)h.benched=false;
+   const pct=(S.v2.senseiReturnPercent||90)/100,limit=BattleRoster.deployedLimit||10;
+   const ready=S.h.filter(h=>!h.on&&!h.benched&&h.en>=h.st*50*pct&&BattleRoster.eligible(h)).sort((a,b)=>b.r-a.r||b.pw-a.pw);
+   let deployed=0;
+   for(const out of S.h.filter(h=>h.on&&h.z&&h.x>=0)){const next=ready.shift();if(!next)break;out.on=false;out.p=[];out.x=-9;out.y=-9;next.on=true;place(next);deployed++}
+   while(ready.length&&S.h.filter(h=>h.on).length<limit){const next=ready.shift();next.on=true;place(next);deployed++}
+   if(deployed)toast('Sensei deployed '+deployed+' hero'+(deployed>1?'es':''));
+  }
+  window.SenseiAssist={run:senseiAssist};
   let saving=false;
   const hired=()=>{const p=RyoPayments.state.profile;return !!p&&(p.sensei||Number(p.senseiRentalUntil||0)>Math.max(RyoPayments.state.serverTime||0,Date.now()))};
   async function setSensei(percent,enabled){
