@@ -994,7 +994,11 @@
   const PHONE_NAV = [['home', 'nav-home', 'Home'], ['adventure', 'nav-adventure', 'Battle'], ['heroes', 'nav-heroes', 'Heroes'], ['summon', 'nav-summon', 'Summon']];
   const PHONE_MORE = [['fusion', 'nav-fusion', 'Fusion'], ['dojo', 'nav-dojo', 'Dojo'], ['market', 'nav-market', 'Market'], ['boss-hunt', 'nav-bosshunt', 'Boss Hunt'], ['codex', 'nav-codex', 'Codex'], ['guild', 'nav-guild', 'Guild']];
   let PH = null;
-  const isPhone = () => innerWidth <= 820 && innerHeight > innerWidth;
+  // Mobile browsers briefly report innerWidth as the zoomed-out width (~1580px) while a new 1536px
+  // artwork stage is in the layout, which once switched phones to the full-size desktop screen. The
+  // layout viewport (documentElement.clientWidth) keeps the real phone width.
+  const viewW = () => document.documentElement.clientWidth || innerWidth, viewH = () => document.documentElement.clientHeight || innerHeight;
+  const isPhone = () => viewW() <= 820 && viewH() > viewW();
   function navIcon(e, id) { const h = D.header.hs.find(h => h.id === id); if (!h) return; const r = [h.r[0], 4, h.r[2], 52], k = 30 / (r[3] - r[1]); e.style.width = (r[2] - r[0]) * k + 'px'; e.style.height = '30px'; e.style.backgroundImage = `url(${BASE + D.header.img})`; e.style.backgroundSize = `${D.header.W * k}px ${D.header.H * k}px`; e.style.backgroundPosition = `${-r[0] * k}px ${-r[1] * k}px`; }
   function buildPhoneChrome() {
     if (PH) return;
@@ -1069,7 +1073,7 @@
     b.sec.style.clipPath = 'none'; b.st.style.clipPath = 'none'; b.st.style.transform = 'none';
     if (!b.mob) stack(b);
     for (const e of [...b.st.children]) if (e !== b.mob.col) adopt(b, e);
-    const cw = Math.min(innerWidth, 640) - 16;
+    const cw = Math.min(viewW(), 640) - 16;
     for (const p of b.mob.panes) {
       const o = p.o, avail = o.half ? (cw - 8) / 2 : cw;
       p.pane.style.width = avail + 'px';
@@ -1103,7 +1107,7 @@
       catch (error) { console.error('Phone layout failed; using the desktop layout:', error); }
     }
     try { leavePhone(); } catch (error) { console.error(error); }
-    const vw = innerWidth, vh = innerHeight;
+    const vw = viewW(), vh = viewH();
     if (HDR) {
       // Content starts at row 100, where the header art's left 70% ends (its clip-path hides another
       // page's fragments below). Only the wallet/Chest column, clipped at row 107, overhangs the

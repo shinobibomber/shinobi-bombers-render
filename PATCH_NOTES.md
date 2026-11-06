@@ -20,6 +20,15 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Phone layout fix)**
+
+**🛠️ Fixes**
+• **Heroes (and other screens) on real phones** — on some phones and in-app wallet browsers, opening Heroes showed a huge, cut-off desktop screen that couldn't be scrolled. Every screen now always uses the phone layout on a phone held upright: readable cards, all filters visible, scrolling, and the bottom navigation bar.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Mobile fixes)**
 
 **🛠️ Fixes**

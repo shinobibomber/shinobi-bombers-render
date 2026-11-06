@@ -87,5 +87,21 @@ const desktopBoxes = p => p.evaluate(() => [...document.querySelectorAll('.sbw-s
     assert.equal(await p.locator('.sbw-mpane').count(), 0, 'no phone panels remain on desktop');
     assert.deepEqual(errors, []);
   });
+  // A real mobile browser (meta viewport, touch, high-density screen). Building a 1536px screen once
+  // made it report a ~1580px innerWidth and drop the phone layout; every screen must stay stacked,
+  // whether reached from the bottom bar or from the game's own navigation.
+  await withGame(async ({ p, errors, assert }) => {
+    await p.locator('#loginPhantom').click();
+    await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && WebsiteDesign.current() === 'home');
+    const pages = { adventure: [0], heroes: [1], summon: [2], codex: [3], dojo: [4, 0], market: [4, 1], fusion: [6], 'boss-hunt': [8], home: [5] };
+    for (const [k, route] of Object.entries(pages)) {
+      await p.evaluate(route => go(...route), route);
+      await p.waitForFunction(k => WebsiteDesign.current() === k, k);
+      await p.waitForTimeout(200);
+      const view = await p.evaluate(() => ({ phone: document.getElementById('sbwLayer').classList.contains('sbw-phone'), stacked: !!document.querySelector('.sbw-scr.on .sbw-mstack'), zoom: visualViewport.scale, nav: getComputedStyle(document.querySelector('.sbw-ph-nav')).display }));
+      assert.deepEqual(view, { phone: true, stacked: true, zoom: 1, nav: 'grid' }, k + ': a real phone browser keeps the phone layout');
+    }
+    assert.deepEqual(errors, []);
+  }, { viewport: { width: 412, height: 839 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2.625 });
   console.log('PASS: portrait phones get a readable single-column layout on every screen (no sideways scroll or overlaps, 24px+ controls, 40px+ header and navigation, More sheet, live header values and Chest), and wide screens restore the exact desktop layout.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
