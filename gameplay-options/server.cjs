@@ -86,5 +86,12 @@ function assignIdentity(h){
  let step=0;const rand=n=>require('node:crypto').createHash('sha256').update(h.tokenId+':identity:'+step++).digest().readUInt32BE(0)%n;
  Object.assign(h,rollIdentity(Math.max(0,Math.min(4,Number(h.rank)||0)),rand),{identityVersion:1});return h;
 }
-Object.assign(module.exports,{MAX_LEVEL,trainingPrice,levelUp,migrateHero,trainedStats,rollIdentity,assignIdentity});
+/* Token purchase split (summons, training, Dojo, Sensei, fusion): the price is the total charged;
+   2% studio, 10% treasury and 8% burned leave custody on-chain, and the remaining 80% stays as
+   operations income that funds the Adventure reward pool. */
+function purchaseSplit(base){
+ const studioFee=Math.floor(base*2/100),treasury=Math.floor(base*10/100),burn=Math.floor(base*8/100);
+ return {studioFee,treasury,burn,operations:base-studioFee-treasury-burn};
+}
+Object.assign(module.exports,{MAX_LEVEL,trainingPrice,levelUp,migrateHero,trainedStats,rollIdentity,assignIdentity,purchaseSplit});
 module.exports.teamDps=teamDps;module.exports.killReport=killReport;module.exports.creditKills=creditKills;module.exports.bankKills=bankKills;

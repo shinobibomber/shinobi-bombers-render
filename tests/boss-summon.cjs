@@ -16,10 +16,10 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     f.holdAdventure = false;
     const kept = hero('kept-legend', 4, 13.5), gone = hero('fused-genin', 0, 2), now = Date.now();
     f.profile = economy.normalizeProfile({ ...f.profile, heroes: [...f.profile.heroes, kept] });
-    const order = (id, status, created, outputs, quantity) => ({ request_id: id, amount: String(25500 * quantity), status, acknowledged: true, created: String(created), signature: 'S'.repeat(80),
+    const order = (id, status, created, outputs, quantity) => ({ request_id: id, amount: String(25000 * quantity), status, acknowledged: true, created: String(created), signature: 'S'.repeat(80),
       quote: { product: 'summon', params: { quantity }, title: 'Summon ' + quantity }, result: status === 'confirmed' ? { product: 'summon', outputs } : null });
     f.purchases = [order('summon-new-0001', 'confirmed', now, [kept, gone], 2), order('summon-pend-0002', 'pending', now - 1000, [], 1),
-      order('summon-refd-0003', 'refunded', now - 2000, [], 1), { request_id: 'fusion-0004', amount: '25500', status: 'confirmed', created: String(now - 3000), quote: { product: 'fusion' }, result: { product: 'fusion', outputs: [] } }];
+      order('summon-refd-0003', 'refunded', now - 2000, [], 1), { request_id: 'fusion-0004', amount: '25000', status: 'confirmed', created: String(now - 3000), quote: { product: 'fusion' }, result: { product: 'fusion', outputs: [] } }];
     await login(p);
     await p.evaluate(() => go(2)); await p.waitForFunction(() => WebsiteDesign.current() === 'summon');
     await p.locator('.sbw-scr.on [data-sbwid="sb-hist"]').click();

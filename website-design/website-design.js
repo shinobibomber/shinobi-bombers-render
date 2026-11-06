@@ -316,7 +316,7 @@
       return { quantity, card, price: footer.querySelector('strong') };
     });
     const fee = cov(b, 1277, 356, 360, 17, '#08091b', 13, '#d4d9e8');
-    fee.classList.add('sbw-summon-fee'); fee.textContent = 'Existing studio fee shown at checkout';
+    fee.classList.add('sbw-summon-fee'); fee.textContent = 'Price includes the 2% studio share';
   };
   function summonQty() { const sel = nativeEl('#p2', e => /Combat\.quantity\(\d+\)/.test(e.getAttribute('onclick') || '') && e.classList.contains('selected')); const m = sel && /\((\d+)\)/.exec(sel.getAttribute('onclick')); return m ? +m[1] : 1; }
   PAINT.summon = b => {

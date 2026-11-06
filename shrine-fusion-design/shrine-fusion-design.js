@@ -30,7 +30,7 @@
    const canvas=section.querySelector('#shrinePortrait');if(canvas){canvas.id='exactShrinePortrait';canvas.setAttribute('aria-label','Current shared Shinobi player model');}
    const recruited=section.querySelector('.shrine-controls > p.mut');if(recruited)recruited.textContent='Heroes recruited: '+S.h.length;
    let fee=section.querySelector('.exact-summon-fee');if(!fee){fee=document.createElement('small');fee.className='exact-summon-fee';section.querySelector('.shrine-controls')?.append(fee)}
-   fee.textContent='A 2% studio fee is shown at checkout.';
+   fee.textContent='Price includes the 2% studio share.';
    fitHeader();paint(performance.now());
   }
   function fusion(){

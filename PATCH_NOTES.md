@@ -20,6 +20,21 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · New purchase split)**
+
+**🔄 Changes**
+• **Purchases now cost exactly their listed price** — the 2% studio fee is included instead of added on top. A summon now costs **25,000 Ryo** (was 25,500), a 10× summon 250,000, and the same applies to training, Dojo, Sensei and fusion.
+• **Where your Ryo goes on every purchase:**
+  – **80%** operations & the Adventure reward pool (more loot for everyone)
+  – **10%** treasury
+  – **8%** burned on-chain (permanently reduces token supply)
+  – **2%** studio
+• The checkout shows this full breakdown before you pay. (Deposits, withdrawals and the Market are unchanged.)
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Market upgrade & offers)**
 
 **✨ New**

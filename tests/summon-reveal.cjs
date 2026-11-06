@@ -65,7 +65,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     f.holdQuote = false; f.release('quote');
     await p.waitForSelector('#tokenCheckoutDialog[open]');
     assert.match(await p.locator('#tokenCheckoutTitle').textContent(), /10 heroes/);
-    assert.match(await p.locator('#checkoutConfirm').textContent(), /255,000/);
+    assert.match(await p.locator('#checkoutConfirm').textContent(), /250,000/);
     f.holdPurchase = true;
     await p.evaluate(() => { const pay = document.querySelector('#checkoutConfirm'); pay.click(); pay.click(); });
     await waitForFixture(() => count(f, 'purchase') === 1);
@@ -76,7 +76,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     await p.waitForFunction(() => S.v2.revealBatch.length === 10 && !RyoPayments.state.busy);
     const expected = f.purchases[0].result.outputs;
     const afterPurchase = await snapshot(p);
-    assert.equal(f.balance, 745000, 'native quote charges base plus the unchanged studio fee once');
+    assert.equal(f.balance, 750000, 'native quote charges the price once (2% studio share included)');
     assert.equal(afterPurchase.ids.length, originalIds.length + 10);
     assert.equal(new Set(afterPurchase.ids).size, afterPurchase.ids.length);
     assert.deepEqual(afterPurchase.batch.map(item => item.id).sort(), expected.map(hero => hero.tokenId).sort(), 'cards display exactly the confirmed server outputs');
@@ -151,7 +151,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert.equal(new Set(newModels).size, newModels.length, 'duplicate models within one batch are not all NEW');
     const starRanks = await p.locator('.reveal-card').evaluateAll(cards => cards.map(card => ({ rank: +card.dataset.rank, stars: card.querySelector('.cinematic-stars').textContent, label: card.querySelector('.cinematic-stars').getAttribute('aria-label') })));
     for (const card of starRanks) { assert.equal(card.stars, '★'.repeat(card.rank + 1)); assert.match(card.label, new RegExp('rank ' + (card.rank + 1) + ' of 5')); }
-    await p.waitForFunction(() => document.querySelector('.cinematic-cost')?.textContent === '255,000 Ryo' && !RyoPayments.state.busy);
+    await p.waitForFunction(() => document.querySelector('.cinematic-cost')?.textContent === '250,000 Ryo' && !RyoPayments.state.busy);
     assert.equal(count(f, 'quote'), 2, 'the results cost is one read-only native quote');
     assert.equal(count(f, 'purchase'), 1, 'displaying the price cannot purchase');
     await p.evaluate(() => Experience.refreshReveal());
@@ -241,7 +241,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     await p.waitForSelector('#tokenCheckoutDialog[open]');
     assert.equal(count(f, 'quote'), 3, 'Summon Again obtains a fresh native checkout quote');
     assert.equal(count(f, 'purchase'), 1, 'Summon Again still requires explicit payment confirmation');
-    assert.equal(f.balance, 745000);
+    assert.equal(f.balance, 750000);
     await p.locator('#checkoutCancel').click();
     await p.waitForSelector('#tokenCheckoutDialog', { state: 'hidden' });
     assert.equal(await p.evaluate(() => S.v2.revealBatch.length), 0, 'Continue in Summon Again uses native reveal cleanup');
@@ -273,7 +273,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert.equal(await p.evaluate(() => revealModelDraws.length), 0, 'closed reveal cannot restart the model loop');
     assert.equal(await p.evaluate(() => tab), 2, 'Continue returns to the original shrine');
     assert.equal(count(f, 'purchase'), 2, 'Continue never triggers another purchase');
-    assert.equal(f.balance, 719500, 'single summon retains its existing price and fee');
+    assert.equal(f.balance, 725000, 'single summon charges its 25,000 price');
     assert.deepEqual(errors, []);
     console.log('PASS: actual checkout, duplicate guards, reveal/recovery flows, NEW/rank/cost, actual game models with rarity auras at DPR2, zero idle redraws, hidden/closed/reduced-motion cleanup and responsive layout.');
   });

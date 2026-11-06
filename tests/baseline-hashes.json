@@ -95,7 +95,7 @@
     },
     {
       "path": "gameplay-options/server.cjs",
-      "sha256": "6d334d718993e49c0b0eae523acf503e1b69f7c0b39d723f34d65c4e49856072"
+      "sha256": "b57bfc0f4a182e991e94cac7f2a664c15b643ca0f52a7de8c3cec9320f6b24f9"
     },
     {
       "path": "heroes-design/heroes-design.css",
@@ -239,7 +239,7 @@
     },
     {
       "path": "shrine-fusion-design/shrine-fusion-design.js",
-      "sha256": "22af9553a7b7548b511e43f034ed745d7795f858f726585e0a838344ffe615cd"
+      "sha256": "b6e36815333322c52c74b7c8d6f7bf9fc909f3a54c85f192fcb2d1819f69232d"
     },
     {
       "path": "tier-auras/aura-system.webp",
@@ -271,11 +271,11 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "b471061f7b3b3279e8532f898b3acf2d72f15a0d5e4396b1a6dc669798c91804"
+      "sha256": "7beee3548b3cd25052bdf3f50e277ede6dfbb081bc9faf01b22df9299a31b0e2"
     },
     {
       "path": "app/server/gameplay-options.cjs",
-      "sha256": "6d334d718993e49c0b0eae523acf503e1b69f7c0b39d723f34d65c4e49856072"
+      "sha256": "b57bfc0f4a182e991e94cac7f2a664c15b643ca0f52a7de8c3cec9320f6b24f9"
     },
     {
       "path": "app/server/init-db.cjs",
@@ -295,7 +295,7 @@
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "3a772162d0d485d393d4441fce7f052e897d6518e5d49bcd141124768c815171"
+      "sha256": "c7f07281ae5562b9d764fe01ee31356ad69e823cf2246eda0b5202396585ae4c"
     },
     {
       "path": "app/server/store.cjs",

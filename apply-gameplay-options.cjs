@@ -50,6 +50,20 @@ const rewardPatches=[
 const chestPopupPatches=[
  ["const gained=prior===null?0:Math.max(0,Number(chest.pending||0)+Number(chest.claimed||0)-prior);if(tab===0&&gained>=1)fl.push({x:W/2-2,y:H/2,t:1,s:'+'+fmt(gained)+' Ryo → Chest'});","const gained=prior===null?0:Math.max(0,Number(chest.pending||0)+Number(chest.claimed||0)-prior),extra=gained-(window.KillReport?.creditedShown(gained)||0);if(tab===0&&extra>=1)fl.push({x:W/2-2,y:H/2,t:1,s:'+'+fmt(extra)+' Ryo → Chest'});"]
 ];
+// Purchase split texts (80% operations / 10% treasury / 8% burn / 2% studio, the 2% inside the price).
+// [before, after, occurrences]. Exported so preservation can reverse them.
+const purchaseSplitPatches=[
+ ['canAfford(base){return this.available()>=base+Math.ceil(base/50)}','canAfford(base){return this.available()>=base}',1],
+ ["<dt>Base price</dt><dd>'+fmt(q.base)+' Ryo</dd><dt>Studio fee · 2%</dt><dd>'+fmt(q.studioFee)+' Ryo</dd><dt>Total deposited Ryo charged</dt><dd>'+fmt(q.total)+' Ryo</dd><dt>Base allocation to treasury · 10%</dt><dd>'+fmt(q.treasury)+' tokens</dd><dt>Base allocation burned · 10%</dt><dd>'+fmt(q.burn)+' tokens</dd><dt>Operations · 80%</dt><dd>'+fmt(q.operations)+' tokens</dd>",
+  "<dt>Price · deposited Ryo charged</dt><dd>'+fmt(q.total)+' Ryo</dd><dt>Operations / reward pool · 80%</dt><dd>'+fmt(q.operations)+' Ryo</dd><dt>Treasury · 10%</dt><dd>'+fmt(q.treasury)+' tokens</dd><dt>Burned · 8%</dt><dd>'+fmt(q.burn)+' tokens</dd><dt>Studio · 2%</dt><dd>'+fmt(q.studioFee)+' tokens</dd>",1],
+ ['<b>25,000 Ryo + 2% studio</b>','<b>25,000 Ryo</b>',1],
+ ['250,000 Ryo + 2% studio fee.','250,000 Ryo (2% studio share included).',1],
+ ['Token training adds a 2% studio fee.','Token training: price includes the 2% studio share.',1],
+ ['all purchases add a 2% studio fee','purchases: 80% reward pool · 10% treasury · 8% burn · 2% studio',1],
+ ['every purchase adds a 2% studio fee · 10% treasury + 10% burn from base.','every purchase: 80% reward pool · 10% treasury · 8% burn · 2% studio.',1],
+ ['charges 25,000 Ryo plus the 2% studio fee, including failed attempts.','charges 25,000 Ryo (2% studio share included), including failed attempts.',1],
+ ['Each base price allocates 10% to treasury, 10% to an on-chain burn, and 80% to operations. A 2% studio fee is added to the base price.','Each price allocates 80% to operations and the reward pool, 10% to treasury, 8% to an on-chain burn and 2% to the studio. The studio share is included in the price.',1]
+];
 // Training (max level 5): stats are base + the server's stored +1 gains (h.bonus) instead of a 1→10
 // stretch to the rank's top; the new price table; level caps, "x/5", Lv 5 Elite fusion; and a toast
 // naming what the training gave. [before, after, occurrences]. Exported so preservation can reverse them.
@@ -88,11 +102,17 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
   s=replaceOne(s,"if(profile.heroes.length-list.length+list.length/3<2)fail('Keep at least two heroes in the server token collection after fusion.');","if(list[0].rank===3&&list.some(h=>h.level!==5))fail('Elite to Legend fusion requires three level 5 Elite heroes.');\n  if(profile.heroes.length-list.length<2)fail('Keep at least two heroes even if every fusion attempt fails.');",'fusion eligibility');
   s=replaceOne(s,"title='Fuse '+list.length+' heroes into '+list.length/3;","title='Fusion · '+list.length/3+' attempt'+(list.length===3?'':'s');",'fusion title');
   s=replaceOne(s,'return {economyVersion:VERSION,product,params,title,base,studioFee,total:base+studioFee,treasury:base/10,burn:base/10,operations:base*.8};','return {economyVersion:VERSION,product,params:product===\'fusion\'?{...params,fusionRulesVersion:1}:params,title,base,studioFee,total:base+studioFee,treasury:base/10,burn:base/10,operations:base*.8,...(product===\'fusion\'?{fusion:{version:1,attempts:params.heroIds.length/3,successPercent:[90,80,70,60][profile.heroes.find(h=>h.tokenId===params.heroIds[0]).rank],consumeOnFailure:true,eliteLevelRequired:5}}:{})};','versioned fusion quote');
+  // Purchase split: the price is the total; 2% studio, 10% treasury, 8% burn, 80% operations.
+  s=replaceOne(s,"const studioFee=fee(base);return {economyVersion:VERSION,product,params:product==='fusion'?{...params,fusionRulesVersion:1}:params,title,base,studioFee,total:base+studioFee,treasury:base/10,burn:base/10,operations:base*.8,","const split=require('./gameplay-options.cjs').purchaseSplit(base),studioFee=split.studioFee;return {economyVersion:VERSION,product,params:product==='fusion'?{...params,fusionRulesVersion:1}:params,title,base,studioFee,total:base,treasury:split.treasury,burn:split.burn,operations:split.operations,",'purchase split');
   s=replaceOne(s,"for(let i=0;i<consumed.size/3;i++)outputs.push(hero(rank+1));","for(let i=0;i<consumed.size/3;i++)if(!q.fusion||crypto.randomInt(100)<q.fusion.successPercent)outputs.push(hero(rank+1));",'server fusion roll');
   s=replaceOne(s,"consumed:q.product==='fusion'?q.params.heroIds:[]","consumed:q.product==='fusion'?q.params.heroIds:[],...(q.product==='fusion'?{fusion:{version:q.fusion?.version||0,attempts:q.params.heroIds.length/3,succeeded:outputs.length,failed:q.params.heroIds.length/3-outputs.length,successPercent:q.fusion?.successPercent??100,totalCharged:q.total}}:{})",'persisted fusion results');return s;
  });
  patch('server/store.cjs',s=>replaceOne(s,"q=economy.quote(profile,product,params);if(q.total!==expectedTotal)","q=economy.quote(profile,product,params);if(product==='fusion'&&(params.fusionRulesVersion!==1||params.fusionRulesAccepted!==1))fail('Fusion rules changed. Refresh and review the success chance and consumption terms before paying.',409);if(q.total!==expectedTotal)",'reviewed fusion rules'));
  patch('server/service.cjs',s=>replaceOne(s,"if(action==='hero-mode'){","if(action==='sensei-settings'){await require('./gameplay-options.cjs').saveSenseiSettings(store,wallet,body);return state(wallet)}\n  if(action==='hero-mode'){",'authenticated settings action'));
+ // Purchases move exactly the quoted studio, treasury and burn shares (zero shares are skipped).
+ patch('server/service.cjs',s=>replaceOne(s,"return signedTransaction([...transferTo(studioAddress,BigInt(q.studioFee)*UNIT),...transferTo(revenueAddress,BigInt(q.base)*UNIT/10n),spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.base)*UNIT/10n,6),memo('shinobi-purchase-v2:'+id)]);",
+  "return signedTransaction([...(q.studioFee>0?transferTo(studioAddress,BigInt(q.studioFee)*UNIT):[]),...(q.treasury>0?transferTo(revenueAddress,BigInt(q.treasury)*UNIT):[]),...(q.burn>0?[spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6)]:[]),memo('shinobi-purchase-v2:'+id)]);",'purchase split transfers'));
+ patch('server/service.cjs',s=>replaceOne(s,'purchaseTreasuryBps:1000,purchaseBurnBps:1000,','purchaseTreasuryBps:1000,purchaseBurnBps:800,purchaseStudioBps:200,purchaseOperationsBps:8000,','purchase split config'));
  patch('server/service.cjs',s=>replaceOne(s,"adventure(store,wallet,{active:body.active===true,claim},available)","adventure(store,wallet,{active:body.active===true,claim,report:{killSession:body.killSession,killTotals:body.killTotals,killStage:body.killStage}},available)",'kill report body'));
  patch('server/adventure.cjs',s=>{
   // Online Adventure pays the kills the player's battle reports (gameplay-options.cjs creditKills).
@@ -130,10 +150,11 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
  patch('public/index.html',s=>trained(s)?s:fusionListPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'fusion list '+i),s));
  patch('public/index.html',s=>trained(s)?s:rewardPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'enemy reward '+i),s));
  patch('public/index.html',s=>trained(s)?s:bossTeamPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'boss team '+i),s));
+ patch('public/index.html',s=>purchaseSplitPatches.reduce((html,[before,after,count],i)=>replaceCount(html,before,after,count,'purchase split '+i),s));
  patch('public/index.html',s=>trainingPatches.reduce((html,[before,after,count],i)=>replaceCount(html,before,after,count,'training '+i),s));
  patch('public/index.html',s=>identityPatches.reduce((html,[before,after,count],i)=>replaceCount(html,before,after,count,'identity '+i),s));
  const dest=path.join(appDir,'public/assets/gameplay-options');fs.mkdirSync(dest,{recursive:true});for(const name of ['options.js','options.css'])fs.copyFileSync(path.join(__dirname,'gameplay-options',name),path.join(dest,name));
  console.log('Server-enforced fusion odds and persisted Sensei preferences applied.');
 }
 function applyAfterChest(appDir=path.join(__dirname,'app')){const name=path.join(appDir,'public/index.html'),before=fs.readFileSync(name,'utf8'),after=chestPopupPatches.reduce((html,[a,b],i)=>replaceOne(html,a,b,'chest popup '+i),before);if(before!==after)fs.writeFileSync(name,after)}
-module.exports={applyGameplayOptions,applyAfterChest,identityPatches,trainingPatches,chestPopupPatches,fusionListPatches,bossTeamPatches,rewardPatches,BOSS_TEAM,MAX_HEROES};if(require.main===module)applyGameplayOptions();
+module.exports={applyGameplayOptions,applyAfterChest,purchaseSplitPatches,identityPatches,trainingPatches,chestPopupPatches,fusionListPatches,bossTeamPatches,rewardPatches,BOSS_TEAM,MAX_HEROES};if(require.main===module)applyGameplayOptions();

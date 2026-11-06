@@ -37,7 +37,7 @@ const train = async (p, id) => {
     await p.waitForFunction(() => /Training complete · Lv 2 · \+1 Power/.test(document.getElementById('toast').textContent));
     const after = await find(p, 'genin');
     assert.deepEqual([after.lv, after.pw, after.sp, after.st], [2, before.pw + 1, before.sp, before.st], 'a Genin level-up adds exactly +1 Power');
-    assert.equal(paid - f.balance, 10000 + economy.fee(10000), 'charged the step price plus the 2% studio fee');
+    assert.equal(paid - f.balance, 10000, 'charged the step price (2% studio share included)');
     assert.equal(after.cost, 20000, 'the next step costs 20,000');
 
     // Legend Lv4→5: two +1s, then Max level.
