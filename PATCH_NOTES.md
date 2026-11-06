@@ -20,6 +20,24 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Boss Hunt rankings & UI polish)**
+
+**✨ New**
+• **Separate Daily and Weekly Rankings buttons** on the Boss Hunt screen. Each shows the current leader and your place, and opens its own pop-up.
+• **Daily Rankings pop-up:** prize pool, time left, your place, today's top 10 (damage and Ryo prize), and the **previous day's winners**.
+• **Weekly Rankings pop-up:** week dates, time left, your place, this week's standings (points and Legend/Elite prize), and **last week's winners**.
+
+**🛠 Fixes & Improvements**
+• Boss Hunt screen cleaned up: no more leftover artwork peeking between panels, and the tiny "Strike Team" caption in the arena is gone.
+• Larger, outlined hero and guardian names in the arena, and hero rows spaced so names are never covered.
+• Bigger, easier-to-read text across the Boss Hunt panels; "Your Day" no longer squeezes its numbers.
+• The Challenge button turns red with a live countdown while you're hunting.
+• Panels show "Loading…" instead of empty boxes while the hunt loads; the guardian name fits better on phones.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Boss Hunt weekly rankings)**
 
 **✨ New**

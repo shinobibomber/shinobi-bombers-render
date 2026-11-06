@@ -1034,8 +1034,9 @@
   addEventListener('pagehide', () => { if (!BH.active) return; if (window.KillReport) KillReport.closing = true; try { huntReport(false); } finally { if (window.KillReport) KillReport.closing = false; } });
   INIT['boss-hunt'] = b => {
     $$('.hs', b.st).forEach(e => { if (e.dataset.sbwid !== 'back') e.hidden = true; });
-    b.head = cv(b, 32, 202, 962, 78, 'sbw-bh-head');
-    b.sched = cv(b, 32, 284, 180, 430, 'sbw-bh-sched');
+    // Panels touch each other so no printed artwork (old HP bar, tab arrows) shows in the gaps.
+    b.head = cv(b, 32, 202, 962, 82, 'sbw-bh-head');
+    b.sched = cv(b, 32, 284, 186, 430, 'sbw-bh-sched');
     b.arenaBox = cv(b, 218, 284, 774, 428, 'sbw-bh-arena');
     b.arena = mk('canvas', 'sbw-bh-canvas', b.arenaBox); b.arena.width = 1200; b.arena.height = 660; b.arena.setAttribute('aria-label', 'Guardian arena');
     b.prize = cv(b, 30, 726, 966, 156, 'sbw-bh-prize');
@@ -1050,7 +1051,7 @@
       <ul class="bh-rules"><li>⏱ 60-second damage run · Adventure keeps going</li><li>✦ No chakra needed · every volley fires</li><li>🏆 Top 10 by total damage today share the prize pool</li><li>👑 Weekly top 3 win a Legend hero · 4th–10th an Elite</li><li>🕛 Prizes are paid at 00:00 UTC to your Ryo balance</li></ul>`;
     b.tiles = Array.from({ length: 5 }, () => mk('div', 'bh-tile', $('.bh-tiles', b.team)));
     b.team.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (!a || a.disabled) return; ({ auto: huntAuto, go: huntChallenge, stop: () => window.V2?.retreat?.() })[a.dataset.act]?.(); });
-    b.ranks.addEventListener('click', e => { if (e.target.closest('[data-act="all"]')) huntRankings(); if (e.target.closest('[data-act="week"]')) huntRankings('weekly'); });
+    b.ranks.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && !a.disabled) huntRankings(a.dataset.act); });
   };
   function huntAuto() {
     const t = huntTeam(); if (built['boss-hunt']) { built['boss-hunt'].sig = ''; built['boss-hunt'].flash = performance.now(); }
@@ -1073,49 +1074,69 @@
     }, 'sbw-hunt');
     if (bal < 10000) $('[data-k="go"]', d).disabled = true;
   }
-  function huntRankings(tab = 'daily') {
-    const h = BH.board; if (!h) return;
-    const rows = (list, empty) => list.length ? `<ol class="bh-list">${list.map(r => `<li class="${r.me ? 'me' : ''}"><b>${ORD(r.rank)}</b><span>${esc(r.name)}<small>${esc(r.wallet)}</small></span><em>${fmt(r.damage)} dmg</em><i>${fmt(r.prize)} Ryo</i></li>`).join('')}</ol>` : `<p class="sbw-small">${empty}</p>`;
+  // Rankings pop-ups: Daily (today's damage standings + the previous day's winners) and Weekly
+  // (this week's points standings + last week's winners).
+  const utcDay = (d, o = {}) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC', ...o });
+  const weekSpan = w => utcDay(w) + ' – ' + utcDay(new Date(Date.parse(w + 'T00:00:00Z') + 6 * 86400000).toISOString().slice(0, 10));
+  function huntRankings(kind = 'daily') {
+    const h = BH.board, wk = h?.weekly; if (!h || (kind === 'weekly' && !wk)) return;
+    const row = (r, value, prize, leg) => `<li class="${r.me ? 'me' : ''}${r.rank <= 3 ? ' p' + r.rank : ''}"><b>${ORD(r.rank)}</b><span>${esc(r.name)}<small>${esc(r.wallet)}</small></span><em>${value}</em><i class="${leg ? 'leg' : ''}">${prize}</i></li>`;
+    const list = (rows, empty, cls, fn) => rows && rows.length ? `<ol class="bh-list ${cls}">${rows.map(fn).join('')}</ol>` : `<p class="bh-empty">${empty}</p>`;
+    const days = rows => list(rows, '', '', r => row(r, fmt(r.damage) + ' dmg', fmt(r.prize) + ' Ryo'));
+    const weeks = rows => list(rows, '', 'wk', r => row(r, r.points + ' pts', esc(r.prize || '—'), /Legend/.test(r.prize)));
+    const sec = (title, note, body) => `<section class="bh-sec"><h3>${title}</h3>${note ? `<p>${note}</p>` : ''}${body}</section>`;
+    const sum = items => `<div class="bh-dsum">${items.map(([k, v]) => `<span>${k}<b>${v}</b></span>`).join('')}</div>`;
+    let body;
+    if (kind === 'weekly') {
+      const me = wk.me.rank ? `${ORD(wk.me.rank)} · ${wk.me.points} pts` : '—';
+      body = `<h2>👑 Weekly Rankings</h2>${sum([['Week (UTC)', weekSpan(wk.week)], ['Ends in', dur(wk.endsIn)], ['Your place', me]])}
+        ${sec("This week's standings", 'Daily places earn points: 1st 10 … 10th 1. <b>Top 3 win a Legend hero · 4th–10th an Elite hero.</b> Today\'s points are provisional until 00:00 UTC.', wk.top.length ? weeks(wk.top) : '<p class="bh-empty">No points yet this week. Finish in a daily top 10 to score.</p>')}
+        ${wk.me.rank > 10 ? `<p class="bh-you">You: <b>${ORD(wk.me.rank)}</b> · ${wk.me.points} pts</p>` : ''}
+        ${sec("🏅 Last week's winners", wk.last ? weekSpan(wk.last.week) + ' · heroes were added to the winners\' collections' : '', wk.last && wk.last.winners.length ? weeks(wk.last.winners) : '<p class="bh-empty">No winners yet. The first weekly prizes are given when this week ends.</p>')}`;
+    } else {
+      const y = h.yesterday, me = h.me.rank ? `${ORD(h.me.rank)} · ${fmt(h.me.damage)}` : h.me.entries ? 'No damage yet' : 'Not entered';
+      body = `<h2>📊 Daily Rankings</h2>${sum([['Prize pool', fmt(h.pool) + ' Ryo'], ['Ends in', dur(h.endsIn)], ['Your place', me]])}
+        ${sec("Today's standings", `${utcDay(h.day, { weekday: 'short' })} · total damage · ${h.players} player${h.players === 1 ? '' : 's'} · the top 10 share the pool at 00:00 UTC`, h.top.length ? days(h.top) : '<p class="bh-empty">No damage yet today. Be the first!</p>')}
+        ${h.me.rank > 10 ? `<p class="bh-you">You: <b>${ORD(h.me.rank)}</b> · ${fmt(h.me.damage)} dmg</p>` : ''}
+        ${sec("🏅 Previous day's winners", y ? `${utcDay(y.day, { weekday: 'short' })} · pool ${fmt(y.pool)} Ryo · paid to Ryo balances` : '', y && y.winners.length ? days(y.winners) : y ? '<p class="bh-empty">Nobody dealt damage that day; the pool carried over.</p>' : '<p class="bh-empty">No results yet for the previous day.</p>')}`;
+    }
     if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
-    dlg.className = 'sbw-dialog sbw-mdialog sbw-rankdlg'; dlg.onclick = e => { if (e.target.dataset && e.target.dataset.k === 'x') dlg.close(); };
-    const wk = h.weekly, wrows = (list, empty) => list.length ? `<ol class="bh-list wk">${list.map(r => `<li class="${r.me ? 'me' : ''}"><b>${ORD(r.rank)}</b><span>${esc(r.name)}<small>${esc(r.wallet)}</small></span><em>${r.points} pts</em><i class="${/Legend/.test(r.prize) ? 'leg' : ''}">${esc(r.prize || '—')}</i></li>`).join('')}</ol>` : `<p class="sbw-small">${empty}</p>`;
-    const daily = `<p>Today · prize pool <b>${fmt(h.pool)} Ryo</b> · ends in ${dur(h.endsIn)}</p>${rows(h.top, 'No damage yet today. Be the first!')}
-      ${h.yesterday ? `<h3 class="bh-sub">${esc(h.yesterday.day)} winners · pool ${fmt(h.yesterday.pool)} Ryo</h3>${rows(h.yesterday.winners, 'No winners that day; the pool carried over.')}` : ''}`;
-    const weekly = !wk ? '' : `<p>Week of ${esc(wk.week)} · ends in ${dur(wk.endsIn)}. Daily places earn points (1st 10 … 10th 1). <b>Top 3: Legend hero · 4th–10th: Elite hero.</b> Today's points are provisional.</p>
-      ${wrows(wk.top, 'No points yet this week.')}${wk.last ? `<h3 class="bh-sub">Week of ${esc(wk.last.week)} winners</h3>${wrows(wk.last.winners, 'No winners that week.')}` : ''}`;
-    dlg.innerHTML = `<h2>Rankings</h2><div class="bh-tabs" role="tablist"><button type="button" role="tab" data-t="daily" class="on" aria-selected="true">Daily</button><button type="button" role="tab" data-t="weekly" aria-selected="false">Weekly</button></div>
-      <div class="bh-pane" data-p="daily">${daily}</div><div class="bh-pane" data-p="weekly" hidden>${weekly}</div><div class="sbw-acts"><button type="button" class="sbw-btn" data-k="x">Close</button></div>`;
-    dlg.onclick = e => { const t = e.target.closest('[data-t]'); if (t) { $$('[data-t]', dlg).forEach(x => { const on = x === t; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); }); $$('.bh-pane', dlg).forEach(p => { p.hidden = p.dataset.p !== t.dataset.t; }); return; } if (e.target.dataset && e.target.dataset.k === 'x') dlg.close(); };
-    if (tab === 'weekly') dlg.querySelector('[data-t="weekly"]').click();
-    if (!dlg.open) dlg.showModal();
+    dlg.className = 'sbw-dialog sbw-mdialog sbw-rankdlg ' + kind;
+    dlg.innerHTML = body + `<div class="sbw-acts"><button type="button" class="sbw-btn ghost" data-k="swap">${kind === 'weekly' ? '📊 Daily rankings' : '👑 Weekly rankings'}</button><button type="button" class="sbw-btn" data-k="x">Close</button></div>`;
+    dlg.onclick = e => { const k = e.target.closest('[data-k]')?.dataset.k; if (k === 'x') dlg.close(); else if (k === 'swap') huntRankings(kind === 'weekly' ? 'daily' : 'weekly'); };
+    dlg.scrollTop = 0; if (!dlg.open) dlg.showModal();
   }
   PAINT['boss-hunt'] = (b, now) => {
     if (!account()) { if (b.sig !== 'out') { b.sig = 'out'; b.head.innerHTML = '<div class="bh-h"><div><small>BOSS HUNT</small><h3>Sign in to hunt</h3></div></div>'; } return; }
     if (!BH.busy && Date.now() - BH.at > (V2?.isBossActive?.() ? 10000 : 20000)) huntLoad();
     const h = BH.board, s = window.V2?.bossState?.(), active = !!window.V2?.isBossActive?.(), team = huntTeam();
     const left = active ? Math.ceil(s.time) : 0, dmg = active ? Math.round(s.damage) : BH.last ? BH.last.damage : 0;
-    const sig = JSON.stringify([h && [h.day, h.pool, h.players, h.top.map(r => [r.name, r.damage]), h.me, h.yesterday?.day, h.weekly?.me, h.weekly?.top.length], BH.error, active, left, dmg, team.map(t => t.id + ':' + t.lv), Math.floor(Date.now() / 60000), b.flash]);
+    const sig = JSON.stringify([h && [h.day, h.pool, h.players, h.top.map(r => [r.name, r.damage]), h.me, h.yesterday?.day, h.weekly?.me, h.weekly?.waiting, h.weekly?.top.map(w => [w.name, w.points])], BH.error, active, left, dmg, team.map(t => t.id + ':' + t.lv), Math.floor(Date.now() / 60000), b.flash]);
     if (sig === b.sig) return; b.sig = sig;
-    const g = h ? h.guardian : 0, name = h ? h.guardianName : GUARD[0];
+    const name = h ? h.guardianName : BH.error ? 'Boss Hunt' : 'Loading today\'s guardian…';
     b.head.innerHTML = `<div class="bh-h"><div><small>TODAY'S GUARDIAN${h ? ' · ends in ' + dur(h.endsIn) : ''}</small><h3>${esc(name)}</h3></div>
       <div class="bh-state"><em class="${active ? 'run' : 'ready'}">${active ? 'HUNTING' : BH.last ? 'FINISHED' : 'READY'}</em><b>${active ? left + 's' : (h ? h.seconds : 60) + 's'}</b></div></div>
       <div class="bh-meter"><i style="width:${active ? Math.round(100 * ((h ? h.seconds : 60) - s.time) / (h ? h.seconds : 60)) : BH.last ? 100 : 0}%"></i><span>${active ? 'This hunt' : BH.last ? 'Last hunt' : 'Damage'}</span><b>${fmt(dmg)} damage</b></div>`;
-    if (h) b.sched.innerHTML = `<h4>GUARDIANS</h4>${h.schedule.map((d, i) => `<div class="bh-day${i ? '' : ' on'}"><small>${i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : new Date(d.day + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })}</small><b>${esc(d.name.split(' · ')[0])}</b><span>${esc(d.name.split(' · ')[1] || '')}</span></div>`).join('')}`;
+    b.sched.innerHTML = !h ? '<h4>GUARDIANS</h4><p class="bh-wait">Loading…</p>' : `<h4>GUARDIANS</h4>${h.schedule.map((d, i) => `<div class="bh-day${i ? '' : ' on'}"><small>${i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : new Date(d.day + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })}</small><b>${esc(d.name.split(' · ')[0])}</b><span>${esc(d.name.split(' · ')[1] || '')}</span></div>`).join('')}`;
     b.prize.innerHTML = BH.error ? `<div class="sbw-empty"><b>Boss Hunt unavailable</b><p>${esc(BH.error)}</p></div>` : !h ? '<div class="sbw-empty"><b>Loading today\'s hunt…</b></div>'
       : `<div class="bh-pool"><small>🏆 TODAY'S PRIZE POOL</small><b><i class="coin"></i>${fmt(h.pool)} Ryo</b><span>${h.players} player${h.players === 1 ? '' : 's'} · 80% of every 10,000 Ryo entry</span></div>
         <div class="bh-chips">${h.prizes.map((p, i) => `<span class="${i < 3 ? 'p' + (i + 1) : ''}"><b>${ORD(i + 1)}</b>${fmt(p)}</span>`).join('')}</div>`;
-    b.ranks.innerHTML = !h ? '' : `<div class="bh-rh"><b>📊 DAILY RANKINGS</b><small>total damage today</small><button type="button" class="sbw-mbtn sm" data-act="all">View all</button></div>
-      <div class="bh-rrow">${h.top.slice(0, 3).map(r => `<span class="${r.me ? 'me' : ''}"><b>${ORD(r.rank)}</b>${esc(r.name)}<em>${fmt(r.damage)}</em></span>`).join('') || '<span class="none">No damage yet today. Be the first!</span>'}
-      <span class="you">${h.me.rank ? `You: <b>${ORD(h.me.rank)}</b> · ${fmt(h.me.damage)}` : h.me.entries ? 'You: no damage yet' : 'You: not entered'}</span></div>
-      ${h.weekly ? `<div class="bh-week" role="button" tabindex="0" data-act="week"><b>👑 WEEKLY</b><span>${h.weekly.me.rank ? `You: <b>${ORD(h.weekly.me.rank)}</b> · ${h.weekly.me.points} pts${h.weekly.me.prize ? ' · ' + esc(h.weekly.me.prize) : ''}` : 'Place in a daily top 10 to earn points'}</span><small>Top 3: Legend · 4th–10th: Elite · ends in ${dur(h.weekly.endsIn)}</small></div>` : ''}`;
-    b.mine.innerHTML = !h ? '' : `<h4>YOUR DAY</h4><span>Damage today<b>${fmt(h.me.damage)}</b></span><span>Rank today<b>${h.me.rank ? ORD(h.me.rank) : '—'}</b></span><span>Entries today<b>${h.me.entries}</b></span><span>If it ended now<b>${h.me.prize ? fmt(h.me.prize) + ' Ryo' : '—'}</b></span><span>Week<b>${h.weekly?.me.rank ? ORD(h.weekly.me.rank) + ' · ' + h.weekly.me.points + ' pts' : '—'}</b></span>${h.weekly?.waiting ? `<span class="wait">Weekly hero waiting<b>${h.weekly.waiting} · free a slot</b></span>` : ''}`;
+    // Two ranking buttons, each opening its own pop-up.
+    const wk = h?.weekly, lead = h?.top[0], wlead = wk?.top[0];
+    b.ranks.innerHTML = `<button type="button" class="bh-rk day" data-act="daily"${h ? '' : ' disabled'}><span class="t">📊 DAILY RANKINGS<i>View ›</i></span>
+        <span class="l">${!h ? 'Loading…' : lead ? `<b>1st</b> ${esc(lead.name)} · ${fmt(lead.damage)} dmg` : 'No damage yet today. Be the first!'}</span>
+        <span class="you">${!h ? '' : `${h.me.rank ? `You: <b>${ORD(h.me.rank)}</b> · ${fmt(h.me.damage)} dmg` : h.me.entries ? 'You: no damage yet' : 'You: not entered'} · ends in ${dur(h.endsIn)}`}</span></button>
+      <button type="button" class="bh-rk wk" data-act="weekly"${wk ? '' : ' disabled'}><span class="t">👑 WEEKLY RANKINGS<i>View ›</i></span>
+        <span class="l">${!wk ? 'Loading…' : wlead ? `<b>1st</b> ${esc(wlead.name)} · ${wlead.points} pts` : 'No points yet this week'}</span>
+        <span class="you">${!wk ? '' : wk.me.rank ? `You: <b>${ORD(wk.me.rank)}</b> · ${wk.me.points} pts${wk.me.prize ? ' · ' + esc(wk.me.prize) : ''}` : 'Top 3: Legend hero · 4th–10th: Elite'}</span></button>`;
+    b.mine.innerHTML = `<h4>YOUR DAY</h4><span>Damage today<b>${h ? fmt(h.me.damage) : '—'}</b></span><span>Rank today<b>${h?.me.rank ? ORD(h.me.rank) : '—'}</b></span><span>Entries<b>${h ? h.me.entries : '—'}</b></span><span>If it ended now<b>${h?.me.prize ? fmt(h.me.prize) + ' Ryo' : '—'}</b></span>${wk?.waiting ? `<span class="wait">👑 Weekly hero waiting: ${wk.waiting} · free a collection slot to receive it</span>` : ''}`;
     setText($('.bh-count', b.team), `${team.length}/5 · auto`);
     const flash = b.flash && now - b.flash < 900;
     b.tiles.forEach((e, i) => { const t = team[i]; e.classList.toggle('empty', !t); e.classList.toggle('flash', !!flash); e.style.setProperty('--rc', t ? RCOL[t.r] : '#2a3a6a');
       const k = t ? t.id + ',' + t.lv : 'x'; if (e.dataset.k !== k) { e.dataset.k = k; e.innerHTML = t ? `<canvas width="80" height="90"></canvas><b>Lv. ${t.lv}</b><small>${RNAME[t.r]}</small>` : '<small>Empty</small>'; }
       const c = $('canvas', e); if (c && t) drawHero(c, t, 1.9, now, 4); });
     const go = $('.bh-go', b.team), stop = $('.bh-stop', b.team);
-    go.disabled = active || !team.length; go.textContent = active ? `HUNTING · ${left}s` : 'CHALLENGE · 10,000 Ryo'; stop.hidden = !active;
+    go.disabled = active || !team.length; go.classList.toggle('run', active); go.textContent = active ? `HUNTING · ${left}s` : 'CHALLENGE · 10,000 Ryo'; stop.hidden = !active;
   };
   MIRROR['boss-hunt'] = b => mirror(b.arena, document.getElementById('bossHuntMap'));
   MODS['boss-hunt'] = { challenge: () => huntChallenge(), team: () => huntAuto(), ranking: () => huntRankings(), bossinfo: () => {}, locked: () => {} };

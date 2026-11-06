@@ -108,6 +108,11 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Boss Hunt UI (owner request): the ranks panel is two buttons (.bh-rk data-act daily/weekly);
+  huntRankings(kind) opens a Daily or Weekly pop-up (summary, standings, previous day / last week winners,
+  swap button). Head/sched panels touch the arena (no printed gaps); bossHuntPatches remove the arena
+  caption, outline hero/guardian names and space hero rows 105px. Loading placeholders; .bh-go.run style.
+
 - 2026-11-07 Boss Hunt weekly (owner request): entry 10,000 = 8,000 prize pool / 1,000 treasury (revenue
   transfer) / 1,000 burn; hunts 60 s (HUNT_SECONDS, bossHuntPatches time:60). Weekly ranking Mon–Sun UTC
   (weekOf): points 11−daily rank from ryo_hunt_payouts, ties by the week's confirmed damage, then earliest.

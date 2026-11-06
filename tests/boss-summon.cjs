@@ -78,20 +78,31 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     await p.screenshot({ path: path.join(output, 'boss-hunt-fight.png') });
     // Ending reports the damage; the ranking and my day update.
     await p.evaluate(() => V2.retreat());
-    await p.waitForFunction(() => /You: <b>|You: \d|You: .*\d/.test(document.querySelector('.sbw-scr.on .bh-rrow .you')?.innerHTML || '') && !/not entered/.test(document.querySelector('.sbw-scr.on .bh-rrow .you').textContent), null, { timeout: 15000 });
+    await p.waitForFunction(() => /You: <b>/.test(document.querySelector('.sbw-scr.on .bh-rk.day .you')?.innerHTML || ''), null, { timeout: 15000 });
     const dealt = f.hunt.entries[0].damage;
     assert(dealt > 0 && f.hunt.reports.length >= 1, 'the damage was reported to the server');
     assert.match(await p.locator('.sbw-scr.on .sbw-bh-mine').textContent(), new RegExp('Damage today' + dealt.toLocaleString('en-US')));
-    // Weekly line, then View all: Daily tab and the Weekly tab with points, prizes and last week's winners.
-    assert.match(await p.locator('.sbw-scr.on .bh-week').textContent(), /WEEKLY.*You: 3rd · 8 pts · Legend hero.*Top 3: Legend · 4th–10th: Elite/s, 'my provisional weekly place');
-    await p.locator('.sbw-scr.on [data-act="all"]').click(); await p.waitForSelector('.sbw-rankdlg[open]');
-    assert.match(await p.locator('.sbw-rankdlg .bh-pane[data-p="daily"]').textContent(), /KuroSenpai[\s\S]*2030-01-01 winners/, 'Daily lists today and yesterday');
-    await p.locator('.sbw-rankdlg [data-t="weekly"]').click();
-    const weekly = await p.locator('.sbw-rankdlg .bh-pane[data-p="weekly"]').textContent();
-    assert.match(weekly, /1stKuroSenpai[\s\S]*28 pts[\s\S]*Legend hero[\s\S]*2nd[\s\S]*17 pts/, 'weekly standings by points with prizes');
-    assert.match(weekly, /Week of 2029-12-24 winners[\s\S]*Legend hero[\s\S]*Elite hero/, "last week's winners");
+    // Two ranking buttons, each with its own pop-up: standings plus the previous day's / week's winners.
+    const buttons = await p.evaluate(() => [...document.querySelectorAll('.sbw-scr.on .sbw-bh-ranks .bh-rk')].map(b => [b.dataset.act, b.textContent.replace(/\s+/g, ' ').trim()]));
+    assert.deepEqual(buttons.map(b => b[0]), ['daily', 'weekly'], 'separate Daily and Weekly buttons');
+    assert.match(buttons[0][1], /DAILY RANKINGS.*1st KuroSenpai · 42,000 dmg.*You: \d+(st|nd|rd|th) · [\d,]+ dmg · ends in/);
+    assert.match(buttons[1][1], /WEEKLY RANKINGS.*1st KuroSenpai · 28 pts.*You: 3rd · 8 pts · Legend hero/, 'my provisional weekly place');
+    await p.locator('.sbw-scr.on .bh-rk.day').click(); await p.waitForSelector('.sbw-rankdlg.daily[open]');
+    const daily = await p.locator('.sbw-rankdlg').textContent();
+    assert.match(daily, /Daily Rankings[\s\S]*Prize pool[\s\S]*Today's standings[\s\S]*KuroSenpai[\s\S]*42,000 dmg[\s\S]*Previous day's winners[\s\S]*Jan 1[\s\S]*pool 18,000 Ryo[\s\S]*99,000 dmg[\s\S]*10,800 Ryo/, 'Daily: today and the previous day');
+    assert(!/Weekly Rankings/.test(daily), 'the daily pop-up shows only daily rankings');
+    await p.screenshot({ path: path.join(output, 'boss-hunt-daily.png') });
+    await p.locator('.sbw-rankdlg [data-k="x"]').click(); await p.waitForFunction(() => !document.querySelector('.sbw-rankdlg[open]'));
+    await p.locator('.sbw-scr.on .bh-rk.wk').click(); await p.waitForSelector('.sbw-rankdlg.weekly[open]');
+    const weekly = await p.locator('.sbw-rankdlg').textContent();
+    assert.match(weekly, /Weekly Rankings[\s\S]*This week's standings[\s\S]*1stKuroSenpai[\s\S]*28 pts[\s\S]*Legend hero[\s\S]*2nd[\s\S]*17 pts/, 'weekly standings by points with prizes');
+    assert.match(weekly, /Last week's winners[\s\S]*Dec 24 – Dec 30[\s\S]*Legend hero[\s\S]*Elite hero/, "last week's winners");
     await p.screenshot({ path: path.join(output, 'boss-hunt-weekly.png') });
+    await p.locator('.sbw-rankdlg [data-k="swap"]').click(); await p.waitForSelector('.sbw-rankdlg.daily[open]');
     await p.keyboard.press('Escape');
+    // No tiny text on the Boss Hunt panels.
+    const tiny = await p.evaluate(() => [...document.querySelectorAll('.sbw-scr.on [class*="sbw-bh-"] *')].filter(e => e.childNodes.length && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) && e.getBoundingClientRect().width && (c => parseFloat(getComputedStyle(e).fontSize) * c.getBoundingClientRect().width / c.offsetWidth)(e.closest('.sbw-cv')) < 10).map(e => e.className + ':' + e.textContent.slice(0, 30)));
+    assert.deepEqual(tiny, [], 'Boss Hunt text is at least 10px on screen');
     // Phone: stacked panels, a full-width arena and a one-line Challenge button.
     await p.setViewportSize({ width: 390, height: 844 });
     await p.waitForFunction(() => document.getElementById('sbwLayer').classList.contains('sbw-phone'));

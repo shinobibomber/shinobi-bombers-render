@@ -1,6 +1,6 @@
 /* Boss Hunt daily rankings build step: copies boss-hunt/server.cjs to app/server/boss-hunt.cjs, adds
  * its tables, wires the paid entry / damage report / board actions and daily settlement into the
- * game server, and turns the game's local Boss Hunt into a 90-second, no-chakra damage run that
+ * game server, and turns the game's local Boss Hunt into a 60-second, no-chakra damage run that
  * needs a paid entry. Exact-string hooks; tests/preservation.cjs reverses bossHuntPatches. */
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
@@ -30,10 +30,16 @@ const bossHuntPatches = [
   // Before a hunt, the arena shows today's guardian.
   ["stage=b?.stage||S.v2.bestBoss+1;\n  const sky=c", "stage=b?.stage||(window.BossHunt?.guardian()??S.v2.bestBoss)+1;\n  const sky=c", 1],
   // Heroes stand on the arena floor (the floor starts at y 220), in two columns.
-  ["const position=slot=>({x:175+(slot%2)*165,y:195+Math.floor(slot/2)*88});", "const position=slot=>({x:300+(slot%2)*150,y:300+Math.floor(slot/2)*90});", 1],
+  ["const position=slot=>({x:175+(slot%2)*165,y:195+Math.floor(slot/2)*88});", "const position=slot=>({x:300+(slot%2)*150,y:290+Math.floor(slot/2)*105});", 1],
   ["c.globalAlpha=h.en<1?.45:1;", "c.globalAlpha=1/* hunt heroes never tire */;", 1],
   ["firing?'a1':h.en<1?'s0':SS.idleName(now,h.id)", "firing?'a1':SS.idleName(now,h.id)", 1],
-  [";c.fillStyle='#14212a';c.fillRect(p.x-35,p.y+30,70,4);c.fillStyle=colors[h.r];c.fillRect(p.x-35,p.y+30,70*Math.min(1,h.en/(h.st*50)),4)}", "/* no chakra bar */}", 1]
+  [";c.fillStyle='#14212a';c.fillRect(p.x-35,p.y+30,70,4);c.fillStyle=colors[h.r];c.fillRect(p.x-35,p.y+30,70*Math.min(1,h.en/(h.st*50)),4)}", "/* no chakra bar */}", 1],
+  // Readable arena labels (outlined); the old "STRIKE TEAM n OF 10" caption is gone.
+  ["c.font='12px system-ui';c.textAlign='center';c.fillStyle=colors[h.r];c.fillText(h.name.split(' ')[0],p.x,p.y+23)",
+   "c.font='bold 18px system-ui';c.textAlign='center';c.lineJoin='round';c.lineWidth=4;c.strokeStyle='#05030f';c.strokeText(h.name.split(' ')[0],p.x,p.y+28);c.fillStyle=colors[h.r];c.fillText(h.name.split(' ')[0],p.x,p.y+28)", 1],
+  ["c.font='bold 19px system-ui';c.fillStyle='#f4d4b5';c.textAlign='center';c.fillText(guardians[(stage-1)%6],target.x,535);",
+   "c.font='bold 24px system-ui';c.textAlign='center';c.lineJoin='round';c.lineWidth=5;c.strokeStyle='#05030f';c.strokeText(guardians[(stage-1)%6],target.x,540);c.fillStyle='#ffe2c4';c.fillText(guardians[(stage-1)%6],target.x,540);", 1],
+  ["c.fillStyle='#a4b2c3';c.font='11px system-ui';c.textAlign='left';c.fillText('GUARDIAN SANCTUARY  /  STRIKE TEAM '+team.length+' OF 10',28,34);", "/* no arena caption */", 1]
 ];
 function replaceCount(text, [before, after, count], label) {
   if (text.split(after).length - 1 === count && !text.includes(before)) return text;
