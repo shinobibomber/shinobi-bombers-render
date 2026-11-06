@@ -25,7 +25,7 @@ const {Store,hash}=require('../app/server/store.cjs'),{createService,GENESIS}=re
  await assert.rejects(service.handle('admin-snapshot',{},'invalid'),/expired/);
  await assert.rejects(call(pw,'admin-snapshot'),e=>e.status===403);
  await assert.rejects(call(vw,'admin-pause',{control:'claims',reason:'test'}),e=>e.status===403);
- let s=await call(vw,'admin-snapshot');assert.equal(s.flow.spent,0);assert.equal(s.runway,null);assert.equal(s.chain.circulating,null);assert.equal(s.chain.supplyRaw,'900000000000000');assert.equal(s.role,'viewer');assert.equal(s.nft.minted,null);
+ let s=await call(vw,'admin-snapshot');assert.equal(s.flow.spent,0);assert.equal(s.runway,null);assert.equal(s.chain.circulating,null);assert.equal(s.chain.supplyRaw,'900000000000000');assert.equal(s.role,'viewer');assert.equal(s.nft.minted,0);assert.equal(s.nft.supply,20);
  const propose=async(kind,payload)=>call(ow,'admin-propose',{kind,payload,reason:'Verified isolated test evidence',version:(await call(ow,'admin-snapshot')).control.version});
  const approve=async p=>call(aw,'admin-review',{id:p.id,approve:true,reason:'Independent evidence review complete'});
  const proposal=await propose('vaults',{vaults:[{label:'Rewards allocation',wallet:addr(vault),evidence:'Approved allocation document'}]});

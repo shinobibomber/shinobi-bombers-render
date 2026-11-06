@@ -2,7 +2,7 @@
  * A wallet owns one Tsukiyomi for every box NFT it holds, verified on-chain (finalized):
  *   MYTHIC_BOX_MINTS       comma/space separated NFT mint addresses, and/or
  *   MYTHIC_BOX_COLLECTION  a verified Metaplex collection mint (any NFT in it counts).
- * Neither set → the feature is dormant and nobody has a Mythic hero. Supply, price and addresses are
+ * Box NFTs sold in the game (mythic-box.cjs) always count. None of these → the feature is dormant. Supply, price and addresses are
  * configuration for the launch, never code. The hero belongs to the NFT: its level and training move
  * with the NFT to the next holder, and it leaves a wallet (and its battle-ready team) when the NFT does.
  * An RPC failure never removes a hero; only a successful finalized check does. */
@@ -92,6 +92,8 @@ async function apply(store, wallet, mints) {
     const profile = await store.profileLocked(c, wallet), others = new Map(), now = store.now ? store.now() : Date.now();
     const owned = (await c.query('SELECT * FROM ryo_mythic_heroes WHERE scope=$1 AND (wallet=$2 OR mint=ANY($3)) FOR UPDATE', [store.scope, wallet, mints])).rows;
     let changed = false, waiting = 0;
+    // Box holders get the 10% purchase discount (economy quote), one discount however many boxes.
+    if (profile.mythicPerk !== held.size > 0) { profile.mythicPerk = held.size > 0; changed = true; }
     // NFTs that left this wallet: the hero leaves too, keeping its latest training in the registry.
     for (const hero of profile.heroes.filter(h => isMythic(h) && h.nft?.mint && !held.has(h.nft.mint))) {
       dropFrom(profile, hero.tokenId); changed = true;
@@ -121,6 +123,10 @@ async function apply(store, wallet, mints) {
 const cache = new Map(), refreshed = new Map();
 async function sync(store, wallet, connection, { force = false, env = process.env } = {}) {
   const cfg = config(env);
+  // Boxes sold in the game (mythic-box.cjs) count alongside any mints configured in the env.
+  let boxes = []; try { boxes = await require('./mythic-box.cjs').mints(store); } catch {}
+  for (const mint of boxes) cfg.mints.add(mint);
+  if (boxes.length) cfg.enabled = true;
   if (!cfg.enabled || !connection) return { enabled: cfg.enabled, mints: [], waiting: 0 };
   const now = Date.now();
   let entry = cache.get(wallet);

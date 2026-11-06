@@ -108,6 +108,13 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Limited Mythic NFT Box (owner request; mythic-box/README.md): home EVENT card + dialog; Devnet;
+  20 boxes, 1 SOL then 1.5 SOL, 2 per wallet, SOL to RYO_REVENUE_WALLET. One atomic server-built tx (player
+  pays + Token-2022 NFT w/ metadata, authority removed, memo), treasury+mint sign, player signs last
+  (box.js reviews it). ryo_mythic_boxes; confirm by the player's signature over the stored message or the
+  mint existing; expiry frees serials. Sold mints count for Tsukiyomi; profile.mythicPerk → quote −10%
+  (not market/hunt). Dashboard: box-mint gated by purchases pause; snapshot nft stats.
+
 - 2026-11-07 Mythic hero Tsukiyomi (owner request; mythic-hero/README.md): rank 5, 7 stars, stats 15–18,
   6 perks, Legend ultimate/training, no summon/fusion/Market. Ownership = Limited NFT Box: env
   MYTHIC_BOX_MINTS and/or MYTHIC_BOX_COLLECTION (dormant until set), finalized on-chain check in

@@ -174,7 +174,7 @@
   }
   const HOME = {
     'logo': () => {}, 'prof': editNickname, 'mng': () => go(1), 't1': () => go(1), 't2': () => go(1), 't3': () => go(1), 't4': () => go(1), 't5': () => go(1),
-    'ev': () => notice('Events', 'No active event is configured. Check back for upcoming events.'),
+    'ev': () => openBox(),
     'go1': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go2': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go3': () => notice('Daily missions', 'Daily missions are not available yet.'),
     'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => go(3), 'news': () => notice('News', 'No news has been posted yet.'),
     'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
@@ -258,9 +258,13 @@
     const barArt = b.st.querySelector('[data-sbwid="chatbar"] > .sl') || b.st;
     b.chat = place(mk('span', 'sbw-chatline', barArt), barArt === b.st ? 582 : 53, barArt === b.st ? 888 : 11, 620, 32); b.chat.hidden = true;
     mk('i', '', b.chat).textContent = '[Global]'; mk('b', '', b.chat); mk('span', '', b.chat);
+    // EVENT: the Limited Mythic NFT Box card covers the printed banner inside the ev hotspot.
+    const evArt = b.st.querySelector('[data-sbwid="ev"] > .sl');
+    if (evArt) { b.box = place(mk('div', 'sbw-boxcard', evArt), 0, 0, 369, 132); b.box.innerHTML = '<img src="assets/mythic-box/box-256.webp" alt=""><div><small>LIMITED EVENT</small><b>MYTHIC NFT BOX</b><span>Tsukiyomi 7★ · 10% off</span><em>1 SOL · 20 pcs only</em></div><i>VIEW</i>'; }
     b.tiles = [1270, 1345, 1420, 1494, 1569].map((x, i) => { const t = place(mk('div', 'sbw-tile', b.st), x, 302, 66, 122); const cv = mk('canvas', '', t); cv.width = 132; cv.height = 150; mk('b', '', t); t.addEventListener('click', () => go(1)); return t; });
   };
   PAINT.home = (b, now) => {
+    if (b.box) { if (account() && !BOXS.busy && Date.now() - BOXS.at > 60000) boxLoad(); const i = BOXS.info; setText($('em', b.box), !i || !account() ? '1 SOL · 20 pcs only' : i.soldOut ? 'SOLD OUT · ' + i.supply + ' / ' + i.supply : (i.limitReached ? 'Owned ' + i.owned + ' · ' : (i.price || 1) + ' SOL · ') + i.remaining + ' / ' + i.supply + ' left'); b.box.classList.toggle('sold', !!i?.soldOut); }
     const nickName = (gs() && gs().nick) || 'Shinobi', mine = owned(), dep = deployed();
     setText(b.name, nickName); setText(b.line, `${mine.length} Shinobi · ${dep.length}/10 deployed`);
     // Message IDs share one sequence, so the higher ID is the newer of Global and System.
@@ -609,6 +613,56 @@
   }
   const num = (t, re) => { const m = re.exec(t || ''); return m ? m[1] : ''; };
   function pressIn(root, test) { if (!root) return false; const e = [...root.querySelectorAll('button')].find(test); if (e && !e.disabled) { e.click(); return true; } return false; }
+
+  /* ---------- Limited Mythic NFT Box (home EVENT): 1 SOL, 20 pcs, max 2 per wallet ---------- */
+  const BOXS = { info: null, at: 0, busy: false, minting: false };
+  async function boxLoad() {
+    if (!account() || !window.MythicBox || BOXS.busy) return;
+    BOXS.busy = true;
+    try { BOXS.info = (await MythicBox.info()).box; } catch {} finally { BOXS.at = Date.now(); BOXS.busy = false; }
+  }
+  function boxHtml(b) {
+    const supply = b?.supply ?? 20, left = b ? b.remaining : null, signedIn = !!account();
+    const label = !signedIn ? 'Sign in to mint' : BOXS.minting ? 'Minting…' : b?.soldOut ? 'Sold out' : b?.limitReached ? 'Limit reached (2)' : '» MINT NOW «';
+    const price = !b ? '1 SOL' : b.limitReached ? b.owned + ' / ' + b.perWallet + ' owned' : b.price + ' SOL';
+    return `<div class="bx-top"><img class="bx-box" src="assets/mythic-box/box-256.webp" alt="Mythic NFT Box">
+        <div class="bx-title"><small>SHINOBI BOMBERS</small><h2>LIMITED MYTHIC NFT BOX</h2><p class="bx-tag">✦ EXCLUSIVE INITIAL INVESTOR OFFER ✦</p><p class="bx-un">Unlock a <b>7-STAR MYTHIC HERO</b> + <b>MYTHIC AURA</b></p></div>
+        <img class="bx-tsu" src="assets/mythic-hero/previews/tsukiyomi_front.png" alt="Tsukiyomi"></div>
+      <div class="bx-perks"><div><b>Mythic hero · Tsukiyomi</b><span class="sbw-stars" aria-label="7 stars">★★★★★★★</span></div><div><b>Mythic Aura</b><span>Wings · glyph ring · crown</span></div><div><b>Exclusive NFT holder tier</b><span>The hero follows the NFT</span></div></div>
+      <div class="bx-disc"><b class="bx-pct">10%</b><div><b>DISCOUNT ON ALL IN-GAME PURCHASES!</b><p><i class="ok">✔ Included:</i> Summon, Fusion, Dojo, Sensei, Training</p><p><i class="no">✖ Not included:</i> Marketplace transactions, Boss Hunt entrance fee</p></div></div>
+      <div class="bx-supply"><div><b>LIMITED SUPPLY · ${supply} PCS ONLY</b><span>${left == null ? 'Sign in to see how many are left' : left ? left + ' of ' + supply + ' left' : 'SOLD OUT'}</span></div><div class="sbw-bar"><i style="width:${left == null ? 100 : Math.round(100 * left / supply)}%"></i></div></div>
+      <div class="bx-price"><span>PRICE</span><b>◎ ${esc(price)}</b><small>${b?.owned === 1 ? 'Your 2nd box: 1 SOL + 0.5 SOL' : 'Max 2 per wallet · a 2nd box is 1.5 SOL (1 + 0.5)'} · Solana Devnet (test SOL)</small></div>
+      ${b?.mine?.length ? `<p class="bx-mine">Your boxes: ${b.mine.map(m => '#' + m.serial + (m.status === 'pending' ? ' (confirming)' : '')).join(', ')}</p>` : ''}
+      <p class="sbw-msg bx-msg" role="status" hidden></p>
+      <div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Close</button><button type="button" class="sbw-btn bx-mint" data-k="mint" ${signedIn && (BOXS.minting || b?.soldOut || b?.limitReached || !b) ? 'disabled' : ''}>${label}</button></div>`;
+  }
+  function boxRender() { if (dlg?.open && dlg.classList.contains('sbw-boxdlg')) dlg.innerHTML = boxHtml(BOXS.info); }
+  function boxMsg(text, ok) { const m = dlg && $('.bx-msg', dlg); if (!m) return; m.hidden = !text; m.textContent = text || ''; m.classList.toggle('ok', !!ok); }
+  async function boxMint() {
+    if (!account()) return notice('Mythic NFT Box', 'Sign in with your wallet to mint the Mythic NFT Box.');
+    if (BOXS.minting || !window.MythicBox) return;
+    BOXS.minting = true; boxRender();
+    const steps = { signing: 'Approve the 1 transaction in your wallet…', confirming: 'Confirming on Solana Devnet… (about 30 seconds)' };
+    boxMsg('Reserving your box…');
+    try {
+      const data = await MythicBox.mint(step => boxMsg(steps[step] || ''));
+      BOXS.info = data.box; BOXS.at = Date.now(); BOXS.minting = false; boxRender();
+      if (data.mint.status === 'confirmed') { boxMsg('Mythic NFT Box #' + data.mint.serial + ' minted! Tsukiyomi joined your Heroes and your 10% discount is active.', true); toast('Mythic NFT Box #' + data.mint.serial + ' minted · Tsukiyomi joined your Heroes'); }
+      else boxMsg('The box transaction did not complete, so nothing was charged. You can try again.');
+    } catch (e) { BOXS.minting = false; boxRender(); boxMsg(e.message || 'Minting failed. Nothing was charged.'); }
+  }
+  function openBox() {
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    dlg.className = 'sbw-dialog sbw-boxdlg'; dlg.innerHTML = boxHtml(BOXS.info);
+    dlg.onclick = e => { const k = e.target.closest('[data-k]')?.dataset.k; if (k === 'x') dlg.close(); else if (k === 'mint') boxMint(); };
+    if (!dlg.open) dlg.showModal();
+    if (account()) {
+      boxLoad().then(boxRender);
+      // A mint that was sent before the page closed finishes here.
+      if (window.MythicBox?.pending()?.signature && !BOXS.minting) { BOXS.minting = true; boxMsg('Finishing your previous box mint…'); MythicBox.resume(() => {}).then(d => { BOXS.minting = false; if (d) BOXS.info = d.box; boxRender(); if (d?.mint.status === 'confirmed') boxMsg('Mythic NFT Box #' + d.mint.serial + ' minted!', true); }).catch(e => { BOXS.minting = false; boxRender(); boxMsg(e.message); }); }
+    }
+  }
+  window.MythicBoxUI = { open: openBox };
 
   /* ---------- Heroes (game page 1) ---------- */
   const HF = [-1, -3, -2, 0, 1, 2, 3, 4], HFL = ['ALL', 'BATTLE-READY', 'RESERVE', 'GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND'];

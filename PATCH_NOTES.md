@@ -20,6 +20,23 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Limited Mythic NFT Box)**
+
+**✨ New Event: LIMITED MYTHIC NFT BOX** 🎁
+• **Exclusive initial investor offer** — find it in **EVENTS** on the Main Menu and tap it to see the full details.
+• **Only 20 boxes** exist. Price: **1 SOL** (a second box is 1.5 SOL). Max **2 per wallet**.
+• Minting is one wallet approval: you pay and receive the box NFT in the same transaction — it lands in your wallet instantly.
+• **Currently on Solana Devnet** for testing (test SOL only).
+
+**🎁 Box perks**
+• 🌙 **Tsukiyomi — the 7-star Mythic hero** with the **Mythic Aura**, added to your Heroes automatically.
+• 💰 **10% DISCOUNT on all in-game purchases** — ✅ Summon, Fusion, Dojo, Sensei and Training. ❌ Not on Marketplace transactions or the Boss Hunt entrance fee.
+• 👑 **Exclusive NFT holder tier** — the perks follow the NFT if you trade it.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Mythic hero: Tsukiyomi)**
 
 **✨ New**

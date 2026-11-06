@@ -271,7 +271,7 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "3120b2a6a8e1024261c8eb4bf1688cde97cdeef15997d5f13fe6d37eda604444"
+      "sha256": "4418936e7bb45cdeec425eb953dd42c6ad23cc8d25c6b2ff20db9e7aebff989c"
     },
     {
       "path": "app/server/gameplay-options.cjs",
@@ -291,11 +291,11 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "c71a09daf8029c0d1914152a84cc9f38750d4f27be418fd23bf702e4888878c9"
+      "sha256": "b9362c74be485a75ab4f7c6b1da4d590bf5a3290dadf871636b07f7118557a2c"
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "cd603d9093815869fb4ac05505e5afa3c616340f3fa750237529659e85a443bc"
+      "sha256": "95c2a4fd9af887de7855383e51782d1cbcdeafbf4dec118f94a5915ac54f78c2"
     },
     {
       "path": "app/server/store.cjs",

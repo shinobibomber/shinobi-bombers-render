@@ -4,7 +4,7 @@ const {fail}=require('./store.cjs');
 const MARKER='ryo-economic-dashboard-v1';
 const PAUSES=['purchases','withdrawals','claims'];
 // Market buys and new listings follow the purchases pause.
-const GATES={purchase:'purchases','market-buy':'purchases','market-post':'purchases','market-offer':'purchases','market-accept':'purchases','hunt-enter':'purchases',withdraw:'withdrawals','claim-adventure':'claims'};
+const GATES={purchase:'purchases','market-buy':'purchases','market-post':'purchases','market-offer':'purchases','market-accept':'purchases','hunt-enter':'purchases','box-mint':'purchases',withdraw:'withdrawals','claim-adventure':'claims'};
 const DEFAULTS={vaults:[],seasons:[],financial:null,monitor:{concentrationPercent:40,claimRyo:100000,pendingMinutes:30}};
 const canonical=x=>x&&typeof x==='object'?(Array.isArray(x)?'['+x.map(canonical).join(',')+']':'{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+canonical(x[k])).join(',')+'}'):JSON.stringify(x);
 const digest=x=>crypto.createHash('sha256').update(canonical(x)).digest('hex');
@@ -106,6 +106,8 @@ async function snapshot(ctx,wallet){
   for(const r of transactions)if(r.status==='pending'&&now-safeNum(r.created)>config.monitor.pendingMinutes*60000)alerts.push({wallet:r.wallet,signal:'Stale pending transaction',detail:r.kind+' '+r.request_id,severity:'review'});
   return {marker:MARKER,serverTime:now,role:role(wallet),wallet,scope:store.scope,control:{version:ctl.version,config,pauses:ctl.pauses,installed:safeNum(ctl.installed)},flow,products:products.map(numRow),liabilities:{...liability,reserved:liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool,total:liability.balances+liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool+liability.chests},rewards:{claimed:total,recorded,unassignedHistory:Math.max(0,total-recorded),outsideSeasons:safeNum(claimTotals.outside),seasons,pool:Math.max(0,flow.recycled-total)},activity:numRow(activity),concentration:{top1Percent:top1,top10Percent:top10,earners:safeNum(pop.earners),leaders:leaders.map(numRow)},alerts,transactions,transactionCounts:txCounts.map(numRow),proposals,audits,nft:{minted:null,reason:'The beta stores hero entitlements. No NFT mint/escrow service is deployed.'}};
  });
+ // Limited Mythic NFT Box sales (SOL, outside the Ryo ledger).
+ try{result.nft=await require('./mythic-box.cjs').stats(ctx.store)}catch{}
  result.chain=await chain(ctx,result.control.config.vaults);
  result.solvency=result.chain.status==='verified'?{custodyRyo:Number(BigInt(result.chain.custodyRaw))/10**result.chain.decimals,knownLiabilities:result.liabilities.total}:null;
  if(result.solvency)result.solvency.surplus=result.solvency.custodyRyo-result.solvency.knownLiabilities;
