@@ -20,6 +20,16 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Permanent hero perks)**
+
+**🔄 Changes**
+• **Every hero's perks and look are now permanent** — they're saved with your hero on the server, so you see the same perks and the same character on every phone and computer, and they stay with the hero if it's ever traded.
+• **One-time change:** existing heroes received their permanent perks with this update, so some heroes may show different perks than before. New summons and fusions roll their own permanent perks.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Phone layout fix)**
 
 **🛠️ Fixes**

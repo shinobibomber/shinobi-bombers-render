@@ -54,6 +54,10 @@ const chestPopupPatches=[
 // stretch to the rank's top; the new price table; level caps, "x/5", Lv 5 Elite fusion; and a toast
 // naming what the training gave. [before, after, occurrences]. Exported so preservation can reverse them.
 const TRAINING_GAINS="'Training complete · Lv '+result.result.training.level+' · '+Object.entries(result.result.training.gains).map(([k,v])=>'+'+v+' '+{pw:'Power',sp:'Speed',st:'Stamina'}[k]).join(', ')";
+// Identity: token heroes take their perks and look from the server. Applied after trainingPatches.
+const identityPatches=[
+ ['h.bonus={...descriptor.bonus};','h.bonus={...descriptor.bonus};if(Array.isArray(descriptor.perks))h.pk=[...descriptor.perks];if(Number.isInteger(descriptor.look))h.look=descriptor.look;',1]
+];
 const trainingPatches=[
  ['h[key]=Math.round((base+(hi-base)*t)*1000)/1000','h[key]=Math.round((base+(Number(h.bonus?.[key])||0))*1000)/1000',1],
  ['h.baseStats={...descriptor.baseStats};','h.baseStats={...descriptor.baseStats};h.bonus={...descriptor.bonus};',1],
@@ -75,8 +79,8 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
   s=replaceOne(s,"if(![1,5,10,15].includes(params.quantity))fail('Choose 1, 5, 10 or 15 summons.');","if(![1,5,10,15].includes(params.quantity))fail('Choose 1, 5, 10 or 15 summons.');if(profile.heroes.length+params.quantity>"+MAX_HEROES+")fail('Your collection holds '+profile.heroes.length+' of "+MAX_HEROES+" heroes. Fuse heroes to free '+(profile.heroes.length+params.quantity-"+MAX_HEROES+")+' slot(s) before summoning '+params.quantity+'.',409);",'hero limit');
   s=replaceOne(s,'function normalizeProfile(profile){','function normalizeProfile(profile){if(!Number.isInteger(profile.senseiReturnPercent)||profile.senseiReturnPercent<50||profile.senseiReturnPercent>90)profile.senseiReturnPercent=90;if(typeof profile.senseiEnabled!=="boolean")profile.senseiEnabled=true;','Sensei defaults');
   // Training: max level 5, stored +1 stat gains (gameplay-options.cjs levelUp/migrateHero/trainingPrice).
-  s=replaceOne(s,'if(!Array.isArray(profile.battleReady))','for(const h of profile.heroes||[])require(\'./gameplay-options.cjs\').migrateHero(h);if(!Array.isArray(profile.battleReady))','training migration');
-  s=replaceOne(s,'return {tokenId:crypto.randomUUID(),rank,level:1,name:','return {tokenId:crypto.randomUUID(),rank,level:1,bonus:{pw:0,sp:0,st:0},trainingVersion:2,name:','trained hero defaults');
+  s=replaceOne(s,'if(!Array.isArray(profile.battleReady))','for(const h of profile.heroes||[]){require(\'./gameplay-options.cjs\').migrateHero(h);require(\'./gameplay-options.cjs\').assignIdentity(h)}if(!Array.isArray(profile.battleReady))','training migration');
+  s=replaceOne(s,'return {tokenId:crypto.randomUUID(),rank,level:1,name:','return {tokenId:crypto.randomUUID(),rank,level:1,bonus:{pw:0,sp:0,st:0},trainingVersion:2,...require(\'./gameplay-options.cjs\').rollIdentity(rank,n=>crypto.randomInt(n)),identityVersion:1,name:','trained hero defaults');
   s=replaceOne(s,"if(!target||target.level>=10)fail('Choose an owned token-recruited hero below level 10.');base=Math.round(5000*Math.pow(target.level,1.65)*(1+target.rank*.45));","if(!target||target.level>=5)fail('Choose an owned token-recruited hero below level 5.');base=require('./gameplay-options.cjs').trainingPrice(target.rank,target.level);",'training price and level cap');
   s=replaceOne(s,"if(q.product==='training')next.heroes.find(h=>h.tokenId===q.params.heroId).level++;","let training=null;if(q.product==='training'){const h=next.heroes.find(h=>h.tokenId===q.params.heroId);if(h&&h.level<5){const gains=require('./gameplay-options.cjs').levelUp(h,n=>crypto.randomInt(n));training={heroId:h.tokenId,level:h.level,gains}}}",'training rolls');
   s=replaceOne(s,'normalizeProfile(next);return {profile:next,result:{product:q.product,title:q.title,outputs,','normalizeProfile(next);return {profile:next,result:{product:q.product,title:q.title,outputs,...(training?{training}:{}),','training result');
@@ -127,8 +131,9 @@ function applyGameplayOptions(appDir=path.join(__dirname,'app')){
  patch('public/index.html',s=>trained(s)?s:rewardPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'enemy reward '+i),s));
  patch('public/index.html',s=>trained(s)?s:bossTeamPatches.reduce((html,[before,after],i)=>replaceOne(html,before,after,'boss team '+i),s));
  patch('public/index.html',s=>trainingPatches.reduce((html,[before,after,count],i)=>replaceCount(html,before,after,count,'training '+i),s));
+ patch('public/index.html',s=>identityPatches.reduce((html,[before,after,count],i)=>replaceCount(html,before,after,count,'identity '+i),s));
  const dest=path.join(appDir,'public/assets/gameplay-options');fs.mkdirSync(dest,{recursive:true});for(const name of ['options.js','options.css'])fs.copyFileSync(path.join(__dirname,'gameplay-options',name),path.join(dest,name));
  console.log('Server-enforced fusion odds and persisted Sensei preferences applied.');
 }
 function applyAfterChest(appDir=path.join(__dirname,'app')){const name=path.join(appDir,'public/index.html'),before=fs.readFileSync(name,'utf8'),after=chestPopupPatches.reduce((html,[a,b],i)=>replaceOne(html,a,b,'chest popup '+i),before);if(before!==after)fs.writeFileSync(name,after)}
-module.exports={applyGameplayOptions,applyAfterChest,trainingPatches,chestPopupPatches,fusionListPatches,bossTeamPatches,rewardPatches,BOSS_TEAM,MAX_HEROES};if(require.main===module)applyGameplayOptions();
+module.exports={applyGameplayOptions,applyAfterChest,identityPatches,trainingPatches,chestPopupPatches,fusionListPatches,bossTeamPatches,rewardPatches,BOSS_TEAM,MAX_HEROES};if(require.main===module)applyGameplayOptions();

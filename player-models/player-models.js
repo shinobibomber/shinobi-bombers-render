@@ -56,7 +56,8 @@
   ready.catch(error => console.error('Player models could not be loaded:', error));
 
   function modelFor(hero) {
-    const id = Math.abs(Math.trunc(Number(hero?.id) || 0)) % 8;
+    // Token heroes carry a server-owned look; practice heroes keep their local id.
+    const id = Number.isInteger(hero?.look) ? ((hero.look % 8) + 8) % 8 : Math.abs(Math.trunc(Number(hero?.id) || 0)) % 8;
     return { index: id, ...api.catalog[id] };
   }
 

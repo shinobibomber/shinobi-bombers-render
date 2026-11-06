@@ -47,7 +47,7 @@
     },
     {
       "path": "character-animations/character-animations.js",
-      "sha256": "4d3caa3aeae2e6dc0bc9875209b05416dc63a7811678d2d6bd3ae95107dd4c6a"
+      "sha256": "3cf2567bcb654ccfca408b2156679bb17a4ca6b869afd1ae03adc38fd584e438"
     },
     {
       "path": "character-animations/manifest.json",
@@ -95,7 +95,7 @@
     },
     {
       "path": "gameplay-options/server.cjs",
-      "sha256": "f062e1711ab345fcd804f8646f91116564babaddd764292faba48ecad43f130f"
+      "sha256": "6d334d718993e49c0b0eae523acf503e1b69f7c0b39d723f34d65c4e49856072"
     },
     {
       "path": "heroes-design/heroes-design.css",
@@ -187,7 +187,7 @@
     },
     {
       "path": "player-models/player-models.js",
-      "sha256": "5d1f36dfd7637530008b6de865835a05bb06a1152a8d548aa0f4352f1b567c30"
+      "sha256": "1e92c20fb034ff9fe7a49bed47229ea4afe0e49d646fc4189a136a75062f5536"
     },
     {
       "path": "player-models/playermodel.png",
@@ -271,11 +271,11 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "9e58fc6d1920b81d63244338c153ff6d0830022eecd965b888f466fd990656b3"
+      "sha256": "b471061f7b3b3279e8532f898b3acf2d72f15a0d5e4396b1a6dc669798c91804"
     },
     {
       "path": "app/server/gameplay-options.cjs",
-      "sha256": "f062e1711ab345fcd804f8646f91116564babaddd764292faba48ecad43f130f"
+      "sha256": "6d334d718993e49c0b0eae523acf503e1b69f7c0b39d723f34d65c4e49856072"
     },
     {
       "path": "app/server/init-db.cjs",

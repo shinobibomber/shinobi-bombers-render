@@ -73,5 +73,18 @@ function teamDps(roster){
  return roster.map(h=>{const s=trainedStats(h);
   return (h.rank+1)*(Math.max(1,s.pw)+1)/(Math.max(.6,1.6-s.sp*.05)*.85)}).sort((a,b)=>b-a).slice(0,10).reduce((n,v)=>n+v,0);
 }
-Object.assign(module.exports,{MAX_LEVEL,trainingPrice,levelUp,migrateHero,trainedStats});
+/* Hero identity: perks (rank+1 distinct, the game's own perks(r) pool) and look (character model 0–7)
+   are stored on the server, so every device and every Market buyer sees the same hero. Heroes
+   minted before this get a permanent roll from their token id, so normalizing never changes it. */
+function rollIdentity(rank,rand){
+ const pool=[0,1,2,3,4,6];if(rank>0)pool.push(5);const perks=[];
+ for(let n=0;n<rank+1&&pool.length;n++)perks.push(pool.splice(rand(pool.length),1)[0]);
+ return {perks,look:rand(8)};
+}
+function assignIdentity(h){
+ if(h.identityVersion===1&&Array.isArray(h.perks)&&Number.isInteger(h.look))return h;
+ let step=0;const rand=n=>require('node:crypto').createHash('sha256').update(h.tokenId+':identity:'+step++).digest().readUInt32BE(0)%n;
+ Object.assign(h,rollIdentity(Math.max(0,Math.min(4,Number(h.rank)||0)),rand),{identityVersion:1});return h;
+}
+Object.assign(module.exports,{MAX_LEVEL,trainingPrice,levelUp,migrateHero,trainedStats,rollIdentity,assignIdentity});
 module.exports.teamDps=teamDps;module.exports.killReport=killReport;module.exports.creditKills=creditKills;module.exports.bankKills=bankKills;

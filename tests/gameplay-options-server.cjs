@@ -103,5 +103,18 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
   assert.deepEqual(hero(old,'old-genin').bonus,{pw:2,sp:0,st:0});assert.deepEqual(hero(old,'new-genin').bonus,{pw:0,sp:0,st:0});assert.equal(hero(old,'old-elite').level,5,'a Lv10 Elite becomes a fusion-ready Lv5');
   assert.deepEqual(go.trainedStats(j),{pw:7+j.bonus.pw,sp:7+j.bonus.sp,st:7+j.bonus.st},'battle stats are base + training');
  }
+ // Identity: perks (rank+1 distinct from the game's pool, Piercing only above Genin) and look (0-7) are
+ // server-owned. Old heroes get a permanent roll from the token id; summons and fusions roll their own.
+ {
+  const go=require(path.join(root,'gameplay-options.cjs'));
+  const old=economy.normalizeProfile({dojo:0,heroes:[0,1,2,3,4].map(r=>({tokenId:'ident-'+r,rank:r,level:1,name:'I'+r,baseStats:{pw:5,sp:5,st:5}}))});
+  for(const h of old.heroes){assert.equal(h.perks.length,h.rank+1);assert.equal(new Set(h.perks).size,h.perks.length,'perks are distinct');assert(h.perks.every(k=>[0,1,2,3,4,5,6].includes(k)));assert(Number.isInteger(h.look)&&h.look>=0&&h.look<8);if(h.rank===0)assert(!h.perks.includes(5),'Genin never roll Piercing Shuriken')}
+  assert.deepEqual(economy.normalizeProfile(structuredClone(old)).heroes,old.heroes,'old heroes keep the same perks and look on every read');
+  const summoned=economy.fulfill(old,economy.quote(old,'summon',{quantity:5})).result.outputs;
+  assert(summoned.every(h=>h.identityVersion===1&&h.perks.length===h.rank+1&&Number.isInteger(h.look)),'summons roll their own identity');
+  const fuse=make(5,0,1);const fused=roll(0,()=>economy.fulfill(fuse,economy.quote(fuse,'fusion',{heroIds:ids(fuse)}))).result.outputs[0];
+  assert.equal(fused.perks.length,2,'a fused Chunin gets two perks');assert(Number.isInteger(fused.look));
+  assert.deepEqual(go.rollIdentity(4,()=>0),{perks:[0,1,2,3,4],look:0});
+ }
  await db.close();console.log('PASS: fusion odds/boundaries, level 5 Elites, training (+1 Power / random +1, double at Lv5, prices, conversion), failure consumption+fees, partial batches, two-hero minimum, persisted idempotent settlement, validated Sensei settings, online/offline thresholds, the 500-hero limit and verified Adventure kill reports.');
 })().catch(e=>{crypto.randomInt=originalRandom;console.error(e);process.exitCode=1});

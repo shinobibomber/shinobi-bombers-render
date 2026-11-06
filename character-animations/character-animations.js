@@ -32,7 +32,7 @@
   });
   api.ready.catch(error => console.error('Character animations could not be loaded:', error));
 
-  const modelIndex = hero => Math.abs(Math.trunc(Number(hero?.id) || 0)) % 8;
+  const modelIndex = hero => Number.isInteger(hero?.look) ? ((hero.look % 8) + 8) % 8 : Math.abs(Math.trunc(Number(hero?.id) || 0)) % 8;
   function currentEvent(hero, now) {
     const event = events.get(hero.id);
     if (event && now - event.started < event.duration) return event;
