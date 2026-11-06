@@ -13,7 +13,9 @@ const output = path.join(__dirname, 'out');
     await p.addStyleTag({ content: '#sbwLayer *,#sbwLayer *::before,#sbwLayer *::after{animation:none!important;transition:none!important}' });
     const before = await p.evaluate(() => ({ balance: RyoPayments.state.balance, heroes: S.h.map(h => h.id) }));
     const screens = [['summon', 'summon'], ['heroes', 'heroes'], ['boss-hunt', 'bosshunt'], ['codex', 'codex'], ['guild', 'guild']];
-    for (const viewport of [{ width: 1672, height: 941 }, { width: 390, height: 844 }]) {
+    // Portrait phones get the stacked phone layout (tests/mobile-layout.cjs); a phone held sideways
+    // keeps this scaled desktop layout.
+    for (const viewport of [{ width: 1672, height: 941 }, { width: 844, height: 390 }]) {
       await p.setViewportSize(viewport);
       for (const [screen, nav] of screens) {
         await p.locator(`.sbw-hdr [data-sbwid="nav-${nav}"]`).click();

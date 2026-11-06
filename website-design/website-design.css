@@ -505,3 +505,68 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 .sbw-offline .sbw-off-warn{padding:8px 12px;border:1px solid #ffb02a;border-radius:8px;background:#2a1a05;color:#ffe2a8}
 .sbw-offline .sbw-off-msg{color:#ff9a9a}
 .sbw-offline .sbw-acts{flex-wrap:wrap}
+/* ---------- phone layout (portrait phones; see MOBILE in website-design.js) ---------- */
+#sbwLayer.sbw-phone .sbw-hdr,#sbwLayer.sbw-phone .sbw-preview{display:none}
+#sbwLayer.sbw-phone .sbw-scr.on{overflow:hidden auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;
+  padding:calc(52px + env(safe-area-inset-top)) 0 calc(66px + env(safe-area-inset-bottom));clip-path:none!important}
+#sbwLayer .sbw-stage.sbw-mstack{position:relative;width:auto!important;height:auto!important;transform:none!important;clip-path:none!important;overflow:visible;background:transparent}
+#sbwLayer .sbw-mstack>.sbw-base,#sbwLayer .sbw-mstack>.petals,#sbwLayer .sbw-moff{display:none!important}
+#sbwLayer .sbw-mcol{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:640px;margin:0 auto;padding:8px}
+#sbwLayer .sbw-mpane{flex:0 0 auto;border-radius:10px;overflow:hidden;background:#07041a;box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+#sbwLayer .sbw-mpane.pan{overflow:auto hidden;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#8953ac transparent}
+#sbwLayer .sbw-minner{position:relative;overflow:hidden}
+#sbwLayer .sbw-mpane.flow .sbw-minner{overflow:visible}
+#sbwLayer .sbw-mshift{position:absolute}
+#sbwLayer .sbw-mflow{position:relative!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;transform:none!important}
+#sbwLayer .sbw-hgrid.sbw-mflow,#sbwLayer .sbw-mgrid.sbw-mflow{min-height:120px}
+#sbwLayer .sbw-ateam.sbw-mflow .sbw-at-head{flex-wrap:wrap;height:auto;row-gap:6px}
+#sbwLayer .sbw-ateam.sbw-mflow .sbw-at-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:104px}
+/* compact header */
+#sbwLayer .sbw-ph-top,#sbwLayer .sbw-ph-nav{display:none}
+#sbwLayer.sbw-phone .sbw-ph-top{position:absolute;inset:0 0 auto;z-index:60;display:flex;align-items:center;gap:6px;height:52px;box-sizing:content-box;padding:env(safe-area-inset-top) 8px 0;
+  background:linear-gradient(#0b0727f5,#06041af0);border-bottom:1px solid #a447d7;box-shadow:0 2px 14px #000a}
+#sbwLayer .sbw-ph-top button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:44px;height:40px;padding:0 10px;border:1px solid #ffffff2a;border-radius:10px;
+  background:#170f33;color:#f5efff;font:800 14px Rajdhani,'Arial Narrow',system-ui,sans-serif;white-space:nowrap;cursor:pointer}
+#sbwLayer .sbw-ph-top button:focus-visible,#sbwLayer .sbw-ph-item:focus-visible{outline:3px solid #f9e197;outline-offset:2px}
+#sbwLayer .sbw-ph-ryo{flex:1 1 0;min-width:0;justify-content:flex-start!important}
+#sbwLayer .sbw-ph-ryo b{overflow:hidden;text-overflow:ellipsis;color:#ffe08a}
+#sbwLayer .sbw-ph-ryo .coin{flex:none;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6b0,#ffc13a 45%,#c47a00)}
+#sbwLayer .sbw-ph-chest{position:relative;flex:1 1 0;min-width:0;border-color:#f6a823!important;background:linear-gradient(#3a2207,#1d1003)!important;color:#ffe08a!important}
+#sbwLayer .sbw-ph-chest b{overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-ph-chest .cdot{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:#ff3b3b;box-shadow:0 0 6px #ff3b3b}
+#sbwLayer .sbw-ph-gear{flex:none;width:40px;padding:0!important}
+#sbwLayer .sbw-ph-gear svg{width:22px;height:22px}
+#sbwLayer .sbw-ph-wallet{flex:none;border-color:#b78aff!important;background:linear-gradient(#5b1fd6,#3a0fa0)!important;font-size:12px!important;letter-spacing:.4px}
+#sbwLayer .sbw-ph-wallet.sbw-connect{background:linear-gradient(#ffbb2a,#f48c0c)!important;color:#2a1000!important}
+/* bottom navigation and More sheet */
+#sbwLayer.sbw-phone .sbw-ph-nav{position:absolute;inset:auto 0 0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);height:62px;box-sizing:content-box;padding:0 4px env(safe-area-inset-bottom);
+  background:linear-gradient(#0b0727f0,#06041a);border-top:1px solid #a447d7;box-shadow:0 -2px 14px #000a}
+#sbwLayer .sbw-ph-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:48px;padding:4px 2px;border:0;border-radius:10px;background:none;
+  color:#9fb3d9;font:700 12px Rajdhani,'Arial Narrow',system-ui,sans-serif;cursor:pointer}
+#sbwLayer .sbw-ph-item i{display:block;background-repeat:no-repeat}
+#sbwLayer .sbw-ph-item .dots{width:auto;height:30px;font-style:normal;font-size:18px;line-height:30px;color:#c9b6ff}
+#sbwLayer .sbw-ph-item.on{color:#fff;background:linear-gradient(#5b1fd6aa,#3a0fa055);box-shadow:inset 0 0 0 1px #b78aff}
+#sbwLayer .sbw-ph-more{position:absolute;inset:0;z-index:70;display:flex;align-items:flex-end;background:#0008}
+#sbwLayer .sbw-ph-more[hidden]{display:none}
+#sbwLayer .sbw-ph-sheet{width:100%;box-sizing:border-box;padding:14px 12px calc(76px + env(safe-area-inset-bottom));border-top:1px solid #a447d7;border-radius:16px 16px 0 0;background:#0b0727}
+#sbwLayer .sbw-ph-sheethead{display:flex;justify-content:space-between;align-items:baseline;margin:0 4px 10px;color:#fff;font:800 18px Rajdhani,sans-serif}
+#sbwLayer .sbw-ph-sheethead small{color:#9fb3d9;font-size:13px}
+#sbwLayer .sbw-ph-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#sbwLayer .sbw-ph-grid .sbw-ph-item{min-height:64px;background:#170f33;border:1px solid #ffffff1a}
+#sbwLayer .sbw-ph-top .v{display:flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1}
+#sbwLayer .sbw-ph-top .v small{font-size:9px;letter-spacing:1px;opacity:.75}
+#sbwLayer .sbw-ph-top .v b{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+#sbwLayer .sbw-ph-ryo .plus{margin-left:auto;color:#7ee7ff;font-size:18px}
+body.sbw-phone-ui .sbw-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 32px)}
+#sbwLayer.sbw-phone .sbw-ph-top{gap:5px;padding-left:6px;padding-right:6px}
+#sbwLayer .sbw-ph-top button{gap:4px;padding:0 7px}
+#sbwLayer .sbw-ph-top .v b{font-size:14px}
+#sbwLayer .sbw-ph-wallet{font-size:11px!important;letter-spacing:.2px;padding:0 8px!important}
+/* phone touch targets: taller list buttons, and an invisible larger tap area around small artwork hotspots */
+#sbwLayer .sbw-ateam.sbw-mflow .sbw-at-card>button{height:32px}
+#sbwLayer .sbw-hgrid.sbw-mflow{grid-auto-rows:auto}
+#sbwLayer .sbw-hgrid.sbw-mflow .sbw-hb{height:34px;font-size:13px}
+#sbwLayer.sbw-phone .sbw-mpane .hs[role="button"]::after{content:"";position:absolute;inset:-8px}
+/* dialogs size their padding inside the width, and keep a margin on phones */
+.sbw-dialog{box-sizing:border-box}
+body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}

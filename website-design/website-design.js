@@ -920,6 +920,7 @@
   function markNav() {
     if (!HDR) return; const id = NAVOF[cur]; for (const k in HDR.nav) { const on = k === id; HDR.nav[k].classList.toggle('sbw-on', on); if (on) HDR.nav[k].setAttribute('aria-current', 'page'); else HDR.nav[k].removeAttribute('aria-current'); }
     const e = id && HDR.nav[id]; HDR.navhl.hidden = !e; if (e) { HDR.navhl.style.left = e.style.left; HDR.navhl.style.width = e.style.width; }
+    markPhoneNav();
   }
 
   /* ---------- live refresh ---------- */
@@ -948,14 +949,148 @@
     } else if (hb.covers.wallet) setText(hb.covers.wallet, a ? a.slice(0, 4) + '...' + a.slice(-4) : 'Sign in');
     if (hb.online) { const players = (document.getElementById('onlinePlayers')?.textContent || '').match(/\d[\d,]*/); setText(hb.online, a && players ? players[0] : '—'); }
     else if (hb.covers.gems) setText(hb.covers.gems, '⚙ Tools');
+    if (PH) {
+      setText(PH.ryo, a && Number.isFinite(Number(l.balance)) ? fmt(Number(l.balance)) : '—');
+      if (pend != null && Number.isFinite(pend)) countTo(PH.chest, pend, v => fmt(v)); else { counters.delete(PH.chest); setText(PH.chest, '—'); }
+      PH.dot.hidden = !(pend >= 1); setText(PH.wallet, a ? 'GO OFFLINE' : 'Connect'); PH.wallet.classList.toggle('sbw-connect', !a);
+      const players = (document.getElementById('onlinePlayers')?.textContent || '').match(/\d[\d,]*/); setText(PH.online, a && players ? players[0] : '—');
+    }
     for (const id of ['ltimer', 'btimer', 'cost', 'slabel', 'fcount', 'stitle', 'enemies', 'reward', 'team', 'upcost', 'trainlbl']) if (b.live[id]) b.live[id].hidden = true;
     (PAINT[cur] || (() => {}))(b, now);
   }
 
   /* ---------- show/hide over the matching game page ---------- */
+  /* ---------- phone layout ---------- */
+  // Portrait phones: each screen's panels (MOBILE regions, artwork coordinates) are cut out of the
+  // artwork and stacked in one scrolling column at readable size, under a compact header and above a
+  // bottom navigation bar. Elements are re-parented, not cloned, into a window that keeps their
+  // artwork coordinates, so handlers, live text and PAINT updates keep working; turning the phone
+  // to landscape or widening the window puts every element back exactly. A region that would shrink
+  // below MIN_ZOOM keeps that zoom and scrolls sideways instead. `flow` panes take an HTML list
+  // (team, hero grid, listings) out of its fixed box and reflow it into two columns.
+  const MIN_ZOOM = 0.6;
+  const MOBILE = {
+    home: [[1252, 122, 1652, 247], [22, 122, 1238, 388, { fit: 1 }], [29, 395, 438, 563], [451, 395, 845, 563], [858, 395, 1231, 563], [29, 573, 438, 727], [451, 573, 845, 727],
+      [858, 573, 1231, 727], [29, 735, 438, 858], [451, 735, 845, 858], [858, 735, 1231, 858], [1252, 255, 1652, 437], [1252, 445, 1652, 637], [1252, 645, 1652, 860],
+      [524, 866, 1218, 938, { fit: 1 }], [12, 866, 520, 938], [1252, 866, 1652, 938]],
+    adventure: [[290, 128, 1070, 202, { fit: 1 }], [22, 208, 1524, 732, { pan: 0.5, center: 1 }], { flow: '.sbw-ateam', zoom: 0.85 }],
+    heroes: [[14, 228, 1522, 286, { pan: 0.8 }], [14, 288, 1000, 318, { fit: 1 }], [1290, 284, 1512, 318], { flow: '.sbw-hgrid', zoom: 0.85, cols: 2 }, [1084, 318, 1512, 1004]],
+    summon: [[1252, 118, 1652, 372], [318, 568, 540, 755, { half: 1 }], [552, 568, 768, 755, { half: 1 }], [778, 568, 1000, 755, { half: 1 }], [1010, 568, 1232, 755, { half: 1 }],
+      [300, 100, 1245, 560, { fit: 1 }], [1252, 378, 1652, 605], [1252, 612, 1652, 752], [15, 128, 285, 450], [28, 462, 280, 705, { half: 1 }], [28, 715, 280, 875, { half: 1 }]],
+    fusion: [[20, 115, 640, 225, { fit: 1 }], [40, 238, 815, 352, { pan: 0.75 }], [42, 358, 815, 540, { pan: 0.75 }], [40, 548, 815, 972, { pan: 0.75 }], [845, 222, 1510, 632],
+      [860, 640, 1500, 870], [860, 874, 1500, 972]],
+    dojo: [[70, 118, 820, 350, { fit: 1 }], [72, 365, 785, 1012], [800, 365, 1508, 1012]],
+    'dojo-upg': [[55, 98, 440, 142, { fit: 1 }], [45, 132, 584, 860], [596, 130, 1632, 852, { pan: 0.65 }]],
+    'dojo-sen': [[55, 98, 440, 142, { fit: 1 }], [712, 135, 1382, 744], [64, 135, 694, 744]],
+    market: [[60, 120, 500, 235, { fit: 1 }], [70, 248, 1135, 356, { pan: 0.75 }], { flow: '.sbw-mgrid', zoom: 0.85, cols: 2 }, [1158, 158, 1612, 912]],
+    'boss-hunt': [[20, 108, 660, 192, { fit: 1 }], [1015, 195, 1512, 882], [28, 200, 1000, 334, { pan: 0.6 }], [222, 336, 1000, 718, { fit: 1 }], [40, 348, 222, 716],
+      [25, 722, 1000, 886, { pan: 0.7 }], [1015, 888, 1512, 1006], [25, 888, 1000, 1006, { pan: 0.7 }]],
+    codex: [[20, 108, 960, 200, { fit: 1 }], [20, 208, 292, 726], [305, 210, 1205, 724, { pan: 0.7 }], [1215, 210, 1652, 420], [1215, 425, 1652, 666], [1215, 672, 1652, 906],
+      [305, 728, 1205, 906, { pan: 0.7 }]],
+    guild: [[208, 205, 978, 524, { pan: 0.7 }], [988, 205, 1515, 524], [208, 530, 978, 706, { pan: 0.7 }], [988, 530, 1515, 706], [25, 712, 506, 1002], [515, 712, 1026, 1002, { pan: 0.7 }],
+      [1035, 712, 1513, 1002], [25, 160, 200, 652]],
+  };
+  const PHONE_NAV = [['home', 'nav-home', 'Home'], ['adventure', 'nav-adventure', 'Battle'], ['heroes', 'nav-heroes', 'Heroes'], ['summon', 'nav-summon', 'Summon']];
+  const PHONE_MORE = [['fusion', 'nav-fusion', 'Fusion'], ['dojo', 'nav-dojo', 'Dojo'], ['market', 'nav-market', 'Market'], ['boss-hunt', 'nav-bosshunt', 'Boss Hunt'], ['codex', 'nav-codex', 'Codex'], ['guild', 'nav-guild', 'Guild']];
+  let PH = null;
+  const isPhone = () => innerWidth <= 820 && innerHeight > innerWidth;
+  function navIcon(e, id) { const h = D.header.hs.find(h => h.id === id); if (!h) return; const r = [h.r[0], 4, h.r[2], 52], k = 30 / (r[3] - r[1]); e.style.width = (r[2] - r[0]) * k + 'px'; e.style.height = '30px'; e.style.backgroundImage = `url(${BASE + D.header.img})`; e.style.backgroundSize = `${D.header.W * k}px ${D.header.H * k}px`; e.style.backgroundPosition = `${-r[0] * k}px ${-r[1] * k}px`; }
+  function buildPhoneChrome() {
+    if (PH) return;
+    const top = mk('div', 'sbw-ph-top', layer), nav = mk('nav', 'sbw-ph-nav', layer), more = mk('div', 'sbw-ph-more', layer);
+    nav.setAttribute('aria-label', 'Main'); more.hidden = true; more.setAttribute('role', 'dialog'); more.setAttribute('aria-label', 'More screens');
+    top.innerHTML = '<button type="button" class="sbw-ph-ryo" aria-label="Ryo balance – open Chest to deposit"><i class="coin"></i><span class="v"><small>RYO</small><b>—</b></span><span class="plus">+</span></button>' +
+      '<button type="button" class="sbw-ph-chest" aria-label="Open your Chest"><span class="v"><small>CHEST</small><b>—</b></span><i class="cdot" hidden></i></button>' +
+      `<button type="button" class="sbw-ph-gear" aria-label="Tools">${HDR ? HDR.gear.innerHTML : '⚙'}</button><button type="button" class="sbw-ph-wallet">GO OFFLINE</button>`;
+    const item = (k, id, label, root) => { const btn = mk('button', 'sbw-ph-item', root); btn.type = 'button'; btn.dataset.k = k; navIcon(mk('i', '', btn), id); mk('span', '', btn).textContent = label; btn.addEventListener('click', () => { more.hidden = true; goScreen(k); }); return btn; };
+    const items = {}; for (const [k, id, label] of PHONE_NAV) items[k] = item(k, id, label, nav);
+    const moreBtn = mk('button', 'sbw-ph-item sbw-ph-morebtn', nav); moreBtn.type = 'button'; moreBtn.setAttribute('aria-expanded', 'false'); moreBtn.innerHTML = '<i class="dots">•••</i><span>More</span>';
+    const sheet = mk('div', 'sbw-ph-sheet', more); const head = mk('p', 'sbw-ph-sheethead', sheet); head.innerHTML = 'More <small>Players online: <b>—</b></small>';
+    const grid = mk('div', 'sbw-ph-grid', sheet); for (const [k, id, label] of PHONE_MORE) items[k] = item(k, id, label, grid);
+    const chat = mk('button', 'sbw-ph-item', grid); chat.type = 'button'; chat.innerHTML = '<i class="dots">💬</i><span>Chat</span>'; chat.addEventListener('click', () => { more.hidden = true; goScreen('home'); setTimeout(() => toggleChat(true), 50); });
+    const setMore = open => { more.hidden = !open; moreBtn.setAttribute('aria-expanded', String(open)); };
+    moreBtn.addEventListener('click', () => setMore(more.hidden)); more.addEventListener('click', e => { if (e.target === more) setMore(false); });
+    addEventListener('keydown', e => { if (e.key === 'Escape' && !more.hidden) setMore(false); });
+    top.querySelector('.sbw-ph-ryo').addEventListener('click', openChest); top.querySelector('.sbw-ph-chest').addEventListener('click', openChest); top.querySelector('.sbw-ph-wallet').addEventListener('click', walletButton);
+    PH = { top, nav, more, items, moreBtn, ryo: top.querySelector('.sbw-ph-ryo b'), chest: top.querySelector('.sbw-ph-chest b'), chestEl: top.querySelector('.sbw-ph-chest'), dot: top.querySelector('.sbw-ph-chest .cdot'),
+      gear: top.querySelector('.sbw-ph-gear'), wallet: top.querySelector('.sbw-ph-wallet'), online: head.querySelector('b') };
+  }
+  function markPhoneNav() {
+    if (!PH) return; const k = cur && cur.startsWith('dojo') ? 'dojo' : cur;
+    for (const [key, e] of Object.entries(PH.items)) { const on = key === k; e.classList.toggle('on', on); if (on) e.setAttribute('aria-current', 'page'); else e.removeAttribute('aria-current'); }
+    PH.moreBtn.classList.toggle('on', PHONE_MORE.some(([key]) => key === k));
+  }
+  function regionOf(e, panes) {
+    const x = parseFloat(e.style.left), y = parseFloat(e.style.top); if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const cx = x + (parseFloat(e.style.width) || e.offsetWidth || 0) / 2, cy = y + (parseFloat(e.style.height) || e.offsetHeight || 0) / 2;
+    return panes.find(p => p.o.r && cx >= p.o.r[0] && cx < p.o.r[2] && cy >= p.o.r[1] && cy < p.o.r[3]) || null;
+  }
+  function adopt(b, e) {
+    const m = b.mob; if (e === m.col || e.classList.contains('sbw-base') || m.seen.has(e)) return; m.seen.add(e);
+    const flow = m.panes.find(p => p.o.flow && e.matches(p.o.flow)), p = flow || regionOf(e, m.panes);
+    if (!p) { e.classList.add('sbw-moff'); return; }
+    if (flow) { e.classList.add('sbw-mflow'); if (flow.o.cols) { m.cols.set(e, e.style.gridTemplateColumns); } p.inner.append(e); }
+    else p.shift.append(e);
+  }
+  function stack(b) {
+    const spec = MOBILE[cur] || [[0, b.s.hdrH || 0, b.s.W, b.s.H, { pan: MIN_ZOOM }]];
+    const col = mk('div', 'sbw-mcol', b.st), panes = [];
+    for (const item of spec) {
+      const o = Array.isArray(item) ? { r: item.slice(0, 4), ...(item[4] || {}) } : item;
+      const pane = mk('div', 'sbw-mpane' + (o.half ? ' half' : '') + (o.flow ? ' flow' : ''), col), inner = mk('div', 'sbw-minner', pane);
+      let shift = null;
+      if (o.r) {
+        inner.style.width = (o.r[2] - o.r[0]) + 'px'; inner.style.height = (o.r[3] - o.r[1]) + 'px';
+        shift = mk('div', 'sbw-mshift', inner); shift.style.cssText = `left:${-o.r[0]}px;top:${-o.r[1]}px;width:${b.s.W}px;height:${b.s.H}px;background:url(${BASE + b.s.img}) 0 0/${b.s.W}px ${b.s.H}px no-repeat`;
+      }
+      panes.push({ o, pane, inner, shift });
+    }
+    b.mob = { col, panes, order: [...b.st.children].filter(e => e !== col), seen: new Set(), cols: new Map() };
+    b.st.classList.add('sbw-mstack');
+    for (const e of b.mob.order) adopt(b, e);
+  }
+  function unstack(b) {
+    const m = b.mob; if (!m) return;
+    for (const e of m.seen) e.classList.remove('sbw-moff', 'sbw-mflow');
+    for (const [e, cols] of m.cols) e.style.gridTemplateColumns = cols;
+    for (const e of [...m.order, ...m.seen]) if (e !== m.col && e.parentElement !== b.st) b.st.append(e);
+    m.col.remove(); b.st.classList.remove('sbw-mstack'); b.mob = null;
+  }
+  function layoutPhone(b) {
+    buildPhoneChrome(); layer.classList.add('sbw-phone');
+    b.sec.style.clipPath = 'none'; b.st.style.clipPath = 'none'; b.st.style.transform = 'none';
+    if (!b.mob) stack(b);
+    for (const e of [...b.st.children]) if (e !== b.mob.col) adopt(b, e);
+    const cw = Math.min(innerWidth, 640) - 16;
+    for (const p of b.mob.panes) {
+      const o = p.o, avail = o.half ? (cw - 8) / 2 : cw;
+      p.pane.style.width = avail + 'px';
+      if (o.flow) {
+        const z = o.zoom || 1; p.inner.style.zoom = z; p.inner.style.width = (avail / z) + 'px';
+        if (o.cols) for (const e of p.inner.children) e.style.gridTemplateColumns = `repeat(${o.cols},minmax(0,1fr))`;
+        continue;
+      }
+      const w = o.r[2] - o.r[0]; let z = Math.min(o.max || 1, avail / w); const pan = !o.fit && z < (o.pan || MIN_ZOOM);
+      if (pan) z = o.pan || MIN_ZOOM;
+      p.pane.classList.toggle('pan', pan); p.inner.style.zoom = z;
+      if (!pan) p.pane.style.width = Math.min(avail, w * z) + 'px'; // narrow panels sit centred, not stretched
+      if (pan && o.center && !p.centered && p.pane.scrollWidth > p.pane.clientWidth) { p.pane.scrollLeft = (p.pane.scrollWidth - p.pane.clientWidth) / 2; p.centered = true; }
+    }
+    // Tapping a hero card scrolls to its details below the grid.
+    if (cur === 'heroes' && b.grid && b.det && !b.phoneTap) { b.phoneTap = true; b.grid.addEventListener('click', e => { if (!layer.classList.contains('sbw-phone') || e.target.closest('button,[data-k]')) return; setTimeout(() => b.det.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' }), 60); }); }
+    document.body.classList.add('sbw-phone-ui');
+    markPhoneNav();
+  }
+  function leavePhone() {
+    if (!layer.classList.contains('sbw-phone')) return;
+    layer.classList.remove('sbw-phone'); document.body.classList.remove('sbw-phone-ui'); for (const k in built) unstack(built[k]);
+    if (PH) PH.more.hidden = true;
+  }
   function fit() {
     geometryRevision++;
     const b = cur && built[cur]; if (!b) return;
+    if (isPhone()) { layoutPhone(b); placeTrigger(); placeChat(); return; }
+    leavePhone();
     const vw = innerWidth, vh = innerHeight;
     if (HDR) {
       // Content starts at row 100, where the header art's left 70% ends (its clip-path hides another
@@ -982,6 +1117,13 @@
   /* align the game's real Chest trigger with the website Chest artwork */
   function placeTrigger() {
     const b = cur && built[cur]; if (!b) return;
+    // Phone: the game's own Chest button and Tools menu sit over the compact header's buttons.
+    if (PH && layer.classList.contains('sbw-phone')) {
+      const d = document.documentElement.style, r = PH.chestEl.getBoundingClientRect(), g = PH.gear.getBoundingClientRect();
+      d.setProperty('--sbw-chest-x', r.left + 'px'); d.setProperty('--sbw-chest-y', r.top + 'px'); d.setProperty('--sbw-chest-w', r.width + 'px'); d.setProperty('--sbw-chest-h', r.height + 'px');
+      d.setProperty('--sbw-tools-x', g.left + 'px'); d.setProperty('--sbw-tools-y', g.top + 'px'); d.setProperty('--sbw-tools-w', g.width + 'px'); d.setProperty('--sbw-tools-h', g.height + 'px');
+      return;
+    }
     const hb = HDR || b, gh = HDR ? D.header.hdr : b.s.hdr; if (!hb.chestEl) return;
     const r = hb.chestEl.getBoundingClientRect(), d = document.documentElement.style;
     d.setProperty('--sbw-chest-x', r.left + 'px'); d.setProperty('--sbw-chest-y', r.top + 'px'); d.setProperty('--sbw-chest-w', r.width + 'px'); d.setProperty('--sbw-chest-h', r.height + 'px');

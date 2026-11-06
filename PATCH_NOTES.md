@@ -20,6 +20,21 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Mobile layout)**
+
+**✨ New**
+• **Real phone layout** — on a phone held upright, every screen now becomes one easy-to-read scrolling page instead of a tiny desktop picture. Panels are shown at a readable size, hero and team lists show two cards per row, and wide panels (like the battle map) can be swiped sideways.
+• **Bottom navigation bar** — Home, Battle, Heroes and Summon are one tap away, and "More" opens Fusion, Dojo, Market, Boss Hunt, Codex, Guild and Chat.
+• **Compact phone header** — your Ryo, Chest, Tools and GO OFFLINE always stay at the top.
+• Turn your phone sideways or use a computer and you get the full desktop layout as before.
+
+**🛠️ Fixes**
+• Summon History and the GO OFFLINE window no longer run off the edge of small screens.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Faster loading)**
 
 **🔄 Changes**

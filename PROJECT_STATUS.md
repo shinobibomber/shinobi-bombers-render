@@ -108,6 +108,18 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-06 phone layout (owner request): portrait/narrow viewports (innerWidth <= 820 and taller
+  than wide) switch website-design.js into phone mode: MOBILE[screen] lists regions in artwork
+  coordinates; stack() re-parents each stage element into a pane window (.sbw-mshift keeps artwork
+  coordinates, so PAINT keeps working), panes zoom to the column width (CSS zoom), regions below
+  MIN_ZOOM 0.6 (or their own pan value) swipe sideways, fit:1 shrinks, half:1 pairs, flow:'sel'
+  reflows HTML lists (team, hero grid, listings) into 2 columns. unstack() restores everything on
+  wide screens. Compact header (.sbw-ph-top: Ryo, Chest, Tools, GO OFFLINE; the game's Chest and
+  Tools triggers are pinned over it) and bottom nav + More sheet (.sbw-ph-nav). New tests:
+  mobile-layout.cjs (every screen at 390/412 px, restore to desktop) and smoke-sweep.cjs (screens +
+  dialogs at desktop/phone with no console errors or failed requests). Live check on a phone
+  profile: login 4.3 s, game ready 9.5 s first visit; repeat visit login 0.65 s / 67 KB.
+
 - 2026-11-06 faster loading (owner request): ~110 MB downloaded before login. Now: the startup gate
   shows LoginScreen as soon as the login art loads (loading-design.js; startupPatches guards the final
   show()), GameLoading stays active until sprites/maps/fonts finish, and a CSS-only card
