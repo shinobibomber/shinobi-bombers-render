@@ -974,14 +974,15 @@
       [858, 573, 1231, 727], [29, 735, 438, 858], [451, 735, 845, 858], [858, 735, 1231, 858], [1252, 255, 1652, 437], [1252, 445, 1652, 637], [1252, 645, 1652, 860],
       [524, 866, 1218, 938, { fit: 1 }], [12, 866, 520, 938], [1252, 866, 1652, 938]],
     adventure: [[290, 128, 1070, 202, { fit: 1 }], [22, 208, 1524, 732, { pan: 0.5, center: 1 }], { flow: '.sbw-ateam', zoom: 0.85 }],
-    heroes: [[14, 228, 1522, 286, { pan: 0.8 }], [14, 288, 1000, 318, { fit: 1 }], [1290, 284, 1512, 318], { flow: '.sbw-hgrid', zoom: 0.85, cols: 2 }, [1084, 318, 1512, 1004]],
+    heroes: [[14, 228, 432, 286], [436, 228, 1060, 286], [1062, 228, 1522, 286], [14, 288, 450, 318], [1290, 284, 1512, 318], { flow: '.sbw-hgrid', zoom: 0.85, cols: 2 }, [1084, 318, 1512, 1004]],
     summon: [[1252, 118, 1652, 372], [318, 568, 540, 755, { half: 1 }], [552, 568, 768, 755, { half: 1 }], [778, 568, 1000, 755, { half: 1 }], [1010, 568, 1232, 755, { half: 1 }],
       [300, 100, 1245, 560, { fit: 1 }], [1252, 378, 1652, 605], [1252, 612, 1652, 752], [15, 128, 285, 450], [28, 462, 280, 705, { half: 1 }], [28, 715, 280, 875, { half: 1 }]],
     fusion: [[20, 115, 640, 225, { fit: 1 }], [40, 238, 815, 352, { pan: 0.75 }], [42, 358, 815, 540, { pan: 0.75 }], [40, 548, 815, 972, { pan: 0.75 }], [845, 222, 1510, 632],
       [860, 640, 1500, 870], [860, 874, 1500, 972]],
     dojo: [[70, 118, 820, 350, { fit: 1 }], [72, 365, 785, 1012], [800, 365, 1508, 1012]],
     'dojo-upg': [[55, 98, 440, 142, { fit: 1 }], [45, 132, 584, 860], [596, 130, 1632, 852, { pan: 0.65 }]],
-    'dojo-sen': [[55, 98, 440, 142, { fit: 1 }], [712, 135, 1382, 744], [64, 135, 694, 744]],
+    'dojo-sen': [[56, 96, 330, 144], [826, 140, 1604, 372, { fit: 1 }], { parts: [[858, 374, 1120, 420], [1306, 374, 1584, 420]] }, [858, 420, 1592, 452, { fit: 1 }],
+      { parts: [[862, 462, 1110, 650], [1300, 462, 1592, 650]] }, [842, 662, 1600, 830, { fit: 1 }], [72, 138, 806, 842, { fit: 1 }]],
     market: [[60, 120, 500, 235, { fit: 1 }], [70, 248, 1135, 356, { pan: 0.75 }], { flow: '.sbw-mgrid', zoom: 0.85, cols: 2 }, [1158, 158, 1612, 912]],
     'boss-hunt': [[20, 108, 660, 192, { fit: 1 }], [1015, 195, 1512, 882], [28, 200, 1000, 334, { pan: 0.6 }], [222, 336, 1000, 718, { fit: 1 }], [40, 348, 222, 716],
       [25, 722, 1000, 886, { pan: 0.7 }], [1015, 888, 1512, 1006], [25, 888, 1000, 1006, { pan: 0.7 }]],
@@ -1023,14 +1024,21 @@
   function regionOf(e, panes) {
     const x = parseFloat(e.style.left), y = parseFloat(e.style.top); if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
     const cx = x + (parseFloat(e.style.width) || e.offsetWidth || 0) / 2, cy = y + (parseFloat(e.style.height) || e.offsetHeight || 0) / 2;
-    return panes.find(p => p.o.r && cx >= p.o.r[0] && cx < p.o.r[2] && cy >= p.o.r[1] && cy < p.o.r[3]) || null;
+    for (const p of panes) for (const w of p.windows) if (cx >= w.r[0] && cx < w.r[2] && cy >= w.r[1] && cy < w.r[3]) return w;
+    return null;
   }
   function adopt(b, e) {
     const m = b.mob; if (e === m.col || e.classList.contains('sbw-base') || m.seen.has(e)) return; m.seen.add(e);
-    const flow = m.panes.find(p => p.o.flow && e.matches(p.o.flow)), p = flow || regionOf(e, m.panes);
-    if (!p) { e.classList.add('sbw-moff'); return; }
-    if (flow) { e.classList.add('sbw-mflow'); if (flow.o.cols) { m.cols.set(e, e.style.gridTemplateColumns); } p.inner.append(e); }
-    else p.shift.append(e);
+    const flow = m.panes.find(p => p.o.flow && e.matches(p.o.flow)), w = flow ? null : regionOf(e, m.panes);
+    if (!flow && !w) { e.classList.add('sbw-moff'); return; }
+    if (flow) { e.classList.add('sbw-mflow'); if (flow.o.cols) { m.cols.set(e, e.style.gridTemplateColumns); } flow.inner.append(e); }
+    else w.shift.append(e);
+  }
+  function windowOf(b, r, parent) {
+    const box = mk('div', 'sbw-mpart', parent), shift = mk('div', 'sbw-mshift', box);
+    box.style.width = (r[2] - r[0]) + 'px'; box.style.height = (r[3] - r[1]) + 'px';
+    shift.style.cssText = `left:${-r[0]}px;top:${-r[1]}px;width:${b.s.W}px;height:${b.s.H}px;background:url(${BASE + b.s.img}) 0 0/${b.s.W}px ${b.s.H}px no-repeat`;
+    return { r, shift };
   }
   function stack(b) {
     const spec = MOBILE[cur] || [[0, b.s.hdrH || 0, b.s.W, b.s.H, { pan: MIN_ZOOM }]];
@@ -1038,12 +1046,12 @@
     for (const item of spec) {
       const o = Array.isArray(item) ? { r: item.slice(0, 4), ...(item[4] || {}) } : item;
       const pane = mk('div', 'sbw-mpane' + (o.half ? ' half' : '') + (o.flow ? ' flow' : ''), col), inner = mk('div', 'sbw-minner', pane);
-      let shift = null;
-      if (o.r) {
-        inner.style.width = (o.r[2] - o.r[0]) + 'px'; inner.style.height = (o.r[3] - o.r[1]) + 'px';
-        shift = mk('div', 'sbw-mshift', inner); shift.style.cssText = `left:${-o.r[0]}px;top:${-o.r[1]}px;width:${b.s.W}px;height:${b.s.H}px;background:url(${BASE + b.s.img}) 0 0/${b.s.W}px ${b.s.H}px no-repeat`;
-      }
-      panes.push({ o, pane, inner, shift });
+      // A region is one window; `parts` places several windows of one row side by side, dropping the
+      // empty artwork between a label and its control so the row fits the phone at readable size.
+      const windows = (o.parts || (o.r ? [o.r] : [])).map(r => windowOf(b, r, inner));
+      if (o.parts) inner.classList.add('sbw-mparts');
+      o.w = windows.reduce((n, w) => n + w.r[2] - w.r[0], 0);
+      panes.push({ o, pane, inner, windows });
     }
     b.mob = { col, panes, order: [...b.st.children].filter(e => e !== col), seen: new Set(), cols: new Map() };
     b.st.classList.add('sbw-mstack');
@@ -1070,7 +1078,7 @@
         if (o.cols) for (const e of p.inner.children) e.style.gridTemplateColumns = `repeat(${o.cols},minmax(0,1fr))`;
         continue;
       }
-      const w = o.r[2] - o.r[0]; let z = Math.min(o.max || 1, avail / w); const pan = !o.fit && z < (o.pan || MIN_ZOOM);
+      const w = o.w; let z = Math.min(o.max || 1, avail / w); const pan = !o.fit && z < (o.pan || MIN_ZOOM);
       if (pan) z = o.pan || MIN_ZOOM;
       p.pane.classList.toggle('pan', pan); p.inner.style.zoom = z;
       if (!pan) p.pane.style.width = Math.min(avail, w * z) + 'px'; // narrow panels sit centred, not stretched
@@ -1089,8 +1097,12 @@
   function fit() {
     geometryRevision++;
     const b = cur && built[cur]; if (!b) return;
-    if (isPhone()) { layoutPhone(b); placeTrigger(); placeChat(); return; }
-    leavePhone();
+    if (isPhone()) {
+      try { layoutPhone(b); placeTrigger(); placeChat(); return; }
+      // Never leave a phone on raw full-size artwork: fall back to the fitted desktop layout.
+      catch (error) { console.error('Phone layout failed; using the desktop layout:', error); }
+    }
+    try { leavePhone(); } catch (error) { console.error(error); }
     const vw = innerWidth, vh = innerHeight;
     if (HDR) {
       // Content starts at row 100, where the header art's left 70% ends (its clip-path hides another

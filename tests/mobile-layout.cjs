@@ -54,6 +54,17 @@ const desktopBoxes = p => p.evaluate(() => [...document.querySelectorAll('.sbw-s
         assert.equal(view.current, inMore ? 'more' : k, `${k}: the bottom navigation shows where you are`);
         if (size.width === 390) await p.screenshot({ path: path.join(output, 'phone-' + k + '.png') });
       }
+      // Dojo → Sensei: every row keeps its label and control on screen, large enough to use.
+      await p.locator('.sbw-ph-morebtn').click(); await p.locator('.sbw-ph-more .sbw-ph-item[data-k="dojo"]').click();
+      await p.waitForFunction(() => WebsiteDesign.current() === 'dojo');
+      await p.evaluate(() => document.querySelector('.sbw-scr.on .sbw-dback button')?.click());
+      await p.evaluate(() => document.querySelector('.sbw-scr.on [data-sbwid="msen"]').click());
+      await p.waitForFunction(() => WebsiteDesign.current() === 'dojo-sen');
+      const sensei = await p.evaluate(() => { const sec = document.querySelector('.sbw-scr.on'); return { sideways: sec.scrollWidth > sec.clientWidth + 1,
+        controls: ['.sbw-dsel', '.sbw-dtg', '.sbw-dturn'].map(sel => { const r = sec.querySelector(sel).getBoundingClientRect(); return { sel, h: Math.round(r.height), inside: r.left >= 0 && r.right <= innerWidth + 0.5 }; }) }; });
+      assert.equal(sensei.sideways, false, 'Sensei: the page never scrolls sideways');
+      for (const c of sensei.controls) { assert(c.inside, `Sensei: ${c.sel} is fully on screen`); assert(c.h >= 24, `Sensei: ${c.sel} is ${c.h}px tall`); }
+      if (size.width === 390) await p.screenshot({ path: path.join(output, 'phone-dojo-sen.png') });
       await p.locator('.sbw-ph-nav .sbw-ph-item[data-k="home"]').click();
       await p.waitForFunction(() => WebsiteDesign.current() === 'home');
     }

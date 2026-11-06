@@ -20,6 +20,17 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Mobile fixes)**
+
+**🛠️ Fixes**
+• **Sensei on phones** — the Sensei page now fits your screen: "Return to battle at", Dojo in service, Sensei hired and the Auto rotation switch each show their label and control side by side, with nothing cut off on the right.
+• **Heroes on phones** — all filters (All / Battle-ready / Reserve, ranks, search and sort) are visible without swiping, and the hero count and page arrows are easy to read.
+• If the phone layout can't be applied for any reason, the game now falls back to the regular layout instead of showing oversized artwork.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Mobile layout)**
 
 **✨ New**

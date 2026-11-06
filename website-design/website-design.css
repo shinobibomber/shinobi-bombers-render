@@ -570,3 +570,6 @@ body.sbw-phone-ui .sbw-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))
 /* dialogs size their padding inside the width, and keep a margin on phones */
 .sbw-dialog{box-sizing:border-box}
 body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
+#sbwLayer .sbw-mpart{position:relative;flex:none;overflow:hidden}
+#sbwLayer .sbw-minner{width:max-content}
+#sbwLayer .sbw-minner.sbw-mparts{display:flex;align-items:flex-start}
