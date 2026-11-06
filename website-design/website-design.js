@@ -14,7 +14,9 @@
   const SHOWN = { '5': 'home', '3': 'codex', '2': 'summon', '6': 'fusion', '4:0': 'dojo', '1': 'heroes', '0': 'adventure', '4:1': 'market', '8': 'boss-hunt' };
   let preview = null; /* Guild/Chat preview screens (no game page) */
   let dojoView = 'dojo'; /* Dojo pages: 'dojo' (Services, landing), 'dojo-upg' (Enter Dojo), 'dojo-sen' (Manage Sensei) */
-  const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'];
+  const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a', '#c98bff'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'];
+  // Stars per rank: rank + 1, except Mythic (Tsukiyomi), which has exactly seven.
+  const STARS = r => '★'.repeat(r === 5 ? 7 : (r || 0) + 1);
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   let RM = motionPreference.matches, geometryRevision = 0;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -285,7 +287,7 @@
     const R2 = D.ref; switch (i) {
       case 0: return `<p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Heroes nap and recover – faster in the Dojo.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
       case 2: return `<p>Element and rarity are independent: an element changes a hero's jutsu and aura colour, never their rank.</p><h4>Hero models · four directions</h4>${gal([R2.models], () => 'All 12 hero models')}`;
-      case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin ★</b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin ★★</b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin ★★★</b><span>3 perks</span></div><div><b style="color:#b45cff">Elite ★★★★</b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend ★★★★★</b><span>Top rank · 5 perks</span></div></div><p>Fusion combines three heroes of the same rank. Legend is the maximum rank and stays tradable.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
+      case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin ★</b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin ★★</b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin ★★★</b><span>3 perks</span></div><div><b style="color:#b45cff">Elite ★★★★</b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend ★★★★★</b><span>Top summon rank · 5 perks</span></div><div><b style="color:#c98bff">Mythic ★★★★★★★</b><span>Tsukiyomi · NFT only · 6 perks</span></div></div><p>Fusion combines three heroes of the same rank. Legend is the highest rank you can summon or fuse and stays tradable. Mythic Tsukiyomi comes only with the Limited NFT Box and moves with that NFT.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
       case 4: return `<div class="cxg"><div><b>Save burst</b><span>Hold jutsu bursts for boss phases.</span></div><div><b>Balance</b><span>Mix damage dealers with chakra support.</span></div><div><b>Read the board</b><span>Blasts stop at stone – line up crates.</span></div><div><b>Rotate</b><span>A Sensei swaps in rested heroes automatically.</span></div></div><h4>Hero animation reference</h4>${gal([R2.hayate], () => 'Hayate – animation & VFX reference')}`;
       case 5: return `<p>Each boss has idle, walk, hurt and death animations plus signature attacks, ending in a rage mode at low HP.</p><h4>Boss concept sheets</h4>${gal(R2.bosses, x => `${x.n} · ${x.t}`)}<h4>Akuma animation sheets</h4>${gal(R2.akuma, x => 'Akuma sprite sheet ' + (R2.akuma.indexOf(x) + 1))}`;
       case 6: return `<div class="cxg"><div><b>Adventure Ryo</b><span>Earned while your team works stages. It collects in your Chest.</span></div><div><b>Claim</b><span>Moves verified Chest Ryo into your game balance – not an on-chain withdrawal.</span></div><div><b>Withdraw / Deposit</b><span>Use the Chest's own limits, fees, cooldown and wallet steps.</span></div></div><p><button class="gb" type="button" data-cx="chest">Open Chest</button></p>`;
@@ -574,7 +576,7 @@
     if (!surface) return;
     // Repaint only when the idle pose flips (every 520ms), not on every paint tick.
     const time = RM ? 0 : now || 0, pose = h && PM?.loaded ? PM.portraitPose(h, time) : '';
-    const key = [h?.id, h?.r, h?.z, h?.model, PM?.loaded, pose, x, y, scale].join('|');
+    const key = [h?.id, h?.r, h?.z, h?.model, PM?.loaded, pose, x, y, scale, h?.r === 5 && window.MythicHero?.assetsReady, h?.r === 5 && window.MythicHero?.auraEnabled].join('|');
     if (surface.key === key) return;
     const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
     if (h && PM?.loaded) {
@@ -628,6 +630,14 @@
         tog: tg, up: btn(/^up\(/), list: btn(/openListing/), mode: btn(/hero-mode-button/) };
     });
   }
+  // Tsukiyomi (Mythic, rank 5): 7 stars, his box NFT, the aura switch and his four skills.
+  const shortMint = m => m ? m.slice(0, 4) + '…' + m.slice(-4) : '';
+  function mythicBlock(h) {
+    const MH = window.MythicHero, aura = MH ? MH.auraEnabled : true, skills = MH ? MH.skills : [];
+    return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-stars" aria-label="7 stars">${STARS(5)}</b><span>Exclusive Mythic Shinobi</span></div>
+      <div class="sbw-myth-nft"><span>${h.nft?.mint ? '✔ NFT verified · ' + esc(shortMint(h.nft.mint)) : 'NFT hero'}</span><button type="button" data-k="mcheck">Check NFT</button><button type="button" data-k="maura" aria-pressed="${aura}">Aura: ${aura ? 'On' : 'Off'}</button></div>
+      <ul class="sbw-myth-skills" aria-label="Skills">${skills.map(k => `<li class="${k.ultimate ? 'ult' : ''}" title="${esc(k.text)}"><b>${esc(k.ultimate ? '★ ' + k.name.replace('Mythic ', '') : k.name)}</b></li>`).join('')}</ul></div>`;
+  }
   function heroPageButton(previous) { return document.querySelector('#p1 .heroes-pagination button[aria-label="' + (previous ? 'Previous page' : 'Next page') + '"]'); }
   INIT.heroes = b => {
     b.tabs = b.s.hs.filter(h => /^tf\d$/.test(h.id)).map((h, i) => cov(b, h.r[0] + 5, h.r[1] + 6, h.r[2] - h.r[0] - 10, h.r[3] - h.r[1] - 12, i === 0 ? '#342003' : '#04172e', 15, '#e8eefc'));
@@ -644,10 +654,10 @@
   function heroCardHtml(c, i, on) {
     const h = c.h || {}, r = h.r || 0, col = RCOL[r] || RCOL[0], [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0), pct = cm ? Math.round(100 * cc / cm) : 0;
     const btn = (k, label, cls = '', dis) => `<button type="button" class="sbw-hb ${cls}" data-k="${k}" data-i="${i}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
-    return `<div class="sbw-hcard${on ? ' on' : ''}" data-i="${i}" style="--rc:${col}">
-      <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
-      <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas></div>
-      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(c.attack || c.style)}</span></div>
+    return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
+      <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}${r === 5 ? `<em class="sbw-stars" aria-label="7 stars">${STARS(5)}</em>` : ''}</b><i>${esc(c.status || '')}</i></div>
+      <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}</div>
+      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Slash' : c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
       <div class="sbw-hc-ch"><span>CHAKRA</span><span>${esc(c.ch.replace(/\s/g, ' '))}</span></div><div class="sbw-bar"><i style="width:${pct}%"></i></div>
       <div class="sbw-hc-btns">${btn('tog', c.tog ? c.tog.textContent.trim().replace(/^Reserve$/, 'In Reserve') : 'Deploy hero', c.status === 'DEPLOYED' ? 'rest' : 'deploy', !c.tog || c.tog.disabled)}${btn('mode', c.mode ? c.mode.textContent.trim() : '—', 'mode', !c.mode || c.mode.disabled)}</div></div>`;
@@ -673,7 +683,7 @@
     }
     $$('.sbw-hcard canvas', b.grid).forEach(c => { const card = cards[+c.dataset.i]; drawHero(c, card && card.h, 2.7, now, 2); });
     const c = cards[b.sel];
-    const dsig = c ? [c.idx, c.lvl, c.ch, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled].join(',') : 'none';
+    const dsig = c ? [c.idx, c.lvl, c.ch, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint].join(',') : 'none';
     if (dsig !== b.dsig) {
       b.dsig = dsig;
       const portrait = $('.sbw-h2-port canvas', b.det);
@@ -685,7 +695,7 @@
         const stat = (k, v) => `<div class="sbw-st"><span>${k}</span><b>${esc(v || '—')}</b></div>`;
         b.det.innerHTML = `<div class="sbw-h2" style="--rc:${RCOL[r]}">
           <div class="sbw-h2-top"><div><h3 data-fs="23">${esc(c.name)}</h3><p>Lv. ${esc(lv)} / ${esc(lvMax || '5')}<em>${esc(c.status)}</em></p></div><i class="sbw-h2-rank">${esc(RNAME[r].toUpperCase())}</i></div>
-          <div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>
+          ${r === 5 ? mythicBlock(h) : `<div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>`}
           <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + (r + 1))}</div>
             <div class="sbw-h2-port"><canvas width="292" height="344"></canvas></div></div>
           <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
@@ -693,7 +703,7 @@
           <ul class="sbw-perks2">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
           <div class="sbw-h2-btns">
             <button type="button" class="sbw-xbtn train${maxed ? ' max' : ''}" data-k="train" ${c.up && !c.up.disabled ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MAX LEVEL' : 'TRAIN'}</b><small>${maxed ? 'Fully trained' : price ? '<i class="coin"></i>' + esc(price) : 'Level ' + esc(lv) + ' → ' + (Number(lv) + 1)}</small></span></button>
-            <button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>
+            ${r === 5 ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>◈</i><span><b>NFT ONLY</b><small>Trade the box NFT</small></span></button>' : `<button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>`}
           </div></div>`;
         const n = $('h3', b.det); if (n) fitText(n);
         const fresh = $('.sbw-h2-port canvas', b.det);
@@ -714,6 +724,8 @@
     dtab: a => { built.heroes.dt = +a; built.heroes.dsig = ''; for (let i = 0; i < 4; i++) { const e = $(`.hs[data-sbwid="dt${i}"]`, built.heroes.st); if (e) e.classList.toggle('on2', i === +a); } },
     train: () => { const c = heroCards()[built.heroes.sel]; if (c && c.up && !c.up.disabled) c.up.click(); else toast('Training is not available for this hero right now.'); },
     sell: () => { const c = heroCards()[built.heroes.sel]; if (c && c.list && !c.list.disabled) c.list.click(); else toast('This hero cannot be listed right now.'); },
+    maura: () => { const MH = window.MythicHero; if (!MH) return; MH.setAura(!MH.auraEnabled); toast('Mythic aura ' + (MH.auraEnabled ? 'on' : 'off')); built.heroes.dsig = ''; },
+    mcheck: async () => { if (!window.RyoPayments?.mythic) return toast('Sign in to check your NFT.'); try { const r = await RyoPayments.mythic(); const n = r?.mythic?.mints?.length || 0; toast(r?.mythic?.enabled === false ? 'The Mythic NFT check opens at launch.' : n ? 'NFT verified · ' + n + ' Mythic hero' + (n === 1 ? '' : 'es') : 'No Mythic box NFT found in this wallet.'); } catch (e) { toast(e.message || 'NFT check failed. Try again shortly.'); } built.heroes.sig = built.heroes.dsig = ''; },
     deploy: () => { const c = heroCards()[built.heroes.sel]; if (c && c.tog && !c.tog.disabled) c.tog.click(); else toast('This hero cannot be deployed right now.'); built.heroes.sig = ''; }
   };
 
@@ -760,7 +772,7 @@
       const k = [c.idx, h.id, h.r, h.lv, meta, bar, btn && btn.textContent, btn && btn.disabled, c.deployed].join('|');
       if (e.dataset.k !== k) {
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
-        e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
+        e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
         e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">✦ ${esc(RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
         if (keep && e.dataset.sbwHero === String(h.id)) e.querySelector('canvas').replaceWith(keep);
         e.dataset.sbwHero = String(h.id);
@@ -814,7 +826,7 @@
     b.left = cv(b, 68, 248, 1076, 664, 'sbw-mpanel');
     b.bar = cv(b, 78, 256, 1046, 96, 'sbw-mbar');
     b.bar.innerHTML = `<div class="sbw-mtabs" role="tablist" aria-label="Market">${[['heroes', 'For Sale'], ['mine', 'My Listings'], ['offers', 'My Offers']].map(([k, t]) => `<button type="button" role="tab" data-tab="${k}">${t}</button>`).join('')}<span class="sbw-mheld" hidden></span></div>
-      <div class="sbw-mfilters"><div class="sbw-mranks" role="group" aria-label="Rank">${['All', ...RNAME].map((n, i) => `<button type="button" data-rank="${i - 1}" style="--rc:${i ? RCOL[i - 1] : '#ffd257'}">${n}</button>`).join('')}</div>
+      <div class="sbw-mfilters"><div class="sbw-mranks" role="group" aria-label="Rank">${['All', ...RNAME.slice(0, 5)].map((n, i) => `<button type="button" data-rank="${i - 1}" style="--rc:${i ? RCOL[i - 1] : '#ffd257'}">${n}</button>`).join('')}</div>
       <button type="button" class="sbw-mskills" data-skills>Skills <b hidden></b></button>
       <label class="sbw-msort"><span class="sbw-sr">Sort</span><select aria-label="Sort"><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="newest">Newest</option></select></label>
       <label class="sbw-msearch"><span class="sbw-sr">Search hero name</span><input type="search" maxlength="40" placeholder="Search hero name" aria-label="Search hero name"></label>

@@ -1,0 +1,657 @@
+{
+  "version": 1,
+  "hero": {
+    "id": 13,
+    "key": "tsukiyomi",
+    "name": "Tsukiyomi",
+    "title": "Mythic Shinobi",
+    "rarity": "Mythic",
+    "rank": 5,
+    "stars": 7,
+    "theme": "Lunar / Celestial / Void"
+  },
+  "sources": {
+    "model": {
+      "file": "reference/tsukiyomi-model.png",
+      "sha256": "29d54f6cdbd5971565117b0475d870b71b96a0b107109dc18299398cdadf5977"
+    },
+    "animation": {
+      "file": "reference/mythic-animation-sheet.png",
+      "sha256": "8a186db2e6efa3ee91017d6c1cd3ddfcf6937bf76fc43bac03b4da145235257e"
+    },
+    "aura": {
+      "file": "reference/mythic-aura-sheet.png",
+      "sha256": "2af5b9261add996a3b4a488ea98585d3191f871c69def5d3a10b10937bba5a92"
+    }
+  },
+  "frame": {
+    "width": 128,
+    "height": 128,
+    "anchor": [
+      64,
+      124
+    ],
+    "format": "PNG RGBA",
+    "displaySizes": [
+      32,
+      48,
+      64
+    ]
+  },
+  "character": {
+    "front": {
+      "path": "character/tsukiyomi_front.png",
+      "width": 128,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "format": "PNG RGBA",
+      "displaySizes": [
+        32,
+        48,
+        64
+      ],
+      "direction": "front"
+    },
+    "left": {
+      "path": "character/tsukiyomi_left.png",
+      "width": 128,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "format": "PNG RGBA",
+      "displaySizes": [
+        32,
+        48,
+        64
+      ],
+      "direction": "left"
+    },
+    "right": {
+      "path": "character/tsukiyomi_right.png",
+      "width": 128,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "format": "PNG RGBA",
+      "displaySizes": [
+        32,
+        48,
+        64
+      ],
+      "direction": "right"
+    },
+    "back": {
+      "path": "character/tsukiyomi_back.png",
+      "width": 128,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "format": "PNG RGBA",
+      "displaySizes": [
+        32,
+        48,
+        64
+      ],
+      "direction": "back"
+    }
+  },
+  "previews": {
+    "front": {
+      "path": "previews/tsukiyomi_front.png",
+      "width": 197,
+      "height": 268,
+      "anchor": [
+        95,
+        268
+      ]
+    },
+    "left": {
+      "path": "previews/tsukiyomi_left.png",
+      "width": 184,
+      "height": 266,
+      "anchor": [
+        66,
+        266
+      ]
+    },
+    "right": {
+      "path": "previews/tsukiyomi_right.png",
+      "width": 176,
+      "height": 265,
+      "anchor": [
+        114,
+        265
+      ]
+    },
+    "back": {
+      "path": "previews/tsukiyomi_back.png",
+      "width": 179,
+      "height": 268,
+      "anchor": [
+        96,
+        268
+      ]
+    }
+  },
+  "animations": {
+    "idle": {
+      "path": "animations/idle.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 6,
+      "loop": true,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character"
+    },
+    "walk_front": {
+      "path": "animations/walk_front.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 10,
+      "loop": true,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character"
+    },
+    "walk_left": {
+      "path": "animations/walk_left.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 10,
+      "loop": true,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "left",
+      "layer": "character"
+    },
+    "walk_right": {
+      "path": "animations/walk_right.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 10,
+      "loop": true,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "right",
+      "layer": "character"
+    },
+    "walk_back": {
+      "path": "animations/walk_back.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 10,
+      "loop": true,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "back",
+      "layer": "character"
+    },
+    "run_front": {
+      "path": "animations/run_front.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 14,
+      "loop": true,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character"
+    },
+    "run_left": {
+      "path": "animations/run_left.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 14,
+      "loop": true,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "left",
+      "layer": "character"
+    },
+    "run_right": {
+      "path": "animations/run_right.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 14,
+      "loop": true,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "right",
+      "layer": "character"
+    },
+    "run_back": {
+      "path": "animations/run_back.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 14,
+      "loop": true,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "back",
+      "layer": "character"
+    },
+    "attack_front": {
+      "path": "animations/attack_front.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 6,
+      "fps": 14,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character",
+      "events": {
+        "slash": 2,
+        "recover": 4
+      }
+    },
+    "attack_left": {
+      "path": "animations/attack_left.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 6,
+      "fps": 14,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "left",
+      "layer": "character",
+      "events": {
+        "slash": 2,
+        "recover": 4
+      }
+    },
+    "attack_right": {
+      "path": "animations/attack_right.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 6,
+      "fps": 14,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "right",
+      "layer": "character",
+      "events": {
+        "slash": 2,
+        "recover": 4
+      }
+    },
+    "attack_back": {
+      "path": "animations/attack_back.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 6,
+      "fps": 14,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "back",
+      "layer": "character",
+      "events": {
+        "slash": 2,
+        "recover": 4
+      }
+    },
+    "bomb_place": {
+      "path": "animations/bomb_place.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 6,
+      "fps": 10,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character",
+      "events": {
+        "place": 2
+      }
+    },
+    "hurt": {
+      "path": "animations/hurt.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 4,
+      "fps": 10,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character"
+    },
+    "defeat": {
+      "path": "animations/defeat.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 8,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character",
+      "events": {
+        "down": 7
+      }
+    },
+    "victory": {
+      "path": "animations/victory.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 8,
+      "fps": 8,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character"
+    },
+    "alert": {
+      "path": "animations/alert.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 4,
+      "fps": 8,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character"
+    },
+    "question": {
+      "path": "animations/question.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 4,
+      "fps": 8,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character"
+    },
+    "like": {
+      "path": "animations/like.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 4,
+      "fps": 8,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character"
+    },
+    "celebrate": {
+      "path": "animations/celebrate.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameCount": 4,
+      "fps": 8,
+      "loop": false,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "layer": "character"
+    }
+  },
+  "skills": {
+    "dragon_slash": {
+      "label": "Dragon Slash",
+      "path": "skills/dragon_slash.png",
+      "frameWidth": 72,
+      "frameHeight": 80,
+      "frameCount": 8,
+      "fps": 16,
+      "loop": false,
+      "anchor": [
+        36,
+        40
+      ],
+      "layer": "skill-front",
+      "direction": "right",
+      "events": {
+        "impact": 6
+      }
+    },
+    "void_shuriken": {
+      "label": "Void Shuriken",
+      "path": "skills/void_shuriken.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frameCount": 8,
+      "fps": 16,
+      "loop": false,
+      "anchor": [
+        32,
+        32
+      ],
+      "layer": "skill-front",
+      "events": {
+        "launch": 5,
+        "impact": 6
+      }
+    },
+    "raijin_field": {
+      "label": "Raijin Field",
+      "path": "skills/raijin_field.png",
+      "frameWidth": 64,
+      "frameHeight": 80,
+      "frameCount": 10,
+      "fps": 14,
+      "loop": false,
+      "anchor": [
+        32,
+        76
+      ],
+      "layer": "skill-front",
+      "events": {
+        "strike": 6,
+        "peak": 7
+      }
+    },
+    "mythic_dragon_ascension": {
+      "label": "Mythic Dragon Ascension",
+      "path": "skills/mythic_dragon_ascension.png",
+      "frameWidth": 72,
+      "frameHeight": 88,
+      "frameCount": 10,
+      "fps": 12,
+      "loop": false,
+      "anchor": [
+        36,
+        84
+      ],
+      "layer": "ultimate",
+      "sheetLabels": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12
+      ],
+      "timeline": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        8,
+        9
+      ],
+      "events": {
+        "burst": 10,
+        "end": 11
+      }
+    }
+  },
+  "aura": {
+    "source": "Existing Mythic Hero Aura sheet (reference/mythic-aura-sheet.png), reused as supplied",
+    "layers": [
+      "sacred_floor_sigil",
+      "particle_sparks",
+      "energy_wings",
+      "outer_glyph_ring",
+      "character",
+      "orbit_rings",
+      "aerial_shards",
+      "skill_front",
+      "ultimate"
+    ],
+    "parts": {
+      "outer_glyph_ring": {
+        "path": "aura/outer_glyph_ring.png",
+        "width": 98,
+        "height": 86
+      },
+      "inner_halo_ring": {
+        "path": "aura/inner_halo_ring.png",
+        "width": 98,
+        "height": 55
+      },
+      "sacred_floor_sigil": {
+        "path": "aura/sacred_floor_sigil.png",
+        "width": 98,
+        "height": 52
+      },
+      "summoning_seal": {
+        "path": "aura/summoning_seal.png",
+        "width": 86,
+        "height": 86
+      },
+      "divine_halo_crown": {
+        "path": "aura/divine_halo_crown.png",
+        "width": 95,
+        "height": 63
+      },
+      "energy_wings_left": {
+        "path": "aura/energy_wings_left.png",
+        "width": 92,
+        "height": 86
+      },
+      "energy_wings_right": {
+        "path": "aura/energy_wings_right.png",
+        "width": 91,
+        "height": 86
+      },
+      "orbit_rings": {
+        "path": "aura/orbit_rings.png",
+        "width": 98,
+        "height": 77
+      },
+      "aerial_shards": {
+        "path": "aura/aerial_shards.png",
+        "width": 96,
+        "height": 78
+      },
+      "rune_tablets": {
+        "path": "aura/rune_tablets.png",
+        "width": 94,
+        "height": 82
+      },
+      "particle_sparks": {
+        "path": "aura/particle_sparks.png",
+        "width": 90,
+        "height": 77
+      },
+      "energy_pillars": {
+        "path": "aura/energy_pillars.png",
+        "width": 98,
+        "height": 85
+      },
+      "aura_flames": {
+        "path": "aura/aura_flames.png",
+        "width": 93,
+        "height": 85
+      },
+      "light_burst": {
+        "path": "aura/light_burst.png",
+        "width": 97,
+        "height": 85
+      }
+    },
+    "frames": {
+      "path": "aura/aura_frames.png",
+      "frameWidth": 88,
+      "frameHeight": 84,
+      "frameCount": 8,
+      "fps": 8,
+      "loop": true
+    }
+  }
+}

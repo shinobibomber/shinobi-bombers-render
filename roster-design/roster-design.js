@@ -18,7 +18,7 @@
     const mobileCopy=document.createElement('p');mobileCopy.textContent='Deploy your shinobi and start bombing!';
     mobileHeading.append(mobileTitle,mobileCopy);scene.append(mobileHeading);
     const rects=[[40,238,412,205],[465,238,394,205],[873,238,380,205],[1266,238,399,205],[1677,238,411,205],[40,455,412,207],[465,455,394,207],[873,455,380,207],[1266,455,399,207],[1677,455,411,207]];
-    const sx=1672/2088,sy=363/563,templates=[0,2,4,8,7,5,1,3],colors=['#ff4541','#cf45ff','#25caff','#ff6b3d','#3dd7ff','#35f397','#ffd23a','#d750ff'],rankColors=['#d8e3ee','#36ec9b','#25bdff','#db5cff','#ffd646'];
+    const sx=1672/2088,sy=363/563,templates=[0,2,4,8,7,5,1,3],colors=['#ff4541','#cf45ff','#25caff','#ff6b3d','#3dd7ff','#35f397','#ffd23a','#d750ff'],rankColors=['#d8e3ee','#36ec9b','#25bdff','#db5cff','#ffd646','#c98bff'];
     const elements = [
       ['Fire', '<path d="M17 3c3 6-1 7 4 11 2-2 2-4 2-5 5 6 7 10 4 15-3 6-13 7-18 2C3 20 8 15 12 10c-1 5 1 6 2 7 4-4 1-8 3-14Z"/><path fill="#fff2aa" d="M17 17c1 4 6 5 3 9-2 3-7 2-8-1-1-3 2-5 5-8Z"/>'],
       ['Shadow', '<path d="M24 5a12 12 0 1 0 3 20A12 12 0 0 1 24 5Z"/>'],

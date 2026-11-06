@@ -102,6 +102,8 @@ async function post(store, wallet, body) {
     if ((await c.query("SELECT request_id FROM ryo_purchases WHERE scope=$1 AND wallet=$2 AND status='pending' LIMIT 1", [store.scope, wallet])).rows.length) fail('Wait for your pending purchase to settle before listing a hero.', 409);
     const profile = await store.profileLocked(c, wallet), hero = profile.heroes.find(h => h.tokenId === body.heroId);
     if (!hero) fail('Only heroes from your signed-in token collection can be listed.');
+    // Mythic heroes belong to their box NFT: they change hands by moving the NFT, never here.
+    if (!(hero.rank >= 0 && hero.rank < MIN_PRICE.length) || hero.nft) fail('Mythic NFT heroes are traded by moving their NFT, not on the Market.');
     if (!Number.isSafeInteger(price) || price < MIN_PRICE[hero.rank] || price > MAX_PRICE) fail(`Set a price from ${MIN_PRICE[hero.rank].toLocaleString('en-US')} to ${MAX_PRICE.toLocaleString('en-US')} Ryo for this rank.`);
     if (profile.heroes.length <= 2) fail('Keep at least two heroes in your collection.');
     const active = Number((await c.query("SELECT COUNT(*) AS n FROM ryo_market_listings WHERE scope=$1 AND seller=$2 AND status IN ('active','pending')", [store.scope, wallet])).rows[0].n);

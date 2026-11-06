@@ -47,7 +47,7 @@
     },
     {
       "path": "character-animations/character-animations.js",
-      "sha256": "3cf2567bcb654ccfca408b2156679bb17a4ca6b869afd1ae03adc38fd584e438"
+      "sha256": "b0f4698349a42def3f98fb1c377d02ea151508cb707bc210bce284ef86456261"
     },
     {
       "path": "character-animations/manifest.json",
@@ -95,7 +95,7 @@
     },
     {
       "path": "gameplay-options/server.cjs",
-      "sha256": "b57bfc0f4a182e991e94cac7f2a664c15b643ca0f52a7de8c3cec9320f6b24f9"
+      "sha256": "00353d812423394928f7cc62503c5eb04e62456c7b1bd64f4998563306ea1e1a"
     },
     {
       "path": "heroes-design/heroes-design.css",
@@ -103,7 +103,7 @@
     },
     {
       "path": "heroes-design/heroes-design.js",
-      "sha256": "fa1ad2d109ea5a5c9fa2e85b57a01d5b74a4257ba27ddd49ce529a5dc73eb0a6"
+      "sha256": "295dd666d8a3694dba7303d1b499f258d0aa2a33684c5629ae619b7b6a0c9b26"
     },
     {
       "path": "heroes-design/heroes-menu.png",
@@ -223,7 +223,7 @@
     },
     {
       "path": "roster-design/roster-design.js",
-      "sha256": "d2201c55a9fe1669ad2fe0c3c912bfbc780d54134354caa096a9ec07074fd768"
+      "sha256": "3f8b0fcf884325df71f0521f8e4f52ecfe33eafe0db510755c0ba22e220568a6"
     },
     {
       "path": "roster-design/source.png",
@@ -271,11 +271,11 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "76df25cedfb3de29c14e2cfae640c935a6cc6b530984de6dcc344dca971ae103"
+      "sha256": "3120b2a6a8e1024261c8eb4bf1688cde97cdeef15997d5f13fe6d37eda604444"
     },
     {
       "path": "app/server/gameplay-options.cjs",
-      "sha256": "b57bfc0f4a182e991e94cac7f2a664c15b643ca0f52a7de8c3cec9320f6b24f9"
+      "sha256": "00353d812423394928f7cc62503c5eb04e62456c7b1bd64f4998563306ea1e1a"
     },
     {
       "path": "app/server/init-db.cjs",
@@ -291,11 +291,11 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "1a252a32a0f544d255be21bf21c208cad069ae794e310224a4aa9becbd4669ef"
+      "sha256": "c71a09daf8029c0d1914152a84cc9f38750d4f27be418fd23bf702e4888878c9"
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "a5f4b9e655e5d6f73d714059f9067d56a9faabd278e8e1c0aefae4ca4961eb8b"
+      "sha256": "cd603d9093815869fb4ac05505e5afa3c616340f3fa750237529659e85a443bc"
     },
     {
       "path": "app/server/store.cjs",

@@ -18,3 +18,5 @@ dojo-design/dojo-list-upgrades.png
 dojo-design/sensei-tab.png
 shrine-fusion-design/summoning-shrine.png
 shrine-fusion-design/fusion-menu.png
+# Tsukiyomi's HD menu views are build sources, not generated previews.
+!/mythic-hero/assets/previews/

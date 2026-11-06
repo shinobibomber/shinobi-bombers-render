@@ -105,6 +105,8 @@
     return canvas;
   }
   function effectFrame(hero, type, phase = 0) {
+    // Optional per-hero art (e.g. the Mythic hero's own skills) is asked first; undefined = not handled.
+    if (api.effectOverride) { const custom = api.effectOverride(hero, type, phase); if (custom !== undefined) return custom; }
     const data = manifest.models[modelIndex(hero)];
     const cells = data.effects[type] || data.rows[type]?.effects || [];
     if (!cells.length) return null;
@@ -146,10 +148,10 @@
   }
   function drawProjectile(context, projectile, now, position) {
     if (!api.loaded) return false;
-    return drawEffect(context, effectFrame({ id: projectile.o || 0 }, 'projectile', now / 85), position.x, position.y, (projectile.ultimate ? 58 : 32) * position.scale, position.angle);
+    return drawEffect(context, effectFrame({ id: projectile.o || 0, projectile }, 'projectile', now / 85), position.x, position.y, (projectile.ultimate ? 58 : 32) * position.scale, position.angle);
   }
   function drawHuntProjectile(context, shot, x, y, now, owner, angle) {
-    return drawEffect(context, effectFrame({ id: owner }, 'projectile', now / 85), x, y, shot.ultimate ? 62 : 35, angle);
+    return drawEffect(context, effectFrame({ id: owner, projectile: shot }, 'projectile', now / 85), x, y, shot.ultimate ? 62 : 35, angle);
   }
   function drawHuntImpact(context, hit, position, owner) {
     const age = Math.max(0, .8 - hit.life);

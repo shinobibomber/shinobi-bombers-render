@@ -1,0 +1,51 @@
+# Tsukiyomi — 7-star Mythic Shinobi (hero 13, rank 5)
+
+The exclusive hero of the **Limited NFT Box** for initial investors. Mythic is a sixth rank above
+Legend: exactly seven stars, base stats 15–18, six perks, Legend's ultimate rules (2.2×, every 8th
+volley), Legend training prices, never summoned, fused or listed on the in-game Market.
+
+## Ownership (server: `server.cjs` → `app/server/mythic-hero.cjs`)
+
+Set one or both on the Render service; until then the feature is dormant and nobody owns him.
+
+| Variable | Meaning |
+|---|---|
+| `MYTHIC_BOX_MINTS` | Comma/space separated box NFT mint addresses |
+| `MYTHIC_BOX_COLLECTION` | Verified Metaplex collection mint of the box NFTs |
+
+* Checked on-chain at `finalized` commitment (SPL Token and Token-2022 accounts, amount 1, 0 decimals).
+* One Tsukiyomi per box NFT held. The hero belongs to the NFT: when the NFT moves, the hero (with its
+  level and training) moves to the new holder and leaves the old wallet and its battle-ready team.
+* Checks are cached 60 s per wallet; the **Check NFT** button forces one (at most every 10 s).
+* An RPC failure never removes a hero. A full collection (500) waits until there is room.
+* Supply, price and addresses are launch configuration, never code.
+
+## Art (`reference/` → `tools/build-assets.cjs` → `assets/`)
+
+`node mythic-hero/tools/build-assets.cjs` rebuilds every asset from the three supplied sheets
+(their SHA-256 is recorded in `assets/metadata/tsukiyomi.json`):
+
+* **Character** — the FRONT / LEFT / RIGHT / BACK views of `tsukiyomi-model.png`, cut from their
+  backdrop (exterior flood fill, enclosed black clothing kept, soft un-blended edges). Previews keep
+  the native resolution for menus; game frames are 128×128 RGBA with a centre-bottom anchor (64,124).
+* **Animations** — idle 8, walk/run 8 × 4 directions, attack 6 × 4 directions (with a Dragon Slash
+  trail), bomb place 6, hurt 4, defeat 8, victory 8, and alert / question / like / celebrate emotes 4.
+  Motion is made from the exact reference poses (anchored at the feet), so every frame shows the same
+  hero; the reference sheet's own sprite rows show a different (Hayate-based) model on a white
+  checkerboard and are not used. Hand-drawn sheets with the same cell size can replace these files.
+* **Skills** — Dragon Slash 8, Void Shuriken 8, Raijin Field 10 and Mythic Dragon Ascension from
+  `mythic-animation-sheet.png`. The ultimate row draws 10 separable frames (5 is not drawn and 11 is
+  hidden behind 12); its 12-step timeline holds frames 4 and 10 for one extra step.
+* **Aura** — the existing Mythic Aura (`mythic-aura-sheet.png`): its 14 asset tiles and the 8-frame
+  animation, keyed off the checkerboard. Nothing is redesigned.
+
+## Game (`mythic-hero.js` → `assets/mythic-hero/`)
+
+* Only the metadata loads at start; the art (≈3.5 MB) loads the first time a Mythic hero is drawn.
+* Frames: arena, menus and Boss Hunt use his frames (his real LEFT view for left-facing moves).
+* Aura layers (behind → front): energy pillars, floor sigil, inner halo, ground particles, orbit
+  rings, energy wings, golden glyph ring, rune tablets · hero · crystal shards, divine crown. Cached
+  in 8 phases; reduced motion / low effects use fewer layers. Players can switch it off (Heroes).
+* Skills are visuals on the game's own combat events (no extra damage events): normal volleys
+  alternate Dragon Slash and Void Shuriken, their impacts show Raijin Field, and the every-8th-volley
+  ultimate shows Mythic Dragon Ascension over the summoning seal.

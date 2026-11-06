@@ -34,6 +34,7 @@ async function withGame(run,pageOptions={}){
  case'ack-spend':data={ok:true};break;
  case'market-browse':case'market-mine':case'market-post':case'market-cancel':case'market-buy':case'market-offer':case'market-offer-cancel':case'market-offer-decline':case'market-accept':data=await require('./market-fixture.cjs').handle(f,req,account,snapshot);break;
  case'hunt-board':case'hunt-enter':case'hunt-report':data=await require('./hunt-fixture.cjs').handle(f,req,account,snapshot);break;
+ case'mythic-refresh':f.mythicChecks=(f.mythicChecks||0)+1;data={mythic:{enabled:true,mints:f.profile.heroes.filter(h=>h.nft).map(h=>h.nft.mint),waiting:0},...snapshot()};break;
  default:throw Error('Unexpected isolated API action: '+req.action);
  }}catch(error){status=error.status||400;data={error:error.message}}await route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)})});
  await p.goto(url);await p.evaluate(()=>GameLoading.ready);await p.waitForFunction(()=>window.GlobalChestUI?.ready&&!GameLoading.active);try{await run({p,f,errors,url,account,mint,snapshot,chest,assert})}catch(error){console.error('Browser failure context:',JSON.stringify({requests:f.requests.slice(-8),balance:f.balance,pendingWithdrawal:f.pendingWithdrawal,settlePending:f.settlePending,withdrawals:f.withdrawals}));console.error('Current UI:',await p.locator('body').innerText().then(t=>t.slice(0,6000)).catch(()=>''));throw error}

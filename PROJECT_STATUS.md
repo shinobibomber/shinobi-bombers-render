@@ -108,6 +108,13 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Mythic hero Tsukiyomi (owner request; mythic-hero/README.md): rank 5, 7 stars, stats 15–18,
+  6 perks, Legend ultimate/training, no summon/fusion/Market. Ownership = Limited NFT Box: env
+  MYTHIC_BOX_MINTS and/or MYTHIC_BOX_COLLECTION (dormant until set), finalized on-chain check in
+  state() (60 s cache, mythic-refresh action, 10 s limit), ryo_mythic_heroes registry; the hero and its
+  training follow the NFT. Art built from the 3 supplied sheets (tools/build-assets.cjs): 21 animations
+  128×128, 4 skills, 14 aura parts; lazy-loaded; CharacterAnimations.effectOverride hook.
+
 - 2026-11-07 Boss Hunt UI (owner request): the ranks panel is two buttons (.bh-rk data-act daily/weekly);
   huntRankings(kind) opens a Daily or Weekly pop-up (summary, standings, previous day / last week winners,
   swap button). Head/sched panels touch the arena (no printed gaps); bossHuntPatches remove the arena

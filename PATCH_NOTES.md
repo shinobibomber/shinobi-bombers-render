@@ -20,6 +20,26 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Mythic hero: Tsukiyomi)**
+
+**✨ New**
+• **Introducing TSUKIYOMI — the 7-star Mythic Shinobi!** 🌙 A brand-new **Mythic** rank above Legend, with exactly ★★★★★★★ seven stars.
+• **Exclusive to the Limited NFT Box** for our initial investors. Hold the box NFT and Tsukiyomi joins your Heroes automatically — your ownership is verified on-chain.
+• **The hero follows the NFT:** if the NFT moves to another wallet, Tsukiyomi (with his level and training) moves with it.
+• **Mythic power:** base stats 15–18, six perks, and Legend-class attacks with an ultimate every 8th volley.
+• **Signature skills:** ⚔️ *Dragon Slash* and 💠 *Void Shuriken* on his attacks, ⚡ *Raijin Field* where they land, and 🐉 *Mythic Dragon Ascension* as his ultimate.
+• **Mythic Aura:** golden glyph ring, celestial wings, floor sigil, crystal shards and divine crown — switch it on or off in his Heroes details.
+• Fully playable in Adventure and Boss Hunt, with his own animations in every direction.
+
+**📌 Good to know**
+• Tsukiyomi can't be summoned or fused, and he isn't sold on the in-game Market — trade the box NFT itself.
+• He trains to level 5 at Legend prices.
+• Use **Check NFT** in his Heroes details to refresh your NFT status anytime.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Boss Hunt rankings & UI polish)**
 
 **✨ New**

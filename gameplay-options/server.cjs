@@ -45,8 +45,9 @@ function bankKills(d,budget){d.reportBudget=Math.min(KILL_CARRY,(d.reportBudget|
    Power, Jonin/Elite/Legend gain a random stat, and Lv4→5 gives two +1s (random rolls may repeat).
    A hero's stats are its base (rolled inside its rank's band) plus this bonus, in the browser battle
    (GameBalance.recalculateHero), in Sensei offline time and in the kill budget alike. */
-const STAT_BANDS=[[1,3],[3,6],[6,9],[9,12],[12,15]],STATS=['pw','sp','st'],MAX_LEVEL=5;
-const TRAINING_STEP=[10000,20000,40000,80000],TRAINING_RANK=[1,1.5,2,2.5,3];
+// Rank 5 is Mythic (Tsukiyomi, NFT only): one band above Legend; it trains at Legend prices.
+const STAT_BANDS=[[1,3],[3,6],[6,9],[9,12],[12,15],[15,18]],STATS=['pw','sp','st'],MAX_LEVEL=5;
+const TRAINING_STEP=[10000,20000,40000,80000],TRAINING_RANK=[1,1.5,2,2.5,3,3];
 function trainingPrice(rank,level){return Math.round(TRAINING_STEP[level-1]*TRAINING_RANK[rank])}
 function levelUp(h,rand){
  const gains={},rolls=h.level+1===MAX_LEVEL?2:1;h.bonus={pw:0,sp:0,st:0,...h.bonus};
@@ -84,7 +85,7 @@ function rollIdentity(rank,rand){
 function assignIdentity(h){
  if(h.identityVersion===1&&Array.isArray(h.perks)&&Number.isInteger(h.look))return h;
  let step=0;const rand=n=>require('node:crypto').createHash('sha256').update(h.tokenId+':identity:'+step++).digest().readUInt32BE(0)%n;
- Object.assign(h,rollIdentity(Math.max(0,Math.min(4,Number(h.rank)||0)),rand),{identityVersion:1});return h;
+ Object.assign(h,rollIdentity(Math.max(0,Math.min(5,Number(h.rank)||0)),rand),{identityVersion:1});return h;
 }
 /* Token purchase split (summons, training, Dojo, Sensei, fusion): the price is the total charged;
    2% studio, 10% treasury and 8% burned leave custody on-chain, and the remaining 80% stays as

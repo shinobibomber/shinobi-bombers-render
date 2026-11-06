@@ -28,8 +28,8 @@
     // Use the original card's medallion/crystal, rather than the unrelated
     // crown icons in the aura-sheet headings. Keep one image and one live label.
     const badgeIcons = [crop(image, [48, 325, 36, 36]), crop(image, [738, 325, 36, 36])];
-    const badgeNames = ['GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND'];
-    const rankColors = ['#dbe5ef', '#4be986', '#39bfff', '#d95cff', '#ffd45d'];
+    const badgeNames = ['GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND', 'MYTHIC'];
+    const rankColors = ['#dbe5ef', '#4be986', '#39bfff', '#d95cff', '#ffd45d', '#c98bff'];
     const columns = 5, pageSize = 10, cardHeight = 570, rowGap = 20;
     let contentHeight = 311 + 2 * cardHeight + rowGap + 16;
     let query = '', sorting = 'rarity', page = 0, rank = '', cards = [], search, select, pager, status;
@@ -99,7 +99,8 @@
       }
       const filters = section.querySelector('.hero-filters');
       const filterBoxes = [[35, 221, 115], [164, 221, 174], [351, 221, 142], [508, 221, 119], [642, 221, 139], [797, 221, 133], [945, 221, 114], [1071, 221, 141]];
-      [...filters.children].forEach((button, i) => { const [x, y, width] = filterBoxes[i]; Object.assign(button.style, { left: x + 'px', top: y + 'px', width: width + 'px' }); });
+      // The artwork has eight filter tabs; any further rank filter (Mythic) is not drawn on it.
+      [...filters.children].forEach((button, i) => { if (!filterBoxes[i]) { button.hidden = true; return; } const [x, y, width] = filterBoxes[i]; Object.assign(button.style, { left: x + 'px', top: y + 'px', width: width + 'px' }); });
       const tools = document.createElement('div'); tools.className = 'heroes-collection-tools';
       search = document.createElement('input'); search.type = 'search'; search.className = 'heroes-search'; search.placeholder = 'Search heroes...'; search.setAttribute('aria-label', 'Search heroes'); search.value = query;
       search.oninput = () => { query = search.value; page = 0; layout(); };

@@ -813,3 +813,30 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 .sbw-rankdlg .sbw-btn.ghost{background:#0d1440;border:1px solid #3b4a8a;color:#dfe6ff}.sbw-rankdlg.weekly .sbw-btn.ghost{border-color:#ffd257;color:#ffd257}
 .sbw-rankdlg .sbw-acts{flex-wrap:wrap}
 #sbwLayer .sbw-bh-head.sbw-mflow .bh-h h3{font-size:20px}#sbwLayer .sbw-bh-head.sbw-mflow .bh-h small{font-size:12px}
+/* Mythic hero (Tsukiyomi): seven stars, NFT status, aura switch and skills */
+#sbwLayer .sbw-stars{font-style:normal;letter-spacing:-1px;color:#ffd257;text-shadow:0 0 6px #c98bff}
+#sbwLayer .sbw-hc-top .sbw-stars{margin-left:5px;font-size:11px;vertical-align:1px}
+#sbwLayer .sbw-hcard.mythic{background:linear-gradient(180deg,#2a1150,#0c0624 60%);box-shadow:0 0 0 1px #c98bff,0 0 16px #9b4dff88}
+#sbwLayer .sbw-hcard.mythic .sbw-hc-top i{border-color:#ffd257;color:#ffe9a8;background:#2a1640}
+#sbwLayer .sbw-myth{display:flex;flex-direction:column;gap:6px;margin:0 0 8px;padding:8px 10px;border:1px solid #c98bff;border-radius:9px;background:linear-gradient(135deg,#2a1150,#120830 60%,#2a1a05);box-shadow:inset 0 0 14px #9b4dff44}
+#sbwLayer .sbw-myth-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#sbwLayer .sbw-myth-top .sbw-stars{font-size:17px}
+#sbwLayer .sbw-myth-top span{font:800 13px Rajdhani,sans-serif;color:#e2ccff;letter-spacing:.5px;text-transform:uppercase}
+#sbwLayer .sbw-myth-nft{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font:700 13px Rajdhani,sans-serif;color:#b8f5c4}
+#sbwLayer .sbw-myth-nft span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-myth-nft button{min-height:28px;padding:2px 10px;border:1px solid #c98bff;border-radius:7px;background:#1d0d45;color:#efe4ff;font:800 12.5px Rajdhani,sans-serif;cursor:pointer}
+#sbwLayer .sbw-myth-nft button[aria-pressed="true"]{border-color:#ffd257;color:#ffd257}
+#sbwLayer .sbw-myth-skills{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0;padding:0;list-style:none}
+#sbwLayer .sbw-myth-skills li{display:flex;flex-direction:column;padding:4px 7px;border-left:3px solid #c98bff;border-radius:6px;background:rgba(150,80,255,.16);min-width:0}
+#sbwLayer .sbw-myth-skills li.ult{border-left-color:#ffd257}
+#sbwLayer .sbw-myth-skills b{font:800 13.5px/1.15 Rajdhani,sans-serif;color:#f1e4ff}
+#sbwLayer .sbw-myth-skills li.ult b{color:#ffd257}
+#sbwLayer .sbw-myth-skills span{font:600 11.5px/1.2 Rajdhani,sans-serif;color:#cfd0ee}
+#sbwLayer .sbw-at-card.aura-mythic{box-shadow:0 0 16px #b36bffaa,inset 0 0 14px #c98bff44;border-color:#c98bff}
+#sbwLayer .sbw-at-card.aura-mythic .sbw-at-info strong{color:#f1dcff}
+#sbwLayer .sbw-hc-portrait{position:relative}
+#sbwLayer .sbw-nft{position:absolute;top:4px;right:4px;padding:1px 6px;border:1px solid #ffd257;border-radius:5px;background:#2a1640;font:800 10.5px Rajdhani,sans-serif;color:#ffe9a8;letter-spacing:.6px}
+#sbwLayer .sbw-myth{gap:5px;padding:7px 9px}
+#sbwLayer .sbw-myth-skills li{padding:3px 7px}
+#sbwLayer .sbw-myth-skills b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-h2 .sbw-perks2{min-height:84px}

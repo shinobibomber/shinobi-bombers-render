@@ -7,6 +7,9 @@ let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 html=require('../apply-performance.cjs').restoreReferences(html);
 const {walletPatches,apiPatches}=require('../apply-transaction-safety.cjs');
 for(const [before,after]of [...walletPatches,...apiPatches].reverse()){assert.equal(html.split(after).length-1,1,'one reviewed SOL gas preflight hook');html=html.replace(after,()=>before)}
+// Mythic hero (applied after Boss Hunt): the sixth rank's table entries, colours and NFT link.
+const {mythicPatches}=require('../apply-mythic-hero.cjs');
+for(const [before,after,count]of mythicPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact Mythic hero hook: '+before.slice(0,40));html=html.split(after).join(before)}
 // Reverse only the reviewed cinematic presentation hooks, then compare every
 // original module against its existing frozen hash. No economy/wallet exception.
 const {bossHuntPatches}=require('../apply-boss-hunt.cjs');
