@@ -760,7 +760,7 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .bh-stop[hidden]{display:none}
 #sbwLayer .bh-rules{display:flex;flex-direction:column;gap:6px;margin:auto 0 0;padding:0;list-style:none}
 #sbwLayer .bh-rules li{padding:6px 10px;border-radius:8px;background:#0b1030;color:#dfe6ff;font-size:14px}
-#sbwLayer .sbw-bh-mine{display:grid;grid-template-columns:repeat(4,1fr);align-items:center;gap:4px 6px;padding:8px 14px}
+#sbwLayer .sbw-bh-mine{display:grid;grid-template-columns:repeat(5,1fr);align-items:center;gap:4px 6px;padding:8px 14px}
 #sbwLayer .sbw-bh-mine h4{grid-column:1/-1;margin:0;color:#ffd257;font:800 14px Rajdhani,sans-serif;letter-spacing:1px}
 #sbwLayer .sbw-bh-mine span{display:flex;flex-direction:column;align-items:center;color:#9fb3d9;font-size:12px;text-align:center}
 #sbwLayer .sbw-bh-mine b{color:#fff;font:800 22px Rajdhani,sans-serif}
@@ -783,3 +783,15 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-bh-mine.sbw-mflow{grid-template-columns:repeat(2,1fr)}
 #sbwLayer .sbw-bh-ranks.sbw-mflow .bh-rrow .you{margin-left:0}
 #sbwLayer .sbw-bh-team.sbw-mflow .bh-go{font-size:19px!important;white-space:nowrap}
+/* Boss Hunt weekly ranking */
+#sbwLayer .bh-week{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 10px;border:1px solid #b78aff88;border-radius:8px;background:#160c34;cursor:pointer;font-size:13px}
+#sbwLayer .bh-week b{color:#e2ccff;letter-spacing:.5px}#sbwLayer .bh-week span b{color:#ffd257}
+#sbwLayer .bh-week small{margin-left:auto;color:#9fb3d9}
+#sbwLayer .sbw-bh-mine .wait{grid-column:1/-1;color:#ffd98a}
+.bh-tabs{display:flex;gap:6px;margin:4px 0 8px}
+.bh-tabs button{flex:1;min-height:40px;border:1px solid #3b4a8a;border-radius:8px;background:#0d1440;color:#dfe6ff;font-weight:800;cursor:pointer}
+.bh-tabs button.on{border-color:#ffd257;color:#ffd257;background:#2a1a05}
+.bh-pane[hidden]{display:none}
+.bh-list.wk i{color:#e2ccff}.bh-list.wk i.leg{color:#ffd257}
+#sbwLayer .sbw-bh-mine.sbw-mflow{grid-template-columns:repeat(2,1fr)}
+#sbwLayer .sbw-bh-mine b{font-size:17px;white-space:nowrap}

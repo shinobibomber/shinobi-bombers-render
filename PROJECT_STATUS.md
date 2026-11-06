@@ -108,6 +108,13 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Boss Hunt weekly (owner request): entry 10,000 = 8,000 prize pool / 1,000 treasury (revenue
+  transfer) / 1,000 burn; hunts 60 s (HUNT_SECONDS, bossHuntPatches time:60). Weekly ranking Mon–Sun UTC
+  (weekOf): points 11−daily rank from ryo_hunt_payouts, ties by the week's confirmed damage, then earliest.
+  settleWeeks (after all the week's days settle, +5 min) mints economy.hero(4) for 1–3 and hero(3) for
+  4–10 into profiles (ryo_hunt_awards, WEEKLY_SCHEMA); full collections wait (granted=false) and
+  grantWaiting() adds them on state/board. board().weekly: standings incl. today's provisional points.
+
 - 2026-11-07 purchase split (owner request): price = total; purchaseSplit() in gameplay-options/server.cjs
   gives 80% operations (reward pool income) / 10% treasury / 8% burn / 2% studio; service signs exactly
   q.studioFee/q.treasury/q.burn (zero skipped). Client texts via purchaseSplitPatches. Summon = 25,000.

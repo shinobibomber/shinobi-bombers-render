@@ -1004,9 +1004,10 @@
   if (window.Market) window.Market.openListing = id => sellDialog(((gs() && gs().h) || []).find(h => h.id === id));
 
   /* ---------- Boss Hunt (game page 8): paid daily damage rankings ---------- */
-  // Each hunt costs 10,000 Ryo (90% to today's prize pool, 10% burned) and is a 90-second damage run
+  // Each hunt costs 10,000 Ryo (80% to today's prize pool, 10% treasury, 10% burned) and is a 60-second damage run
   // by the 5 strongest battle-ready heroes; no chakra is used. Total damage per UTC day ranks the
-  // players, and the top 10 share the pool when the day ends (boss-hunt.cjs on the server). The
+  // players, and the top 10 share the pool when the day ends (boss-hunt.cjs on the server). Daily places
+  // also earn weekly points (1st 10 … 10th 1): the week's top 3 win a Legend hero and 4th–10th an Elite. The
   // artwork keeps its title and frames; every panel inside them is live HTML.
   const GUARD = ['Akuma · Fallen Shinobi', 'Yuki Onna · Frozen Moon', 'Raijin · Thunder Lord', 'Daichi · Ancient Golem', 'Orochi · Serpent King'];
   const BH = { board: null, at: 0, busy: false, error: '', pending: null, active: null, last: null, timer: 0 };
@@ -1042,14 +1043,14 @@
     b.team = cv(b, 1020, 200, 488, 678, 'sbw-bh-team');
     b.mine = cv(b, 1020, 890, 488, 110, 'sbw-bh-mine');
     b.team.innerHTML = `<h3>⚔ PREPARE YOUR TEAM</h3><p class="bh-note">Your 5 strongest battle-ready heroes fight. No chakra is used.</p>
-      <div class="bh-fee"><span>ENTRANCE FEE</span><b><i class="coin"></i>10,000 Ryo</b><small>9,000 to today's prize pool · 1,000 burned</small></div>
+      <div class="bh-fee"><span>ENTRANCE FEE</span><b><i class="coin"></i>10,000 Ryo</b><small>8,000 prize pool · 1,000 treasury · 1,000 burned</small></div>
       <div class="bh-label"><b>Hunt team</b><span class="bh-count"></span></div><div class="bh-tiles"></div>
       <button type="button" class="sbw-mbtn bh-auto" data-act="auto">⟳ Auto-select strongest 5</button>
       <button type="button" class="sbw-mbtn buy bh-go" data-act="go">CHALLENGE · 10,000 Ryo</button><button type="button" class="sbw-mbtn ghost bh-stop" data-act="stop" hidden>End hunt now</button>
-      <ul class="bh-rules"><li>⏱ 90-second damage run · Adventure keeps going</li><li>✦ No chakra needed · every volley fires</li><li>🏆 Top 10 by total damage today share the prize pool</li><li>🕛 Prizes are paid at 00:00 UTC to your Ryo balance</li></ul>`;
+      <ul class="bh-rules"><li>⏱ 60-second damage run · Adventure keeps going</li><li>✦ No chakra needed · every volley fires</li><li>🏆 Top 10 by total damage today share the prize pool</li><li>👑 Weekly top 3 win a Legend hero · 4th–10th an Elite</li><li>🕛 Prizes are paid at 00:00 UTC to your Ryo balance</li></ul>`;
     b.tiles = Array.from({ length: 5 }, () => mk('div', 'bh-tile', $('.bh-tiles', b.team)));
     b.team.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (!a || a.disabled) return; ({ auto: huntAuto, go: huntChallenge, stop: () => window.V2?.retreat?.() })[a.dataset.act]?.(); });
-    b.ranks.addEventListener('click', e => { if (e.target.closest('[data-act="all"]')) huntRankings(); });
+    b.ranks.addEventListener('click', e => { if (e.target.closest('[data-act="all"]')) huntRankings(); if (e.target.closest('[data-act="week"]')) huntRankings('weekly'); });
   };
   function huntAuto() {
     const t = huntTeam(); if (built['boss-hunt']) { built['boss-hunt'].sig = ''; built['boss-hunt'].flash = performance.now(); }
@@ -1061,8 +1062,8 @@
     if (S?.v2?.revealBatch?.length) return toast('Finish your card reveal first.');
     const team = huntTeam(); if (!team.length) return notice('Boss Hunt', 'Make at least one hero battle-ready in Heroes first.');
     const bal = Number(ledger().balance) || 0, g = BH.board ? BH.board.guardianName : GUARD[0];
-    const d = confirmDialog('Enter today\'s Boss Hunt?', `<p>Fight <b>${esc(g)}</b> for 90 seconds with ${team.map(h => esc(h.name.split(' ')[0])).join(', ')}.</p>
-      <p class="sbw-mbuyline">Entrance fee <b>10,000 Ryo</b><br><span class="sbw-small">9,000 to today's prize pool · 1,000 burned · your balance after: ${fmt(bal - 10000)} Ryo</span></p>
+    const d = confirmDialog('Enter today\'s Boss Hunt?', `<p>Fight <b>${esc(g)}</b> for 60 seconds with ${team.map(h => esc(h.name.split(' ')[0])).join(', ')}.</p>
+      <p class="sbw-mbuyline">Entrance fee <b>10,000 Ryo</b><br><span class="sbw-small">8,000 prize pool · 1,000 treasury · 1,000 burned · your balance after: ${fmt(bal - 10000)} Ryo</span></p>
       ${bal < 10000 ? '<p class="sbw-small sbw-warn">Not enough Ryo. Deposit Ryo from your Chest first.</p>' : ''}`, 'Pay 10,000 Ryo & start', async () => {
       const data = await RyoPayments.hunt('hunt-enter', { requestId: crypto.randomUUID(), name: (gs() && gs().nick) || '' });
       if (data.hunt) BH.board = data.hunt;
@@ -1072,13 +1073,20 @@
     }, 'sbw-hunt');
     if (bal < 10000) $('[data-k="go"]', d).disabled = true;
   }
-  function huntRankings() {
+  function huntRankings(tab = 'daily') {
     const h = BH.board; if (!h) return;
     const rows = (list, empty) => list.length ? `<ol class="bh-list">${list.map(r => `<li class="${r.me ? 'me' : ''}"><b>${ORD(r.rank)}</b><span>${esc(r.name)}<small>${esc(r.wallet)}</small></span><em>${fmt(r.damage)} dmg</em><i>${fmt(r.prize)} Ryo</i></li>`).join('')}</ol>` : `<p class="sbw-small">${empty}</p>`;
     if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
     dlg.className = 'sbw-dialog sbw-mdialog sbw-rankdlg'; dlg.onclick = e => { if (e.target.dataset && e.target.dataset.k === 'x') dlg.close(); };
-    dlg.innerHTML = `<h2>Daily rankings</h2><p>Today · prize pool <b>${fmt(h.pool)} Ryo</b> · ends in ${dur(h.endsIn)}</p>${rows(h.top, 'No damage yet today. Be the first!')}
-      ${h.yesterday ? `<h3 class="bh-sub">${esc(h.yesterday.day)} winners · pool ${fmt(h.yesterday.pool)} Ryo</h3>${rows(h.yesterday.winners, 'No winners that day; the pool carried over.')}` : ''}<div class="sbw-acts"><button type="button" class="sbw-btn" data-k="x">Close</button></div>`;
+    const wk = h.weekly, wrows = (list, empty) => list.length ? `<ol class="bh-list wk">${list.map(r => `<li class="${r.me ? 'me' : ''}"><b>${ORD(r.rank)}</b><span>${esc(r.name)}<small>${esc(r.wallet)}</small></span><em>${r.points} pts</em><i class="${/Legend/.test(r.prize) ? 'leg' : ''}">${esc(r.prize || '—')}</i></li>`).join('')}</ol>` : `<p class="sbw-small">${empty}</p>`;
+    const daily = `<p>Today · prize pool <b>${fmt(h.pool)} Ryo</b> · ends in ${dur(h.endsIn)}</p>${rows(h.top, 'No damage yet today. Be the first!')}
+      ${h.yesterday ? `<h3 class="bh-sub">${esc(h.yesterday.day)} winners · pool ${fmt(h.yesterday.pool)} Ryo</h3>${rows(h.yesterday.winners, 'No winners that day; the pool carried over.')}` : ''}`;
+    const weekly = !wk ? '' : `<p>Week of ${esc(wk.week)} · ends in ${dur(wk.endsIn)}. Daily places earn points (1st 10 … 10th 1). <b>Top 3: Legend hero · 4th–10th: Elite hero.</b> Today's points are provisional.</p>
+      ${wrows(wk.top, 'No points yet this week.')}${wk.last ? `<h3 class="bh-sub">Week of ${esc(wk.last.week)} winners</h3>${wrows(wk.last.winners, 'No winners that week.')}` : ''}`;
+    dlg.innerHTML = `<h2>Rankings</h2><div class="bh-tabs" role="tablist"><button type="button" role="tab" data-t="daily" class="on" aria-selected="true">Daily</button><button type="button" role="tab" data-t="weekly" aria-selected="false">Weekly</button></div>
+      <div class="bh-pane" data-p="daily">${daily}</div><div class="bh-pane" data-p="weekly" hidden>${weekly}</div><div class="sbw-acts"><button type="button" class="sbw-btn" data-k="x">Close</button></div>`;
+    dlg.onclick = e => { const t = e.target.closest('[data-t]'); if (t) { $$('[data-t]', dlg).forEach(x => { const on = x === t; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); }); $$('.bh-pane', dlg).forEach(p => { p.hidden = p.dataset.p !== t.dataset.t; }); return; } if (e.target.dataset && e.target.dataset.k === 'x') dlg.close(); };
+    if (tab === 'weekly') dlg.querySelector('[data-t="weekly"]').click();
     if (!dlg.open) dlg.showModal();
   }
   PAINT['boss-hunt'] = (b, now) => {
@@ -1086,20 +1094,21 @@
     if (!BH.busy && Date.now() - BH.at > (V2?.isBossActive?.() ? 10000 : 20000)) huntLoad();
     const h = BH.board, s = window.V2?.bossState?.(), active = !!window.V2?.isBossActive?.(), team = huntTeam();
     const left = active ? Math.ceil(s.time) : 0, dmg = active ? Math.round(s.damage) : BH.last ? BH.last.damage : 0;
-    const sig = JSON.stringify([h && [h.day, h.pool, h.players, h.top.map(r => [r.name, r.damage]), h.me, h.yesterday?.day], BH.error, active, left, dmg, team.map(t => t.id + ':' + t.lv), Math.floor(Date.now() / 60000), b.flash]);
+    const sig = JSON.stringify([h && [h.day, h.pool, h.players, h.top.map(r => [r.name, r.damage]), h.me, h.yesterday?.day, h.weekly?.me, h.weekly?.top.length], BH.error, active, left, dmg, team.map(t => t.id + ':' + t.lv), Math.floor(Date.now() / 60000), b.flash]);
     if (sig === b.sig) return; b.sig = sig;
     const g = h ? h.guardian : 0, name = h ? h.guardianName : GUARD[0];
     b.head.innerHTML = `<div class="bh-h"><div><small>TODAY'S GUARDIAN${h ? ' · ends in ' + dur(h.endsIn) : ''}</small><h3>${esc(name)}</h3></div>
-      <div class="bh-state"><em class="${active ? 'run' : 'ready'}">${active ? 'HUNTING' : BH.last ? 'FINISHED' : 'READY'}</em><b>${active ? left + 's' : '90s'}</b></div></div>
-      <div class="bh-meter"><i style="width:${active ? Math.round(100 * (90 - s.time) / 90) : BH.last ? 100 : 0}%"></i><span>${active ? 'This hunt' : BH.last ? 'Last hunt' : 'Damage'}</span><b>${fmt(dmg)} damage</b></div>`;
+      <div class="bh-state"><em class="${active ? 'run' : 'ready'}">${active ? 'HUNTING' : BH.last ? 'FINISHED' : 'READY'}</em><b>${active ? left + 's' : (h ? h.seconds : 60) + 's'}</b></div></div>
+      <div class="bh-meter"><i style="width:${active ? Math.round(100 * ((h ? h.seconds : 60) - s.time) / (h ? h.seconds : 60)) : BH.last ? 100 : 0}%"></i><span>${active ? 'This hunt' : BH.last ? 'Last hunt' : 'Damage'}</span><b>${fmt(dmg)} damage</b></div>`;
     if (h) b.sched.innerHTML = `<h4>GUARDIANS</h4>${h.schedule.map((d, i) => `<div class="bh-day${i ? '' : ' on'}"><small>${i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : new Date(d.day + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })}</small><b>${esc(d.name.split(' · ')[0])}</b><span>${esc(d.name.split(' · ')[1] || '')}</span></div>`).join('')}`;
     b.prize.innerHTML = BH.error ? `<div class="sbw-empty"><b>Boss Hunt unavailable</b><p>${esc(BH.error)}</p></div>` : !h ? '<div class="sbw-empty"><b>Loading today\'s hunt…</b></div>'
-      : `<div class="bh-pool"><small>🏆 TODAY'S PRIZE POOL</small><b><i class="coin"></i>${fmt(h.pool)} Ryo</b><span>${h.players} player${h.players === 1 ? '' : 's'} · 90% of every 10,000 Ryo entry</span></div>
+      : `<div class="bh-pool"><small>🏆 TODAY'S PRIZE POOL</small><b><i class="coin"></i>${fmt(h.pool)} Ryo</b><span>${h.players} player${h.players === 1 ? '' : 's'} · 80% of every 10,000 Ryo entry</span></div>
         <div class="bh-chips">${h.prizes.map((p, i) => `<span class="${i < 3 ? 'p' + (i + 1) : ''}"><b>${ORD(i + 1)}</b>${fmt(p)}</span>`).join('')}</div>`;
     b.ranks.innerHTML = !h ? '' : `<div class="bh-rh"><b>📊 DAILY RANKINGS</b><small>total damage today</small><button type="button" class="sbw-mbtn sm" data-act="all">View all</button></div>
       <div class="bh-rrow">${h.top.slice(0, 3).map(r => `<span class="${r.me ? 'me' : ''}"><b>${ORD(r.rank)}</b>${esc(r.name)}<em>${fmt(r.damage)}</em></span>`).join('') || '<span class="none">No damage yet today. Be the first!</span>'}
-      <span class="you">${h.me.rank ? `You: <b>${ORD(h.me.rank)}</b> · ${fmt(h.me.damage)}` : h.me.entries ? 'You: no damage yet' : 'You: not entered'}</span></div>`;
-    b.mine.innerHTML = !h ? '' : `<h4>YOUR DAY</h4><span>Damage today<b>${fmt(h.me.damage)}</b></span><span>Rank today<b>${h.me.rank ? ORD(h.me.rank) : '—'}</b></span><span>Entries today<b>${h.me.entries}</b></span><span>If it ended now<b>${h.me.prize ? fmt(h.me.prize) + ' Ryo' : '—'}</b></span>`;
+      <span class="you">${h.me.rank ? `You: <b>${ORD(h.me.rank)}</b> · ${fmt(h.me.damage)}` : h.me.entries ? 'You: no damage yet' : 'You: not entered'}</span></div>
+      ${h.weekly ? `<div class="bh-week" role="button" tabindex="0" data-act="week"><b>👑 WEEKLY</b><span>${h.weekly.me.rank ? `You: <b>${ORD(h.weekly.me.rank)}</b> · ${h.weekly.me.points} pts${h.weekly.me.prize ? ' · ' + esc(h.weekly.me.prize) : ''}` : 'Place in a daily top 10 to earn points'}</span><small>Top 3: Legend · 4th–10th: Elite · ends in ${dur(h.weekly.endsIn)}</small></div>` : ''}`;
+    b.mine.innerHTML = !h ? '' : `<h4>YOUR DAY</h4><span>Damage today<b>${fmt(h.me.damage)}</b></span><span>Rank today<b>${h.me.rank ? ORD(h.me.rank) : '—'}</b></span><span>Entries today<b>${h.me.entries}</b></span><span>If it ended now<b>${h.me.prize ? fmt(h.me.prize) + ' Ryo' : '—'}</b></span><span>Week<b>${h.weekly?.me.rank ? ORD(h.weekly.me.rank) + ' · ' + h.weekly.me.points + ' pts' : '—'}</b></span>${h.weekly?.waiting ? `<span class="wait">Weekly hero waiting<b>${h.weekly.waiting} · free a slot</b></span>` : ''}`;
     setText($('.bh-count', b.team), `${team.length}/5 · auto`);
     const flash = b.flash && now - b.flash < 900;
     b.tiles.forEach((e, i) => { const t = team[i]; e.classList.toggle('empty', !t); e.classList.toggle('flash', !!flash); e.style.setProperty('--rc', t ? RCOL[t.r] : '#2a3a6a');

@@ -46,7 +46,8 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     f.holdAdventure = false; f.balance = 100000;
     const heroes = Array.from({ length: 8 }, (_, i) => hero('boss-' + i, i % 5, 2 + i * 1.5));
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
-    f.hunt = { others: [{ name: 'KuroSenpai', damage: 42000 }, { name: 'YukiChan', damage: 31000 }], yesterday: { day: '2030-01-01', pool: 18000, winners: [{ rank: 1, name: 'KuroSenpai', wallet: 'Kuro…1111', damage: 99000, prize: 10800 }] } };
+    f.hunt = { week: [{ name: 'KuroSenpai', points: 28, damage: 90000 }, { name: 'YukiChan', points: 17 }], lastWeek: { week: '2029-12-24', winners: [{ rank: 1, name: 'KuroSenpai', wallet: 'Kuro…1111', points: 61, prize: 'Legend hero' }, { rank: 4, name: 'Raizen', wallet: 'Raiz…4444', points: 30, prize: 'Elite hero' }] },
+      others: [{ name: 'KuroSenpai', damage: 42000 }, { name: 'YukiChan', damage: 31000 }], yesterday: { day: '2030-01-01', pool: 18000, winners: [{ rank: 1, name: 'KuroSenpai', wallet: 'Kuro…1111', damage: 99000, prize: 10800 }] } };
     await login(p);
     // Nobody deployed and some heroes out of chakra: the hunt team does not need either.
     await p.evaluate(() => S.h.filter(h => h.tokenId).forEach((h, i) => { h.on = false; if (i % 2) h.en = 0; }));
@@ -55,7 +56,7 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
       return { art: [...sec.querySelectorAll('.hs:not([hidden])')].map(e => e.dataset.sbwid), text: sec.innerText, tiles: sec.querySelectorAll('.bh-tile:not(.empty)').length, fit: getComputedStyle(sec.querySelector('.sbw-bh-canvas')).objectFit }; });
     assert.deepEqual(view.art, ['back'], 'only the Back button remains from the artwork');
     assert(!/POTENTIAL REWARDS|FIRST-CLEAR|Manage Team|Not yet/i.test(view.text), 'no first-clear reward, fragments or Manage Team');
-    assert.match(view.text, /TODAY'S PRIZE POOL[\s\S]*18,000 Ryo/, 'the prize pool shows Ryo (2 entries × 9,000)');
+    assert.match(view.text, /TODAY'S PRIZE POOL[\s\S]*16,000 Ryo/, 'the prize pool shows Ryo (2 entries × 8,000)');
     assert.match(view.text, /Auto-select strongest 5/); assert.match(view.text, /CHALLENGE · 10,000 Ryo/);
     assert.equal(view.tiles, 5, 'five auto-selected heroes'); assert.equal(view.fit, 'contain', 'the whole arena is shown (moon included)');
     const strongest = await p.evaluate(() => BattleRoster.list().slice().sort((a, c) => c.pw - a.pw).slice(0, 5).map(h => h.id));
@@ -63,7 +64,7 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     await p.waitForFunction(() => /^Hunt team: /.test(document.querySelector('.sbw-toast')?.textContent || ''));
     // Challenge: the confirmation shows the fee; paying starts the hunt with the strongest five.
     await p.locator('.sbw-scr.on .bh-go').click(); await p.waitForSelector('.sbw-hunt[open]');
-    assert.match(await p.locator('.sbw-hunt').textContent(), /10,000 Ryo[\s\S]*9,000 to today's prize pool · 1,000 burned/);
+    assert.match(await p.locator('.sbw-hunt').textContent(), /60 seconds[\s\S]*10,000 Ryo[\s\S]*8,000 prize pool · 1,000 treasury · 1,000 burned/);
     await p.locator('.sbw-hunt [data-k="go"]').click();
     await p.waitForFunction(() => V2.isBossActive());
     assert.equal(f.balance, 90000, 'the 10,000 Ryo entrance fee is paid');
@@ -73,6 +74,7 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     const later = await p.evaluate(() => S.h.map(h => h.en));
     assert(later.every((en, i) => en >= chakra[i] - 1e-9), 'the hunt spends no chakra (heroes at 0 chakra still fight)');
     assert.match(await p.locator('.sbw-scr.on .bh-go').textContent(), /HUNTING · \d+s/);
+    assert(await p.evaluate(() => V2.bossState().time <= 60), 'hunts last 60 seconds');
     await p.screenshot({ path: path.join(output, 'boss-hunt-fight.png') });
     // Ending reports the damage; the ranking and my day update.
     await p.evaluate(() => V2.retreat());
@@ -80,8 +82,15 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     const dealt = f.hunt.entries[0].damage;
     assert(dealt > 0 && f.hunt.reports.length >= 1, 'the damage was reported to the server');
     assert.match(await p.locator('.sbw-scr.on .sbw-bh-mine').textContent(), new RegExp('Damage today' + dealt.toLocaleString('en-US')));
+    // Weekly line, then View all: Daily tab and the Weekly tab with points, prizes and last week's winners.
+    assert.match(await p.locator('.sbw-scr.on .bh-week').textContent(), /WEEKLY.*You: 3rd · 8 pts · Legend hero.*Top 3: Legend · 4th–10th: Elite/s, 'my provisional weekly place');
     await p.locator('.sbw-scr.on [data-act="all"]').click(); await p.waitForSelector('.sbw-rankdlg[open]');
-    assert.match(await p.locator('.sbw-rankdlg').textContent(), /KuroSenpai[\s\S]*2030-01-01 winners/, 'View all lists today and yesterday');
+    assert.match(await p.locator('.sbw-rankdlg .bh-pane[data-p="daily"]').textContent(), /KuroSenpai[\s\S]*2030-01-01 winners/, 'Daily lists today and yesterday');
+    await p.locator('.sbw-rankdlg [data-t="weekly"]').click();
+    const weekly = await p.locator('.sbw-rankdlg .bh-pane[data-p="weekly"]').textContent();
+    assert.match(weekly, /1stKuroSenpai[\s\S]*28 pts[\s\S]*Legend hero[\s\S]*2nd[\s\S]*17 pts/, 'weekly standings by points with prizes');
+    assert.match(weekly, /Week of 2029-12-24 winners[\s\S]*Legend hero[\s\S]*Elite hero/, "last week's winners");
+    await p.screenshot({ path: path.join(output, 'boss-hunt-weekly.png') });
     await p.keyboard.press('Escape');
     // Phone: stacked panels, a full-width arena and a one-line Challenge button.
     await p.setViewportSize({ width: 390, height: 844 });
@@ -116,5 +125,5 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     assert.equal(await p.evaluate(() => document.getElementById('p8')?.innerText.includes('Adventure pauses')), false, 'no screen says Adventure pauses');
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: Summon History lists summoned heroes (owned, fused, pending, refunded); Boss Hunt shows only live panels, auto-picks the 5 strongest battle-ready heroes, takes the 10,000 Ryo entry, spends no chakra, reports damage to the daily ranking and prize pool, fits phones, and Adventure keeps fighting during a hunt.');
+  console.log('PASS: Summon History lists summoned heroes (owned, fused, pending, refunded); Boss Hunt shows only live panels, auto-picks the 5 strongest battle-ready heroes, takes the 10,000 Ryo entry (80% pool, 10% treasury, 10% burn), runs 60 seconds without chakra, shows daily and weekly rankings (Legend/Elite prizes), reports damage to the daily ranking and prize pool, fits phones, and Adventure keeps fighting during a hunt.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

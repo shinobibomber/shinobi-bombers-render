@@ -6,8 +6,8 @@
 const fs = require('node:fs'), path = require('node:path');
 const economyHook = ["function quote(profile,product,params={}){\r\n normalizeProfile(profile);", "function quote(profile,product,params={}){\r\n normalizeProfile(profile);if(product==='hunt')return require('./boss-hunt.cjs').quote(VERSION);"];
 const serviceHooks = [
-  ["  if(action==='market-buy'){", "  if(action==='hunt-enter'){await checkMint();const id=requestId(body.requestId),hunt=require('./boss-hunt.cjs');await hunt.beforeEnter(store,wallet);const row=await store.purchase(wallet,id,'hunt',{},hunt.FEE,async q=>{\n    const available=await connection.getTokenAccountBalance(treasuryAta,'finalized');if(BigInt(available.value.amount)<BigInt(q.burn)*UNIT)fail('Custody tokens are temporarily unavailable.',503);\n    return signedTransaction([spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6),memo('shinobi-hunt-v1:'+id)]);\n   });const entry=await hunt.record(store,wallet,row,body);await progress(row,'purchase');return {entry,...await hunt.board(store,wallet),...await state(wallet)}}\n  if(action==='hunt-report')return require('./boss-hunt.cjs').report(store,wallet,body);\n  if(action==='hunt-board')return require('./boss-hunt.cjs').board(store,wallet);\n  if(action==='market-buy'){"],
-  ["async function state(wallet){await checkNetwork();", "async function state(wallet){await checkNetwork();await require('./boss-hunt.cjs').settleDue(store);"]
+  ["  if(action==='market-buy'){", "  if(action==='hunt-enter'){await checkMint();const id=requestId(body.requestId),hunt=require('./boss-hunt.cjs');await hunt.beforeEnter(store,wallet);const row=await store.purchase(wallet,id,'hunt',{},hunt.FEE,async q=>{\n    const available=await connection.getTokenAccountBalance(treasuryAta,'finalized');if(BigInt(available.value.amount)<BigInt(q.burn+q.treasury)*UNIT)fail('Custody tokens are temporarily unavailable.',503);\n    return signedTransaction([...(q.treasury>0?transferTo(revenueAddress,BigInt(q.treasury)*UNIT):[]),spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6),memo('shinobi-hunt-v1:'+id)]);\n   });const entry=await hunt.record(store,wallet,row,body);await progress(row,'purchase');return {entry,...await hunt.board(store,wallet),...await state(wallet)}}\n  if(action==='hunt-report')return require('./boss-hunt.cjs').report(store,wallet,body);\n  if(action==='hunt-board')return require('./boss-hunt.cjs').board(store,wallet);\n  if(action==='market-buy'){"],
+  ["async function state(wallet){await checkNetwork();", "async function state(wallet){await checkNetwork();await require('./boss-hunt.cjs').settleDue(store);await require('./boss-hunt.cjs').grantWaiting(store,wallet);"]
 ];
 // Game client: the API and the paid, no-chakra damage run. Exported so preservation can reverse them.
 const TEAM_BEFORE = 'BattleRoster.list().filter(h=>h.on&&h.en>=1).sort((a,c)=>c.pw-a.pw).slice(0,5)', TEAM_AFTER = 'BattleRoster.list().slice().sort((a,c)=>c.pw-a.pw).slice(0,5)';
@@ -16,8 +16,8 @@ const bossHuntPatches = [
   // The hunt team: the 5 strongest battle-ready heroes; no deployment or chakra needed.
   [TEAM_BEFORE, TEAM_AFTER, 3],
   ["  if(!team.length)return toast('Deploy a rested hero first');\r\n  const stage=init().bestBoss+1,max=GameBalance.huntHP(stage);\r\n  boss={id:++huntSerial,stage,hp:max,max,time:90,",
-   "  if(!team.length)return toast('Make a hero battle-ready first');\r\n  const entry=window.BossHunt?.takeEntry();if(!entry)return toast('Pay the entrance fee on the Boss Hunt screen to start.');\r\n  const stage=entry.guardian+1,max=1e12;\r\n  boss={id:++huntSerial,entry,stage,hp:max,max,time:90,", 1],
-  ["toast('Hunt '+stage+' started · Adventure continues')", "toast('Boss Hunt started · deal all the damage you can in 90 seconds')", 1],
+   "  if(!team.length)return toast('Make a hero battle-ready first');\r\n  const entry=window.BossHunt?.takeEntry();if(!entry)return toast('Pay the entrance fee on the Boss Hunt screen to start.');\r\n  const stage=entry.guardian+1,max=1e12;\r\n  boss={id:++huntSerial,entry,stage,hp:max,max,time:60,", 1],
+  ["toast('Hunt '+stage+' started · Adventure continues')", "toast('Boss Hunt started · deal all the damage you can in 60 seconds')", 1],
   // No local rewards: damage goes to the server's daily ranking.
   ["  if(result==='victory'){\r\n   const v=init();if(done.stage>v.bestBoss){v.bestBoss=done.stage;done.reward=GameBalance.huntReward(done.stage);reward(done.reward);count('ryo',done.reward);count('bosses');if(done.stage%5===0)S.h.push(mk(1,false));}\r\n   logs=['Guardian defeated! +'+done.reward.toLocaleString()+' Ryo'+(done.stage%5===0?' · Chunin hero joined your collection.':'.')];\r\n  }else logs=[result==='retreat'?'Your team retreated. Chakra spent is not refunded.':'Time expired. Recover chakra in the Dojo and try again.'];\r\n  done.projectiles=[];lastHunt=done;save();hud();toast(logs[0]);",
    "  logs=[(result==='retreat'?'Hunt ended early':'Time up')+' · '+Math.round(done.damage).toLocaleString()+' damage dealt.'];\r\n  done.projectiles=[];lastHunt=done;save();hud();toast(logs[0]);window.BossHunt?.ended(done);", 1],
@@ -40,17 +40,19 @@ function replaceCount(text, [before, after, count], label) {
   const n = text.split(before).length - 1; if (n !== count) throw Error('Boss Hunt patch mismatch: ' + label + ' (' + n + ')');
   return text.split(before).join(after);
 }
+const exportHook = ['module.exports={normalizeProfile,', 'module.exports={hero,normalizeProfile,'];
 function applyBossHunt(appDir = path.join(__dirname, 'app')) {
   const server = path.join(appDir, 'server');
   fs.copyFileSync(path.join(__dirname, 'boss-hunt/server.cjs'), path.join(server, 'boss-hunt.cjs'));
   const schema = path.join(server, 'schema.sql');
   if (!fs.readFileSync(schema, 'utf8').includes('-- Boss Hunt v1')) fs.appendFileSync(schema, '\n-- Boss Hunt v1\n' + require('./boss-hunt/server.cjs').SCHEMA + '\n');
-  const economy = path.join(server, 'economy.cjs'); fs.writeFileSync(economy, replaceCount(fs.readFileSync(economy, 'utf8'), [...economyHook, 1], 'economy quote'));
+  if (!fs.readFileSync(schema, 'utf8').includes('-- Boss Hunt weekly v1')) fs.appendFileSync(schema, '\n-- Boss Hunt weekly v1\n' + require('./boss-hunt/server.cjs').WEEKLY_SCHEMA + '\n');
+  const economy = path.join(server, 'economy.cjs'); fs.writeFileSync(economy, replaceCount(replaceCount(fs.readFileSync(economy, 'utf8'), [...economyHook, 1], 'economy quote'), [...exportHook, 1], 'economy hero export'));
   const service = path.join(server, 'service.cjs'); let text = fs.readFileSync(service, 'utf8');
   serviceHooks.forEach((hook, i) => { text = replaceCount(text, [...hook, 1], 'service ' + i); }); fs.writeFileSync(service, text);
   const index = path.join(appDir, 'public/index.html');
   fs.writeFileSync(index, bossHuntPatches.reduce((html, hook, i) => replaceCount(html, hook, 'client ' + i), fs.readFileSync(index, 'utf8')));
-  console.log('Boss Hunt applied: 10,000 Ryo entry (90% prize pool, 10% burn), daily damage rankings, no-chakra 90-second runs.');
+  console.log('Boss Hunt applied: 10,000 Ryo entry (80% prize pool, 10% treasury, 10% burn), daily and weekly rankings, no-chakra 60-second runs.');
 }
 module.exports = { applyBossHunt, bossHuntPatches, economyHook, serviceHooks };
 if (require.main === module) applyBossHunt();

@@ -20,6 +20,21 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Boss Hunt weekly rankings)**
+
+**✨ New**
+• **Weekly Boss Hunt ranking!** Every day's top 10 earn weekly points — 1st 10 pts, 2nd 9 … 10th 1 pt. The week runs Monday to Sunday (UTC).
+• **Weekly hero prizes:** when the week ends, the **top 3 each win a Legend hero** 👑 and **4th–10th each win an Elite hero**, added to your collection automatically. (If your collection is full, the hero waits until you free a slot.)
+• See your weekly place on the Boss Hunt screen, and tap **View all → Weekly** for the full standings and last week's winners.
+
+**🔄 Changes**
+• **Hunts now last 60 seconds** (was 90).
+• **New entrance fee split** (10,000 Ryo per hunt): **8,000 to the daily prize pool**, 1,000 to the treasury and 1,000 burned.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Boss Hunt rankings)**
 
 **✨ New**
