@@ -108,6 +108,16 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Market UI + offers (owner request): the screen's printed tabs/filters/cards/buttons are
+  hidden and replaced by live HTML (website-design.js MK: .sbw-mpanel, .sbw-mbar tabs For Sale/My
+  Listings/My Offers, rank buttons, Skills, sort select, search input; .sbw-mgrid cards; .sbw-mdet
+  details with Buy now/Make offer/Accept/Decline/Cancel). Items, Resources and Element removed.
+  Offers (ryo_market_offers, OFFER_SCHEMA): amount from rank minimum to price-1 is held from the
+  buyer's balance (48 h, never past the listing); decline/cancel/expiry/listing close/sale return it;
+  accept() creates the buyer's market purchase at the offer price from the held Ryo (no second
+  debit); buying a listing you offered on uses the held offer first. Held offers count in the admin
+  dashboard liabilities. Purchases pause gates market-offer/market-accept too.
+
 - 2026-11-07 Player Market (owner request): heroes only. market/server.cjs (copied to
   app/server/market.cjs by apply-market.cjs, last-but-one unpack step): ryo_market_listings; post
   escrows the hero out of the profile (rank minimums 10k/25k/80k/200k/500k, max 100M, 7 days, 20 per

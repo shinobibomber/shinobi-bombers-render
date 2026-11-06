@@ -92,6 +92,60 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
   await market.sweep(store, SELLER);
   assert((await profile(SELLER)).heroes.some(h => h.tokenId === 's-jonin'), 'an expired hero returns to the seller');
 
+  // Offers: the offered Ryo is held; decline/cancel/listing close return it; accepting sells at the
+  // offered price from the held Ryo; a failed transfer returns it and relists; lapsed offers refund.
+  {
+    await setup(SELLER, 0, [hero('of-a', 2), hero('of-b', 1), hero('of-c', 0), hero('of-d', 0), hero('of-e', 0)]);
+    await setup(BUYER, 1_000_000, [hero('b-1', 0), hero('b-2', 0)]); await setup(OTHER, 1_000_000, [hero('o-1', 0), hero('o-2', 0)]);
+    const offer = (wallet, listingId, amount) => market.handle(store, wallet, 'market-offer', { listingId, amount });
+    const jonin = (await post(SELLER, 'of-a', 200000)).listing;
+    await rejects(offer(BUYER, jonin.id, 79999), /from 80,000 up to 199,999/, 'offers start at the rank minimum');
+    await rejects(offer(BUYER, jonin.id, 200000), /buy now/, 'an offer at the price is a purchase');
+    await rejects(offer(SELLER, jonin.id, 100000), /your own listing/);
+    await offer(BUYER, jonin.id, 120000);
+    assert.equal(await balance(BUYER), 880000, 'the offer is held from the balance');
+    await offer(BUYER, jonin.id, 150000);
+    assert.equal(await balance(BUYER), 850000, 'changing an offer holds only the new amount');
+    await offer(OTHER, jonin.id, 140000);
+    const seen = await market.handle(store, SELLER, 'market-mine', {});
+    assert.deepEqual(seen.listings.find(l => l.id === jonin.id).offers.map(o => o.amount), [150000, 140000], 'the seller sees offers, highest first');
+    assert.equal((await market.handle(store, BUYER, 'market-browse', { rank: 2 })).listings[0].myOffer.amount, 150000, 'the buyer sees their own offer');
+    assert.equal((await market.handle(store, BUYER, 'market-mine', {})).held, 150000);
+    const [high, low] = seen.listings.find(l => l.id === jonin.id).offers;
+    await market.handle(store, SELLER, 'market-offer-decline', { offerId: low.id });
+    assert.equal(await balance(OTHER), 1000000, 'a declined offer is returned');
+    await rejects(market.handle(store, BUYER, 'market-offer-decline', { offerId: high.id }), /not available/, 'only the seller declines');
+    // Accept with a refunded transfer: the held Ryo comes back and the hero is on sale again.
+    const before = tx.length;
+    await market.accept(store, SELLER, 'acc-1', { offerId: high.id }, prepare);
+    assert.equal(tx.length, before + 1); assert.deepEqual([tx.at(-1).total, tx.at(-1).seller, tx.at(-1).studioFee, tx.at(-1).treasury], [150000, 120000, 3000, 12000], 'sold at the offered price');
+    assert.equal(await balance(BUYER), 850000, 'accepting does not charge the buyer twice');
+    await store.settlePurchase(BUYER, 'acc-1', 'refunded');
+    assert.equal(await balance(BUYER), 1000000, 'a failed transfer returns the held Ryo');
+    assert.equal((await market.handle(store, OTHER, 'market-browse', { rank: 2 })).total, 1, 'and relists the hero');
+    // Accept and confirm: the buyer gets the hero, the seller 80% of the offer, other offers return.
+    await offer(BUYER, jonin.id, 160000); await offer(OTHER, jonin.id, 100000);
+    const sellerBefore = await balance(SELLER), best = (await market.handle(store, SELLER, 'market-mine', {})).listings.find(l => l.id === jonin.id).offers[0];
+    await market.accept(store, SELLER, 'acc-2', { offerId: best.id }, prepare);
+    await store.settlePurchase(BUYER, 'acc-2', 'confirmed');
+    assert((await profile(BUYER)).heroes.some(h => h.tokenId === 'of-a'), 'the buyer receives the hero');
+    assert.equal(await balance(SELLER) - sellerBefore, 128000, 'the seller receives 80% of the offer');
+    assert.equal(await balance(BUYER), 840000); assert.equal(await balance(OTHER), 1000000, 'the other offer is returned when the hero sells');
+    assert.equal((await market.handle(store, SELLER, 'market-mine', {})).sales.find(s => s.id === jonin.id).price, 160000, 'sales history shows the agreed price');
+    // Cancelling a listing and offer expiry return held Ryo.
+    const chunin = (await post(SELLER, 'of-b', 60000)).listing;
+    await offer(BUYER, chunin.id, 30000); await market.handle(store, SELLER, 'market-cancel', { listingId: chunin.id });
+    assert.equal(await balance(BUYER), 840000, 'a cancelled listing returns offers');
+    const genin = (await post(SELLER, 'of-c', 20000)).listing;
+    await offer(BUYER, genin.id, 15000); assert.equal(await balance(BUYER), 825000);
+    clock += market.OFFER_MS + 1; await market.sweep(store, BUYER);
+    assert.equal(await balance(BUYER), 840000, 'an expired offer is returned');
+    await rejects(market.accept(store, SELLER, 'acc-3', { offerId: (await market.handle(store, BUYER, 'market-mine', {})).offers[0].id }, prepare), /no longer open/);
+    // Pausing purchases pauses offers and accepting.
+    await store.pool.query("INSERT INTO ryo_admin_control(scope,version,config,pauses,installed) VALUES($1,1,'{}',$2,$3) ON CONFLICT(scope) DO UPDATE SET pauses=$2", [store.scope, JSON.stringify({ purchases: true }), clock]);
+    await rejects(guard(store, 'market-offer', BUYER, {}), /paused/); await rejects(guard(store, 'market-accept', SELLER, { requestId: 'x' }), /paused/);
+    await store.pool.query('DELETE FROM ryo_admin_control WHERE scope=$1', [store.scope]);
+  }
   // The listing cap and the purchases pause.
   await store.pool.query("INSERT INTO ryo_admin_control(scope,version,config,pauses,installed) VALUES($1,1,'{}',$2,$3)", [store.scope, JSON.stringify({ purchases: true }), clock]);
   await rejects(guard(store, 'market-buy', BUYER, { requestId: 'req-new' }), /paused/, 'pausing purchases pauses Market buys');
@@ -100,5 +154,5 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
   assert.deepEqual(market.rules().shares, { seller: 80, studio: 2, treasury: 8, pool: 10 });
   assert.deepEqual(market.MIN_PRICE, [10000, 25000, 80000, 200000, 500000]);
   await db.close();
-  console.log('PASS: Market escrow, rank minimums and maximum, perks/rank/search/sort browsing, buy reserve/refund/confirm with the identical hero, 80/10/8/2 split with reward pool income, cancel and expiry returns, and the purchases pause.');
+  console.log('PASS: Market escrow, rank minimums and maximum, perks/rank/search/sort browsing, buy reserve/refund/confirm with the identical hero, 80/10/8/2 split with reward pool income, cancel and expiry returns, offers (held Ryo, change, decline, accept at the offered price, refund, expiry, close on sale or cancel) and the purchases pause.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

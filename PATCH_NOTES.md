@@ -20,6 +20,22 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Market upgrade & offers)**
+
+**✨ New**
+• **Make Offer works!** Offer less than the asking price (from the rank minimum). Your offered Ryo is held safely until the seller answers — up to 48 hours — and comes straight back if they decline, the offer expires, the hero sells to someone else, or you cancel it. Change your offer any time.
+• **Sellers can accept or decline offers** in **My Listings** — each offer shows exactly how much you'd receive (80%).
+• **My Offers** tab shows every offer you've made, its status and how much Ryo is held.
+
+**🔄 Changes**
+• **Cleaner Market** — new tabs (For Sale · My Listings · My Offers), clear rank buttons, a Skills filter with a count, a real search box and a sort menu. Items, Resources and the Element filter were removed until they're available.
+• **Better hero cards and details** — clear stats, skill tags, level badge and a large portrait; every price and button is crisp with no leftover artwork text.
+• **Phone layout** — filters, two cards per row and the hero details with Buy now / Make offer all fit your screen.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Player Market)**
 
 **✨ New**

@@ -72,13 +72,19 @@ function transfers(hash){return wireByHash.get(hash).instructions.filter(i=>i.pr
  // Market buy through the service: the custody transfer carries only the studio 2% and treasury 8%
  // (no burn), the buyer receives the hero, and the seller is credited 80% when it finalizes.
  {autoFinalize=true;const market=require('../app/server/market.cjs'),seller='SeLLer'+'7'.repeat(38),ata=owner=>spl.getAssociatedTokenAddressSync(mint,owner).toBase58();
-  await store.transaction(async c=>{await store.locked(c,seller);await store.profileLocked(c,seller);await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[store.scope,seller,JSON.stringify(economy.normalizeProfile({dojo:0,heroes:['mk-1','mk-2','mk-3'].map(id=>({tokenId:id,rank:1,level:1,name:'Market '+id,baseStats:{pw:4,sp:4,st:4}})),battleReady:[]}))])});
+  await store.transaction(async c=>{await store.locked(c,seller);await store.profileLocked(c,seller);await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[store.scope,seller,JSON.stringify(economy.normalizeProfile({dojo:0,heroes:['mk-1','mk-2','mk-3','mk-4'].map(id=>({tokenId:id,rank:1,level:1,name:'Market '+id,baseStats:{pw:4,sp:4,st:4}})),battleReady:[]}))])});
   const listing=(await market.handle(store,seller,'market-post',{heroId:'mk-1',price:50000})).listing,before=await store.balance(wallet);
   const bought=await call('market-buy',{listingId:listing.id,expectedPrice:50000,requestId:crypto.randomUUID()});
   assert.equal(bought.purchase.status,'confirmed');assert.equal(await store.balance(wallet),before-50000,'the buyer pays the listed price');assert(bought.profile.heroes.some(h=>h.tokenId==='mk-1'),'the buyer receives the hero');
   const tx=wireByHash.get(bought.purchase.signature);assert(!tx.instructions.some(i=>i.programId.equals(spl.TOKEN_PROGRAM_ID)&&i.data[0]===spl.TokenInstruction.BurnChecked),'a Market sale burns nothing');
   assert.deepEqual(transfers(bought.purchase.signature).map(p=>[p.data.amount,p.keys.destination.pubkey.toBase58()]),[[1000n*UNIT,ata(studio)],[4000n*UNIT,ata(revenue)]],'2% studio and 8% treasury leave custody');
-  assert.equal(await store.balance(seller),40000,'the seller is credited 80%');}
+  assert.equal(await store.balance(seller),40000,'the seller is credited 80%');
+  // An offer: the buyer's Ryo is held, the seller accepts through the service, and the same 2%/8% leave custody.
+  const second=(await market.handle(store,seller,'market-post',{heroId:'mk-2',price:60000})).listing,held=await store.balance(wallet);
+  await call('market-offer',{listingId:second.id,amount:40000});assert.equal(await store.balance(wallet),held-40000,'an offer holds the amount');
+  const offerId=(await market.handle(store,seller,'market-mine',{})).listings[0].offers[0].id;
+  const accepted=await market.accept(store,seller,crypto.randomUUID(),{offerId},async q=>{assert.deepEqual([q.total,q.studioFee,q.treasury,q.seller],[40000,800,3200,32000]);return {signature:bs58.encode(crypto.randomBytes(64)),wire:'d2lyZQ==',lastHeight:1}});
+  await store.settlePurchase(wallet,accepted.request_id,'confirmed');assert.equal(await store.balance(wallet),held-40000,'accepting does not charge the buyer twice');assert.equal(await store.balance(seller),72000,'the seller receives 80% of the offer');}
  console.log(JSON.stringify({database:'real PostgreSQL engine; additive migration twice',deposit:'2% studio transfer; 98% credit; replay/forged fee rejected',purchases:'25k summon = 25,500 debit; 2,500 treasury + 2,500 burn + 500 studio; 20k operations retained',withdrawal:'minimum 100k gross; 98k net; one finalized success per rolling 24 hours',clockBoundary:'23:59:59.999 rejected, exact 24h accepted',recovery:'same signed transaction; failure/expiry refunded once',failedPurchase:'no hero and no lost reserve after failed burn',legacyPacks:'disabled',mainnet:'blocked',claims:'concurrent claim credits once; whole-Ryo, revenue pool and custody-liability caps; forged client loot ignored',validation:'actual assembled backend with in-memory PGlite and mocked Solana RPC using real SDK signatures/instruction decoding; no live transactions'},null,2));
  }finally{await db.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
