@@ -1,27 +1,28 @@
-/* The supplied 1536 × 1024 illustration is unchanged. Live values cover examples. */
-#gameLoading.loading-reference-active{padding:0;display:grid;place-items:center;background:#020812;overflow:hidden}
-#gameLoading.loading-reference-active::before{display:none}
-#gameLoading .loading-reference-viewport{display:grid;grid-template-columns:minmax(0,1fr);place-items:center;width:100%;height:100%;overflow:hidden}
-#gameLoading.loading-reference-active>.loading-emblem,#gameLoading.loading-reference-active>.loading-eyebrow,#gameLoading.loading-reference-active>h1,#gameLoading.loading-reference-active>small{display:none}
-#gameLoading .loading-reference-stage{position:relative;width:min(100vw,150dvh);aspect-ratio:3/2;flex:none;isolation:isolate;container-type:inline-size}
-#gameLoading .loading-reference-art{position:absolute;inset:0;width:100%;height:100%;display:block;max-width:none;object-fit:contain;pointer-events:none;user-select:none}
-#gameLoading .loading-accessible-title,#gameLoading .loading-accessible-tip{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-#gameLoading #loadingPercent{position:absolute;left:61.35%;top:60.45%;width:5.4%;height:2.6%;display:grid;place-items:center;background:linear-gradient(90deg,#231036,#321442,#21102f);color:#fff;font:800 1.82cqw/1 Arial,sans-serif;text-shadow:0 0 8px #b57aff;box-sizing:border-box}
-#gameLoading .loading-reference-stage #loadingProgress{position:absolute;left:29.3%;top:64.45%;width:41.4%;height:3.45%;max-width:none;margin:0;box-sizing:border-box;border:0;border-radius:999px;overflow:hidden;background:linear-gradient(#100a2e,#050821);box-shadow:inset 0 0 6px #5746c9}
-#gameLoading .loading-reference-stage #loadingProgress i{display:block;position:relative;width:100%;height:100%;overflow:hidden;border-radius:999px;background:#c442ff;box-shadow:0 0 12px #ee83ff;transform-origin:left center;transition:transform .24s cubic-bezier(.2,.8,.2,1)}
-#gameLoading .loading-fill-art{display:block;position:absolute;inset:0 auto 0 0;width:41.4cqw;background-image:url('loading-reference.png');background-repeat:no-repeat;background-size:130cqw 66.6667cqw;background-position:-38.09cqw -42.9667cqw}
-#gameLoading .loading-reference-stage #loadingStatus{position:absolute;left:28%;top:90.7%;width:44%;min-height:0;margin:0;padding:4px 8px;box-sizing:border-box;color:#f3e6ff;background:#080b23e6;border:1px solid #8570be66;border-radius:5px;font:500 clamp(10px,1cqw,16px)/1.35 system-ui,sans-serif;text-align:center;overflow-wrap:anywhere}
-#gameLoading #loadingRetry{position:absolute;left:40%;top:82.8%;width:20%;min-height:44px;padding:10px 12px;border:1px solid #ffe18a;border-radius:8px;background:linear-gradient(#8c3be5,#4b1ca5);color:white;font:700 clamp(13px,1.2cqw,19px)/1.2 system-ui,sans-serif;cursor:pointer;box-shadow:0 0 20px #ad3fff88}
+/* Compact startup gate: no artwork to download. A small card shows on a dark screen until the
+   login artwork is ready, hides while the login screen is up, and returns after sign-in only while
+   the game is still preparing its sprites and maps. */
+#gameLoading.loading-compact{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:16px;box-sizing:border-box;
+  background:radial-gradient(circle at 50% 40%,#1a0f33,#04060f 70%);color:#f3e6ff;font:600 14px/1.4 system-ui,Arial,sans-serif}
+#gameLoading.loading-compact::before{display:none}
+body.at-login #gameLoading.loading-compact{display:none}
+#gameLoading .loading-card{width:min(360px,100%);padding:20px 22px;box-sizing:border-box;border:1px solid #6b3fa8;border-radius:14px;
+  background:#0b0820e6;box-shadow:0 0 24px #a54ae755;text-align:center}
+#gameLoading .loading-brand{margin:0 0 8px;font:italic 900 26px/1 Rajdhani,Arial,sans-serif;letter-spacing:1px;color:#fff}
+#gameLoading .loading-brand span{color:#ffb02a}
+#gameLoading .loading-accessible-title{margin:0 0 4px;font-size:15px;font-weight:700}
+#gameLoading .loading-accessible-tip{margin:0 0 14px;font-size:12px;font-weight:500;color:#b9a8d8}
+#gameLoading.loading-compact #loadingProgress{position:relative;width:100%;height:10px;margin:0;border:0;border-radius:999px;background:#241640;overflow:hidden}
+/* A moving sheen while work is still running, so a long milestone never looks frozen. */
+#gameLoading.loading-compact[aria-busy="true"] #loadingProgress::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#ffffff40,transparent);transform:translateX(-100%);animation:loading-sheen 1.3s linear infinite}
+@keyframes loading-sheen{to{transform:translateX(100%)}}
+#gameLoading.loading-compact #loadingProgress i{display:block;width:100%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#8c3be5,#ee83ff);
+  box-shadow:0 0 10px #ee83ff;transform-origin:0 50%;transition:transform .3s ease}
+#gameLoading .loading-line{display:flex;justify-content:space-between;gap:10px;margin:8px 0 0;font-size:12px}
+#gameLoading #loadingStatus{margin:0;text-align:left}
+#gameLoading #loadingPercent{font-weight:800}
+#gameLoading #loadingRetry{margin-top:12px;min-height:44px;padding:10px 16px;border:1px solid #ffe18a;border-radius:8px;background:linear-gradient(#8c3be5,#4b1ca5);
+  color:#fff;font-weight:800;cursor:pointer}
 #gameLoading #loadingRetry[hidden]{display:none}
 #gameLoading #loadingRetry:focus-visible{outline:3px solid #fff1a0;outline-offset:4px}
-#gameLoading.loading-failed #loadingStatus{color:#fff0bd;border-color:#dcb762;top:92%;background:#151025}
-@media(max-width:650px) and (orientation:portrait){
-  #gameLoading.loading-reference-active{grid-template-columns:minmax(0,1fr);overflow:hidden auto;padding:0}
-  #gameLoading .loading-reference-stage{width:min(740px,190vw);margin-bottom:66px}
-  #gameLoading #loadingPercent{font-size:1.82cqw}
-  #gameLoading .loading-reference-stage #loadingStatus{left:25%;top:102%;width:50%;padding:8px;font-size:13px}
-  #gameLoading #loadingRetry{left:35%;top:118%;width:30%;font-size:14px}
-  #gameLoading.loading-failed .loading-reference-stage{margin-bottom:140px}
-  #gameLoading.loading-failed #loadingStatus{top:102%}
-}
-@media(prefers-reduced-motion:reduce){#gameLoading.loading-reference-active,#gameLoading .loading-reference-stage #loadingProgress i{transition:none}}
+#gameLoading.loading-failed #loadingStatus{color:#fff0bd}
+@media(prefers-reduced-motion:reduce){#gameLoading.loading-compact #loadingProgress i{transition:none}#gameLoading.loading-compact #loadingProgress::after{animation:none;display:none}}

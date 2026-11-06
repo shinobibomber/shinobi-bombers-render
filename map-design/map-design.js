@@ -3,20 +3,29 @@
   const root = new URL('.', document.currentScript.src), previousReady = ShinobiSprites.ready;
   const images = [], aligned = new WeakSet(), floors = new WeakMap(), reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let manifest, projectedMap = null, projection = null;
-  const api = window.MapDesign = { loaded: false, ready: null, maps: [], activeLayout, project, alignGrid, blocked, drawFloor, drawAtmosphere };
+  const api = window.MapDesign = { loaded: false, ready: null, maps: [], activeLayout, project, alignGrid, blocked, drawFloor, drawAtmosphere, load };
+  // Startup waits for the current map only (each is ~1.7 MB); the next one is prefetched and the
+  // rest load when the team reaches them, so phones don't download all eight up front.
+  const loading = [];
+  const index = map => ((Math.max(1, Number(map) || 1) - 1) % 8 + 8) % 8;
+  function load(map) {
+    const i = index(map), entry = manifest.maps[i];
+    return loading[i] || (loading[i] = new Promise((resolve, reject) => {
+      const image = new Image(); image.onload = () => { if (image.naturalWidth !== 1536 || image.naturalHeight !== 645) return reject(Error('Map design dimensions changed.')); images[i] = image; resolve(image); };
+      image.onerror = () => { loading[i] = null; reject(Error('Map design unavailable: ' + entry.file)); }; image.src = new URL(entry.file, root).href;
+    }));
+  }
   const sources = fetch(new URL('maps.json', root)).then(response => { if (!response.ok) throw Error('Map design manifest unavailable.'); return response.json(); }).then(async data => {
     if (data.version !== 1 || data.maps.length !== 8) throw Error('Map design manifest changed.');
     manifest = data;
-    await Promise.all(data.maps.map((entry, i) => new Promise((resolve, reject) => {
-      const image = new Image(); image.onload = () => { if (image.naturalWidth !== 1536 || image.naturalHeight !== 645) return reject(Error('Map design dimensions changed.')); images[i] = image; resolve(); };
-      image.onerror = () => reject(Error('Map design unavailable: ' + entry.file)); image.src = new URL(entry.file, root).href;
-    })));
+    await load(S.map);
+    load(Number(S.map) + 1).catch(() => {});
   });
   api.ready = ShinobiSprites.ready = Promise.all([previousReady, sources]).then(() => {
     api.maps = manifest.maps; api.loaded = true;
     for (const entry of api.maps) { if (ArenaThemes[entry.key]) ArenaThemes[entry.key][0] = entry.name; if (AdventureDesign.themes[entry.key]) AdventureDesign.themes[entry.key].name = entry.name; }
     AdventureDesign.drawFloor = drawFloor; AdventureDesign.drawWall = () => {};
-    const oldNewMap = newMap; newMap = function (...args) { const result = oldNewMap(...args); alignGrid(); return result; };
+    const oldNewMap = newMap; newMap = function (...args) { const result = oldNewMap(...args); alignGrid(); load(Number(S.map) + 1).catch(() => {}); return result; };
     document.getElementById('exactAdventureScene')?.classList.add('original-maps-active');
     alignGrid(); Arena3D.rebuild(); hud(); RosterDesign.refresh(); dispatchEvent(new CustomEvent('shinobi-map-design-ready')); return true;
   });
@@ -75,6 +84,8 @@
   }
   function drawFloor(canvas, world) {
     const layout = activeLayout(world.map), width = world.W * world.T, height = 465;
+    // A map not downloaded yet (a jump to a later stage): fetch it, then rebuild the arena.
+    if (!images[layout.key]) { load(world.map).then(() => { floors.delete(canvas); window.Arena3D?.rebuild(); }, error => console.error(error)); return; }
     const previous = floors.get(canvas);
     // Arena3D already retains this raster between frames. Camera/HUD rebuilds
     // can request the same original scenery again; keep its pixels and backing

@@ -108,6 +108,16 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-06 faster loading (owner request): ~110 MB downloaded before login. Now: the startup gate
+  shows LoginScreen as soon as the login art loads (loading-design.js; startupPatches guards the final
+  show()), GameLoading stays active until sprites/maps/fonts finish, and a CSS-only card
+  (#gameLoading.loading-compact) shows only after sign-in while still preparing. apply-performance.cjs
+  (last unpack step, sharp 0.34.5) converts 37 PNGs to WebP (sprite sheets lossless, menu/reference art
+  q88: 92 MB → 44 MB), rewrites static and runtime-built URLs (DYNAMIC list; the build fails on any
+  leftover), and adds content-hash ETag/304 to render-server.cjs (file-etag.cjs). map-design loads
+  the current map (+ next) and others on demand (MapDesign.load). preservation reverses the WebP
+  rewrites via restoreReferences(). 20 Mbps phone sim: login at 4 s (1.3 MB), game ready 24 s.
+
 - 2026-11-06 Sensei auto-deploy (owner request): the game's own Sensei swap only replaced one
   exhausted hero per 2s and never filled empty slots, so a signed-in team (0 deployed after login)
   sat idle with a hired/rented Sensei. gameplay-options/options.js wraps `tick`: every 2s an active

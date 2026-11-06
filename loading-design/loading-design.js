@@ -1,22 +1,12 @@
-/* Presentation for the native startup gate. Artwork stays intact; progress is real. */
+/* Compact startup gate. The login screen shows as soon as its artwork is ready; the game keeps
+   preparing sprites and maps behind it (GameLoading.active stays true, so battle waits), and this
+   card returns after sign-in only while that work is unfinished. Progress is the gate's real work. */
 (() => {
-  const api = window.LoadingDesign = {
-    ready: null, fail,
-    source: 'loading_enhanced_reference.png',
-    sha256: 'fcdca38ba5926100306824e0e372258f69f3d72bc8815e708423aa7a3515c3e7'
-  };
+  const api = window.LoadingDesign = { ready: null, fail };
   const screen = document.getElementById('gameLoading');
   if (!screen) { api.ready = Promise.resolve(); return; }
   const progress = document.getElementById('loadingProgress');
   const status = document.getElementById('loadingStatus');
-  const image = screen.querySelector('.loading-reference-art');
-  const artwork = new Promise((resolve, reject) => {
-    const loaded = () => image.naturalWidth === 1536 && image.naturalHeight === 1024
-      ? image.decode().then(resolve, reject) : reject(Error('Loading artwork has unexpected dimensions.'));
-    image.onload = loaded;
-    image.onerror = () => reject(Error('Loading artwork could not load. Check your connection and retry.'));
-    if (image.complete) image.naturalWidth ? loaded() : image.onerror();
-  });
   const percent = document.getElementById('loadingPercent');
   const retry = document.getElementById('loadingRetry');
   retry.addEventListener('click', () => location.reload());
@@ -30,14 +20,13 @@
   const changes = new MutationObserver(update);
   changes.observe(progress, { attributes: true, attributeFilter: ['aria-valuenow'] });
   update();
-  const removed = new MutationObserver(() => { if (!screen.isConnected) cleanup(); });
+  const removed = new MutationObserver(() => { if (!screen.isConnected) { changes.disconnect(); removed.disconnect(); } });
   removed.observe(document.body, { childList: true });
-  function cleanup() { changes.disconnect(); removed.disconnect(); image.onload = image.onerror = null; }
-  addEventListener('pagehide', cleanup, { once: true });
 
-  // Login is the next view, so its artwork must also be ready before the gate
-  // transitions. Rejection holds startup until an explicit retry.
-  api.ready = Promise.all([artwork, window.LoginDesign?.ready]).catch(fail);
+  // Only the login artwork gates sign-in. A failure holds startup until an explicit retry.
+  api.ready = Promise.resolve(window.LoginDesign?.ready).catch(fail);
+  api.ready.then(() => { if (window.GameLoading?.active && !window.LoginScreen?.active) window.LoginScreen?.show(); });
+
   function fail(error) {
     screen.classList.add('loading-failed'); screen.setAttribute('aria-busy', 'false');
     status.textContent = error?.message || 'The village could not finish loading. Please retry.';

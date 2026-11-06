@@ -22,6 +22,7 @@
     "test:visual": "node tests/visual-regression.cjs"
   },
   "dependencies": {
+    "sharp": "0.34.5",
     "yauzl": "3.4.0"
   }
 }

@@ -20,6 +20,17 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Faster loading)**
+
+**🔄 Changes**
+• **Straight to the login screen** — the slow loading screen is gone. The login screen appears in seconds while the game finishes preparing in the background. If you sign in before it's done, a small progress card shows until your village is ready.
+• **Much lighter downloads** — game artwork is now compressed (about half the size, same look), and battle maps load only when you reach them instead of all at once.
+• **Faster return visits** — your browser now keeps the game's images, so coming back only downloads what changed.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Sensei fix)**
 
 **🛠️ Fixes**

@@ -9,6 +9,8 @@ const { withGame } = require('./harness.cjs');
       !LoginScreen.active && window.MapDesign?.loaded);
     const rows = await p.evaluate(async () => {
       const state = () => JSON.stringify({ heroes: S.h, grid: G, map: S.map, balance: RyoPayments.state.balance });
+      // Maps load on demand; fetch all eight so each one is compared.
+      await Promise.all([1, 2, 3, 4, 5, 6, 7, 8].map(map => MapDesign.load(map)));
       const images = await Promise.all(MapDesign.maps.map(async entry => {
         const image = new Image(); image.src = new URL('assets/map-design/' + entry.file, location.href).href;
         await image.decode(); return image;

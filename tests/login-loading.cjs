@@ -15,7 +15,7 @@ const signedIn = p => p.waitForFunction(() => RyoPayments.state.authenticated &&
     assert.equal(f.loginSerial, 0, 'startup does not request a signature or authenticate');
     assert.equal(await p.locator('[data-gc-chest]').count(), 0, 'no authenticated Chest on login');
     const art = await p.locator('.login-reference-art').evaluate(image => ({ src: image.src, w: image.naturalWidth, h: image.naturalHeight, box: image.getBoundingClientRect().toJSON() }));
-    assert.match(art.src, /assets\/login-exact\/login-reference\.png$/);
+    assert.match(art.src, /assets\/login-exact\/login-reference\.webp$/);
     assert.deepEqual([art.w, art.h], [1536, 1024]);
     assert.deepEqual([art.box.x, art.box.y, art.box.width, art.box.height], [0, 0, 1536, 1024], 'desktop preserves the reference aspect and full artwork');
     for (const [id, expected] of [['loginPhantom', [503, 500, 530, 72]], ['loginSolflare', [503, 589, 530, 71]]]) {
@@ -88,61 +88,64 @@ const signedIn = p => p.waitForFunction(() => RyoPayments.state.authenticated &&
 
   await withGame(async ({ p, f, errors, assert }) => {
     await p.setViewportSize({ width: 1536, height: 1024 });
-    // Hold deferred presentation JS: the parser must already show the enhanced
-    // scene, rather than flashing the old dark emblem/title screen first.
+    // First paint, before deferred scripts run: a compact card with no artwork to download, and the
+    // login art (not a loading illustration) is the one preloaded image.
     let releasePresentation;
     const holdPresentation = async route => { await new Promise(resolve => { releasePresentation = resolve; }); await route.fallback(); };
     await p.route('**/assets/loading-design/loading-design.js', holdPresentation);
     await p.reload({ waitUntil: 'commit' });
-    await p.waitForFunction(() => document.querySelector('.loading-reference-art')?.naturalWidth === 1536 && typeof LoadingDesign === 'undefined');
-    assert.equal(await p.locator('#gameLoading .loading-emblem, #gameLoading > h1').count(), 0, 'legacy loader markup is removed before deferred scripts run');
-    assert.equal(await p.locator('#loadingPercent').textContent(), '33%', 'the illustrated 75% is masked with the real native milestone before hydration');
-    assert.equal(await p.locator('#enhanced-startup-preload').count(), 1, 'required loading art is preloaded once');
-    assert.equal(await p.locator('#gameLoading').evaluate(screen => getComputedStyle(screen).display), 'grid', 'critical scene CSS is present before hydration');
+    await p.waitForFunction(() => document.querySelector('#gameLoading .loading-card') && typeof LoadingDesign === 'undefined');
+    assert.equal(await p.locator('#gameLoading img, #gameLoading .loading-emblem').count(), 0, 'the startup card downloads no artwork');
+    assert.match(await p.locator('#enhanced-startup-preload').getAttribute('href'), /login-exact\/login-reference\.webp$/, 'the login art is preloaded first');
+    assert.equal(await p.locator('#gameLoading').evaluate(screen => getComputedStyle(screen).display), 'grid', 'critical card CSS is present before hydration');
     await p.screenshot({ path: path.join(output, 'loading-first-paint.png'), scale: 'css' });
     releasePresentation();
     await p.evaluate(() => GameLoading.ready);
     await p.unroute('**/assets/loading-design/loading-design.js', holdPresentation);
+
+    // Login first: with a game sprite sheet and the fonts still loading, the login screen is already up.
     await p.addInitScript(() => {
-      // A controllable font milestone proves that startup waits for real work.
       Object.defineProperty(document.fonts, 'ready', { value: new Promise(resolve => { window.releaseTestFonts = resolve; }) });
     });
-    let releaseArt;
-    const holdLoginArt = async route => { await new Promise(resolve => { releaseArt = resolve; }); await route.fallback(); };
-    await p.route('**/assets/login-exact/login-reference.png', holdLoginArt);
+    let releaseSprites;
+    const holdSprites = async route => { await new Promise(resolve => { releaseSprites = resolve; }); await route.fallback(); };
+    await p.route('**/assets/design-v3/terrain.webp', holdSprites);
     await p.reload({ waitUntil: 'domcontentloaded' });
-    await p.waitForFunction(() => document.querySelector('.loading-reference-art')?.naturalWidth === 1536 && document.getElementById('loadingPercent')?.textContent === '33%');
-    assert.equal(await p.evaluate(() => GameLoading.active), true);
-    assert.equal(await p.evaluate(() => document.querySelector('main').inert), true);
-    assert.equal(await p.evaluate(() => LoginScreen.active), false, 'login stays gated until its art is ready');
-    await p.evaluate(() => {
-      const progress = document.getElementById('loadingProgress');
-      window.testLoadingSteps = [Number(progress.getAttribute('aria-valuenow'))];
-      new MutationObserver(() => testLoadingSteps.push(Number(progress.getAttribute('aria-valuenow')))).observe(progress, { attributes: true, attributeFilter: ['aria-valuenow'] });
-    });
+    await p.waitForFunction(() => LoginScreen.active);
+    assert.equal(await p.evaluate(() => GameLoading.active), true, 'the game is still preparing behind the login screen');
+    assert.equal(await p.evaluate(() => document.querySelector('main').inert), true, 'the game stays inert behind login');
+    assert.equal(await p.locator('#gameLoading').evaluate(screen => getComputedStyle(screen).display), 'none', 'no loading card covers the login screen');
+    // Signing in before the game is ready shows the progress card until it is.
+    await p.locator('#loginPhantom').click();
+    await p.waitForFunction(() => RyoPayments.state.authenticated && !LoginScreen.active);
+    assert.equal(await p.locator('#gameLoading').evaluate(screen => getComputedStyle(screen).display), 'grid', 'the progress card shows after sign-in while the game prepares');
     const actualPercent = await p.locator('#loadingProgress').evaluate(progress => Math.round(Number(progress.getAttribute('aria-valuenow')) / Number(progress.getAttribute('aria-valuemax')) * 100) + '%');
     assert.equal(await p.locator('#loadingPercent').textContent(), actualPercent, 'visible percentage follows completed native milestones');
-    const fill = await p.locator('#loadingProgress i').evaluate(element => ({ property: getComputedStyle(element).transitionProperty, width: element.style.width, transform: element.style.transform }));
+    const fill = await p.locator('#loadingProgress i').evaluate(element => ({ property: getComputedStyle(element).transitionProperty, width: element.style.width }));
     assert.equal(fill.property, 'transform', 'progress animates a compositor transform rather than layout width');
     assert.equal(fill.width, '');
-    assert.match(fill.transform, /^scaleX\(0\.333/);
-    await p.screenshot({ path: path.join(output, 'loading-desktop.png'), scale: 'css' });
+    await p.screenshot({ path: path.join(output, 'loading-after-sign-in.png'), scale: 'css' });
     await p.setViewportSize({ width: 390, height: 844 });
     await p.screenshot({ path: path.join(output, 'loading-mobile.png'), scale: 'css' });
     assert.equal(await p.locator('#gameLoading').evaluate(screen => screen.scrollWidth > screen.clientWidth + 1), false);
     await p.emulateMedia({ reducedMotion: 'reduce' });
     assert.equal(await p.locator('#gameLoading').evaluate(screen => screen.getAnimations({ subtree: true }).filter(animation => animation.playState === 'running').length), 0, 'reduced motion stops loading decoration');
-    releaseArt();
+    releaseSprites();
     await p.waitForFunction(() => document.getElementById('loadingPercent')?.textContent === '67%');
     assert.equal(await p.evaluate(() => GameLoading.active), true, 'fonts must finish before native completion');
     await p.evaluate(() => releaseTestFonts());
     await p.evaluate(() => GameLoading.ready);
-    assert.equal(await p.evaluate(() => GameLoading.active), false);
-    assert.deepEqual(await p.evaluate(() => [...new Set(testLoadingSteps)]), [1, 2, 3], 'real milestones finish in order');
-    await p.unroute('**/assets/login-exact/login-reference.png', holdLoginArt);
+    await p.waitForFunction(() => !GameLoading.active && !document.getElementById('gameLoading'));
+    assert.equal(await p.evaluate(() => LoginScreen.active), false, 'finishing startup does not pop the login back up');
+    await p.waitForFunction(() => window.WebsiteDesign?.current() && !document.body.classList.contains('at-login'));
+    await p.unroute('**/assets/design-v3/terrain.webp', holdSprites);
+    await p.evaluate(() => BetaWallet.disconnect());
+    await p.waitForFunction(() => LoginScreen.active);
 
-    let failLoadingArt = true;
-    await p.route('**/assets/loading-design/loading-reference.png', route => failLoadingArt ? route.abort() : route.fallback());
+    // The login art failing to load stops at a retry, without claiming success or touching the wallet.
+    const signIns = f.loginSerial;
+    let failLoginArt = true;
+    await p.route('**/assets/login-exact/login-reference.webp', route => failLoginArt ? route.abort() : route.fallback());
     await p.reload({ waitUntil: 'domcontentloaded' });
     await p.waitForSelector('#gameLoading.loading-failed');
     assert.equal(await p.evaluate(() => GameLoading.active), true, 'failed required art cannot claim startup success');
@@ -150,16 +153,15 @@ const signedIn = p => p.waitForFunction(() => RyoPayments.state.authenticated &&
     assert(await p.locator('#loadingRetry').isVisible(), 'missing required art exposes retry');
     assert.notEqual(await p.locator('#loadingPercent').textContent(), '100%');
     await p.screenshot({ path: path.join(output, 'loading-error-mobile.png'), scale: 'css' });
-    failLoadingArt = false;
+    failLoginArt = false;
     await Promise.all([p.waitForNavigation({ waitUntil: 'domcontentloaded' }), p.locator('#loadingRetry').click()]);
-    await p.waitForFunction(() => typeof releaseTestFonts === 'function');
+    await p.waitForFunction(() => LoginScreen.active);
     await p.evaluate(() => releaseTestFonts());
     await p.evaluate(() => GameLoading.ready);
-    assert.equal(await p.evaluate(() => LoginScreen.active), true, 'retry resumes the existing login transition');
-    assert.equal(await p.evaluate(() => BetaWallet.state.account), null);
-    assert.equal(f.loginSerial, 0);
-    assert.equal(f.requests.filter(request => mutations.has(request.action) || ['login', 'challenge'].includes(request.action)).length, 0, 'loading/retry never authorizes or moves funds');
+    assert.equal(await p.evaluate(() => LoginScreen.active), true, 'retry resumes the login screen');
+    assert.equal(f.loginSerial, signIns, 'loading/retry never signs in');
+    assert.equal(f.requests.filter(request => mutations.has(request.action)).length, 0, 'loading/retry never moves funds');
     assert.deepEqual(errors, []);
-    console.log('PASS: startup waits for required artwork and fonts, reports actual milestones, handles art failure/retry, and respects reduced motion without wallet activity.');
+    console.log('PASS: login shows as soon as its artwork is ready while the game prepares behind it, a compact progress card covers only signed-in waiting, real milestones, art failure/retry, reduced motion and no wallet activity.');
   });
 })().catch(error => { console.error(error); process.exitCode = 1; });

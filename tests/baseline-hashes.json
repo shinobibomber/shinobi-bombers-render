@@ -115,11 +115,11 @@
     },
     {
       "path": "loading-design/loading-design.css",
-      "sha256": "0bab272e5e5e3c132d7335bee0ed94c8bd960e04e99fca71582dc59c843d3c63"
+      "sha256": "1672d1b94d1dfeafe378c1a6b73c558ba589e079ffe42006ce03eb148e60856a"
     },
     {
       "path": "loading-design/loading-design.js",
-      "sha256": "af8636fdef8690d7b06154bb003701715b54b447ec75b1b324f349d82a02fca2"
+      "sha256": "b5a9eedd4520c6104513a794d4e57ef6a3ea173a4d45c315fa35f764d47dcc84"
     },
     {
       "path": "login-screen/login-exact.css",
@@ -143,7 +143,7 @@
     },
     {
       "path": "map-design/map-design.js",
-      "sha256": "c9a0a4dfa04c45a69be302e1d9677f8496a07c91ad417b41c3554c741d0dad66"
+      "sha256": "392bb2f252b40954b3ab0e9533a159af230538acbd9d46aa1cee5a40ddd4c01a"
     },
     {
       "path": "map-design/map1.webp",
@@ -287,7 +287,7 @@
     },
     {
       "path": "app/server/render-server.cjs",
-      "sha256": "830c1d193ae9cb895dca2ceaa3fe3c382be458d677f900a8be648e6eea808c92"
+      "sha256": "44cb12ab082837de97eeb99b661a1ae56b15985f825866bf8089575a6fcd8af0"
     },
     {
       "path": "app/server/schema.sql",

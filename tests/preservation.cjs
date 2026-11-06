@@ -3,6 +3,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const root=path.resolve(__dirname,'..'),sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 for(const file of baseline.files){assert.equal(sha(fs.readFileSync(path.join(root,file.path))),file.sha256,'unchanged maintained game/server/visual file: '+file.path);if(file.path.startsWith('map-design/'))assert.equal(sha(fs.readFileSync(path.join(root,'app/public/assets',file.path))),file.sha256,'generated map remains the original baseline: '+file.path);}
 let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
+// The last build step points image URLs at their WebP versions; restore the original names first.
+html=require('../apply-performance.cjs').restoreReferences(html);
 const {walletPatches,apiPatches}=require('../apply-transaction-safety.cjs');
 for(const [before,after]of [...walletPatches,...apiPatches].reverse()){assert.equal(html.split(after).length-1,1,'one reviewed SOL gas preflight hook');html=html.replace(after,()=>before)}
 // Reverse only the reviewed cinematic presentation hooks, then compare every
