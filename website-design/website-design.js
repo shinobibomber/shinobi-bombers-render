@@ -1003,64 +1003,113 @@
   // The game's own 'Sell · List on Market' buttons (Heroes) open the shared Market listing dialog.
   if (window.Market) window.Market.openListing = id => sellDialog(((gs() && gs().h) || []).find(h => h.id === id));
 
-  /* ---------- Boss Hunt (game page 8): the real sanctuary canvas inside your frame ---------- */
-  const GUARD = ['Akuma · Fallen Shinobi', 'Yuki Onna · Frozen Moon', 'Raijin · Thunder Lord', 'Daichi · Ancient Golem', 'Orochi · Serpent King', 'Shadow Emperor'];
-  INIT['boss-hunt'] = b => {
-    b.arena = place(mk('canvas', 'sbw-mirror', b.st), 222, 346, 770, 368); b.arena.width = 770; b.arena.height = 368; b.arena.style.objectPosition = '50% 62%';
-    b.world = artMatch(b, cov(b, 50, 218, 160, 20, '#0d0407', 14, '#e9dcff', 'sbw-left'), 300);
-    b.name = artMatch(b, cov(b, 50, 234, 520, 42, '#0d0407', 28, '#ffffff', 'sbw-left'), 600); b.name.style.fontWeight = '800';
-    b.badge = cov(b, 806, 214, 176, 26, '#2a1a05', 15, '#ffd257');
-    b.rec = artMatch(b, cov(b, 690, 254, 292, 22, '#05040d', 14, '#cfd8ee'), 684); b.rec.style.justifyContent = 'flex-end';
-    b.hpbar = cv(b, 54, 282, 928, 22, 'sbw-hp'); b.hptext = artMatch(b, cov(b, 52, 312, 162, 22, '#05040d', 15, '#ffffff', 'sbw-left'), 214);
-    b.list = [0, 1, 2, 3, 4].map(i => cv(b, 48, [353, 427, 499, 570, 642][i], 159, 69, 'sbw-blist'));
-    // The artwork says "Deploy up to 10 ninjas"; the hunt team is the 5 strongest rested heroes.
-    b.prep = artMatch(b, cov(b, 1030, 258, 450, 46, '#060a19', 16, '#e8ecf8', 'sbw-left sbw-wrap'), 1490);
-    b.prep.textContent = 'Your 5 strongest rested deployed heroes fight. Their attacks, jutsu and chakra are used in the battle.';
-    b.tpl = artMatch(b, cov(b, 1092, 330, 300, 20, '#0c192d', 13, '#cfd8ee', 'sbw-left'), 1270); b.tpv = artMatch(b, cov(b, 1092, 354, 240, 40, '#0c192d', 32, '#ffd257', 'sbw-left'), 1270); b.tpv.style.fontWeight = '800';
-    b.rcm = artMatch(b, cov(b, 1300, 368, 190, 22, '#0c192d', 13, '#6ef294'), 1322); b.rcm.style.justifyContent = 'flex-end';
-    b.dep = artMatch(b, cov(b, 1030, 420, 250, 24, '#060a19', 16, '#ffffff', 'sbw-left'), 1300);
-    b.tiles = [1032, 1090, 1149, 1208, 1267].map(x => cv(b, x, 452, 54, 122, 'sbw-btile'));
-    // The artwork's three extra "+" slots: a hunt takes at most five heroes.
-    b.cap = cv(b, 1328, 452, 170, 88, 'sbw-bcap'); b.cap.innerHTML = '<b>5-hero team</b><span>Strongest rested heroes fight</span>';
-    // Inside the CHALLENGE button's own artwork slice, so it pulses with the button.
-    const chArt = $('.hs[data-sbwid="ch"] > .sl', b.st);
-    b.chal = cov(b, 1186 - 1032, 618 - 605, 200, 40, 'linear-gradient(#ffc13a,#f39a12)', 25, '#2a1000'); b.chal.style.fontWeight = '900';
-    if (chArt) { chArt.append(b.chal); artMatch(b, b.chal, 1392, 605); } else { place(b.chal, 1186, 618); artMatch(b, b.chal, 1392); }
-    // Four single-line rows beside the artwork's four mechanic icons; no emoji duplicates.
-    b.mech = [728, 758, 787, 817].map(y => artMatch(b, cov(b, 1062, y, 436, 26, '#04050f', 15, '#e1e6f7', 'sbw-left sbw-mechrow'), 1500));
-    [['90 seconds · 1 chakra per projectile · Adventure keeps going'], ['Shockwaves drain chakra every 8 seconds'], ['Below 35% HP it enrages: waves every 5 s drain 3 chakra'], ['Elite and Legend heroes show an ultimate every 8th volley']].forEach(([t], i) => setText(b.mech[i], t));
-    b.rw = [1, 2, 3, 4, 5, 6, 7].map(i => { const h = b.s.hs.find(x => x.id === 'rw' + i); const e = cv(b, h.r[0], h.r[1], h.r[2] - h.r[0], h.r[3] - h.r[1], 'sbw-soon'); e.textContent = 'Not yet'; return e; });
-    b.rw0 = artMatch(b, cov(b, 56, 834, 82, 22, '#2a1a05', 13, '#ffd257'), 136);
-    // A garbled baked label sits just below the Legend Fragment tile.
-    artMatch(b, cov(b, 160, 856, 98, 14, '#0a0f20', 10, '#0a0f20'), 150);
-    b.ranks = cv(b, 32, 930, 960, 72, 'sbw-soonpanel'); b.ranks.innerHTML = '<b>Daily rankings are not available yet</b><span>Rankings need a shared leaderboard service.</span>';
-    b.recp = cv(b, 1018, 930, 490, 72, 'sbw-recpanel');
+  /* ---------- Boss Hunt (game page 8): paid daily damage rankings ---------- */
+  // Each hunt costs 10,000 Ryo (90% to today's prize pool, 10% burned) and is a 90-second damage run
+  // by the 5 strongest battle-ready heroes; no chakra is used. Total damage per UTC day ranks the
+  // players, and the top 10 share the pool when the day ends (boss-hunt.cjs on the server). The
+  // artwork keeps its title and frames; every panel inside them is live HTML.
+  const GUARD = ['Akuma · Fallen Shinobi', 'Yuki Onna · Frozen Moon', 'Raijin · Thunder Lord', 'Daichi · Ancient Golem', 'Orochi · Serpent King'];
+  const BH = { board: null, at: 0, busy: false, error: '', pending: null, active: null, last: null, timer: 0 };
+  const ORD = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
+  const huntTeam = () => { try { return BattleRoster.list().slice().sort((a, c) => c.pw - a.pw).slice(0, 5); } catch { return []; } };
+  const dur = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm'; };
+  async function huntLoad() {
+    if (!account() || !window.RyoPayments?.hunt || BH.busy) return;
+    BH.busy = true;
+    try { BH.board = (await RyoPayments.hunt('hunt-board')).hunt; BH.error = ''; BH.at = Date.now(); }
+    catch (e) { BH.error = e.message || 'Boss Hunt is unavailable right now.'; BH.at = Date.now(); }
+    finally { BH.busy = false; if (built['boss-hunt']) built['boss-hunt'].sig = ''; }
+  }
+  function huntReport(final) {
+    const a = BH.active, s = window.V2?.bossState?.(); if (!a || !s) return Promise.resolve();
+    return RyoPayments.hunt('hunt-report', { entryId: a.id, damage: Math.round(s.damage || 0) }).catch(() => {}).then(r => { if (final) { BH.active = null; huntLoad(); } return r; });
+  }
+  // Bridge used by the game's startBoss/endHunt hooks (apply-boss-hunt.cjs).
+  window.BossHunt = {
+    guardian: () => BH.board ? BH.board.guardian : null,
+    takeEntry: () => { const e = BH.pending; BH.pending = null; if (e) BH.active = e; return e; },
+    ended: done => { BH.last = { damage: Math.round(done.damage || 0), result: done.result }; clearInterval(BH.timer); huntReport(true).then(() => { const me = BH.board?.me; if (me?.rank) toast(`Hunt finished · ${fmt(BH.last.damage)} damage · you are ${ORD(me.rank)} today`); }); }
   };
-  function bossInfo() { const t = ((document.querySelector('#p8') || {}).innerText || ''); return { hunt: num(t, /HUNT\s*(\d+)/), name: (t.match(/HUNT\s*\d+\s*\n\s*([^\n]+)/) || [, ''])[1].trim(), status: (() => { const L = t.split('\n').map(x => x.trim()).filter(Boolean), i = L.findIndex(x => /^HUNT\s*\d+$/i.test(x)); return i >= 0 && L[i + 2] && L[i + 2].length < 24 ? L[i + 2] : ''; })(), hp: (t.match(/([\d,]+)\s*\/\s*([\d,]+)\s*HP/) || []), secs: num(t, /HP\s*·\s*(\d+)s/), dmg: num(t, /Damage dealt:\s*([\d,]+)/), reward: num(t, /FIRST-CLEAR REWARD\s*\n?\s*([\d,]+)\s*Ryo/i), chal: (t.match(/CHALLENGE\s*·\s*\d+/) || ['CHALLENGE'])[0], mech: (t.match(/Shockwaves[^\n]*/) || [''])[0] }; }
+  addEventListener('pagehide', () => { if (!BH.active) return; if (window.KillReport) KillReport.closing = true; try { huntReport(false); } finally { if (window.KillReport) KillReport.closing = false; } });
+  INIT['boss-hunt'] = b => {
+    $$('.hs', b.st).forEach(e => { if (e.dataset.sbwid !== 'back') e.hidden = true; });
+    b.head = cv(b, 32, 202, 962, 78, 'sbw-bh-head');
+    b.sched = cv(b, 32, 284, 180, 430, 'sbw-bh-sched');
+    b.arenaBox = cv(b, 218, 284, 774, 428, 'sbw-bh-arena');
+    b.arena = mk('canvas', 'sbw-bh-canvas', b.arenaBox); b.arena.width = 1200; b.arena.height = 660; b.arena.setAttribute('aria-label', 'Guardian arena');
+    b.prize = cv(b, 30, 726, 966, 156, 'sbw-bh-prize');
+    b.ranks = cv(b, 30, 892, 966, 110, 'sbw-bh-ranks');
+    b.team = cv(b, 1020, 200, 488, 678, 'sbw-bh-team');
+    b.mine = cv(b, 1020, 890, 488, 110, 'sbw-bh-mine');
+    b.team.innerHTML = `<h3>⚔ PREPARE YOUR TEAM</h3><p class="bh-note">Your 5 strongest battle-ready heroes fight. No chakra is used.</p>
+      <div class="bh-fee"><span>ENTRANCE FEE</span><b><i class="coin"></i>10,000 Ryo</b><small>9,000 to today's prize pool · 1,000 burned</small></div>
+      <div class="bh-label"><b>Hunt team</b><span class="bh-count"></span></div><div class="bh-tiles"></div>
+      <button type="button" class="sbw-mbtn bh-auto" data-act="auto">⟳ Auto-select strongest 5</button>
+      <button type="button" class="sbw-mbtn buy bh-go" data-act="go">CHALLENGE · 10,000 Ryo</button><button type="button" class="sbw-mbtn ghost bh-stop" data-act="stop" hidden>End hunt now</button>
+      <ul class="bh-rules"><li>⏱ 90-second damage run · Adventure keeps going</li><li>✦ No chakra needed · every volley fires</li><li>🏆 Top 10 by total damage today share the prize pool</li><li>🕛 Prizes are paid at 00:00 UTC to your Ryo balance</li></ul>`;
+    b.tiles = Array.from({ length: 5 }, () => mk('div', 'bh-tile', $('.bh-tiles', b.team)));
+    b.team.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (!a || a.disabled) return; ({ auto: huntAuto, go: huntChallenge, stop: () => window.V2?.retreat?.() })[a.dataset.act]?.(); });
+    b.ranks.addEventListener('click', e => { if (e.target.closest('[data-act="all"]')) huntRankings(); });
+  };
+  function huntAuto() {
+    const t = huntTeam(); if (built['boss-hunt']) { built['boss-hunt'].sig = ''; built['boss-hunt'].flash = performance.now(); }
+    toast(t.length ? `Hunt team: ${t.map(h => h.name.split(' ')[0]).join(', ')}` : 'Make at least one hero battle-ready first.');
+  }
+  function huntChallenge() {
+    if (!account()) return notice('Boss Hunt', 'Sign in with your wallet to enter the Boss Hunt.');
+    if (window.V2?.isBossActive?.()) return toast('A hunt is already running.');
+    if (S?.v2?.revealBatch?.length) return toast('Finish your card reveal first.');
+    const team = huntTeam(); if (!team.length) return notice('Boss Hunt', 'Make at least one hero battle-ready in Heroes first.');
+    const bal = Number(ledger().balance) || 0, g = BH.board ? BH.board.guardianName : GUARD[0];
+    const d = confirmDialog('Enter today\'s Boss Hunt?', `<p>Fight <b>${esc(g)}</b> for 90 seconds with ${team.map(h => esc(h.name.split(' ')[0])).join(', ')}.</p>
+      <p class="sbw-mbuyline">Entrance fee <b>10,000 Ryo</b><br><span class="sbw-small">9,000 to today's prize pool · 1,000 burned · your balance after: ${fmt(bal - 10000)} Ryo</span></p>
+      ${bal < 10000 ? '<p class="sbw-small sbw-warn">Not enough Ryo. Deposit Ryo from your Chest first.</p>' : ''}`, 'Pay 10,000 Ryo & start', async () => {
+      const data = await RyoPayments.hunt('hunt-enter', { requestId: crypto.randomUUID(), name: (gs() && gs().nick) || '' });
+      if (data.hunt) BH.board = data.hunt;
+      BH.pending = data.entry; go(8); V2.startBoss();
+      if (!V2.isBossActive()) { BH.pending = null; throw Error('The hunt could not start. Your entry still counts for today; contact support if this repeats.'); }
+      clearInterval(BH.timer); BH.timer = setInterval(() => { if (V2.isBossActive()) huntReport(false); else clearInterval(BH.timer); }, 10000);
+    }, 'sbw-hunt');
+    if (bal < 10000) $('[data-k="go"]', d).disabled = true;
+  }
+  function huntRankings() {
+    const h = BH.board; if (!h) return;
+    const rows = (list, empty) => list.length ? `<ol class="bh-list">${list.map(r => `<li class="${r.me ? 'me' : ''}"><b>${ORD(r.rank)}</b><span>${esc(r.name)}<small>${esc(r.wallet)}</small></span><em>${fmt(r.damage)} dmg</em><i>${fmt(r.prize)} Ryo</i></li>`).join('')}</ol>` : `<p class="sbw-small">${empty}</p>`;
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    dlg.className = 'sbw-dialog sbw-mdialog sbw-rankdlg'; dlg.onclick = e => { if (e.target.dataset && e.target.dataset.k === 'x') dlg.close(); };
+    dlg.innerHTML = `<h2>Daily rankings</h2><p>Today · prize pool <b>${fmt(h.pool)} Ryo</b> · ends in ${dur(h.endsIn)}</p>${rows(h.top, 'No damage yet today. Be the first!')}
+      ${h.yesterday ? `<h3 class="bh-sub">${esc(h.yesterday.day)} winners · pool ${fmt(h.yesterday.pool)} Ryo</h3>${rows(h.yesterday.winners, 'No winners that day; the pool carried over.')}` : ''}<div class="sbw-acts"><button type="button" class="sbw-btn" data-k="x">Close</button></div>`;
+    if (!dlg.open) dlg.showModal();
+  }
   PAINT['boss-hunt'] = (b, now) => {
-    const x = bossInfo(), hunt = +x.hunt || 1, cur = Math.max(0, GUARD.indexOf(x.name)), cl = Math.max(0, hunt - 1);
-    setText(b.world, `HUNT ${hunt}`); setText(b.name, x.name || GUARD[cur]); setText(b.badge, x.status || 'READY');
-    const hp = +(x.hp[1] || '0').replace(/,/g, ''), max = +(x.hp[2] || '1').replace(/,/g, '') || 1, pct = Math.max(0, Math.min(100, Math.round(100 * hp / max)));
-    b.hpbar.innerHTML = `<i style="width:${pct}%"></i><span>${pct}%</span>`; setText(b.hptext, `${x.hp[1] || '—'} / ${x.hp[2] || '—'} HP`);
-    setText(b.rec, `${x.secs || 90}s · Damage dealt: ${x.dmg || 0}`);
-    if (b.live.btimer) { b.live.btimer.hidden = false; setText(b.live.btimer, `${x.secs || 90}s`); }
-    const lsig = hunt + x.name; if (lsig !== b.lsig) { b.lsig = lsig; b.list.forEach((e, i) => { const g = (cur + i) % GUARD.length; e.classList.toggle('on', i === 0); e.classList.toggle('lock', i > 0); e.innerHTML = `<b>${esc(GUARD[g].split(' · ')[0])}</b><span>${i === 0 ? 'Hunt ' + hunt : 'Hunt ' + (hunt + i)}</span>`; }); }
-    setText(b.tpl, 'NEXT FIRST-CLEAR REWARD'); setText(b.tpv, `${x.reward || '—'} Ryo`); setText(b.rcm, 'Every 5th hunt: + Chunin hero'); setText(b.rw0, x.reward ? x.reward : '—');
-    // The same choice V2.startBoss makes: the 5 strongest rested deployed heroes.
-    let team = []; try { team = BattleRoster.list().filter(h => h.on && h.en >= 1).sort((p, q) => q.pw - p.pw).slice(0, 5); } catch { team = deployed().slice(0, 5); }
-    setText(b.dep, `Hunt team (${team.length}/5)`);
-    b.tiles.forEach((e, i) => { const h = team[i]; e.classList.toggle('empty', !h); e.style.setProperty('--rc', h ? RCOL[h.r] : '#2a3a6a'); const k = h ? h.id + ',' + h.lv : 'x'; if (e.dataset.k !== k) { e.dataset.k = k; e.innerHTML = h ? `<canvas width="53" height="70"></canvas><span>Lv. ${h.lv}</span><small>${esc(RNAME[h.r])}</small>` : '<b>+</b><small>Empty</small>'; } if (h) drawHero($('canvas', e), h, 1, now, 2); });
-    setText(b.chal, x.chal.toUpperCase());
-    if (cl !== b.ms) { b.ms = cl; b.recp.innerHTML = `<span>Highest damage<b>—</b></span><span>Best rank<b>—</b></span><span>Hunts cleared<b>${cl}</b></span>`; }
+    if (!account()) { if (b.sig !== 'out') { b.sig = 'out'; b.head.innerHTML = '<div class="bh-h"><div><small>BOSS HUNT</small><h3>Sign in to hunt</h3></div></div>'; } return; }
+    if (!BH.busy && Date.now() - BH.at > (V2?.isBossActive?.() ? 10000 : 20000)) huntLoad();
+    const h = BH.board, s = window.V2?.bossState?.(), active = !!window.V2?.isBossActive?.(), team = huntTeam();
+    const left = active ? Math.ceil(s.time) : 0, dmg = active ? Math.round(s.damage) : BH.last ? BH.last.damage : 0;
+    const sig = JSON.stringify([h && [h.day, h.pool, h.players, h.top.map(r => [r.name, r.damage]), h.me, h.yesterday?.day], BH.error, active, left, dmg, team.map(t => t.id + ':' + t.lv), Math.floor(Date.now() / 60000), b.flash]);
+    if (sig === b.sig) return; b.sig = sig;
+    const g = h ? h.guardian : 0, name = h ? h.guardianName : GUARD[0];
+    b.head.innerHTML = `<div class="bh-h"><div><small>TODAY'S GUARDIAN${h ? ' · ends in ' + dur(h.endsIn) : ''}</small><h3>${esc(name)}</h3></div>
+      <div class="bh-state"><em class="${active ? 'run' : 'ready'}">${active ? 'HUNTING' : BH.last ? 'FINISHED' : 'READY'}</em><b>${active ? left + 's' : '90s'}</b></div></div>
+      <div class="bh-meter"><i style="width:${active ? Math.round(100 * (90 - s.time) / 90) : BH.last ? 100 : 0}%"></i><span>${active ? 'This hunt' : BH.last ? 'Last hunt' : 'Damage'}</span><b>${fmt(dmg)} damage</b></div>`;
+    if (h) b.sched.innerHTML = `<h4>GUARDIANS</h4>${h.schedule.map((d, i) => `<div class="bh-day${i ? '' : ' on'}"><small>${i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : new Date(d.day + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })}</small><b>${esc(d.name.split(' · ')[0])}</b><span>${esc(d.name.split(' · ')[1] || '')}</span></div>`).join('')}`;
+    b.prize.innerHTML = BH.error ? `<div class="sbw-empty"><b>Boss Hunt unavailable</b><p>${esc(BH.error)}</p></div>` : !h ? '<div class="sbw-empty"><b>Loading today\'s hunt…</b></div>'
+      : `<div class="bh-pool"><small>🏆 TODAY'S PRIZE POOL</small><b><i class="coin"></i>${fmt(h.pool)} Ryo</b><span>${h.players} player${h.players === 1 ? '' : 's'} · 90% of every 10,000 Ryo entry</span></div>
+        <div class="bh-chips">${h.prizes.map((p, i) => `<span class="${i < 3 ? 'p' + (i + 1) : ''}"><b>${ORD(i + 1)}</b>${fmt(p)}</span>`).join('')}</div>`;
+    b.ranks.innerHTML = !h ? '' : `<div class="bh-rh"><b>📊 DAILY RANKINGS</b><small>total damage today</small><button type="button" class="sbw-mbtn sm" data-act="all">View all</button></div>
+      <div class="bh-rrow">${h.top.slice(0, 3).map(r => `<span class="${r.me ? 'me' : ''}"><b>${ORD(r.rank)}</b>${esc(r.name)}<em>${fmt(r.damage)}</em></span>`).join('') || '<span class="none">No damage yet today. Be the first!</span>'}
+      <span class="you">${h.me.rank ? `You: <b>${ORD(h.me.rank)}</b> · ${fmt(h.me.damage)}` : h.me.entries ? 'You: no damage yet' : 'You: not entered'}</span></div>`;
+    b.mine.innerHTML = !h ? '' : `<h4>YOUR DAY</h4><span>Damage today<b>${fmt(h.me.damage)}</b></span><span>Rank today<b>${h.me.rank ? ORD(h.me.rank) : '—'}</b></span><span>Entries today<b>${h.me.entries}</b></span><span>If it ended now<b>${h.me.prize ? fmt(h.me.prize) + ' Ryo' : '—'}</b></span>`;
+    setText($('.bh-count', b.team), `${team.length}/5 · auto`);
+    const flash = b.flash && now - b.flash < 900;
+    b.tiles.forEach((e, i) => { const t = team[i]; e.classList.toggle('empty', !t); e.classList.toggle('flash', !!flash); e.style.setProperty('--rc', t ? RCOL[t.r] : '#2a3a6a');
+      const k = t ? t.id + ',' + t.lv : 'x'; if (e.dataset.k !== k) { e.dataset.k = k; e.innerHTML = t ? `<canvas width="80" height="90"></canvas><b>Lv. ${t.lv}</b><small>${RNAME[t.r]}</small>` : '<small>Empty</small>'; }
+      const c = $('canvas', e); if (c && t) drawHero(c, t, 1.9, now, 4); });
+    const go = $('.bh-go', b.team), stop = $('.bh-stop', b.team);
+    go.disabled = active || !team.length; go.textContent = active ? `HUNTING · ${left}s` : 'CHALLENGE · 10,000 Ryo'; stop.hidden = !active;
   };
   MIRROR['boss-hunt'] = b => mirror(b.arena, document.getElementById('bossHuntMap'));
-  MODS['boss-hunt'] = {
-    challenge: () => { if (!pressOnclick('#p8', 'V2.startBoss()')) toast('Deploy a rested hero first.'); },
-    team: () => go(1),
-    bossinfo: () => { const x = bossInfo(); notice(x.name || 'Guardian', `Hunt ${x.hunt || 1}. ${x.mech} First clear rewards ${x.reward || '—'} Ryo; every fifth hunt also awards a Chunin hero.`); },
-    locked: () => toast('Clear the current hunt to face the next guardian.'),
-    ranking: () => notice('Rankings', 'Daily rankings need a shared leaderboard service and are not available yet.')
-  };
+  MODS['boss-hunt'] = { challenge: () => huntChallenge(), team: () => huntAuto(), ranking: () => huntRankings(), bossinfo: () => {}, locked: () => {} };
 
   /* ---------- Guild and Chat: previews (no backend yet) ---------- */
   ['guild', 'chat'].forEach(k => {
@@ -1165,8 +1214,7 @@
     'dojo-sen': [[56, 96, 330, 144], [826, 140, 1604, 372, { fit: 1 }], { parts: [[858, 374, 1120, 420], [1306, 374, 1584, 420]] }, [858, 420, 1592, 452, { fit: 1 }],
       { parts: [[862, 462, 1110, 650], [1300, 462, 1592, 650]] }, [842, 662, 1600, 830, { fit: 1 }], [72, 138, 806, 842, { fit: 1 }]],
     market: [[60, 120, 500, 235, { fit: 1 }], { flow: '.sbw-mbar' }, { flow: '.sbw-mgrid', zoom: 0.85, cols: 2 }, { flow: '.sbw-mpages' }, { flow: '.sbw-mdet' }],
-    'boss-hunt': [[20, 108, 660, 192, { fit: 1 }], [1015, 195, 1512, 882], [28, 200, 1000, 334, { pan: 0.6 }], [222, 336, 1000, 718, { fit: 1 }], [40, 348, 222, 716],
-      [25, 722, 1000, 886, { pan: 0.7 }], [1015, 888, 1512, 1006], [25, 888, 1000, 1006, { pan: 0.7 }]],
+    'boss-hunt': [[20, 108, 660, 192, { fit: 1 }], { flow: '.sbw-bh-head' }, { flow: '.sbw-bh-arena' }, { flow: '.sbw-bh-team' }, { flow: '.sbw-bh-prize' }, { flow: '.sbw-bh-ranks' }, { flow: '.sbw-bh-mine' }, { flow: '.sbw-bh-sched' }],
     codex: [[20, 108, 960, 200, { fit: 1 }], [20, 208, 292, 726], [305, 210, 1205, 724, { pan: 0.7 }], [1215, 210, 1652, 420], [1215, 425, 1652, 666], [1215, 672, 1652, 906],
       [305, 728, 1205, 906, { pan: 0.7 }]],
     guild: [[208, 205, 978, 524, { pan: 0.7 }], [988, 205, 1515, 524], [208, 530, 978, 706, { pan: 0.7 }], [988, 530, 1515, 706], [25, 712, 506, 1002], [515, 712, 1026, 1002, { pan: 0.7 }],

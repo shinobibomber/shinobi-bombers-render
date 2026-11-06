@@ -695,3 +695,91 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 .sbw-perk-list span{display:flex;flex-direction:column}
 .sbw-perk-list small{color:#9fb3d9}
 #sbwLayer .sbw-mcard .mc-perks i.more{flex:none}
+/* Boss Hunt: live panels inside the artwork's frames */
+#sbwLayer [class*="sbw-bh-"]{box-sizing:border-box;border-radius:10px;background:linear-gradient(180deg,#0b0826,#05041a);font:600 14px Rajdhani,'Arial Narrow',system-ui,sans-serif;color:#dfe6ff}
+#sbwLayer .sbw-bh-head{display:flex;flex-direction:column;justify-content:center;gap:5px;padding:6px 14px}
+#sbwLayer .bh-h{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#sbwLayer .bh-h small{color:#9fb3d9;font-size:12px;letter-spacing:1px}
+#sbwLayer .bh-h h3{margin:0;font:800 23px Rajdhani,sans-serif;line-height:1.05;color:#fff}
+#sbwLayer .bh-state{display:flex;align-items:center;gap:10px}
+#sbwLayer .bh-state em{padding:3px 12px;border-radius:7px;font:800 14px Rajdhani,sans-serif;font-style:normal;letter-spacing:1px}
+#sbwLayer .bh-state em.ready{border:1px solid #ffc13a;color:#ffd257;background:#2a1a05}
+#sbwLayer .bh-state em.run{border:1px solid #ff6a5a;color:#ffd0c8;background:#3a0d0d;animation:bh-pulse 1s ease-in-out infinite}
+@keyframes bh-pulse{50%{box-shadow:0 0 12px #ff6a5a}}
+#sbwLayer .bh-state b{font:800 24px Rajdhani,sans-serif;color:#fff;min-width:46px;text-align:right}
+#sbwLayer .bh-meter{position:relative;height:20px;border-radius:10px;background:#1a1235;overflow:hidden}
+#sbwLayer .bh-meter i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#ff5a3c,#ffb02a);transition:width .4s}
+#sbwLayer .bh-meter span,#sbwLayer .bh-meter b{position:absolute;top:0;line-height:20px;font:800 13px Rajdhani,sans-serif;color:#fff;text-shadow:0 1px 2px #000}
+#sbwLayer .bh-meter span{left:10px}#sbwLayer .bh-meter b{right:10px}
+#sbwLayer .sbw-bh-sched{display:flex;flex-direction:column;gap:6px;padding:8px}
+#sbwLayer .sbw-bh-sched h4{margin:2px 4px;color:#ffd257;font:800 13px Rajdhani,sans-serif;letter-spacing:1px}
+#sbwLayer .bh-day{display:flex;flex-direction:column;padding:6px 10px;border:1px solid #2d3a6a;border-radius:8px;background:#0b1030}
+#sbwLayer .bh-day.on{border-color:#ffc13a;background:linear-gradient(#3a2208,#1c0f04);box-shadow:0 0 10px #ffb02a55}
+#sbwLayer .bh-day small{color:#9fb3d9;font-size:11px}
+#sbwLayer .bh-day b{color:#fff;font:800 17px Rajdhani,sans-serif;line-height:1.1}
+#sbwLayer .bh-day span{color:#b9c4e6;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-bh-arena{overflow:hidden;background:#05030f}
+#sbwLayer .sbw-bh-canvas{display:block;width:100%;height:100%;object-fit:contain}
+#sbwLayer .sbw-bh-prize{display:flex;align-items:center;gap:14px;padding:10px 14px}
+#sbwLayer .bh-pool{display:flex;flex-direction:column;flex:none;min-width:230px}
+#sbwLayer .bh-pool small{color:#ffd257;font:800 14px Rajdhani,sans-serif;letter-spacing:1px}
+#sbwLayer .bh-pool b{display:flex;align-items:center;gap:8px;color:#ffd257;font:800 34px Rajdhani,sans-serif;line-height:1.1;text-shadow:0 0 12px #ffb02a66}
+#sbwLayer .bh-pool span{color:#9fb3d9;font-size:12px}
+#sbwLayer .bh-pool .coin,#sbwLayer .bh-fee .coin{display:inline-block;flex:none;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6b0,#ffc13a 45%,#c47a00);box-shadow:0 0 8px #ffc13a}
+#sbwLayer .bh-chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;flex:1;min-width:0}
+#sbwLayer .bh-chips span{display:flex;flex-direction:column;align-items:center;padding:4px 2px;border:1px solid #2d3a6a;border-radius:7px;background:#0b1030;color:#fff;font:800 14px Rajdhani,sans-serif;white-space:nowrap}
+#sbwLayer .bh-chips span b{color:#9fb3d9;font-size:11px}
+#sbwLayer .bh-chips .p1{border-color:#ffd257;box-shadow:0 0 8px #ffd25766}#sbwLayer .bh-chips .p1 b{color:#ffd257}
+#sbwLayer .bh-chips .p2{border-color:#cfd8ee}#sbwLayer .bh-chips .p3{border-color:#d8925a}
+#sbwLayer .sbw-bh-ranks{display:flex;flex-direction:column;gap:6px;padding:8px 14px}
+#sbwLayer .bh-rh{display:flex;align-items:center;gap:10px}
+#sbwLayer .bh-rh b{color:#ffd257;font:800 15px Rajdhani,sans-serif;letter-spacing:1px}
+#sbwLayer .bh-rh small{flex:1;color:#9fb3d9}
+#sbwLayer .bh-rrow{display:flex;flex-wrap:wrap;gap:6px}
+#sbwLayer .bh-rrow span{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid #2d3a6a;border-radius:8px;background:#0b1030;color:#fff;font-size:14px;white-space:nowrap}
+#sbwLayer .bh-rrow span b{color:#ffd257}#sbwLayer .bh-rrow span em{font-style:normal;color:#9fb3d9}
+#sbwLayer .bh-rrow span.me{border-color:#7ee787}#sbwLayer .bh-rrow .you{margin-left:auto;border-color:#b78aff}
+#sbwLayer .bh-rrow .none{color:#9fb3d9}
+#sbwLayer .sbw-bh-team{display:flex;flex-direction:column;gap:10px;padding:14px 16px}
+#sbwLayer .sbw-bh-team h3{margin:0;color:#ffd257;font:800 24px Rajdhani,sans-serif;letter-spacing:.5px}
+#sbwLayer .bh-note{margin:0;color:#cfd8ee;font-size:15px}
+#sbwLayer .bh-fee{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:2px 10px;padding:10px 12px;border:1px solid #ffb02a66;border-radius:10px;background:#1d1003}
+#sbwLayer .bh-fee span{color:#ffd98a;font:800 13px Rajdhani,sans-serif;letter-spacing:1px}
+#sbwLayer .bh-fee b{display:flex;align-items:center;justify-content:flex-end;gap:8px;color:#ffd257;font:800 24px Rajdhani,sans-serif}
+#sbwLayer .bh-fee small{grid-column:1/-1;color:#d8c49a;font-size:13px}
+#sbwLayer .bh-label{display:flex;justify-content:space-between;color:#fff}
+#sbwLayer .bh-label span{color:#9fb3d9}
+#sbwLayer .bh-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+#sbwLayer .bh-tile{display:flex;flex-direction:column;align-items:center;padding:4px 2px 6px;border:2px solid var(--rc);border-radius:9px;background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 22%,#0b0727),#06041a 70%);min-width:0;transition:box-shadow .2s}
+#sbwLayer .bh-tile canvas{width:100%;height:74px;object-fit:contain}
+#sbwLayer .bh-tile b{color:#fff;font:800 13px Rajdhani,sans-serif}
+#sbwLayer .bh-tile small{color:var(--rc);font:700 11px Rajdhani,sans-serif}
+#sbwLayer .bh-tile.empty{justify-content:center;min-height:110px;border-style:dashed;opacity:.6}
+#sbwLayer .bh-tile.flash{box-shadow:0 0 14px var(--rc)}
+#sbwLayer .bh-go{min-height:60px;font-size:24px!important;letter-spacing:1px}
+#sbwLayer .bh-stop[hidden]{display:none}
+#sbwLayer .bh-rules{display:flex;flex-direction:column;gap:6px;margin:auto 0 0;padding:0;list-style:none}
+#sbwLayer .bh-rules li{padding:6px 10px;border-radius:8px;background:#0b1030;color:#dfe6ff;font-size:14px}
+#sbwLayer .sbw-bh-mine{display:grid;grid-template-columns:repeat(4,1fr);align-items:center;gap:4px 6px;padding:8px 14px}
+#sbwLayer .sbw-bh-mine h4{grid-column:1/-1;margin:0;color:#ffd257;font:800 14px Rajdhani,sans-serif;letter-spacing:1px}
+#sbwLayer .sbw-bh-mine span{display:flex;flex-direction:column;align-items:center;color:#9fb3d9;font-size:12px;text-align:center}
+#sbwLayer .sbw-bh-mine b{color:#fff;font:800 22px Rajdhani,sans-serif}
+@media (prefers-reduced-motion:reduce){#sbwLayer .bh-state em.run{animation:none}}
+/* Boss Hunt dialogs */
+.sbw-rankdlg{max-width:min(620px,94vw)}
+.bh-list{margin:8px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.bh-list li{display:grid;grid-template-columns:44px 1fr auto auto;align-items:center;gap:8px;padding:6px 10px;border:1px solid #2d3a6a;border-radius:8px;background:#0b1030}
+.bh-list li.me{border-color:#7ee787}
+.bh-list b{color:#ffd257}.bh-list span{display:flex;flex-direction:column;min-width:0;overflow:hidden;text-overflow:ellipsis}.bh-list small{color:#9fb3d9}
+.bh-list em{font-style:normal;color:#cfd8ee}.bh-list i{font-style:normal;color:#7ee787;font-weight:800}
+.bh-sub{margin:14px 0 4px;font-size:16px;color:#ffd257}
+/* phone */
+#sbwLayer .sbw-bh-arena.sbw-mflow{aspect-ratio:1200/660}
+#sbwLayer .sbw-bh-sched.sbw-mflow{flex-direction:row;flex-wrap:wrap}
+#sbwLayer .sbw-bh-sched.sbw-mflow h4{flex-basis:100%}
+#sbwLayer .sbw-bh-sched.sbw-mflow .bh-day{flex:1 1 30%}
+#sbwLayer .sbw-bh-prize.sbw-mflow{flex-direction:column;align-items:stretch}
+#sbwLayer .sbw-bh-prize.sbw-mflow .bh-chips{grid-template-columns:repeat(5,minmax(0,1fr))}
+#sbwLayer .sbw-bh-mine.sbw-mflow{grid-template-columns:repeat(2,1fr)}
+#sbwLayer .sbw-bh-ranks.sbw-mflow .bh-rrow .you{margin-left:0}
+#sbwLayer .sbw-bh-team.sbw-mflow .bh-go{font-size:19px!important;white-space:nowrap}

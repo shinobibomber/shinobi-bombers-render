@@ -1,4 +1,4 @@
-/* Summon History lists summoned heroes; Boss Hunt fights with the 5 strongest rested heroes
+/* Summon History lists summoned heroes; Boss Hunt is a paid 10,000 Ryo damage run by the 5 strongest heroes
  * and its panels neither overflow nor cut the artwork's buttons. Isolated fixtures only. */
 const fs = require('node:fs'), path = require('node:path');
 const { withGame } = require('./harness.cjs');
@@ -39,46 +39,73 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     assert.deepEqual(errors, []);
   });
 
+  // Boss Hunt: live panels (no printed placeholders), the 5 strongest battle-ready heroes picked
+  // automatically (even undeployed or out of chakra), a paid 10,000 Ryo entry, a no-chakra damage run,
+  // damage reported to the daily ranking, the prize pool and rankings, and the phone layout.
   await withGame(async ({ p, f, errors, assert }) => {
-    f.holdAdventure = false;
+    f.holdAdventure = false; f.balance = 100000;
     const heroes = Array.from({ length: 8 }, (_, i) => hero('boss-' + i, i % 5, 2 + i * 1.5));
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
+    f.hunt = { others: [{ name: 'KuroSenpai', damage: 42000 }, { name: 'YukiChan', damage: 31000 }], yesterday: { day: '2030-01-01', pool: 18000, winners: [{ rank: 1, name: 'KuroSenpai', wallet: 'Kuro…1111', damage: 99000, prize: 10800 }] } };
     await login(p);
-    await p.evaluate(() => { go(0); Experience.workAll(); });
-    await p.waitForFunction(() => S.h.filter(h => h.on).length === 8);
-    await p.evaluate(() => go(8)); await p.waitForFunction(() => WebsiteDesign.current() === 'boss-hunt');
-    await p.waitForTimeout(300);
-    const strongest = await p.evaluate(() => BattleRoster.list().filter(h => h.on && h.en >= 1).sort((a, c) => c.pw - a.pw).slice(0, 5).map(h => h.id));
-    const panel = await p.evaluate(() => {
-      const fits = el => el.scrollWidth <= el.clientWidth + 1, rect = el => el.getBoundingClientRect();
-      const rows = [...document.querySelectorAll('.sbw-scr.on .sbw-mechrow')], ranks = rect(document.querySelector('.sbw-scr.on .sbw-soonpanel')), viewAll = rect(document.querySelector('.sbw-scr.on [data-sbwid="rk"]'));
-      return { label: document.querySelector('.sbw-scr.on .sbw-cover.sbw-left[style*="1030px"][style*="420px"]')?.textContent, tiles: document.querySelectorAll('.sbw-scr.on .sbw-btile:not(.empty)').length,
-        rows: rows.length, rowsFit: rows.every(fits), rowsSingleLine: rows.every(r => r.scrollHeight <= r.clientHeight + 1), ranksBelowViewAll: ranks.top >= viewAll.bottom - 0.5 };
-    });
-    assert.equal(panel.label, 'Hunt team (5/5)'); assert.equal(panel.tiles, 5, 'five hunt tiles are filled');
-    assert.equal(panel.rows, 4); assert(panel.rowsFit && panel.rowsSingleLine, 'mechanics rows fit on one line each');
-    assert(panel.ranksBelowViewAll, 'the rankings panel no longer cuts the View All button');
-    await p.screenshot({ path: path.join(output, 'boss-hunt-team.png') });
-    await p.evaluate(() => V2.startBoss());
-    await p.waitForFunction(() => /HUNT ACTIVE|IN COMBAT|Hunt in progress/i.test(document.getElementById('p8')?.innerText || ''));
-    const fighting = await p.evaluate(() => [...document.querySelectorAll('#p8 .hunt-hero')].length);
-    assert.equal(fighting, 5, 'the hunt starts with exactly five heroes');
-    const roster = await p.evaluate(ids => ids.map(id => S.h.find(h => h.id === id).pw), strongest);
-    assert.deepEqual(roster, [...roster].sort((a, b) => b - a), 'they are the strongest rested heroes');
+    // Nobody deployed and some heroes out of chakra: the hunt team does not need either.
+    await p.evaluate(() => S.h.filter(h => h.tokenId).forEach((h, i) => { h.on = false; if (i % 2) h.en = 0; }));
+    await p.evaluate(() => go(8)); await p.waitForFunction(() => WebsiteDesign.current() === 'boss-hunt' && document.querySelector('.sbw-scr.on .bh-pool'));
+    const view = await p.evaluate(() => { const sec = document.querySelector('.sbw-scr.on');
+      return { art: [...sec.querySelectorAll('.hs:not([hidden])')].map(e => e.dataset.sbwid), text: sec.innerText, tiles: sec.querySelectorAll('.bh-tile:not(.empty)').length, fit: getComputedStyle(sec.querySelector('.sbw-bh-canvas')).objectFit }; });
+    assert.deepEqual(view.art, ['back'], 'only the Back button remains from the artwork');
+    assert(!/POTENTIAL REWARDS|FIRST-CLEAR|Manage Team|Not yet/i.test(view.text), 'no first-clear reward, fragments or Manage Team');
+    assert.match(view.text, /TODAY'S PRIZE POOL[\s\S]*18,000 Ryo/, 'the prize pool shows Ryo (2 entries × 9,000)');
+    assert.match(view.text, /Auto-select strongest 5/); assert.match(view.text, /CHALLENGE · 10,000 Ryo/);
+    assert.equal(view.tiles, 5, 'five auto-selected heroes'); assert.equal(view.fit, 'contain', 'the whole arena is shown (moon included)');
+    const strongest = await p.evaluate(() => BattleRoster.list().slice().sort((a, c) => c.pw - a.pw).slice(0, 5).map(h => h.id));
+    await p.locator('.sbw-scr.on [data-act="auto"]').click();
+    await p.waitForFunction(() => /^Hunt team: /.test(document.querySelector('.sbw-toast')?.textContent || ''));
+    // Challenge: the confirmation shows the fee; paying starts the hunt with the strongest five.
+    await p.locator('.sbw-scr.on .bh-go').click(); await p.waitForSelector('.sbw-hunt[open]');
+    assert.match(await p.locator('.sbw-hunt').textContent(), /10,000 Ryo[\s\S]*9,000 to today's prize pool · 1,000 burned/);
+    await p.locator('.sbw-hunt [data-k="go"]').click();
+    await p.waitForFunction(() => V2.isBossActive());
+    assert.equal(f.balance, 90000, 'the 10,000 Ryo entrance fee is paid');
+    assert.deepEqual(await p.evaluate(() => V2.bossState().team.map(u => u.id)), strongest, 'the hunt team is the 5 strongest battle-ready heroes');
+    const chakra = await p.evaluate(() => S.h.map(h => h.en));
+    await p.waitForFunction(() => V2.bossState().damage > 0, null, { timeout: 15000 });
+    const later = await p.evaluate(() => S.h.map(h => h.en));
+    assert(later.every((en, i) => en >= chakra[i] - 1e-9), 'the hunt spends no chakra (heroes at 0 chakra still fight)');
+    assert.match(await p.locator('.sbw-scr.on .bh-go').textContent(), /HUNTING · \d+s/);
+    await p.screenshot({ path: path.join(output, 'boss-hunt-fight.png') });
+    // Ending reports the damage; the ranking and my day update.
     await p.evaluate(() => V2.retreat());
+    await p.waitForFunction(() => /You: <b>|You: \d|You: .*\d/.test(document.querySelector('.sbw-scr.on .bh-rrow .you')?.innerHTML || '') && !/not entered/.test(document.querySelector('.sbw-scr.on .bh-rrow .you').textContent), null, { timeout: 15000 });
+    const dealt = f.hunt.entries[0].damage;
+    assert(dealt > 0 && f.hunt.reports.length >= 1, 'the damage was reported to the server');
+    assert.match(await p.locator('.sbw-scr.on .sbw-bh-mine').textContent(), new RegExp('Damage today' + dealt.toLocaleString('en-US')));
+    await p.locator('.sbw-scr.on [data-act="all"]').click(); await p.waitForSelector('.sbw-rankdlg[open]');
+    assert.match(await p.locator('.sbw-rankdlg').textContent(), /KuroSenpai[\s\S]*2030-01-01 winners/, 'View all lists today and yesterday');
+    await p.keyboard.press('Escape');
+    // Phone: stacked panels, a full-width arena and a one-line Challenge button.
+    await p.setViewportSize({ width: 390, height: 844 });
+    await p.waitForFunction(() => document.getElementById('sbwLayer').classList.contains('sbw-phone'));
+    const phone = await p.evaluate(() => { const sec = document.querySelector('.sbw-scr.on'), go = sec.querySelector('.bh-go').getBoundingClientRect(), arena = sec.querySelector('.sbw-bh-arena').getBoundingClientRect();
+      return { sideways: sec.scrollWidth > sec.clientWidth + 1, goOneLine: go.height < 70 && go.width > 300, arena: arena.width > 340 && Math.abs(arena.width / arena.height - 1200 / 660) < 0.05 }; });
+    assert.deepEqual(phone, { sideways: false, goOneLine: true, arena: true });
+    await p.screenshot({ path: path.join(output, 'boss-hunt-phone.png') });
     assert.deepEqual(errors, []);
   });
-  // A running hunt no longer freezes Adventure: the 5 hunt heroes leave the map, the others keep
+  // A running hunt never freezes Adventure: the 5 hunt heroes leave the map, the others keep
   // defeating enemies, and the hunt heroes come back when the hunt ends.
   await withGame(async ({ p, f, errors, assert }) => {
-    f.holdAdventure = false;
+    f.holdAdventure = false; f.balance = 100000;
     const heroes = [4, 4, 4, 4, 4, 3, 3, 3].map((r, i) => hero('hunt-' + i, r, r === 4 ? 13.5 : 10.5));
     heroes.forEach(h => { h.baseStats.sp = h.baseStats.pw; h.baseStats.st = h.baseStats.pw; });
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
     await login(p);
     await p.evaluate(() => { go(0); Experience.workAll(); });
     await p.waitForFunction(() => S.h.filter(h => h.on && h.x >= 0).length === 8);
-    const team = await p.evaluate(() => { S.v2.bestBoss = 400; go(8); V2.startBoss(); go(0); return BattleRoster.list().filter(h => h.on && h.en >= 1).sort((a, c) => c.pw - a.pw).slice(0, 5).map(h => h.id); });
+    await p.evaluate(() => go(8)); await p.waitForFunction(() => WebsiteDesign.current() === 'boss-hunt' && document.querySelector('.sbw-scr.on .bh-go'));
+    await p.locator('.sbw-scr.on .bh-go').click(); await p.waitForSelector('.sbw-hunt[open]'); await p.locator('.sbw-hunt [data-k="go"]').click();
+    await p.waitForFunction(() => V2.isBossActive());
+    const team = await p.evaluate(() => { go(0); return V2.bossState().team.map(u => u.id); });
     assert.equal(team.length, 5);
     await p.evaluate(() => { window.__huntKills = 0; addEventListener('shinobi-enemy-defeated', () => { if (V2.isBossActive()) __huntKills++; }); });
     await p.waitForFunction(() => __huntKills >= 2, null, { timeout: 60000 });
@@ -89,5 +116,5 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     assert.equal(await p.evaluate(() => document.getElementById('p8')?.innerText.includes('Adventure pauses')), false, 'no screen says Adventure pauses');
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: Summon History lists summoned heroes (owned, fused, pending, refunded); Boss Hunt fights with the 5 strongest rested heroes, its panels fit, and Adventure keeps fighting during a hunt.');
+  console.log('PASS: Summon History lists summoned heroes (owned, fused, pending, refunded); Boss Hunt shows only live panels, auto-picks the 5 strongest battle-ready heroes, takes the 10,000 Ryo entry, spends no chakra, reports damage to the daily ranking and prize pool, fits phones, and Adventure keeps fighting during a hunt.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

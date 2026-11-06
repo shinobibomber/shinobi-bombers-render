@@ -20,6 +20,27 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Boss Hunt rankings)**
+
+**✨ New**
+• **Daily Boss Hunt rankings with real Ryo prizes!** Every hunt is a **90-second damage run** against today's guardian. Your total damage for the day ranks you on the leaderboard.
+• **Prize pool:** each entry costs **10,000 Ryo** — **9,000 goes into today's prize pool** and **1,000 is burned**. At **00:00 UTC** the **top 10** share the pool: 1st 30% · 2nd 20% · 3rd 12% · 4th 9% · 5th 7% · 6th 6% · 7th 5% · 8th 4% · 9th 4% · 10th 3%, paid straight to your Ryo balance.
+• **Enter as often as you like** — every hunt's damage adds to your daily total.
+• **A new guardian every day:** Akuma, Yuki Onna, Raijin, Daichi and Orochi take turns.
+
+**🔄 Changes**
+• **No chakra needed** — your **5 strongest battle-ready heroes** fight automatically, even if they're resting or out of chakra. "Manage Team" is now **Auto-select strongest 5**.
+• The old first-clear reward is gone — **Potential Rewards now shows today's prize pool in Ryo** and what each place wins.
+• **Cleaner Boss Hunt screen** with a live damage meter, today's prize pool, the top players, "View all" rankings with yesterday's winners, and your own damage, rank and entries for the day.
+• **Phone layout** — every panel stacks neatly with big buttons.
+
+**🛠️ Fixes**
+• Heroes now stand on the arena floor instead of off the map, and the full arena (including the moon) is visible.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · New purchase split)**
 
 **🔄 Changes**

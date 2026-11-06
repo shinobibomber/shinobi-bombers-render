@@ -108,6 +108,18 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 purchase split (owner request): price = total; purchaseSplit() in gameplay-options/server.cjs
+  gives 80% operations (reward pool income) / 10% treasury / 8% burn / 2% studio; service signs exactly
+  q.studioFee/q.treasury/q.burn (zero skipped). Client texts via purchaseSplitPatches. Summon = 25,000.
+- 2026-11-07 Boss Hunt rankings (owner request): boss-hunt/server.cjs (apply-boss-hunt.cjs after
+  apply-market): hunt-enter = store.purchase product 'hunt' (10,000 total, burn 1,000, prize 9,000;
+  burn-only signed tx), ryo_hunt_entries/days/payouts; hunt-report caps damage at elapsed (≤90 s) ×
+  top-5 battle-ready DPS × 1.1; settleDue (state/board) pays top 10 30/20/12/9/7/6/5/4/4/3 at 00:00 UTC
+  (+5 min, waits for pending fees; no damage → carry). Purchases pause gates hunt-enter; dashboard
+  liabilities include hunt_pool. Client bossHuntPatches: team = 5 strongest battle-ready (no
+  deploy/chakra), startBoss needs window.BossHunt entry, unlimited HP 90-s run, no chakra spend,
+  no local rewards, heroes on the floor. Website BH panels replace the printed controls.
+
 - 2026-11-07 Market UI + offers (owner request): the screen's printed tabs/filters/cards/buttons are
   hidden and replaced by live HTML (website-design.js MK: .sbw-mpanel, .sbw-mbar tabs For Sale/My
   Listings/My Offers, rank buttons, Skills, sort select, search input; .sbw-mgrid cards; .sbw-mdet
