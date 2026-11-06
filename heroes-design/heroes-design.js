@@ -218,7 +218,7 @@
       detail.querySelector('.hero-detail-title').textContent = hero.name;
       detail.querySelector('.hero-detail-copy').textContent = 'Level ' + hero.lv + ' · ' + Number(GameBalance.damage(hero)).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' damage / hit · ' + hero.bm + ' projectiles · ' + hero.rg + ' range';
       const stats = detail.querySelector('.hero-detail-stats'); stats.replaceChildren();
-      for (const [label, value] of [['Power', hero.pw.toFixed(1)], ['Speed', hero.sp.toFixed(1)], ['Stamina', hero.st.toFixed(1)], ['Volley', hero.bm], ['Range', hero.rg], ['Level', hero.lv + '/10']]) { const block = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label; dd.textContent = value; block.append(dt, dd); stats.append(block); }
+      for (const [label, value] of [['Power', hero.pw.toFixed(1)], ['Speed', hero.sp.toFixed(1)], ['Stamina', hero.st.toFixed(1)], ['Volley', hero.bm], ['Range', hero.rg], ['Level', hero.lv + '/5']]) { const block = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label; dd.textContent = value; block.append(dt, dd); stats.append(block); }
       const perks = detail.querySelector('.hero-detail-perks'); perks.replaceChildren();
       const title = document.createElement('h3'); title.textContent = 'Jutsu · ' + hero.pk.length; perks.append(title);
       for (const key of hero.pk) { const p = document.createElement('p'), b = document.createElement('b'), span = document.createElement('span'); b.textContent = PK[key][0]; span.textContent = PK[key][1]; p.append(b, span); perks.append(p); }

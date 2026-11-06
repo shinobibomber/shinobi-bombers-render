@@ -58,7 +58,7 @@
    const note=root.querySelector('.batch-fusion>small');if(note)note.textContent='Up to 25 attempts · failed attempts consume heroes and charge the fee';
    const warning=root.querySelector('.fusion-warning');if(warning)warning.textContent='Each attempt: 3 heroes consumed + 25,000 Ryo + 2% fee, including failures.';
    const btn=root.querySelector('#fuseButton');if(btn)btn.textContent='FUSE · '+rate+'%';
-   const empty=root.querySelector('.fusion-empty');if(empty&&rank===3)empty.textContent='Move three level 10 Elite heroes to Reserve to attempt Legend fusion.';
+   const empty=root.querySelector('.fusion-empty');if(empty&&rank===3)empty.textContent='Move three level 5 Elite heroes to Reserve to attempt Legend fusion.';
   }
   const oldFusion=FusionUI.render;FusionUI.render=function(...args){const result=oldFusion(...args);fusionUI();return result};
   for(const [object,key]of [[DojoDesign,'refresh'],[DojoServices,'open']]){const old=object[key];object[key]=function(...args){const result=old.apply(this,args);refreshSensei();return result};}

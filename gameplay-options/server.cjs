@@ -41,14 +41,37 @@ function creditKills(d,tally,budget,rate,now){
 // Online damage while a client is reporting but this call carries no report (e.g. a roster change):
 // bank it for the next report instead of paying the server's own kill sequence a second time.
 function bankKills(d,budget){d.reportBudget=Math.min(KILL_CARRY,(d.reportBudget||0)+budget*KILL_SLACK)}
-// Top damage per second of the 10 strongest battle-ready heroes, using the battle's own trained
-// stats (GameBalance.recalculateHero: level 1→10 moves each stat from its base to the rank's top),
-// cooldown (rank+1 shots per max(.6,1.6-speed×.05)s) and the best perks (+1 damage, 15% faster).
-// Base stats and server stamina alone under-count trained heroes, so their kills used to queue.
-const STAT_BANDS=[[1,3],[3,6],[6,9],[9,12],[12,15]];
-function teamDps(roster){
- return roster.map(h=>{const [lo,hi]=STAT_BANDS[h.rank]||STAT_BANDS[0],t=Math.max(0,Math.min(1,((Number(h.level)||1)-1)/9)),
-  stat=k=>{const base=Math.max(lo,Math.min(hi,Number(h.baseStats?.[k])||lo));return base+(hi-base)*t};
-  return (h.rank+1)*(Math.max(1,stat('pw'))+1)/(Math.max(.6,1.6-stat('sp')*.05)*.85)}).sort((a,b)=>b-a).slice(0,10).reduce((n,v)=>n+v,0);
+/* Hero training (max level 5). Every level-up is a stored, server-rolled +1: Genin and Chunin gain
+   Power, Jonin/Elite/Legend gain a random stat, and Lv4→5 gives two +1s (random rolls may repeat).
+   A hero's stats are its base (rolled inside its rank's band) plus this bonus, in the browser battle
+   (GameBalance.recalculateHero), in Sensei offline time and in the kill budget alike. */
+const STAT_BANDS=[[1,3],[3,6],[6,9],[9,12],[12,15]],STATS=['pw','sp','st'],MAX_LEVEL=5;
+const TRAINING_STEP=[10000,20000,40000,80000],TRAINING_RANK=[1,1.5,2,2.5,3];
+function trainingPrice(rank,level){return Math.round(TRAINING_STEP[level-1]*TRAINING_RANK[rank])}
+function levelUp(h,rand){
+ const gains={},rolls=h.level+1===MAX_LEVEL?2:1;h.bonus={pw:0,sp:0,st:0,...h.bonus};
+ for(let i=0;i<rolls;i++){const key=h.rank<=1?'pw':STATS[rand(3)];h.bonus[key]++;gains[key]=(gains[key]||0)+1}
+ h.level++;return gains;
 }
+// Heroes trained under the old 10-level system keep up to level 5 and receive the +1s those levels
+// now give. Rolls come from the token id, so normalizing again never changes them.
+function migrateHero(h){
+ if(h.trainingVersion===2)return h;
+ const target=Math.max(1,Math.min(MAX_LEVEL,Math.floor(Number(h.level))||1));let step=0;
+ h.level=1;h.bonus={pw:0,sp:0,st:0};
+ while(h.level<target)levelUp(h,n=>require('node:crypto').createHash('sha256').update(h.tokenId+':training:'+step++).digest()[0]%n);
+ h.trainingVersion=2;return h;
+}
+function trainedStats(h){
+ const lo=(STAT_BANDS[h.rank]||STAT_BANDS[0])[0];
+ return Object.fromEntries(STATS.map(k=>[k,(Number(h.baseStats?.[k])||lo)+(Number(h.bonus?.[k])||0)]));
+}
+// Top damage per second of the 10 strongest battle-ready heroes at their trained stats, with the
+// battle's cooldown (rank+1 shots per max(.6,1.6-speed×.05)s) and the best perks (+1 damage, 15%
+// faster). Base stats alone under-count trained heroes, so their kills used to queue.
+function teamDps(roster){
+ return roster.map(h=>{const s=trainedStats(h);
+  return (h.rank+1)*(Math.max(1,s.pw)+1)/(Math.max(.6,1.6-s.sp*.05)*.85)}).sort((a,b)=>b-a).slice(0,10).reduce((n,v)=>n+v,0);
+}
+Object.assign(module.exports,{MAX_LEVEL,trainingPrice,levelUp,migrateHero,trainedStats});
 module.exports.teamDps=teamDps;module.exports.killReport=killReport;module.exports.creditKills=creditKills;module.exports.bankKills=bankKills;

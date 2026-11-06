@@ -15,6 +15,8 @@ const {rendererPatches}=require('../apply-map-design.cjs');
 for(const [before,after]of rendererPatches){assert.equal(html.split(after).length-1,1,'one exact map presentation hook: '+before);html=html.replace(after,before)}
 const {chatPatches}=require('../apply-chat.cjs');
 for(const [before,after]of chatPatches){assert.equal(html.split(after).length-1,1,'one exact chat client hook: '+before);html=html.replace(after,before)}
+const {trainingPatches}=require('../apply-gameplay-options.cjs');
+for(const [before,after,count]of trainingPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact training hook count: '+before.slice(0,40));html=html.split(after).join(before)}
 const {fusionListPatches}=require('../apply-gameplay-options.cjs');
 for(const [before,after]of fusionListPatches){assert.equal(html.split(after).length-1,1,'one exact fusion list hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
 const {bossTeamPatches}=require('../apply-gameplay-options.cjs');

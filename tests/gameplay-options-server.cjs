@@ -6,13 +6,13 @@ const ids=p=>p.heroes.slice(0,3).map(h=>h.tokenId),originalRandom=crypto.randomI
 function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===100?value:originalRandom(...args);try{return fn()}finally{crypto.randomInt=originalRandom}}
 (async()=>{
  for(const [rank,chance]of [90,80,70,60].entries()){
-  const p=make(5,rank,rank===3?10:1),q=economy.quote(p,'fusion',{heroIds:ids(p)});
+  const p=make(5,rank,rank===3?5:1),q=economy.quote(p,'fusion',{heroIds:ids(p)});
   assert.equal(q.fusion.successPercent,chance);assert.equal(q.total,25500);assert.equal(q.params.fusionRulesVersion,1);
   const success=roll(chance-1,()=>economy.fulfill(p,q));assert.equal(success.result.outputs.length,1);assert.equal(success.profile.heroes.length,3);assert.equal(success.result.outputs[0].rank,rank+1);
   const failure=roll(chance,()=>economy.fulfill(p,q));assert.equal(failure.result.outputs.length,0);assert.equal(failure.profile.heroes.length,2);assert.deepEqual(failure.result.consumed,ids(p));assert.equal(failure.result.fusion.failed,1);assert.equal(failure.result.fusion.totalCharged,25500);
   assert.equal(p.heroes.length,5,'quote/fulfillment do not mutate input');
  }
- assert.throws(()=>economy.quote(make(5,3,9),'fusion',{heroIds:ids(make(5))}),/level 10/);
+ assert.throws(()=>economy.quote(make(5,3,4),'fusion',{heroIds:ids(make(5))}),/level 5/);
  assert.throws(()=>economy.quote(make(4),'fusion',{heroIds:ids(make(4))}),/two heroes/);
  const ready=make(5);ready.battleReady=ids(ready);assert.throws(()=>economy.quote(ready,'fusion',{heroIds:ids(ready)}),/Reserve/);
  const batch=make(8),bq=economy.quote(batch,'fusion',{heroIds:batch.heroes.slice(0,6).map(h=>h.tokenId)});let rolls=[0,99];crypto.randomInt=(...args)=>args.length===1&&args[0]===100?rolls.shift():originalRandom(...args);const partial=economy.fulfill(batch,bq);crypto.randomInt=originalRandom;assert.equal(partial.result.fusion.succeeded,1);assert.equal(partial.result.fusion.failed,1);assert.equal(partial.profile.heroes.length,3);assert.equal(partial.result.fusion.totalCharged,51000);
@@ -40,7 +40,7 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
  assert.equal(economy.quote(full(500),'fusion',{heroIds:ids(full(500))}).product,'fusion','a full collection can still fuse');
  // Adventure kill reports: the server pays the battle's reported kills within the heroes' damage.
  {
-  const team=make(5,4,10);team.heroes.forEach(h=>h.baseStats={pw:15,sp:15,st:15});team.battleReady=team.heroes.map(h=>h.tokenId);const t0=1_900_000_000_000,report=(totals,stage=1,id='session-aaaa-1111')=>({killSession:id,killTotals:totals,killStage:stage});
+  const team=make(5,4,5);team.heroes.forEach(h=>h.baseStats={pw:15,sp:15,st:15});team.battleReady=team.heroes.map(h=>h.tokenId);const t0=1_900_000_000_000,report=(totals,stage=1,id='session-aaaa-1111')=>({killSession:id,killTotals:totals,killStage:stage});
   let d=adventure.advance(undefined,team,t0,true,60,report([0,0,0,0,0,0,0,0]));
   d=adventure.advance(d,team,t0+5000,true,60,report([3,0,1,0,0,0,1,0]));
   assert.equal(d.reportedKills,5,'every reported kill within budget is credited');
@@ -51,7 +51,7 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
   assert.equal(d.pending-paid>=Math.floor(35625*.6*1.15),true,'the Fortune bonus pays 15% more');
   // Fabricated totals are capped by the damage the team could deal, then wait for more budget.
   const before=d.reportedKills;d=adventure.advance(d,team,t0+20000,true,60,report([3,1,1,0,0,0,100000,0]));
-  const capacity=team.heroes.reduce((n,h)=>n+5/(Math.max(.6,1.6-h.baseStats.sp*.05)*.85)*(h.rank+1)*(h.baseStats.pw+1),0)*1.5+4000;
+  const trained=require(path.join(root,'gameplay-options.cjs')).trainedStats,capacity=team.heroes.reduce((n,h)=>n+5/(Math.max(.6,1.6-trained(h).sp*.05)*.85)*(h.rank+1)*(trained(h).pw+1),0)*1.5+4000;
   assert(((d.reportedKills-before)*1625)<=capacity,'a fake diamond flood is limited to the team damage');
   assert(d.reportedKills-before<100000,'most of the fake kills are not paid');
   // Malformed reports fall back to the server's own battle; under-reported stages are floored.
@@ -59,16 +59,49 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
   const floor=adventure.advance({...structuredClone(d),reportedKills:25000},team,t0+25000,true,60,report([3,1,1,0,0,0,100000,0],1));
   assert(floor.map>=251,'a client cannot report stage 1 to dodge the payout taper');
  }
- // Trained heroes: level 10 lifts each stat from its base to the rank's top, so the battle kills far
- // faster than base stats suggest, and fights on after base stamina would be spent. Each sync must
+ // Trained heroes: a Lv5 Genin has +5 Power over its base, so the battle kills far faster than base
+ // stats suggest, and fights on after base stamina would be spent. Each sync must
  // credit every kill made so far, not queue them for later.
  {
-  const team=make(10,0,10);team.heroes.forEach(h=>h.baseStats={pw:1,sp:1,st:1});team.battleReady=team.heroes.map(h=>h.tokenId);
-  const t0=1_900_000_000_000,clientDps=10*3/(1.6-3*.05),report=k=>({killSession:'trained-genin-1',killTotals:[k,0,0,0,0,0,0,0],killStage:1});
+  const team=make(10,0,5);team.heroes.forEach(h=>h.baseStats={pw:1,sp:1,st:1});team.battleReady=team.heroes.map(h=>h.tokenId);
+  const t0=1_900_000_000_000,clientDps=10*(1+5)/(1.6-1*.05),report=k=>({killSession:'trained-genin-1',killTotals:[k,0,0,0,0,0,0,0],killStage:1});
   let d=adventure.advance(undefined,team,t0,true,60,report(0)),behind=0;
   for(let t=1500;t<=210000;t+=1500){const kills=Math.floor(t/1000*clientDps/100);d=adventure.advance(d,team,t0+t,true,60,report(kills));behind=Math.max(behind,kills-(d.reportedKills||0))}
   assert.equal(behind,0,'trained heroes have every kill credited on the sync right after it');
   assert(require(path.join(root,'gameplay-options.cjs')).teamDps(team.heroes)>=clientDps,"the budget covers the battle's trained damage");
  }
- await db.close();console.log('PASS: fusion odds/boundaries, level 10, failure consumption+fees, partial batches, two-hero minimum, persisted idempotent settlement, validated Sensei settings, online/offline thresholds, the 500-hero limit and verified Adventure kill reports.');
+ // Training: max level 5. Genin/Chunin gain +1 Power per level-up, Jonin/Elite/Legend a random +1
+ // (server-rolled), and Lv4→5 gives two +1s. Prices are per step × rank, plus the 2% studio fee.
+ {
+  const go=require(path.join(root,'gameplay-options.cjs')),stats=(values,fn)=>{crypto.randomInt=(...a)=>a.length===1&&a[0]===3?values.shift():originalRandom(...a);try{return fn()}finally{crypto.randomInt=originalRandom}};
+  const hero=(p,id)=>p.heroes.find(h=>h.tokenId===id);
+  for(const rank of [0,1,2,3,4])assert.deepEqual([1,2,3,4].map(l=>go.trainingPrice(rank,l)),[10000,20000,40000,80000].map(n=>n*[1,1.5,2,2.5,3][rank]),'price table for rank '+rank);
+  for(const rank of [0,1]){
+   let p=make(3,rank,1);
+   for(let level=1;level<5;level++){
+    const q=economy.quote(p,'training',{heroId:'hero-0'});
+    assert.equal(q.base,go.trainingPrice(rank,level));assert.equal(q.total,q.base+economy.fee(q.base),'the 2% studio fee is added');
+    const r=economy.fulfill(p,q);p=r.profile;
+    assert.deepEqual(r.result.training,{heroId:'hero-0',level:level+1,gains:{pw:level===4?2:1}},'Genin/Chunin gain Power ('+level+'→'+(level+1)+')');
+   }
+   assert.deepEqual(hero(p,'hero-0').bonus,{pw:5,sp:0,st:0});assert.equal(hero(p,'hero-0').level,5);
+   assert.throws(()=>economy.quote(p,'training',{heroId:'hero-0'}),/below level 5/,'level 5 is the maximum');
+  }
+  let p=make(3,2,1);const gains=[];
+  for(const rolls of [[1],[2],[0],[1,1]]){const r=stats(rolls,()=>economy.fulfill(p,economy.quote(p,'training',{heroId:'hero-0'})));p=r.profile;gains.push(r.result.training.gains)}
+  assert.deepEqual(gains,[{sp:1},{st:1},{pw:1},{sp:2}],'Jonin+ gain a random stat; both Lv5 rolls may land on the same stat');
+  assert.deepEqual(hero(p,'hero-0').bonus,{pw:1,sp:3,st:1});
+  const elite=make(3,3,4),split=stats([0,2],()=>economy.fulfill(elite,economy.quote(elite,'training',{heroId:'hero-0'})));
+  assert.deepEqual(split.result.training.gains,{pw:1,st:1},'the two Lv5 rolls may land on different stats');
+  // An order quoted before the hero reached level 5 never trains past it.
+  const late=make(3,0,4),order=economy.quote(late,'training',{heroId:'hero-0'});const done=economy.fulfill(late,order).profile;
+  const again=economy.fulfill(done,order);assert.equal(hero(again.profile,'hero-0').level,5);assert.equal(again.result.training,undefined);
+  // Heroes trained under the old 10-level system: kept up to Lv5 with the +1s those levels now give.
+  const old=economy.normalizeProfile({dojo:0,heroes:[{tokenId:'old-jonin',rank:2,level:7,name:'J',baseStats:{pw:7,sp:7,st:7}},{tokenId:'old-genin',rank:0,level:3,name:'G',baseStats:{pw:2,sp:2,st:2}},{tokenId:'new-genin',rank:0,level:1,name:'N',baseStats:{pw:2,sp:2,st:2}},{tokenId:'old-elite',rank:3,level:10,name:'E',baseStats:{pw:10,sp:10,st:10}}]});
+  const j=hero(old,'old-jonin');assert.equal(j.level,5);assert.equal(j.bonus.pw+j.bonus.sp+j.bonus.st,5,'a Lv7 Jonin becomes Lv5 with five +1s');
+  assert.deepEqual(economy.normalizeProfile(structuredClone(old)).heroes,old.heroes,'converted rolls never change on a later read');
+  assert.deepEqual(hero(old,'old-genin').bonus,{pw:2,sp:0,st:0});assert.deepEqual(hero(old,'new-genin').bonus,{pw:0,sp:0,st:0});assert.equal(hero(old,'old-elite').level,5,'a Lv10 Elite becomes a fusion-ready Lv5');
+  assert.deepEqual(go.trainedStats(j),{pw:7+j.bonus.pw,sp:7+j.bonus.sp,st:7+j.bonus.st},'battle stats are base + training');
+ }
+ await db.close();console.log('PASS: fusion odds/boundaries, level 5 Elites, training (+1 Power / random +1, double at Lv5, prices, conversion), failure consumption+fees, partial batches, two-hero minimum, persisted idempotent settlement, validated Sensei settings, online/offline thresholds, the 500-hero limit and verified Adventure kill reports.');
 })().catch(e=>{crypto.randomInt=originalRandom;console.error(e);process.exitCode=1});

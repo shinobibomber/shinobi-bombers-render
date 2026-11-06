@@ -108,6 +108,15 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-06 training rework (owner request): max level 5; each level-up is a stored, server-rolled
+  +1 (`hero.bonus`): Genin/Chunin +1 Power, Jonin+ a random stat, Lv4→5 two +1s. Price = [10k,20k,
+  40k,80k][level-1] × rank [1,1.5,2,2.5,3] + 2% fee. Rules live in gameplay-options/server.cjs
+  (trainingPrice/levelUp/migrateHero/trainedStats); economy.cjs/adventure.cjs patches in
+  apply-gameplay-options.cjs. Old heroes convert on read (capped at 5, deterministic rolls from token
+  id, `trainingVersion:2`). Client: exported `trainingPatches` (stats = base + bonus, prices, x/5,
+  Lv 5 Elite fusion, gain toast), reversed in preservation. Sensei offline battles and teamDps use
+  trained stats; the rewards guard replays Lv5 teams. Tests: training.cjs, gameplay-options-server.
+
 - 2026-11-04 SOL gas protection: `transaction-safety/gas-safety.js` is shared between
   the native wallet and server via `apply-transaction-safety.cjs` (last in unpack).
   It verifies exact-message fees, missing ATA rent/native create costs and a system-account

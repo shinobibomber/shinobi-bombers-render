@@ -20,6 +20,25 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 6, 2026 · Training rework)**
+
+**🔄 Changes**
+• **Max level is now 5** — every level-up gives a real, permanent +1 stat:
+  – **Genin & Chunin:** +1 Power each level.
+  – **Jonin, Elite & Legend:** +1 to a random stat (Power, Speed or Stamina).
+  – **Lv 4 → 5 gives two +1s** (random rolls can land on the same stat).
+• **New training prices** — Lv1→2 10,000 · Lv2→3 20,000 · Lv3→4 40,000 · Lv4→5 80,000 Ryo, × Genin 1 / Chunin 1.5 / Jonin 2 / Elite 2.5 / Legend 3 (plus the usual 2% studio fee).
+• **See what you gained** — after training, a message shows exactly what your hero got, e.g. "Lv 3 · +1 Speed".
+• **Elite → Legend fusion** now needs three **level 5** Elites.
+• Trained stats now also count during Sensei offline grinding and toward real-time rewards.
+
+**📦 Your existing heroes**
+• Heroes above level 5 are now level 5, and every trained hero keeps the +1s its levels give under the new system. No action needed.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 4, 2026 · Gas fee protection)**
 
 **🛠️ Fixes**
