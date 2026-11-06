@@ -18,13 +18,13 @@ const login = async p => {
     // Event card over the printed banner, with the live supply.
     await p.waitForFunction(() => /18 \/ 20 left/.test(document.querySelector('.sbw-scr.on .sbw-boxcard em')?.textContent || ''), null, { timeout: 15000 });
     const card = await p.locator('.sbw-scr.on .sbw-boxcard').textContent();
-    assert.match(card, /MYTHIC NFT BOX[\s\S]*Tsukiyomi 7★ · 10% off[\s\S]*1 SOL · 18 \/ 20 left/);
+    assert.match(card, /MYTHIC NFT BOX[\s\S]*Mythic Tsukiyomi · 10% off[\s\S]*1 SOL · 18 \/ 20 left/);
     await p.screenshot({ path: path.join(output, 'mythic-box-home.png') });
     // Pressing the event opens the box: description, perks, supply and price.
     await p.locator('.sbw-scr.on [data-sbwid="ev"]').click(); await p.waitForSelector('.sbw-boxdlg[open]');
     await p.waitForFunction(() => /18 of 20 left/.test(document.querySelector('.sbw-boxdlg')?.textContent || ''));
     const text = (await p.evaluate(() => document.querySelector('.sbw-boxdlg').innerText)).replace(/\s+/g, ' ');
-    for (const re of [/LIMITED MYTHIC NFT BOX/, /EXCLUSIVE INITIAL INVESTOR OFFER/, /7-STAR MYTHIC HERO \+ MYTHIC AURA/, /Tsukiyomi ?★★★★★★★/, /10% DISCOUNT ON ALL IN-GAME PURCHASES/,
+    for (const re of [/LIMITED MYTHIC NFT BOX/, /EXCLUSIVE INITIAL INVESTOR OFFER/, /MYTHIC HERO \+ MYTHIC AURA/, /Mythic hero · Tsukiyomi/, /10% DISCOUNT ON ALL IN-GAME PURCHASES/,
       /Included: Summon, Fusion, Dojo, Sensei, Training/, /Not included: Marketplace transactions, Boss Hunt entrance fee/, /LIMITED SUPPLY · 20 PCS ONLY/, /◎ 1 SOL/, /Max 2 per wallet · a 2nd box is 1\.5 SOL/, /Solana Devnet/, /MINT NOW/])
       assert.match(text, re);
     assert.equal(await p.evaluate(() => S.h.some(h => h.r === 5)), false);

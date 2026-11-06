@@ -1,7 +1,7 @@
 export interface Configuration {minAmount?:number;maxAmount?:number;withdrawalMinimum?:number;withdrawalCooldownMs?:number;studioFeeBps?:number;decimals?:number;network?:string;mint?:string}
 export interface Transaction {request_id?:string;signature?:string;amount:number|string;gross?:number|string;net?:number|string;studio_fee?:number|string;created?:number|string;status?:string;quote?:{title:string;studioFee:number;treasury:number;burn:number;params?:{quantity?:number}}}
 export interface Chest {pending:number;pool:number;claimed:number;credited?:number;rewardRatePercent:number;nextRateAt:number|null;map:number;kills:number;senseiActive:boolean;offlineSeconds:number;offlineCapHours:number}
-interface Ledger {authenticated:boolean;account:string|null;balance:number;busy:boolean;configuration:Configuration|null;purchases:Transaction[];withdrawals:Transaction[];deposits:Transaction[];serverTime:number;nextWithdrawalAt:number;message:string}
+interface Ledger {authenticated:boolean;account:string|null;balance:number;bonus?:number;busy:boolean;configuration:Configuration|null;purchases:Transaction[];withdrawals:Transaction[];deposits:Transaction[];serverTime:number;nextWithdrawalAt:number;message:string}
 interface Wallet {account:string|null;tokenBalance:string|null;busy:boolean;verified:boolean;message:string}
 export interface Snapshot extends Ledger {page:number;mode:number;loading:boolean;login:boolean;wallet:Wallet;chest:Chest|null;chestBusy:boolean;chestMessage:string;now:number;pendingDeposits:number|null;muted:boolean;online:string;community:{label:string;url:string|null}[]}
 declare const RyoPayments:{state:Ledger;refresh:()=>Promise<unknown>;deposit:(n:number)=>Promise<unknown>;withdraw:(n:number)=>Promise<{withdrawal:{status:string}} >};

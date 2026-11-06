@@ -39,10 +39,40 @@ async function poses() {
   return out;
 }
 
+/* ---------- 2a. Movement rig: a smooth displacement warp of the exact pose (no cut seams) ----------
+ * Legs: weight grows from the hip line to the feet; the left and right halves (soft blend across the
+ * centre) lift and stride in opposite phase, so the hero steps. Hair and the cape hem sway with a lag.
+ * Inverse-mapped, alpha-premultiplied bilinear sampling keeps the edges clean. */
+const smooth = (a, b, v) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+async function warpPose(pose, w) {
+  const pad = 16, { data, info } = await sharp(pose.buffer).extend({ top: pad, left: pad, right: pad, bottom: 0, background: { r: 0, g: 0, b: 0, alpha: 0 } }).raw().toBuffer({ resolveWithObject: true });
+  const W = info.width, H = info.height, out = Buffer.alloc(W * H * 4), cx = pose.pivot[0] + pad, top = pad, body = pose.height, half = pose.width / 2;
+  const hip = top + body * 0.6, hemTop = top + body * 0.52, hemBottom = top + body * 0.92;
+  const sample = (x, y, acc) => {
+    const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
+    for (const [xx, yy, wt] of [[x0, y0, (1 - fx) * (1 - fy)], [x0 + 1, y0, fx * (1 - fy)], [x0, y0 + 1, (1 - fx) * fy], [x0 + 1, y0 + 1, fx * fy]]) {
+      if (xx < 0 || yy < 0 || xx >= W || yy >= H || !wt) continue;
+      const i = (yy * W + xx) * 4, a = data[i + 3] * wt; acc[0] += data[i] * a; acc[1] += data[i + 1] * a; acc[2] += data[i + 2] * a; acc[3] += a;
+    }
+  };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const leg = smooth(hip, top + body, y), left = 1 - smooth(cx - 7, cx + 7, x), right = 1 - left;
+    const lift = (w.lift?.[0] || 0) * left + (w.lift?.[1] || 0) * right, stride = (w.stride?.[0] || 0) * left + (w.stride?.[1] || 0) * right;
+    const hem = smooth(hemTop, hemBottom, y) * (1 - smooth(hemBottom, top + body, y)) * smooth(half * 0.25, half, Math.abs(x - cx));
+    const hair = (1 - smooth(top + body * 0.22, top + body * 0.5, y)) * smooth(half * 0.2, half * 0.9, Math.abs(x - cx));
+    const dx = stride * leg + (w.hem || 0) * hem + (w.hair || 0) * hair, dy = -lift * leg;
+    const acc = [0, 0, 0, 0]; sample(x - dx, y - dy, acc);
+    const o = (y * W + x) * 4;
+    if (acc[3] > 0.5) { out[o] = Math.round(acc[0] / acc[3]); out[o + 1] = Math.round(acc[1] / acc[3]); out[o + 2] = Math.round(acc[2] / acc[3]); out[o + 3] = Math.min(255, Math.round(acc[3])); }
+  }
+  return { buffer: await sharp(out, { raw: { width: W, height: H, channels: 4 } }).png().toBuffer(), width: W, height: H, bodyHeight: body, pivot: [cx, H] };
+}
+
 /* ---------- 2. Frame renderer: an exact pose, transformed about its foot pivot ---------- */
 const svgBuf = svg => Buffer.from(svg);
 async function renderFrame(pose, t = {}) {
-  const k = BODY / pose.height, sx = t.sx || 1, sy = t.sy || 1;
+  if (t.warp) pose = await warpPose(pose, t.warp);
+  const k = BODY / (pose.bodyHeight || pose.height), sx = t.sx || 1, sy = t.sy || 1;
   const w = Math.max(1, Math.round(pose.width * k * sx)), h = Math.max(1, Math.round(pose.height * k * sy));
   let img = await sharp(pose.buffer).resize(w, h, { kernel: 'lanczos3' }).png().toBuffer();
   let piv = [pose.pivot[0] * w / pose.width, h];
@@ -195,8 +225,11 @@ function motions(trail) {
   const side = d => d === 'left' ? -1 : d === 'right' ? 1 : 0;
   const walk = (d, run) => Array.from({ length: 8 }, (_, i) => {
     const t = i / 8, bounce = Math.abs(Math.sin(t * TAU)), contact = 1 - bounce, f = side(d);
-    return { dy: -(run ? 6 : 3) * bounce, sy: 1 - (run ? 0.045 : 0.022) * contact, sx: 1 + (run ? 0.02 : 0.01) * contact,
-      rot: (f ? f * (run ? 7 : 2.5) : 0) + (run ? 3 : 2) * Math.sin(t * TAU) * (f ? 0.5 : 1) };
+    const p = Math.sin(t * TAU), lift = run ? 16 : 9, stride = f ? (run ? 15 : 9) : 0, lag = Math.sin(t * TAU - 0.9);
+    // Opposite legs lift (and, seen from the side, swing fore/aft); hair and cape trail the motion.
+    const warp = { lift: [lift * Math.max(0, p), lift * Math.max(0, -p)], stride: [stride * p * (f || 1), -stride * p * (f || 1)], hair: -(f || 1) * (run ? 7 : 4) * (f ? Math.abs(lag) : lag), hem: (run ? 5 : 3) * lag };
+    return { warp, dy: -(run ? 6 : 3) * bounce, sy: 1 - (run ? 0.03 : 0.015) * contact, sx: 1 + (run ? 0.015 : 0.008) * contact,
+      rot: (f ? f * (run ? 7 : 2.5) : 0) + (run ? 2 : 1.2) * p * (f ? 0.5 : 1) };
   });
   const attack = d => {
     const f = side(d) || 1, v = side(d) === 0;
@@ -209,7 +242,7 @@ function motions(trail) {
     });
   };
   const anim = {
-    idle: Array.from({ length: 8 }, (_, i) => { const b = Math.sin(i / 8 * TAU); return { sy: 1 + .014 * b, sx: 1 - .007 * b, rot: .5 * Math.sin(i / 8 * TAU + .6) }; }),
+    idle: Array.from({ length: 8 }, (_, i) => { const b = Math.sin(i / 8 * TAU); return { warp: { hair: 3.5 * Math.sin(i / 8 * TAU + .5), hem: 2 * Math.sin(i / 8 * TAU + 1.2) }, sy: 1 + .014 * b, sx: 1 - .007 * b, rot: .4 * Math.sin(i / 8 * TAU + .6) }; }),
     walk_front: walk('front'), walk_left: walk('left'), walk_right: walk('right'), walk_back: walk('back'),
     run_front: walk('front', true), run_left: walk('left', true), run_right: walk('right', true), run_back: walk('back', true),
     attack_front: attack('front'), attack_left: attack('left'), attack_right: attack('right'), attack_back: attack('back'),
@@ -227,7 +260,7 @@ const POSE_OF = name => /_(front|left|right|back)$/.exec(name)?.[1] || 'front';
 async function build() {
   fs.rmSync(OUT, { recursive: true, force: true });
   const meta = {
-    version: 1, hero: { id: 13, key: 'tsukiyomi', name: 'Tsukiyomi', title: 'Mythic Shinobi', rarity: 'Mythic', rank: 5, stars: 7, theme: 'Lunar / Celestial / Void' },
+    version: 1, hero: { id: 13, key: 'tsukiyomi', name: 'Tsukiyomi', title: 'Mythic Shinobi', rarity: 'Mythic', rank: 5, theme: 'Lunar / Celestial / Void' },
     sources: Object.fromEntries(Object.entries(SOURCES).map(([k, f]) => [k, { file: 'reference/' + f, sha256: crypto.createHash('sha256').update(fs.readFileSync(path.join(REF, f))).digest('hex') }])),
     frame: { width: CELL, height: CELL, anchor: FOOT, format: 'PNG RGBA', displaySizes: [32, 48, 64] },
     character: {}, previews: {}, animations: {}, skills: {}, aura: {}

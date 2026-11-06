@@ -1,4 +1,4 @@
-/* Tsukiyomi, the 7-star Mythic Shinobi (rank 5). Rendering only: the hero's frames, his existing
+/* Tsukiyomi, the Mythic Shinobi (rank 5). Rendering only: the hero's frames, his existing
    Mythic Aura and his skill effects replace the shared art for Mythic heroes. Damage, chakra,
    rewards and collisions stay with the game's own rules (Legend's ultimate rules apply).
    Assets and metadata: assets/mythic-hero/ (built by mythic-hero/tools/build-assets.cjs). */
@@ -11,7 +11,7 @@
   let meta = null, shotSerial = 0, baseBlit = null, previousHeroFrame = null;
   const AURA_KEY = 'sb-mythic-aura';
   const api = window.MythicHero = {
-    loaded: false, ready: null, source: null, RANK: MYTHIC, STARS: 7,
+    loaded: false, ready: null, source: null, RANK: MYTHIC,
     isMythic, heroFrame, drawPortrait, portraitFrame, effectFrame, frameInfo, emote,
     get auraEnabled() { try { return localStorage.getItem(AURA_KEY) !== 'off'; } catch { return true; } },
     setAura(on) { try { localStorage.setItem(AURA_KEY, on ? 'on' : 'off'); } catch {} auraCache.clear(); dispatchEvent(new CustomEvent('mythic-aura-changed', { detail: { on: !!on } })); },
@@ -44,7 +44,7 @@
   }, error => { assets = null; throw error; }));
   const need = () => { if (!api.assetsReady) api.preload().catch(error => console.error('Tsukiyomi art could not be loaded:', error)); return api.assetsReady; };
   api.ready = sprites.ready = Promise.all([previousReady, metadata]).then(([, source]) => {
-    if (source.version !== 1 || source.hero.rank !== MYTHIC || source.hero.stars !== 7) throw new Error('Unexpected Tsukiyomi metadata.');
+    if (source.version !== 1 || source.hero.rank !== MYTHIC) throw new Error('Unexpected Tsukiyomi metadata.');
     meta = api.source = source;
     previousHeroFrame = sprites.heroFrame;
     sprites.heroFrame = DesignModels.heroFrame = function (hero, ...args) { return isMythic(hero) ? heroFrame(hero, ...args) : previousHeroFrame(hero, ...args); };

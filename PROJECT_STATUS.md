@@ -108,6 +108,12 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Starter pack / whitepaper / Tsukiyomi motion (owner request): STARTER_PACK=on grants once 15
+  heroes (non-NFT starter Tsukiyomi) + 10M starter Ryo (ryo_accounts.bonus; spend-anywhere when it covers
+  the price, never withdrawn, no on-chain tx, no pool income; offers keep their pot) — starter-pack/README.md.
+  /whitepaper = website/whitepaper.html (site-server route; Tools link; home News). Tsukiyomi walk/run/idle
+  use a displacement-warp rig (legs step, hair/cape sway). Mythic shows no star count anywhere.
+
 - 2026-11-07 Limited Mythic NFT Box (owner request; mythic-box/README.md): home EVENT card + dialog; Devnet;
   20 boxes, 1 SOL then 1.5 SOL, 2 per wallet, SOL to RYO_REVENUE_WALLET. One atomic server-built tx (player
   pays + Token-2022 NFT w/ metadata, authority removed, memo), treasury+mint sign, player signs last

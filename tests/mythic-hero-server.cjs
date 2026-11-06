@@ -60,7 +60,7 @@ function rpc() {
   let r = await mythic.sync(store, alice, conn, { env });
   assert.deepEqual([r.enabled, r.mints], [true, [m1]], 'only the configured box NFT (amount 1, 0 decimals)');
   let [t] = await mythicOf(alice);
-  assert.deepEqual([t.tokenId, t.name, t.nft.mint, t.mythic, t.stars, t.level, t.perks.length], ['mythic-' + m1, 'Tsukiyomi', m1, 'tsukiyomi', 7, 1, 6]);
+  assert.deepEqual([t.tokenId, t.name, t.nft.mint, t.mythic, 'stars' in t, t.level, t.perks.length], ['mythic-' + m1, 'Tsukiyomi', m1, 'tsukiyomi', false, 1, 6]);
   assert(['pw', 'sp', 'st'].every(k => t.baseStats[k] >= 15 && t.baseStats[k] <= 18), 'Mythic base stats roll 15–18');
   assert.equal(gameplay.trainedStats({ rank: 5, baseStats: {}, bonus: {} }).pw, 15, 'Mythic stat band starts at 15');
   assert.equal(gameplay.trainingPrice(5, 1), gameplay.trainingPrice(4, 1), 'Mythic trains at Legend prices');

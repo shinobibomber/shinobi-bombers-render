@@ -90,6 +90,9 @@ const server = http.createServer((req, res) => {
     if (req.method === 'HEAD') return res.end();
     fs.createReadStream(path.join(ADMIN_DIR, file)).on('error', () => res.destroy()).pipe(res); return;
   }
+  // The whitepaper (website/whitepaper.html) at a clean URL, with or without the game installed.
+  if (name === '/whitepaper/' || name === '/whitepaper.html') { res.writeHead(308, { Location: '/whitepaper' + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
+  if (name === '/whitepaper') return serveSite(req, res, '/whitepaper.html').catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   if (game) {
     if (GAME_ROOT_PATHS.has(name)) return game.listener(req, res);
     if (name === '/') { res.writeHead(302, { Location: MOUNT + '/' + url.search, 'Cache-Control': 'no-store', ...SITE_HEADERS }); return res.end(); }

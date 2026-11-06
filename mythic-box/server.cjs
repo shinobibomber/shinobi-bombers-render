@@ -23,7 +23,7 @@ function config(env = process.env) {
   return { supply: Math.floor(num(env.MYTHIC_BOX_SUPPLY, 20)), first: Math.round(num(env.MYTHIC_BOX_PRICE_SOL, 1) * LAMPORTS),
     second: Math.round(num(env.MYTHIC_BOX_SECOND_SOL, 1.5) * LAMPORTS), perWallet: Math.floor(num(env.MYTHIC_BOX_MAX_PER_WALLET, 2)) };
 }
-const PERKS = ['7-star Mythic hero: Tsukiyomi', 'Mythic Aura', '10% off Summon, Fusion, Dojo, Sensei and Training (not Market trades or the Boss Hunt entry)', 'Exclusive NFT holder tier'];
+const PERKS = ['Mythic hero: Tsukiyomi', 'Mythic Aura', '10% off Summon, Fusion, Dojo, Sensei and Training (not Market trades or the Boss Hunt entry)', 'Exclusive NFT holder tier'];
 const sol = lamports => Number(lamports) / LAMPORTS;
 const priceFor = (cfg, owned) => owned === 0 ? cfg.first : cfg.second;
 const metadataUri = (origin, serial) => String(origin || '').replace(/\/$/, '') + '/play/assets/mythic-box/metadata/box-' + serial + '.json';

@@ -15,26 +15,28 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
 
 (async () => {
   await withGame(async ({ p, f, errors, assert }) => {
-    f.holdAdventure = false; f.balance = 500000;
+    f.holdAdventure = false; f.balance = 500000; f.bonus = 10000000; // test-server starter Ryo
     const tsukiyomi = hero('mythic-' + MINT, 5, 16, { name: 'Tsukiyomi', level: 2, mythic: 'tsukiyomi', stars: 7, nft: { mint: MINT }, baseStats: { pw: 16, sp: 15, st: 17 } });
     const heroes = [tsukiyomi, hero('legend-1', 4, 13), hero('elite-1', 3, 10), hero('jonin-1', 2, 7), hero('genin-1', 0, 2)];
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
     await login(p);
     // Only the small metadata loads up front; the art waits for a Mythic hero.
-    assert(await p.evaluate(() => MythicHero.loaded && MythicHero.source.hero.stars === 7));
+    assert(await p.evaluate(() => MythicHero.loaded && MythicHero.source.hero.rarity === 'Mythic'));
+    // Starter Ryo adds to what can be spent (header), never to what can be withdrawn.
+    await p.waitForFunction(() => /10,500,000/.test(document.querySelector('#sbwLayer')?.textContent || ''), null, { timeout: 15000 });
+    assert.equal(await p.evaluate(() => [RyoPayments.state.balance, RyoPayments.state.bonus, GameCurrency.available()].join()), '500000,10000000,10500000');
     await p.evaluate(() => go(1)); await p.waitForFunction(() => WebsiteDesign.current() === 'heroes' && document.querySelector('.sbw-scr.on .sbw-hcard.mythic'));
     await p.waitForFunction(() => MythicHero.assetsReady, null, { timeout: 20000 });
     const card = await p.locator('.sbw-scr.on .sbw-hcard.mythic').textContent();
-    assert.match(card, /MYTHIC★★★★★★★/, 'the Mythic card shows exactly seven stars');
-    assert(!/★{8}/.test(card)); assert.match(card, /NFT/); assert.match(card, /Tsukiyomi[\s\S]*Dragon Slash/);
+    assert.match(card, /MYTHIC/); assert(!/★/.test(card), 'Mythic shows no star count'); assert.match(card, /NFT/); assert.match(card, /Tsukiyomi[\s\S]*Dragon Slash/);
     await p.locator('.sbw-scr.on .sbw-hcard.mythic .sbw-hc-name').click();
     await p.waitForSelector('.sbw-scr.on .sbw-myth');
     const det = await p.evaluate(() => { const d = document.querySelector('.sbw-scr.on .sbw-hd2');
       return { text: d.innerText.replace(/\s+/g, ' '), sell: d.querySelector('[data-k="sell"]').disabled, rank: d.querySelector('.sbw-h2-rank').textContent, train: d.querySelector('[data-k="train"]').textContent.replace(/\s+/g, ' ') }; });
     assert.equal(det.rank, 'MYTHIC');
-    assert.match(det.text, /★★★★★★★ Exclusive Mythic Shinobi/i);
+    assert.match(det.text, /MYTHIC Exclusive Mythic Shinobi/i); assert(!/★/.test(det.text));
     assert.match(det.text, /NFT verified · TsuK…1111/, 'the box NFT is shown');
-    for (const skill of ['Dragon Slash', 'Void Shuriken', 'Raijin Field', '★ Dragon Ascension']) assert(det.text.includes(skill), skill + ' listed');
+    for (const skill of ['Dragon Slash', 'Void Shuriken', 'Raijin Field', '⚡ Dragon Ascension']) assert(det.text.includes(skill), skill + ' listed');
     assert.match(det.text, /PERKS 6 \/ 6/, 'six perks');
     assert.equal(det.sell, true); assert.match(det.text, /NFT ONLY/, 'traded only as the NFT');
     assert.match(det.train, /60,000/, 'Lv 2 → 3 training at the Legend price (20,000 × 3)');
@@ -89,5 +91,5 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     await p.screenshot({ path: path.join(output, 'mythic-phone.png') });
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: Tsukiyomi shows as a 7-star Mythic NFT hero (card, details, aura switch, Check NFT, skills, NFT-only selling, Legend training price), uses his own front/side/back/left art, aura and skill effects, plays in Adventure and Boss Hunt, and fits phones.');
+  console.log('PASS: Tsukiyomi shows as a Mythic NFT hero (no star count) (card, details, aura switch, Check NFT, skills, NFT-only selling, Legend training price), uses his own front/side/back/left art, aura and skill effects, plays in Adventure and Boss Hunt, and fits phones.');
 })().catch(e => { console.error(e); process.exit(1); });

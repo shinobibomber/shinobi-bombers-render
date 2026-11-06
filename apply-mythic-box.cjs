@@ -25,9 +25,9 @@ function replaceCount(text, [before, after, count = 1], label) {
 }
 function metadata(serial, supply) {
   const base = SITE.replace(/\/$/, '') + '/play/assets/mythic-box/';
-  return { name: 'Mythic NFT Box #' + serial, symbol: 'SBBOX', description: `Shinobi Bombers Limited Mythic NFT Box (${serial} of ${supply}). Exclusive initial investor offer: unlocks the 7-star Mythic hero Tsukiyomi with the Mythic Aura, a 10% discount on in-game purchases (Summon, Fusion, Dojo, Sensei, Training; not Marketplace transactions or the Boss Hunt entrance fee) and the exclusive NFT holder tier.`,
+  return { name: 'Mythic NFT Box #' + serial, symbol: 'SBBOX', description: `Shinobi Bombers Limited Mythic NFT Box (${serial} of ${supply}). Exclusive initial investor offer: unlocks the Mythic hero Tsukiyomi with the Mythic Aura, a 10% discount on in-game purchases (Summon, Fusion, Dojo, Sensei, Training; not Marketplace transactions or the Boss Hunt entrance fee) and the exclusive NFT holder tier.`,
     image: base + 'box.png', external_url: SITE.replace(/\/$/, '') + '/play/',
-    attributes: [{ trait_type: 'Box', value: serial + ' of ' + supply }, { trait_type: 'Hero', value: 'Tsukiyomi (7-star Mythic)' }, { trait_type: 'Aura', value: 'Mythic Aura' }, { trait_type: 'Perk', value: '10% in-game discount' }],
+    attributes: [{ trait_type: 'Box', value: serial + ' of ' + supply }, { trait_type: 'Hero', value: 'Tsukiyomi (Mythic)' }, { trait_type: 'Aura', value: 'Mythic Aura' }, { trait_type: 'Perk', value: '10% in-game discount' }],
     properties: { category: 'image', files: [{ uri: base + 'box.png', type: 'image/png' }] } };
 }
 function applyMythicBox(appDir = path.join(__dirname, 'app')) {

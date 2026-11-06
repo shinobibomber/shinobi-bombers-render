@@ -1,4 +1,4 @@
-/* Tsukiyomi, the 7-star Mythic Shinobi (rank 5, Limited NFT Box): build step.
+/* Tsukiyomi, the Mythic Shinobi (rank 5, Limited NFT Box): build step.
  * Copies the hero's assets and renderer (mythic-hero/) to app/public/assets/mythic-hero/, adds the
  * on-chain ownership module (app/server/mythic-hero.cjs) and its table, and teaches the game a sixth
  * rank: Mythic stats 15–18, Legend's ultimate and training prices, violet colours, the NFT link on
@@ -73,7 +73,7 @@ function applyMythicHero(appDir = path.join(__dirname, 'app')) {
     html = html.replace('</head>', marker + '\n' + script + '\n</head>');
   }
   fs.writeFileSync(index, html);
-  console.log('Mythic hero applied: Tsukiyomi (rank 5, 7 stars), lazy-loaded art, NFT ownership check (dormant until MYTHIC_BOX_MINTS or MYTHIC_BOX_COLLECTION is set).');
+  console.log('Mythic hero applied: Tsukiyomi (rank 5, Mythic), lazy-loaded art, NFT ownership check (dormant until MYTHIC_BOX_MINTS or MYTHIC_BOX_COLLECTION is set).');
 }
 module.exports = { applyMythicHero, mythicPatches, economyHooks, serviceHooks, marker, script };
 if (require.main === module) applyMythicHero();

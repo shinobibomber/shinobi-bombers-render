@@ -8,6 +8,9 @@ html=require('../apply-performance.cjs').restoreReferences(html);
 const {walletPatches,apiPatches}=require('../apply-transaction-safety.cjs');
 for(const [before,after]of [...walletPatches,...apiPatches].reverse()){assert.equal(html.split(after).length-1,1,'one reviewed SOL gas preflight hook');html=html.replace(after,()=>before)}
 // Mythic hero (applied after Boss Hunt): the sixth rank's table entries, colours and NFT link.
+// Starter pack (applied after the Mythic Box): starter Ryo in the client state.
+const {starterPatches}=require('../apply-starter-pack.cjs');
+for(const [before,after,count]of starterPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact starter pack hook');html=html.split(after).join(before)}
 // Mythic Box (applied after the Mythic hero): RyoPayments.box.
 const {boxPatches}=require('../apply-mythic-box.cjs');
 for(const [before,after,count]of boxPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact Mythic Box hook');html=html.split(after).join(before)}

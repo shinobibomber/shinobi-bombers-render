@@ -1,4 +1,4 @@
-/* Tsukiyomi — the 7-star Mythic hero of the Limited NFT Box for initial investors.
+/* Tsukiyomi — the Mythic hero of the Limited NFT Box for initial investors.
  * A wallet owns one Tsukiyomi for every box NFT it holds, verified on-chain (finalized):
  *   MYTHIC_BOX_MINTS       comma/space separated NFT mint addresses, and/or
  *   MYTHIC_BOX_COLLECTION  a verified Metaplex collection mint (any NFT in it counts).
@@ -7,7 +7,7 @@
  * with the NFT to the next holder, and it leaves a wallet (and its battle-ready team) when the NFT does.
  * An RPC failure never removes a hero; only a successful finalized check does. */
 'use strict';
-const RANK = 5, STARS = 7, CACHE_MS = 60000, REFRESH_MS = 10000, MAX_HEROES = 500;
+const RANK = 5, CACHE_MS = 60000, REFRESH_MS = 10000, MAX_HEROES = 500;
 const TOKEN_PROGRAMS = ['TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'];
 const METADATA_PROGRAM = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s';
 const SCHEMA = `CREATE TABLE IF NOT EXISTS ryo_mythic_heroes(
@@ -70,7 +70,7 @@ async function heldMints(connection, wallet, cfg) {
 // A new Tsukiyomi for a box NFT: Mythic stats (15–18), six perks, his own model. Rolled once per NFT.
 function mythicHero(mint) {
   const hero = require('./economy.cjs').hero(RANK);
-  return { ...hero, tokenId: 'mythic-' + mint, name: 'Tsukiyomi', mythic: 'tsukiyomi', stars: STARS, nft: { mint } };
+  return { ...hero, tokenId: 'mythic-' + mint, name: 'Tsukiyomi', mythic: 'tsukiyomi', nft: { mint } };
 }
 const isMythic = h => Number(h?.rank) === RANK;
 const dropFrom = (profile, tokenId) => {
@@ -150,4 +150,4 @@ async function refresh(store, wallet, connection, options = {}) {
 function status(env = process.env) { const cfg = config(env); return { enabled: cfg.enabled, mode: cfg.collection ? (cfg.mints.size ? 'collection+mints' : 'collection') : cfg.mints.size ? 'mints' : 'off' }; }
 function clearCache() { cache.clear(); refreshed.clear(); }
 
-module.exports = { RANK, STARS, SCHEMA, config, collectionOf, heldMints, mythicHero, apply, sync, refresh, status, clearCache };
+module.exports = { RANK, SCHEMA, config, collectionOf, heldMints, mythicHero, apply, sync, refresh, status, clearCache };

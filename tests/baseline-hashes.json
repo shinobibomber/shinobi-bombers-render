@@ -259,7 +259,7 @@
     },
     {
       "path": "app/server/adventure.cjs",
-      "sha256": "249120258631f6a72dd81eb824bc6367ac9fae89de20f0863fe1ae5fb4321ec4"
+      "sha256": "1c07c9f2e77cac28f611d6d16b8b620b2994b30eaeec483c12adf5672aaf0014"
     },
     {
       "path": "app/server/create-treasury.cjs",
@@ -291,15 +291,15 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "b9362c74be485a75ab4f7c6b1da4d590bf5a3290dadf871636b07f7118557a2c"
+      "sha256": "13c87aa31de0ea05496d1e51d8d73f57281f68797888c376892e7d968a82edfc"
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "95c2a4fd9af887de7855383e51782d1cbcdeafbf4dec118f94a5915ac54f78c2"
+      "sha256": "9e8e672105556d5108f1dbddad3a9eb5676a84f7640751392c886f5781f4f8e0"
     },
     {
       "path": "app/server/store.cjs",
-      "sha256": "c115fbb9966bd3aa4a132c11d15a2c37683472b0911417438a6b76f458d912ff"
+      "sha256": "a5d08adb5a8ae8aa1ea593464a12322380eff0c6b1fe2e3913f106a8eb51b81a"
     },
     {
       "path": "app/server/transaction-review.cjs",

@@ -20,6 +20,21 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Starter Pack, Whitepaper & Tsukiyomi moves)**
+
+**✨ New**
+• 🎁 **Test Server Starter Pack** — every account gets **15 free heroes** (1 Mythic Tsukiyomi, 1 Legend, 1 Elite, 1 Jonin, 1 Chunin, 10 Genin) and **10,000,000 starter Ryo**!
+• 💰 Starter Ryo works for **everything in the game** — Summon, Fusion, Dojo, Sensei, Training, Boss Hunt and the Market. It **cannot be withdrawn**.
+• 📜 **Official Whitepaper v1.1** is now on the site at **/whitepaper** — economy, SR & SOL allocations, withdrawal calculator, Mythic NFT Box and the Day 1–8 roadmap (community review draft). Open it from **Tools → Whitepaper** or the **News** button on the Main Menu.
+
+**🛠 Improvements**
+• 🌙 **Tsukiyomi now really walks and runs** — his legs step, and his hair and cape sway as he moves and while idle.
+• Mythic heroes now simply show **MYTHIC** (no star count).
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Limited Mythic NFT Box)**
 
 **✨ New Event: LIMITED MYTHIC NFT BOX** 🎁

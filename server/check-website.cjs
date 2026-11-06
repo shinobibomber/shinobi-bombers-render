@@ -4,7 +4,7 @@
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const site = path.resolve(__dirname, '..', 'website');
-const required = ['index.html', 'app.js', 'app.css', 'cm.js', 'cm.css', 'site-config.js', 'game-link/game-link.js', 'game-link/game-link.css'];
+const required = ['index.html', 'app.js', 'app.css', 'cm.js', 'cm.css', 'site-config.js', 'game-link/game-link.js', 'game-link/game-link.css', 'whitepaper.html'];
 const missing = required.filter(f => !fs.existsSync(path.join(site, f)));
 if (missing.length) { console.error('Website files missing: ' + missing.join(', ')); process.exit(1); }
 for (const f of required.filter(f => f.endsWith('.js'))) {

@@ -53,6 +53,21 @@ async function startServer() {
         const blocked = await fetch(url + '/api/ryo', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://wrong.example' }, body: '{"action":"admin-snapshot"}' }); assert.equal(blocked.status, 403);
       });
       await check('live: the home page opens the game at /play/ (website kept at /index.html)', async () => { const r = await fetch(url + '/?ref=x', { redirect: 'manual' }); assert.equal(r.status, 302); assert.equal(r.headers.get('location'), '/play/?ref=x'); assert.equal(r.headers.get('cache-control'), 'no-store'); const g = await page(); await g.goto(url + '/'); assert.equal(new URL(g.url()).pathname, '/play/'); assert.match(await g.title(), /Shinobi Bombers/); await g.close(); assert.equal((await fetch(url + '/index.html')).status, 200); });
+      await check('live: the whitepaper is served at /whitepaper with all 16 chapters and a working calculator', async () => {
+        const r = await fetch(url + '/whitepaper'); assert.equal(r.status, 200); assert.match(r.headers.get('content-type'), /text\/html/);
+        for (const alias of ['/whitepaper/', '/whitepaper.html']) { const x = await fetch(url + alias, { redirect: 'manual' }); assert.equal(x.status, 308); assert.equal(x.headers.get('location'), '/whitepaper'); }
+        const w = await page(); await w.setViewportSize({ width: 1280, height: 900 }); await w.goto(url + '/whitepaper');
+        assert.equal(await w.locator('main section[id]').count(), 16); assert.equal(await w.locator('.sidebar a').count(), 16);
+        assert.match(await w.title(), /Whitepaper v1\.1/); assert.match(await w.locator('.notice').textContent(), /Community Review Draft/);
+        assert.equal(await w.locator('#netAmount').textContent(), '9,500 SR'); assert.equal(await w.locator('#feeAmount').textContent(), '500 SR');
+        await w.locator('#withdrawAmount').fill('1234.567891'); assert.equal(await w.locator('#feeAmount').textContent(), '61.728394 SR'); assert.equal(await w.locator('#netAmount').textContent(), '1,172.839497 SR');
+        assert.equal((await w.locator('body').textContent()).includes('★'), false, 'Mythic shows no star count');
+        await w.screenshot({ path: path.join(__dirname, 'out', 'whitepaper-desktop.png') });
+        await w.setViewportSize({ width: 390, height: 844 }); await w.goto(url + '/whitepaper#roadmap'); await w.waitForTimeout(1500);
+        const wide = await w.evaluate(() => { const W = document.documentElement.clientWidth; return document.documentElement.scrollWidth <= W + 1 ? [] : [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > W + 1 && !e.closest('.sidebar,.table-wrap')).slice(0, 6).map(e => e.tagName + '.' + e.className + ':' + Math.round(e.getBoundingClientRect().right) + '/' + W); });
+        assert.equal(wide.length, 0, 'no sideways scroll on phones: ' + wide.join(', '));
+        await w.screenshot({ path: path.join(__dirname, 'out', 'whitepaper-phone.png') }); await w.close();
+      });
       await check('live: site-config served from environment points at /play/', async () => { const r = await (await fetch(url + '/site-config.js')).text(); assert.match(r, /"gameUrl":"\/play\/"/); });
       await check('live: game health, API and config reach the game server at root paths', async () => {
         assert.equal((await fetch(url + '/healthz')).status, 200);

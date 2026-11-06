@@ -15,8 +15,6 @@
   let preview = null; /* Guild/Chat preview screens (no game page) */
   let dojoView = 'dojo'; /* Dojo pages: 'dojo' (Services, landing), 'dojo-upg' (Enter Dojo), 'dojo-sen' (Manage Sensei) */
   const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a', '#c98bff'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'];
-  // Stars per rank: rank + 1, except Mythic (Tsukiyomi), which has exactly seven.
-  const STARS = r => '★'.repeat(r === 5 ? 7 : (r || 0) + 1);
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   let RM = motionPreference.matches, geometryRevision = 0;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -33,6 +31,8 @@
   /* ---------- live game state (read-only) ---------- */
   function ledger() { return window.RyoPayments ? RyoPayments.state : {}; }
   function account() { const l = ledger(); return l.authenticated ? l.account : null; }
+  // Spendable Ryo: the withdrawable balance plus test-server starter Ryo (spend only).
+  const spendable = (l = ledger()) => (Number(l.balance) || 0) + (Number(l.bonus) || 0);
   // Header wallet pill: the game's own Disconnect (which returns to its sign-in screen),
   // or that sign-in screen when signed out. No wallet logic of its own.
   function walletButton() {
@@ -176,7 +176,7 @@
     'logo': () => {}, 'prof': editNickname, 'mng': () => go(1), 't1': () => go(1), 't2': () => go(1), 't3': () => go(1), 't4': () => go(1), 't5': () => go(1),
     'ev': () => openBox(),
     'go1': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go2': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go3': () => notice('Daily missions', 'Daily missions are not available yet.'),
-    'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => go(3), 'news': () => notice('News', 'No news has been posted yet.'),
+    'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => go(3), 'news': () => { location.href = '/whitepaper'; },
     'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
   };
   function act(k, h, el) {
@@ -260,7 +260,7 @@
     mk('i', '', b.chat).textContent = '[Global]'; mk('b', '', b.chat); mk('span', '', b.chat);
     // EVENT: the Limited Mythic NFT Box card covers the printed banner inside the ev hotspot.
     const evArt = b.st.querySelector('[data-sbwid="ev"] > .sl');
-    if (evArt) { b.box = place(mk('div', 'sbw-boxcard', evArt), 0, 0, 369, 132); b.box.innerHTML = '<img src="assets/mythic-box/box-256.webp" alt=""><div><small>LIMITED EVENT</small><b>MYTHIC NFT BOX</b><span>Tsukiyomi 7★ · 10% off</span><em>1 SOL · 20 pcs only</em></div><i>VIEW</i>'; }
+    if (evArt) { b.box = place(mk('div', 'sbw-boxcard', evArt), 0, 0, 369, 132); b.box.innerHTML = '<img src="assets/mythic-box/box-256.webp" alt=""><div><small>LIMITED EVENT</small><b>MYTHIC NFT BOX</b><span>Mythic Tsukiyomi · 10% off</span><em>1 SOL · 20 pcs only</em></div><i>VIEW</i>'; }
     b.tiles = [1270, 1345, 1420, 1494, 1569].map((x, i) => { const t = place(mk('div', 'sbw-tile', b.st), x, 302, 66, 122); const cv = mk('canvas', '', t); cv.width = 132; cv.height = 150; mk('b', '', t); t.addEventListener('click', () => go(1)); return t; });
   };
   PAINT.home = (b, now) => {
@@ -291,7 +291,7 @@
     const R2 = D.ref; switch (i) {
       case 0: return `<p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Heroes nap and recover – faster in the Dojo.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
       case 2: return `<p>Element and rarity are independent: an element changes a hero's jutsu and aura colour, never their rank.</p><h4>Hero models · four directions</h4>${gal([R2.models], () => 'All 12 hero models')}`;
-      case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin ★</b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin ★★</b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin ★★★</b><span>3 perks</span></div><div><b style="color:#b45cff">Elite ★★★★</b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend ★★★★★</b><span>Top summon rank · 5 perks</span></div><div><b style="color:#c98bff">Mythic ★★★★★★★</b><span>Tsukiyomi · NFT only · 6 perks</span></div></div><p>Fusion combines three heroes of the same rank. Legend is the highest rank you can summon or fuse and stays tradable. Mythic Tsukiyomi comes only with the Limited NFT Box and moves with that NFT.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
+      case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin ★</b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin ★★</b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin ★★★</b><span>3 perks</span></div><div><b style="color:#b45cff">Elite ★★★★</b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend ★★★★★</b><span>Top summon rank · 5 perks</span></div><div><b style="color:#c98bff">Mythic</b><span>Tsukiyomi · NFT only · 6 perks</span></div></div><p>Fusion combines three heroes of the same rank. Legend is the highest rank you can summon or fuse and stays tradable. Mythic Tsukiyomi comes only with the Limited NFT Box and moves with that NFT.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
       case 4: return `<div class="cxg"><div><b>Save burst</b><span>Hold jutsu bursts for boss phases.</span></div><div><b>Balance</b><span>Mix damage dealers with chakra support.</span></div><div><b>Read the board</b><span>Blasts stop at stone – line up crates.</span></div><div><b>Rotate</b><span>A Sensei swaps in rested heroes automatically.</span></div></div><h4>Hero animation reference</h4>${gal([R2.hayate], () => 'Hayate – animation & VFX reference')}`;
       case 5: return `<p>Each boss has idle, walk, hurt and death animations plus signature attacks, ending in a rage mode at low HP.</p><h4>Boss concept sheets</h4>${gal(R2.bosses, x => `${x.n} · ${x.t}`)}<h4>Akuma animation sheets</h4>${gal(R2.akuma, x => 'Akuma sprite sheet ' + (R2.akuma.indexOf(x) + 1))}`;
       case 6: return `<div class="cxg"><div><b>Adventure Ryo</b><span>Earned while your team works stages. It collects in your Chest.</span></div><div><b>Claim</b><span>Moves verified Chest Ryo into your game balance – not an on-chain withdrawal.</span></div><div><b>Withdraw / Deposit</b><span>Use the Chest's own limits, fees, cooldown and wallet steps.</span></div></div><p><button class="gb" type="button" data-cx="chest">Open Chest</button></p>`;
@@ -626,9 +626,9 @@
     const label = !signedIn ? 'Sign in to mint' : BOXS.minting ? 'Minting…' : b?.soldOut ? 'Sold out' : b?.limitReached ? 'Limit reached (2)' : '» MINT NOW «';
     const price = !b ? '1 SOL' : b.limitReached ? b.owned + ' / ' + b.perWallet + ' owned' : b.price + ' SOL';
     return `<div class="bx-top"><img class="bx-box" src="assets/mythic-box/box-256.webp" alt="Mythic NFT Box">
-        <div class="bx-title"><small>SHINOBI BOMBERS</small><h2>LIMITED MYTHIC NFT BOX</h2><p class="bx-tag">✦ EXCLUSIVE INITIAL INVESTOR OFFER ✦</p><p class="bx-un">Unlock a <b>7-STAR MYTHIC HERO</b> + <b>MYTHIC AURA</b></p></div>
+        <div class="bx-title"><small>SHINOBI BOMBERS</small><h2>LIMITED MYTHIC NFT BOX</h2><p class="bx-tag">✦ EXCLUSIVE INITIAL INVESTOR OFFER ✦</p><p class="bx-un">Unlock a <b>MYTHIC HERO</b> + <b>MYTHIC AURA</b></p></div>
         <img class="bx-tsu" src="assets/mythic-hero/previews/tsukiyomi_front.png" alt="Tsukiyomi"></div>
-      <div class="bx-perks"><div><b>Mythic hero · Tsukiyomi</b><span class="sbw-stars" aria-label="7 stars">★★★★★★★</span></div><div><b>Mythic Aura</b><span>Wings · glyph ring · crown</span></div><div><b>Exclusive NFT holder tier</b><span>The hero follows the NFT</span></div></div>
+      <div class="bx-perks"><div><b>Mythic hero · Tsukiyomi</b><span>Mythic rank · own skills</span></div><div><b>Mythic Aura</b><span>Wings · glyph ring · crown</span></div><div><b>Exclusive NFT holder tier</b><span>The hero follows the NFT</span></div></div>
       <div class="bx-disc"><b class="bx-pct">10%</b><div><b>DISCOUNT ON ALL IN-GAME PURCHASES!</b><p><i class="ok">✔ Included:</i> Summon, Fusion, Dojo, Sensei, Training</p><p><i class="no">✖ Not included:</i> Marketplace transactions, Boss Hunt entrance fee</p></div></div>
       <div class="bx-supply"><div><b>LIMITED SUPPLY · ${supply} PCS ONLY</b><span>${left == null ? 'Sign in to see how many are left' : left ? left + ' of ' + supply + ' left' : 'SOLD OUT'}</span></div><div class="sbw-bar"><i style="width:${left == null ? 100 : Math.round(100 * left / supply)}%"></i></div></div>
       <div class="bx-price"><span>PRICE</span><b>◎ ${esc(price)}</b><small>${b?.owned === 1 ? 'Your 2nd box: 1 SOL + 0.5 SOL' : 'Max 2 per wallet · a 2nd box is 1.5 SOL (1 + 0.5)'} · Solana Devnet (test SOL)</small></div>
@@ -684,13 +684,13 @@
         tog: tg, up: btn(/^up\(/), list: btn(/openListing/), mode: btn(/hero-mode-button/) };
     });
   }
-  // Tsukiyomi (Mythic, rank 5): 7 stars, his box NFT, the aura switch and his four skills.
+  // Tsukiyomi (Mythic, rank 5): his box NFT (or starter copy), the aura switch and his four skills.
   const shortMint = m => m ? m.slice(0, 4) + '…' + m.slice(-4) : '';
   function mythicBlock(h) {
     const MH = window.MythicHero, aura = MH ? MH.auraEnabled : true, skills = MH ? MH.skills : [];
-    return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-stars" aria-label="7 stars">${STARS(5)}</b><span>Exclusive Mythic Shinobi</span></div>
-      <div class="sbw-myth-nft"><span>${h.nft?.mint ? '✔ NFT verified · ' + esc(shortMint(h.nft.mint)) : 'NFT hero'}</span><button type="button" data-k="mcheck">Check NFT</button><button type="button" data-k="maura" aria-pressed="${aura}">Aura: ${aura ? 'On' : 'Off'}</button></div>
-      <ul class="sbw-myth-skills" aria-label="Skills">${skills.map(k => `<li class="${k.ultimate ? 'ult' : ''}" title="${esc(k.text)}"><b>${esc(k.ultimate ? '★ ' + k.name.replace('Mythic ', '') : k.name)}</b></li>`).join('')}</ul></div>`;
+    return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC</b><span>Exclusive Mythic Shinobi</span></div>
+      <div class="sbw-myth-nft"><span>${h.starter && !h.nft ? 'Starter Mythic · test server' : h.nft?.mint ? '✔ NFT verified · ' + esc(shortMint(h.nft.mint)) : 'NFT hero'}</span><button type="button" data-k="mcheck">Check NFT</button><button type="button" data-k="maura" aria-pressed="${aura}">Aura: ${aura ? 'On' : 'Off'}</button></div>
+      <ul class="sbw-myth-skills" aria-label="Skills">${skills.map(k => `<li class="${k.ultimate ? 'ult' : ''}" title="${esc(k.text)}"><b>${esc(k.ultimate ? '⚡ ' + k.name.replace('Mythic ', '') : k.name)}</b></li>`).join('')}</ul></div>`;
   }
   function heroPageButton(previous) { return document.querySelector('#p1 .heroes-pagination button[aria-label="' + (previous ? 'Previous page' : 'Next page') + '"]'); }
   INIT.heroes = b => {
@@ -709,7 +709,7 @@
     const h = c.h || {}, r = h.r || 0, col = RCOL[r] || RCOL[0], [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0), pct = cm ? Math.round(100 * cc / cm) : 0;
     const btn = (k, label, cls = '', dis) => `<button type="button" class="sbw-hb ${cls}" data-k="${k}" data-i="${i}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
     return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
-      <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}${r === 5 ? `<em class="sbw-stars" aria-label="7 stars">${STARS(5)}</em>` : ''}</b><i>${esc(c.status || '')}</i></div>
+      <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
       <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}</div>
       <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Slash' : c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
@@ -1001,7 +1001,7 @@
   const heroLine = h => `<p class="sbw-mdl-hero" style="--rc:${RCOL[h.rank]}"><b>${RNAME[h.rank]}</b> · Lv. ${h.level} · ${(h.perks || []).map(k => esc(perkName(k))).join(', ')}</p>`;
   function marketBuy(row) {
     if (!row || row.kind !== 'browse') return toast('Select a hero for sale first.');
-    const l = row.l, balance = (Number(ledger().balance) || 0) + (row.offer ? row.offer.amount : 0);
+    const l = row.l, balance = spendable() + (row.offer ? row.offer.amount : 0);
     const d = confirmDialog('Buy ' + l.hero.name + '?', `${heroLine(l.hero)}<p class="sbw-mbuyline">Price <b>${fmt(l.price)} Ryo</b><br><span class="sbw-small">Your balance after: ${fmt(balance - l.price)} Ryo${row.offer ? ' (your open offer is used first)' : ''}</span></p>
       ${balance < l.price ? '<p class="sbw-small sbw-warn">Not enough Ryo. Deposit Ryo from your Chest first.</p>' : ''}`, 'Buy · ' + fmt(l.price) + ' Ryo', async () => {
       const result = await RyoPayments.marketBuy(l);
@@ -1128,7 +1128,7 @@
     if (window.V2?.isBossActive?.()) return toast('A hunt is already running.');
     if (S?.v2?.revealBatch?.length) return toast('Finish your card reveal first.');
     const team = huntTeam(); if (!team.length) return notice('Boss Hunt', 'Make at least one hero battle-ready in Heroes first.');
-    const bal = Number(ledger().balance) || 0, g = BH.board ? BH.board.guardianName : GUARD[0];
+    const bal = spendable(), g = BH.board ? BH.board.guardianName : GUARD[0];
     const d = confirmDialog('Enter today\'s Boss Hunt?', `<p>Fight <b>${esc(g)}</b> for 60 seconds with ${team.map(h => esc(h.name.split(' ')[0])).join(', ')}.</p>
       <p class="sbw-mbuyline">Entrance fee <b>10,000 Ryo</b><br><span class="sbw-small">8,000 prize pool · 1,000 treasury · 1,000 burned · your balance after: ${fmt(bal - 10000)} Ryo</span></p>
       ${bal < 10000 ? '<p class="sbw-small sbw-warn">Not enough Ryo. Deposit Ryo from your Chest first.</p>' : ''}`, 'Pay 10,000 Ryo & start', async () => {
@@ -1265,7 +1265,7 @@
     const b = cur && built[cur]; if (!b) return;
     const l = ledger(), a = account(), pend = chestPending();
     const hb = HDR || b;
-    if (hb.live.ryo) setText(hb.live.ryo, a && Number.isFinite(Number(l.balance)) ? fmt(Number(l.balance)) + ' Ryo' : '— Ryo');
+    if (hb.live.ryo) setText(hb.live.ryo, a && Number.isFinite(Number(l.balance)) ? fmt(spendable(l)) + ' Ryo' : '— Ryo');
     if (hb.label) { if (pend != null && Number.isFinite(pend)) countTo(hb.label, pend, v => 'Chest : ' + fmt(v)); else { counters.delete(hb.label); setText(hb.label, 'Chest'); } }
     if (hb.dot) hb.dot.hidden = !(pend >= 1);
     if (hb.walletSpot) {
@@ -1276,7 +1276,7 @@
     if (hb.online) { const players = (document.getElementById('onlinePlayers')?.textContent || '').match(/\d[\d,]*/); setText(hb.online, a && players ? players[0] : '—'); }
     else if (hb.covers.gems) setText(hb.covers.gems, '⚙ Tools');
     if (PH) {
-      setText(PH.ryo, a && Number.isFinite(Number(l.balance)) ? fmt(Number(l.balance)) : '—');
+      setText(PH.ryo, a && Number.isFinite(Number(l.balance)) ? fmt(spendable(l)) : '—');
       if (pend != null && Number.isFinite(pend)) countTo(PH.chest, pend, v => fmt(v)); else { counters.delete(PH.chest); setText(PH.chest, '—'); }
       PH.dot.hidden = !(pend >= 1); setText(PH.wallet, a ? 'GO OFFLINE' : 'Connect'); PH.wallet.classList.toggle('sbw-connect', !a);
       const players = (document.getElementById('onlinePlayers')?.textContent || '').match(/\d[\d,]*/); setText(PH.online, a && players ? players[0] : '—');

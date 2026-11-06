@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b0620">
+  <title>Shinobi Bombers | Whitepaper v1.1</title>
+  <meta name="description" content="Official Shinobi Bombers economy and game launch whitepaper (v1.1, community review): Shinobi Ryo ($SR), SR and SOL allocations, the 24-hour chest claim, SR withdrawals, the Mythic NFT Box, the Creators Portal and the Day 1–8 launch roadmap.">
+  <link rel="canonical" href="/whitepaper">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Shinobi Bombers Whitepaper v1.1">
+  <meta property="og:description" content="Economy and game launch whitepaper · Community review draft.">
+  <meta property="og:image" content="/play/assets/mythic-box/box.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/fav0.webp" type="image/webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Content is plain HTML below: edit a chapter's text, table or percentages in place.
+       Status stays "Community Review" until the final rules are approved. -->
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05020f;
+      --bg2: #0b0620;
+      --panel: #120a2c;
+      --panel2: #1b1040;
+      --border: #3a2a66;
+      --gold: #ffcf4a;
+      --gold2: #ffe9a8;
+      --amber: #ffb02a;
+      --purple: #b7a8e8;
+      --violet: #d88cff;
+      --torii: #e8443a;
+      --text: #f5efff;
+      --muted: #b9b0d3;
+      --green: #35e06b;
+      --red: #ff7a7a;
+      --radius: 16px;
+      --head: Rajdhani, "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 80% -5%, #3a1468 0%, transparent 38%),
+        radial-gradient(ellipse at -5% 45%, #24103f 0%, transparent 32%),
+        linear-gradient(180deg, var(--bg2), var(--bg) 40%);
+      background-attachment: fixed;
+      color: var(--text);
+      font: 16px/1.75 "Segoe UI", system-ui, Arial, sans-serif;
+    }
+    a { color: var(--gold); }
+    a:hover { color: var(--gold2); }
+    :focus-visible { outline: 3px solid #33c8ff; outline-offset: 3px; border-radius: 6px; }
+    .skip { position: absolute; left: 12px; top: -60px; z-index: 200; padding: 8px 14px; border-radius: 8px; background: var(--gold); color: #2a1000; font-weight: 700; }
+    .skip:focus { top: 12px; }
+
+    /* Top bar */
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px clamp(16px, 4vw, 48px);
+      background: rgba(7, 4, 22, .92);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--gold2); font: 700 20px/1 var(--head); letter-spacing: .08em; text-decoration: none; text-transform: uppercase; }
+    .brand span { color: var(--violet); }
+    .torii { width: 26px; height: 22px; flex: none; }
+    .topnav { display: flex; gap: 6px; margin-left: auto; }
+    .topnav a { padding: 6px 14px; border: 1px solid transparent; border-radius: 9px; color: var(--muted); font: 700 15px var(--head); letter-spacing: .06em; text-decoration: none; text-transform: uppercase; }
+    .topnav a:hover { color: var(--gold2); border-color: var(--border); }
+    .topnav a[aria-current="page"] { color: #2a1000; background: linear-gradient(#ffe27a, #ffbb2a 45%, #f48c0c); }
+    .version { color: var(--muted); font: 600 12px var(--head); letter-spacing: .1em; white-space: nowrap; }
+
+    .shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1540px; margin: auto; }
+    .sidebar { position: sticky; top: 58px; height: calc(100vh - 58px); overflow-y: auto; padding: 26px 16px; border-right: 1px solid var(--border); }
+    .sidebar-title { margin: 0 12px 14px; color: var(--gold); font: 700 12px var(--head); letter-spacing: .18em; text-transform: uppercase; }
+    .sidebar a { display: block; margin: 2px 0; padding: 7px 12px; border-left: 2px solid transparent; border-radius: 0 9px 9px 0; color: var(--muted); font: 600 15px var(--head); text-decoration: none; transition: .2s; }
+    .sidebar a:hover, .sidebar a.active { color: var(--gold2); background: rgba(255, 207, 74, .09); border-left-color: var(--gold); }
+
+    main { width: 100%; max-width: 1100px; min-width: 0; margin: auto; padding: 24px clamp(18px, 4vw, 56px) 100px; }
+
+    /* Hero */
+    .hero {
+      position: relative; overflow: hidden; isolation: isolate;
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px;
+      padding: clamp(32px, 5vw, 64px) clamp(22px, 5vw, 56px);
+      border: 1px solid #6b4f9e; border-radius: 22px;
+      background: radial-gradient(circle at 80% 40%, #5a2c90 0%, transparent 34%), linear-gradient(135deg, #24103f, #0e0827 75%);
+      box-shadow: 0 24px 70px #0007, inset 0 0 0 1px #ffcf4a1f;
+    }
+    .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background-image: radial-gradient(#ffd7a5 1px, transparent 1px); background-size: 34px 34px; opacity: .1; }
+    .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, transparent, var(--gold), var(--violet), transparent); }
+    .moon { position: absolute; right: 7%; top: 9%; z-index: -1; width: 170px; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #fff7e0, #e6c4d7 68%, transparent 72%); filter: drop-shadow(0 0 45px #e9bed5a0); opacity: .55; }
+    .hero-art { width: clamp(130px, 18vw, 210px); height: auto; filter: drop-shadow(0 0 18px #b36bffaa); }
+    .eyebrow { display: inline-block; padding: 4px 12px; border: 1px solid #a07a3a; border-radius: 100px; color: var(--gold); font: 700 13px var(--head); letter-spacing: .14em; text-transform: uppercase; }
+    h1, h2, h3 { margin-top: 0; font-family: var(--head); line-height: 1.15; }
+    h1 { max-width: 650px; margin: 18px 0 10px; font-size: clamp(42px, 6.4vw, 82px); font-weight: 700; letter-spacing: .01em; text-shadow: 0 3px 0 #6a2a00, 0 0 22px #ff9a2a55; }
+    h1 span { color: var(--gold); }
+    .subtitle { max-width: 610px; color: #e9ddf5; font-size: clamp(16px, 2vw, 19px); }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+    .pill { padding: 5px 12px; border: 1px solid #ffffff2a; border-radius: 100px; background: #ffffff0d; color: #f8e8d6; font: 600 14px var(--head); letter-spacing: .04em; }
+
+    .notice { margin-top: 20px; padding: 14px 20px; border: 1px solid #8b7045; border-left: 4px solid var(--gold); border-radius: 12px; background: #e5af5111; color: #ecdcc2; font-size: 14px; }
+
+    section { padding-top: 56px; scroll-margin-top: 72px; }
+    .section-kicker { color: var(--violet); font: 700 14px var(--head); letter-spacing: .18em; text-transform: uppercase; }
+    h2 { margin: 6px 0 16px; color: var(--gold2); font-size: clamp(30px, 3.4vw, 42px); font-weight: 700; }
+    h2::after { content: ""; display: block; width: 64px; height: 3px; margin-top: 10px; border-radius: 3px; background: linear-gradient(90deg, var(--torii), var(--gold)); }
+    h3 { margin: 26px 0 10px; color: var(--gold); font-size: 22px; font-weight: 700; letter-spacing: .02em; }
+    p, li { color: #dcd2ea; }
+    strong { color: #fff7e8; }
+    .muted { color: var(--muted); }
+    .small { font-size: 13.5px; }
+
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card { position: relative; min-width: 0; padding: 22px 24px; border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(150deg, #1d1142, #110a28); }
+    .card::before { content: ""; position: absolute; left: 18px; right: 18px; top: 0; height: 2px; background: linear-gradient(90deg, transparent, #ffcf4a66, transparent); }
+    .card h3 { margin-top: 0; }
+    .stat { color: var(--gold); font: 700 clamp(32px, 4.4vw, 46px)/1.1 var(--head); text-shadow: 0 0 16px #ffb02a44; }
+    .stat-label { margin-top: 6px; color: var(--muted); font-size: 13.5px; }
+    .tag { display: inline-block; padding: 2px 11px; border: 1px solid #ffcf4a55; border-radius: 30px; background: #ffcf4a14; color: var(--gold2); font: 600 14px var(--head); letter-spacing: .04em; }
+
+    .table-wrap { overflow-x: auto; margin: 18px 0; border: 1px solid var(--border); border-radius: 14px; }
+    table { width: 100%; min-width: 520px; border-collapse: collapse; }
+    th, td { padding: 13px 17px; border-bottom: 1px solid #2f2350; text-align: left; }
+    th { background: #23164a; color: var(--gold2); font: 700 15px var(--head); letter-spacing: .05em; }
+    td { color: #e2d8ee; }
+    td:nth-child(2) { color: var(--gold); font-weight: 700; white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #ffffff05; }
+
+    /* Allocation bars with labels and a legend */
+    .allocation { display: flex; overflow: hidden; height: 26px; margin: 22px 0 10px; border-radius: 8px; background: #2a1d44; box-shadow: inset 0 0 0 1px #ffffff12; }
+    .allocation > div { display: grid; place-items: center; min-width: 0; color: #120a28; font: 700 13px var(--head); white-space: nowrap; overflow: hidden; }
+    .a { background: #4fbf8f; } .b { background: #7c91db; } .c { background: #ad88df; } .d { background: #ffbe5a; } .e { background: #e07c9a; } .f { background: #e06a52; }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 16px; padding: 0; list-style: none; font-size: 13.5px; }
+    .legend li { display: flex; align-items: center; gap: 7px; }
+    .legend i { width: 12px; height: 12px; border-radius: 3px; }
+
+    .callout { margin: 22px 0; padding: 18px 22px; border: 1px solid #6a4fa0; border-left: 4px solid var(--violet); border-radius: 14px; background: #1f143c; }
+    .callout strong { display: block; margin-bottom: 4px; color: var(--gold2); font: 700 18px var(--head); letter-spacing: .03em; }
+
+    .steps { margin: 20px 0; padding: 0; list-style: none; counter-reset: step; }
+    .steps li { position: relative; margin-left: 14px; padding: 10px 0 10px 36px; border-left: 2px solid #6a4fb0; counter-increment: step; }
+    .steps li::before { content: counter(step); position: absolute; left: -14px; top: 9px; display: grid; place-items: center; width: 26px; height: 26px; border: 2px solid var(--bg); border-radius: 50%; background: var(--gold); color: #2a1000; font: 700 14px var(--head); }
+
+    .calculator { padding: 24px; border: 1px solid #a07a3a; border-radius: var(--radius); background: linear-gradient(135deg, #2a1640, #140a2a); }
+    .calc-input { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .calc-input label { font: 700 17px var(--head); }
+    .calc-input input { width: 200px; max-width: 100%; padding: 10px 14px; border: 1px solid #7e66b0; border-radius: 9px; background: #0b0620; color: #fff; font: 600 17px var(--head); }
+    .calc-results { margin-top: 18px; }
+    .calc-results strong { display: block; color: var(--gold); font: 700 30px var(--head); }
+    .calc-results .fee strong { color: var(--violet); }
+
+    .roadmap { position: relative; margin-top: 10px; }
+    .roadmap-item { position: relative; margin-left: 12px; padding: 0 0 28px 30px; border-left: 3px solid #7a52c1; }
+    .roadmap-item:last-child { border-left-color: transparent; }
+    .roadmap-item::before { content: ""; position: absolute; left: -10px; top: 6px; width: 17px; height: 17px; border-radius: 4px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 18px #ffcf4a88; }
+    .roadmap-item h3 { margin-top: 0; }
+    .roadmap-item .card { margin-top: 8px; }
+
+    .box-art { float: right; width: 150px; height: auto; margin: 0 0 12px 18px; border-radius: 12px; box-shadow: 0 0 22px #b36bff88; }
+
+    .footer { margin-top: 60px; padding: 34px 0; border-top: 1px solid var(--border); text-align: center; }
+    .footer strong { display: block; color: var(--gold); font: 700 26px var(--head); letter-spacing: .14em; }
+    .footer p { font-size: 13.5px; }
+    #progress { position: fixed; left: 0; top: 0; z-index: 100; width: 0; height: 3px; background: linear-gradient(90deg, var(--violet), var(--gold)); }
+
+    @media (max-width: 960px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; top: 54px; z-index: 10; display: flex; gap: 4px; height: auto; padding: 8px 12px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border); background: rgba(7, 4, 22, .94); }
+      .sidebar-title { display: none; }
+      .sidebar a { border-left: 0; border-radius: 8px; white-space: nowrap; }
+      .version { display: none; }
+    }
+    @media (max-width: 640px) {
+      .grid, .grid.three { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr; padding: 30px 22px; }
+      .hero-art { width: 120px; justify-self: end; margin-top: -10px; }
+      .moon { width: 100px; opacity: .3; }
+      .card { padding: 18px; }
+      .topbar { gap: 8px; padding: 9px 12px; }
+      .brand { min-width: 0; overflow: hidden; gap: 7px; font-size: 15px; letter-spacing: .04em; white-space: nowrap; text-overflow: ellipsis; }
+      .topnav { flex: none; gap: 4px; }
+      .topnav a { padding: 5px 8px; font-size: 13px; letter-spacing: .02em; }
+      section { padding-top: 42px; }
+      .box-art { float: none; display: block; margin: 0 0 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+    @media print {
+      body { background: #fff; color: #000; font-size: 11pt; }
+      .topbar, .sidebar, #progress, .skip, .hero-art { display: none; }
+      .shell { display: block; }
+      main { max-width: none; padding: 0; }
+      .hero, .card, .calculator, .callout { background: #fff; color: #000; box-shadow: none; border-color: #aaa; }
+      h1, h2, h3, p, li, td, th, strong, .subtitle, .muted, .stat, .stat-label { color: #000 !important; text-shadow: none !important; }
+      .card, .roadmap-item, table { break-inside: avoid; }
+      .moon { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+<a class="skip" href="#top">Skip to the whitepaper</a>
+<div id="progress" aria-hidden="true"></div>
+
+<header class="topbar">
+  <a class="brand" href="/play/" aria-label="Shinobi Bombers · play the game">
+    <svg class="torii" viewBox="0 0 26 22" aria-hidden="true"><path fill="#e8443a" d="M1 3h24l-2 3H3zM4 8h18v2.4H4zM6 6h2.6v16H6zM17.4 6H20v16h-2.6z"/><path fill="#ffcf4a" d="M11.6 8h2.8v2.4h-2.8z"/></svg>
+    Shinobi <span>Bombers</span>
+  </a>
+  <nav class="topnav" aria-label="Site">
+    <a href="/play/">Play</a>
+    <a href="/whitepaper" aria-current="page">Whitepaper</a>
+  </nav>
+  <span class="version">v1.1 · Community Review</span>
+</header>
+
+<div class="shell">
+  <nav class="sidebar" aria-label="Whitepaper table of contents">
+    <div class="sidebar-title">Contents</div>
+    <a href="#overview">01 · Introduction</a>
+    <a href="#gameplay">02 · Game Ecosystem</a>
+    <a href="#token">03 · Shinobi Ryo</a>
+    <a href="#sr-economy">04 · SR Allocations</a>
+    <a href="#claims">05 · Chest Claim System</a>
+    <a href="#withdrawals">06 · SR Withdrawals</a>
+    <a href="#sol-revenue">07 · SOL Revenue</a>
+    <a href="#sol-phase1">08 · Early Launch Allocation</a>
+    <a href="#sol-phase2">09 · Long-Term Allocation</a>
+    <a href="#sustainability">10 · Sustainability</a>
+    <a href="#mythic">11 · Mythic NFT</a>
+    <a href="#creators">12 · Creators Portal</a>
+    <a href="#roadmap">13 · Launch Roadmap</a>
+    <a href="#transparency">14 · Transparency</a>
+    <a href="#risks">15 · Risks</a>
+    <a href="#pending">16 · Pending Details</a>
+  </nav>
+
+  <main id="top" tabindex="-1">
+    <div class="hero">
+      <div class="moon" aria-hidden="true"></div>
+      <div>
+        <div class="eyebrow">Official Economy &amp; Game Launch Whitepaper</div>
+        <h1>SHINOBI <span>BOMBERS</span></h1>
+        <p class="subtitle">Forge Your Ninja Way. Discover our game ecosystem, dual-treasury economy, reward distribution policies, and phased launch roadmap.</p>
+        <div class="hero-meta">
+          <span class="pill">Solana Ecosystem</span>
+          <span class="pill">Shinobi Ryo · $SR</span>
+          <span class="pill">Day 1–8 Roadmap</span>
+          <span class="pill">Version 1.1</span>
+        </div>
+      </div>
+      <img class="hero-art" src="/play/assets/mythic-hero/previews/tsukiyomi_front.png" alt="" width="197" height="268" loading="eager" decoding="async">
+    </div>
+
+    <div class="notice" role="note">
+      <strong>Community Review Draft · November 7, 2026.</strong>
+      This document describes proposed features and policies. It does not confirm that they have been deployed.
+      Token details, launch timing, security controls, and final economic parameters remain subject to verification.
+    </div>
+
+    <!-- 01: INTRODUCTION -->
+    <section id="overview" aria-labelledby="h-overview">
+      <span class="section-kicker">Chapter 01</span>
+      <h2 id="h-overview">Executive Summary</h2>
+      <p>Shinobi Bombers is an anime-inspired blockchain game built around collectible Shinobi NFT heroes, automated Adventure gameplay, character progression, and a player-driven economy.</p>
+      <p>The project proposes a dual-treasury structure separating gameplay token management from real-world operating expenses.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="stat">$SR</div>
+          <h3>Game Economy</h3>
+          <p>Supports eligible gameplay services, Adventure chest rewards, community incentives, and long-term reward reserves.</p>
+        </div>
+        <div class="card">
+          <div class="stat">SOL</div>
+          <h3>Development Economy</h3>
+          <p>Supports development, hosting, security, infrastructure, marketing, and approved future economic activities.</p>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>Our Economic Principles</strong>
+        Transparency · Responsible reward distribution · Operational sustainability · Continuous game development.
+      </div>
+    </section>
+
+    <!-- 02: GAMEPLAY -->
+    <section id="gameplay" aria-labelledby="h-gameplay">
+      <span class="section-kicker">Chapter 02</span>
+      <h2 id="h-gameplay">The Game Ecosystem</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>⛩ Summoning Shrine</h3>
+          <p>Obtain collectible heroes across Genin, Chunin, Jonin, Elite, and Legend rarity classifications. Special collections may include Mythic heroes.</p>
+        </article>
+        <article class="card">
+          <h3>⚔ Adventure Mode</h3>
+          <p>Deploy heroes, clear stages, destroy obstacles, collect chest rewards, and progress through new maps. Chakra and hero deployment rules apply.</p>
+        </article>
+        <article class="card">
+          <h3>✦ Fusion</h3>
+          <p>Combine eligible heroes to progress through supported rarity levels using published fusion requirements. Fusion service fees use SR.</p>
+        </article>
+        <article class="card">
+          <h3>🌸 Dojo Services</h3>
+          <p>Access Chakra Recovery, Dojo Upgrades, and Sensei. <strong>Sensei is purchased with SOL.</strong> The Dojo has no separate hero-training service.</p>
+        </article>
+        <article class="card">
+          <h3>🏪 Hero Marketplace</h3>
+          <p>Buy Heroes, Sell Heroes, and Make Offer. The initial Marketplace is for supported hero NFTs, not general item trading.</p>
+        </article>
+        <article class="card">
+          <h3>👹 Boss Hunt</h3>
+          <p>Face challenging bosses and participate in Daily Rewards and Weekly Rewards under published eligibility and reward-pool rules.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 03: TOKEN -->
+    <section id="token" aria-labelledby="h-token">
+      <span class="section-kicker">Chapter 03</span>
+      <h2 id="h-token">Shinobi Ryo ($SR)</h2>
+      <p>Shinobi Ryo is the primary in-game token used for eligible gameplay services and player rewards.</p>
+      <div class="card">
+        <h3>Planned SR Utility</h3>
+        <ul>
+          <li>Hero Summoning</li>
+          <li>Fusion-related services</li>
+          <li>Chakra Recovery and Dojo Upgrades</li>
+          <li>Eligible Marketplace purchases and fees</li>
+          <li>Other approved SR-denominated game services</li>
+          <li>Verified gameplay reward payouts</li>
+        </ul>
+        <p><strong>Exception:</strong> Sensei uses SOL instead of SR.</p>
+      </div>
+      <h3>Token Launch Details</h3>
+      <p>The token mint address, supply, launch-platform mechanism, liquidity arrangements, ownership distribution, and relevant authorities must be published once verified.</p>
+      <p class="small muted">The following revenue allocation percentages apply to eligible game-service revenue. They do not represent allocations of the total token supply at issuance.</p>
+    </section>
+
+    <!-- 04: SR ECONOMY -->
+    <section id="sr-economy" aria-labelledby="h-sr">
+      <span class="section-kicker">Chapter 04</span>
+      <h2 id="h-sr">SR Revenue Distribution</h2>
+      <p>Eligible net SR revenue received through approved game services follows the proposed allocation below.</p>
+      <div class="allocation" role="img" aria-label="50 percent locked treasury, 30 percent active reward pool, 10 percent community, 10 percent stability reserve">
+        <div class="a" style="flex:50">50%</div><div class="b" style="flex:30">30%</div><div class="c" style="flex:10">10%</div><div class="d" style="flex:10">10%</div>
+      </div>
+      <ul class="legend" aria-hidden="true">
+        <li><i class="a"></i>Locked Treasury Vault</li><li><i class="b"></i>Active Reward Pool</li><li><i class="c"></i>Community Reward Vault</li><li><i class="d"></i>Economic Stability Reserve</li>
+      </ul>
+      <div class="grid">
+        <div class="card"><div class="stat">50%</div><h3>Locked Treasury Vault</h3><p>Long-term SR reserve for approved replenishment of gameplay reward pools.</p></div>
+        <div class="card"><div class="stat">30%</div><h3>Active Reward Pool</h3><p>Funds eligible Adventure chest rewards under controlled reward distribution budgets.</p></div>
+        <div class="card"><div class="stat">10%</div><h3>Community Reward Vault</h3><p>Supports community events, competitions, giveaways, and approved incentives.</p></div>
+        <div class="card"><div class="stat">10%</div><h3>Economic Stability Reserve</h3><p>Holds supplementary SR for approved economic and reward-system requirements.</p></div>
+      </div>
+      <h3>Locked Treasury Rules</h3>
+      <p>The intended vault design restricts direct selling and permits only authorized, budgeted transfers to approved reward destinations.</p>
+      <p>Actual enforcement requires verified on-chain controls, clear governance, disclosed authorities, and public transaction reporting. Merely labeling a wallet "locked" is not sufficient.</p>
+      <div class="callout">
+        <strong>Important Accounting Distinction</strong>
+        The 5% SR deduction collected from player withdrawals goes directly to the Locked Treasury. It is not split again under the 50/30/10/10 service-revenue allocation.
+      </div>
+    </section>
+
+    <!-- 05: CHEST CLAIMS -->
+    <section id="claims" aria-labelledby="h-claims">
+      <span class="section-kicker">Chapter 05</span>
+      <h2 id="h-claims">24-Hour Chest Claim System</h2>
+      <div class="grid">
+        <div class="card"><div class="stat">24H</div><div class="stat-label">Chest Reward Claim Interval</div></div>
+        <div class="card"><div class="stat">Anytime</div><div class="stat-label">Withdrawal of Claimed SR</div></div>
+      </div>
+      <p>Eligible Adventure chest rewards may be claimed once every 24 hours. This restriction applies to chest claiming, not to withdrawals of successfully claimed balances.</p>
+      <ol class="steps">
+        <li>Players participate in Adventure using eligible heroes.</li>
+        <li>Chest rewards accumulate according to verified game rules.</li>
+        <li>Players claim eligible chest rewards when the 24-hour cycle allows.</li>
+        <li>Successfully claimed SR becomes part of the available withdrawal balance.</li>
+        <li>The next chest claim is available after the verified cooldown expires.</li>
+      </ol>
+      <p>Claim cooldowns must use authoritative timestamps. Failed claims must not incorrectly consume the cooldown, and duplicate claim processing must be prevented.</p>
+      <p class="small muted">The final policy must clarify how unclaimed rewards are treated across multiple claim cycles.</p>
+    </section>
+
+    <!-- 06: WITHDRAWALS -->
+    <section id="withdrawals" aria-labelledby="h-withdrawals">
+      <span class="section-kicker">Chapter 06</span>
+      <h2 id="h-withdrawals">SR Withdrawal System</h2>
+      <p>Players may withdraw eligible, already-claimed SR balances at any time, subject to balance verification, available custody backing, network conditions, and security controls.</p>
+      <div class="grid three">
+        <div class="card"><div class="stat">95%</div><div class="stat-label">SR received by the player</div></div>
+        <div class="card"><div class="stat">5%</div><div class="stat-label">SR returned to the Locked Treasury</div></div>
+        <div class="card"><div class="stat">0</div><div class="stat-label">Additional SOL platform withdrawal fee</div></div>
+      </div>
+      <h3>Interactive Withdrawal Calculator</h3>
+      <div class="calculator">
+        <div class="calc-input">
+          <label for="withdrawAmount">Gross withdrawal:</label>
+          <input id="withdrawAmount" type="number" min="0" step="0.000001" value="10000" inputmode="decimal" aria-describedby="calcNote">
+          <span>SR</span>
+        </div>
+        <div class="grid calc-results" aria-live="polite">
+          <div><span class="muted">Player Receives — 95%</span><strong id="netAmount">9,500 SR</strong></div>
+          <div class="fee"><span class="muted">Locked Treasury Fee — 5%</span><strong id="feeAmount">500 SR</strong></div>
+        </div>
+        <p class="small muted" id="calcNote">Example only. Production calculations must use precise token base-unit arithmetic and published rounding rules. Normal blockchain network costs may still apply. (This illustration works in 6-decimal base units and rounds the fee down.)</p>
+      </div>
+      <h3>Withdrawal Rules</h3>
+      <ul>
+        <li>5% of the gross SR withdrawal is deducted.</li>
+        <li>95% of the gross SR withdrawal is paid to the player.</li>
+        <li>The deducted 5% is credited to the Locked SR Treasury.</li>
+        <li>No separate SOL-denominated platform withdrawal service fee is charged.</li>
+        <li>Normal Solana network or token-account creation costs remain distinct.</li>
+        <li>Fees and final payout must be shown before player confirmation.</li>
+      </ul>
+      <h3>Security Requirements</h3>
+      <p>The withdrawal system must verify ownership and balances, prevent duplicate payouts, maintain adequate backing, and reconcile fee and player-payout movements safely.</p>
+    </section>
+
+    <!-- 07: SOL REVENUE -->
+    <section id="sol-revenue" aria-labelledby="h-sol">
+      <span class="section-kicker">Chapter 07</span>
+      <h2 id="h-sol">SOL Development Revenue</h2>
+      <p>SOL revenue funds the operational side of Shinobi Bombers, reducing dependence on selling SR to maintain the game.</p>
+      <div class="grid">
+        <div class="card"><h3>📦 Limited NFT Boxes</h3><p>Net proceeds from approved limited-edition NFT collections purchased with SOL.</p></div>
+        <div class="card"><h3>🧙 Sensei Service</h3><p>Sensei purchases are denominated in SOL and contribute to the SOL Development Economy.</p></div>
+        <div class="card"><h3>✦ Eligible Creator Fees</h3><p>Actual creator-fee revenue received under applicable platform rules, when available.</p></div>
+        <div class="card"><h3>🤝 Additional Funding</h3><p>Approved sponsorships, grants, and voluntary supporter programs with transparent terms.</p></div>
+      </div>
+      <div class="callout">
+        <strong>SOL Withdrawal Fee Removed</strong>
+        There is no SOL platform withdrawal service charge. SR withdrawals use the 5% SR deduction instead.
+      </div>
+      <p>Player liabilities, refundable obligations, and assets held on behalf of players are not unrestricted project operating revenue.</p>
+    </section>
+
+    <!-- 08: SOL PHASE 1 -->
+    <section id="sol-phase1" aria-labelledby="h-p1">
+      <span class="section-kicker">Chapter 08</span>
+      <h2 id="h-p1">SOL Allocation — Phase 1</h2>
+      <span class="tag">Early Launch &amp; Development</span>
+      <p>During the initial launch, the priority is to fund essential operations, reserve requirements, and security.</p>
+      <div class="allocation" role="img" aria-label="65 percent development and hosting, 20 percent emergency reserve, 10 percent security and monitoring, 5 percent marketing and growth">
+        <div class="a" style="flex:65">65%</div><div class="b" style="flex:20">20%</div><div class="c" style="flex:10">10%</div><div class="d" style="flex:5"></div>
+      </div>
+      <ul class="legend" aria-hidden="true">
+        <li><i class="a"></i>Development &amp; Hosting</li><li><i class="b"></i>Emergency Reserve</li><li><i class="c"></i>Security &amp; Monitoring</li><li><i class="d"></i>Marketing &amp; Growth</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Allocation</th><th scope="col">Percentage</th><th scope="col">Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>Development &amp; Hosting</td><td>65%</td><td>Servers, development, infrastructure</td></tr>
+            <tr><td>Emergency Reserve</td><td>20%</td><td>Unexpected operating costs</td></tr>
+            <tr><td>Security &amp; Monitoring</td><td>10%</td><td>Security and incident response</td></tr>
+            <tr><td>Marketing &amp; Growth</td><td>5%</td><td>Community development</td></tr>
+            <tr><td>SR Buybacks</td><td>0%</td><td>Inactive during initial phase</td></tr>
+            <tr><td>Additional Liquidity Reserve</td><td>0%</td><td>Inactive during initial phase</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Allocation percentages apply to net distributable SOL proceeds after direct expenses, refunds, applicable tax provisions, and fulfillment obligations.</p>
+      <p class="small muted">Essential initial token-launch liquidity, if required, must be independently funded and disclosed.</p>
+    </section>
+
+    <!-- 09: SOL PHASE 2 -->
+    <section id="sol-phase2" aria-labelledby="h-p2">
+      <span class="section-kicker">Chapter 09</span>
+      <h2 id="h-p2">SOL Allocation — Phase 2</h2>
+      <span class="tag">Long-Term Operational Framework</span>
+      <p>Once essential expenses and reserve targets are met, Shinobi Bombers may transition to the following long-term allocation.</p>
+      <div class="allocation" role="img" aria-label="50 percent development and hosting, 20 percent emergency reserve, 10 percent security fund, 10 percent liquidity reserve, 5 percent marketing and growth, 5 percent optional SR buybacks">
+        <div class="a" style="flex:50">50%</div><div class="b" style="flex:20">20%</div><div class="c" style="flex:10">10%</div><div class="d" style="flex:10">10%</div><div class="e" style="flex:5"></div><div class="f" style="flex:5"></div>
+      </div>
+      <ul class="legend" aria-hidden="true">
+        <li><i class="a"></i>Development &amp; Hosting</li><li><i class="b"></i>Emergency Reserve</li><li><i class="c"></i>Security Fund</li><li><i class="d"></i>Liquidity Reserve</li><li><i class="e"></i>Marketing &amp; Growth</li><li><i class="f"></i>Optional SR Buybacks</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Allocation</th><th scope="col">Percentage</th></tr></thead>
+          <tbody>
+            <tr><td>Development &amp; Hosting</td><td>50%</td></tr>
+            <tr><td>Emergency Reserve</td><td>20%</td></tr>
+            <tr><td>Security Fund</td><td>10%</td></tr>
+            <tr><td>Liquidity Reserve</td><td>10%</td></tr>
+            <tr><td>Marketing &amp; Growth</td><td>5%</td></tr>
+            <tr><td>Optional SR Buybacks</td><td>5%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Liquidity Reserve</h3>
+      <p>Reserve assets may be allocated toward approved liquidity requirements, subject to platform rules, asset availability, treasury governance, and disclosure. These funds are separate from assets already committed to an exchange liquidity pool.</p>
+      <h3>Optional SR Buybacks</h3>
+      <p>Up to 5% of net distributable SOL revenue may be budgeted for optional SR purchases when sufficient operating surplus exists.</p>
+      <p>Repurchased SR may be transferred to the approved Locked Treasury, where it becomes subject to treasury restrictions and reward-allocation rules.</p>
+      <div class="callout">
+        <strong>Transition Requirement</strong>
+        The proposed target is at least 3–6 months of essential operating expenses in reserve, alongside necessary security funding, before discretionary buybacks begin.
+      </div>
+    </section>
+
+    <!-- 10: SUSTAINABILITY -->
+    <section id="sustainability" aria-labelledby="h-sus">
+      <span class="section-kicker">Chapter 10</span>
+      <h2 id="h-sus">Reward Recycling &amp; Sustainability</h2>
+      <p>The project aims to recycle eligible SR revenue and withdrawal deductions into controlled reward funding.</p>
+      <ol class="steps">
+        <li>Players participate in eligible gameplay activities.</li>
+        <li>Verified chest rewards are funded from the Active Reward Pool.</li>
+        <li>Players claim eligible rewards on the 24-hour cycle.</li>
+        <li>Claimed SR becomes available for withdrawal.</li>
+        <li>Successful withdrawal returns 5% SR to the Locked Treasury.</li>
+        <li>Approved Treasury releases may replenish reward reserves.</li>
+      </ol>
+      <h3>Three Potential Treasury Funding Sources</h3>
+      <div class="grid three">
+        <div class="card"><div class="stat">50%</div><div class="stat-label">Of eligible net SR game-service revenue</div></div>
+        <div class="card"><div class="stat">5%</div><div class="stat-label">Of successful gross SR withdrawals</div></div>
+        <div class="card"><div class="stat">Optional</div><div class="stat-label">SR bought with approved surplus SOL</div></div>
+      </div>
+      <p>These streams are accounted for separately. Withdrawal deductions must not be counted again as newly collected service revenue.</p>
+      <p>Reward budgets must be constrained by actual available funds, verified player obligations, and realistic expected game revenue.</p>
+      <div class="callout">
+        <strong>Sustainability Is Not Guaranteed</strong>
+        Treasury recycling does not create unlimited SR. Players can sell SR after it reaches their wallets. No reward model or treasury allocation can guarantee token price stability.
+      </div>
+    </section>
+
+    <!-- 11: MYTHIC -->
+    <section id="mythic" aria-labelledby="h-mythic">
+      <span class="section-kicker">Chapter 11</span>
+      <h2 id="h-mythic">Exclusive Mythic NFT Box</h2>
+      <div class="card">
+        <img class="box-art" src="/play/assets/mythic-box/box-256.webp" alt="The Limited Mythic NFT Box" width="150" height="150" loading="lazy" decoding="async">
+        <div class="eyebrow">Exclusive Early-Supporter Collection</div>
+        <h3 style="font-size:28px;margin-top:14px">Mythic Shinobi</h3>
+        <p>The proposed limited Mythic NFT Box includes a special Mythic hero and an exclusive celestial aura design.</p>
+        <div class="stat">10% OFF</div>
+        <p>Qualifying Mythic NFT holders receive a proposed 10% discount on eligible in-game purchases while holding the qualifying NFT.</p>
+        <h3>Discount Exclusions</h3>
+        <ul>
+          <li>Marketplace transactions.</li>
+          <li>Boss Hunt entrance fees.</li>
+          <li>Withdrawal deductions, which are not purchases.</li>
+        </ul>
+        <p>Sensei is a SOL-paid game service. Its eligibility under the holder discount must be made explicit in the final purchase terms; absent a new exclusion, it should be treated as an eligible in-game purchase.</p>
+      </div>
+      <p class="small muted">Final Mythic NFT supply, SOL price, issuance mechanics, discount stacking, and ownership terms require official confirmation. NFT ownership does not guarantee financial returns.</p>
+    </section>
+
+    <!-- 12: CREATORS -->
+    <section id="creators" aria-labelledby="h-creators">
+      <span class="section-kicker">Chapter 12</span>
+      <h2 id="h-creators">Creators Portal</h2>
+      <p>The Creators Portal is a planned streamer and influencer program. Creator approval uses an administrator-managed Solana wallet allowlist rather than Discord bot integration.</p>
+      <div class="grid">
+        <div class="card"><div class="stat">15</div><div class="stat-label">Valid paid hero mints required</div></div>
+        <div class="card"><div class="stat">Stage 5</div><div class="stat-label">Adventure completion required</div></div>
+        <div class="card"><div class="stat">50,000 CP</div><div class="stat-label">Guaranteed once per qualified referral</div></div>
+        <div class="card"><div class="stat">5% + 5%</div><div class="stat-label">Adventure and eligible spending commissions in CP</div></div>
+      </div>
+      <h3>Creator Rewards</h3>
+      <ul>
+        <li>50,000 CP for each verified referral that mints 15 paid heroes and clears Stage 5.</li>
+        <li>5% of qualified referrals' eligible settled Adventure SR rewards, credited as CP.</li>
+        <li>5% of qualified referrals' eligible settled SR-denominated game-service spending, credited as CP.</li>
+        <li>Default proposed commission window: 90 days after referral qualification.</li>
+        <li>The initial 15 qualifying paid hero mints do not also generate purchase commission.</li>
+      </ul>
+      <h3>Creator Points Restrictions</h3>
+      <p>CP is a non-transferable, non-withdrawable internal rewards balance. It cannot be exchanged directly for SR, SOL, USDC, or cash. It can only be used in the approved Creator Shop.</p>
+      <p>Creator Shop redemptions are subject to published inventory, supply, and eligibility limits. The 50,000 CP milestone guarantees the awarded CP, not unlimited NFT inventory.</p>
+      <div class="callout">
+        <strong>SOL-Paid Sensei and Creator Commissions</strong>
+        Sensei purchases are excluded from the SR-based 5% purchase commission unless the project adopts a separately disclosed SOL-to-CP conversion policy.
+      </div>
+    </section>
+
+    <!-- 13: ROADMAP -->
+    <section id="roadmap" aria-labelledby="h-roadmap">
+      <span class="section-kicker">Chapter 13</span>
+      <h2 id="h-roadmap">Official Game Launch Roadmap</h2>
+      <p>The roadmap describes relative launch days, not confirmed calendar dates. Releases are subject to technical readiness and testing.</p>
+      <div class="roadmap">
+        <div class="roadmap-item">
+          <h3>DAY 1 — The Shinobi Journey Begins</h3>
+          <div class="card">
+            <span class="tag">Initial Game Launch</span>
+            <ul>
+              <li><strong>Summoning Shrine</strong> — Summon and collect Shinobi heroes.</li>
+              <li><strong>Adventure Mode</strong> — Deploy heroes, clear stages, and collect rewards.</li>
+              <li><strong>Sensei Service</strong> — Available for purchase using SOL.</li>
+              <li><strong>Chest Claims</strong> — Eligible every 24 hours.</li>
+              <li><strong>SR Withdrawals</strong> — Anytime for claimed balances, with a 5% SR Treasury deduction.</li>
+            </ul>
+            <p class="small muted">Dojo access is limited to Sensei purchases until Day 3.</p>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <h3>DAY 2 — Hero Fusion</h3>
+          <div class="card"><p>Unlock the Fusion system and combine eligible Shinobi heroes under published rarity and service requirements.</p></div>
+        </div>
+        <div class="roadmap-item">
+          <h3>DAY 3 — Full Dojo Services</h3>
+          <div class="card">
+            <ul><li>Chakra Recovery.</li><li>Dojo Upgrades.</li><li>Sensei Service (SOL payment).</li></ul>
+            <p class="small muted">There is no separate hero-training service.</p>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <h3>DAY 4 — Hero Marketplace</h3>
+          <div class="card">
+            <ul><li>Buy Heroes.</li><li>Sell Heroes.</li><li>Make Offer.</li></ul>
+            <p class="small muted">General item trading is not part of the initial Marketplace release.</p>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <h3>DAYS 5–7 — Special Minting Event</h3>
+          <div class="card">
+            <span class="tag">Three-Day Event</span>
+            <ul><li>Discounts on eligible hero mints.</li><li>Official Minting Leaderboard.</li><li>Legend rewards.</li><li>Elite rewards.</li></ul>
+            <p class="small muted">Exact discount percentage, prize quantities, rankings, and event terms will be published before the event.</p>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <h3>DAY 8 — Boss Hunt</h3>
+          <div class="card">
+            <ul><li>Challenging boss encounters.</li><li>Daily Rewards.</li><li>Weekly Rewards.</li><li>Published eligibility and reward limits.</li></ul>
+            <p class="small muted">Boss Hunt entrance fees are excluded from the Mythic holder discount.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14: TRANSPARENCY -->
+    <section id="transparency" aria-labelledby="h-transparency">
+      <span class="section-kicker">Chapter 14</span>
+      <h2 id="h-transparency">Treasury Transparency</h2>
+      <p>Shinobi Bombers proposes public reporting on eligible game revenue, player reward funding, treasury movements, and operating allocations.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>SR Reporting</h3>
+          <ul>
+            <li>Eligible game-service revenue.</li><li>Revenue allocation by vault.</li><li>Chest rewards claimed.</li>
+            <li>SR withdrawals and 5% deductions.</li><li>Treasury transfers and vault balances.</li><li>Outstanding player reward liabilities.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>SOL Reporting</h3>
+          <ul>
+            <li>Limited NFT Box revenue.</li><li>Sensei purchase revenue.</li><li>Eligible creator-fee receipts.</li>
+            <li>Development and hosting expenditure.</li><li>Emergency and security reserves.</li><li>Liquidity funding and optional buybacks.</li>
+          </ul>
+        </div>
+      </div>
+      <h3>Governance &amp; Verification</h3>
+      <p>Where feasible, reports should reference on-chain transactions and reconcile public holdings with internal account balances. Lock restrictions, administrators, upgrade authority, and emergency permissions must be disclosed.</p>
+      <p>The proposed reporting cadence is monthly, with more frequent dashboard updates when reliable data is available.</p>
+    </section>
+
+    <!-- 15: RISKS -->
+    <section id="risks" aria-labelledby="h-risks">
+      <span class="section-kicker">Chapter 15</span>
+      <h2 id="h-risks">Risks &amp; Limitations</h2>
+      <div class="grid">
+        <div class="card"><h3>Token Price Risk</h3><p>SR prices may fluctuate significantly. Buybacks do not guarantee a price floor or market capitalization.</p></div>
+        <div class="card"><h3>Reward Funding Risk</h3><p>A locked reserve and withdrawal deductions do not guarantee unlimited reward funding.</p></div>
+        <div class="card"><h3>NFT Market Risk</h3><p>NFTs may decline in value or have limited resale liquidity. Ownership does not guarantee investment returns.</p></div>
+        <div class="card"><h3>Blockchain &amp; Security Risk</h3><p>Smart contracts, wallets, trading venues, custody services, and infrastructure can experience technical failures.</p></div>
+        <div class="card"><h3>Withdrawal Risk</h3><p>Network disruption, insufficient backing, or security incidents may delay withdrawal settlement.</p></div>
+        <div class="card"><h3>Legal &amp; Development Risk</h3><p>Financial features may require legal review, and development milestones may change after testing.</p></div>
+      </div>
+    </section>
+
+    <!-- 16: CONFIRMATIONS -->
+    <section id="pending" aria-labelledby="h-pending">
+      <span class="section-kicker">Chapter 16</span>
+      <h2 id="h-pending">Details Requiring Confirmation</h2>
+      <p>The following information must be confirmed before this document becomes a final production whitepaper.</p>
+      <div class="card">
+        <ol>
+          <li>Official SR token mint address, supply, and distribution.</li>
+          <li>Token launch and liquidity arrangements.</li>
+          <li>Locked Treasury program and transfer permissions.</li>
+          <li>Daily and seasonal reward budgets.</li>
+          <li>Unclaimed chest reward handling and timer rules.</li>
+          <li>5% SR withdrawal settlement and rounding implementation.</li>
+          <li>Who pays Solana network transaction costs.</li>
+          <li>Sensei SOL pricing and Mythic discount eligibility.</li>
+          <li>Final in-game SR service prices.</li>
+          <li>Days 5–7 discount percentage and leaderboard prizes.</li>
+          <li>Mythic NFT Box supply, price, and ownership terms.</li>
+          <li>Creators Portal inventory and enrollment safeguards.</li>
+          <li>Exact launch dates and deployment status.</li>
+          <li>Security review and legal readiness.</li>
+        </ol>
+      </div>
+      <div class="callout">
+        <strong>Community Commitment</strong>
+        Shinobi Bombers aims to build a transparent, fair, and engaging game where collectible heroes, strategic gameplay, sustainable rewards, and continuous development remain central to the player experience.
+      </div>
+    </section>
+
+    <footer class="footer">
+      <strong>FORGE YOUR NINJA WAY</strong>
+      <p>SHINOBI BOMBERS · WHITEPAPER v1.1</p>
+      <p>Community Review Draft · November 7, 2026</p>
+      <p>This whitepaper is informational and does not promise cryptocurrency returns, token price stability, NFT resale value, or guaranteed reward availability.</p>
+      <p>© Shinobi Bombers. Project branding and visual assets remain with their respective owners.</p>
+      <p><a href="/play/">Play Shinobi Bombers →</a></p>
+    </footer>
+  </main>
+</div>
+
+<script>
+  // Interactive SR withdrawal illustration in 6-decimal base units (BigInt): fee = 5% rounded down,
+  // player receives the rest. Production calculations happen server-side in integer base units.
+  (() => {
+    const input = document.getElementById('withdrawAmount'), net = document.getElementById('netAmount'), fee = document.getElementById('feeAmount');
+    const DEC = 6n, UNIT = 10n ** DEC;
+    const parse = text => { const m = /^\s*(\d{0,15})(?:\.(\d{0,6})\d*)?\s*$/.exec(String(text)); if (!m || (!m[1] && !m[2])) return 0n; return BigInt(m[1] || '0') * UNIT + BigInt((m[2] || '').padEnd(6, '0')); };
+    const show = units => { const whole = units / UNIT, frac = (units % UNIT).toString().padStart(6, '0').replace(/0+$/, ''); return whole.toLocaleString('en-US') + (frac ? '.' + frac : '') + ' SR'; };
+    function update() { const gross = parse(input.value), f = gross * 5n / 100n; net.textContent = show(gross - f); fee.textContent = show(f); }
+    input.addEventListener('input', update); update();
+  })();
+
+  // Reading progress and the current chapter in the table of contents.
+  (() => {
+    const bar = document.getElementById('progress');
+    const progress = () => { const h = document.documentElement.scrollHeight - innerHeight; bar.style.width = Math.max(0, Math.min(100, h > 0 ? scrollY / h * 100 : 0)) + '%'; };
+    addEventListener('scroll', progress, { passive: true }); addEventListener('resize', progress); progress();
+    const links = [...document.querySelectorAll(".sidebar a[href^='#']")], sections = links.map(l => document.getElementById(l.hash.slice(1))).filter(Boolean);
+    if (!('IntersectionObserver' in window)) return;
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (!visible.length) return;
+      const id = visible[0].target.id;
+      for (const link of links) {
+        const on = link.hash === '#' + id; link.classList.toggle('active', on);
+        if (on) { link.setAttribute('aria-current', 'location'); if (matchMedia('(max-width: 960px)').matches) link.parentElement.scrollTo({ left: link.offsetLeft - 24, behavior: 'smooth' }); } else link.removeAttribute('aria-current');
+      }
+    }, { rootMargin: '-70px 0px -55% 0px', threshold: 0 });
+    sections.forEach(s => observer.observe(s));
+  })();
+</script>
+</body>
+</html>

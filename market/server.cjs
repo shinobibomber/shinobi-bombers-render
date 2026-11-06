@@ -56,13 +56,20 @@ function publicListing(row, now) {
 const publicOffer = (o, now) => ({ id: o.id, listingId: o.listing_id, amount: Number(o.amount), status: o.status, created: Number(o.created), left: Math.max(0, Number(o.expires) - now), buyer: short(o.buyer), payout: split(Number(o.amount)).seller });
 function uuid(value, what) { if (typeof value !== 'string' || !/^[0-9a-f-]{36}$/.test(value)) fail('Choose a Market ' + what + '.'); return value; }
 const listingId = value => uuid(value, 'listing');
+// Starter Ryo (ryo_accounts.bonus, test server) pays for a buy or offer when it covers the whole price;
+// held offers remember their pot, so every refund returns to the pot that paid.
+async function credit(store, c, wallet, amount, funding) {
+  const col = funding === 'bonus' ? 'bonus' : 'balance';
+  await c.query(`INSERT INTO ryo_accounts(scope,wallet,${col}) VALUES($1,$2,$3) ON CONFLICT(scope,wallet) DO UPDATE SET ${col}=ryo_accounts.${col}+EXCLUDED.${col}`, [store.scope, wallet, amount]);
+}
+const bonusTx = (wallet, requestId) => ({ signature: 'bonus:' + wallet + ':' + requestId, wire: '', lastHeight: 0 });
 async function lockBoth(store, c, a, b) { const [x, y] = [a, b].sort(); const first = await store.locked(c, x), second = await store.locked(c, y); return x === a ? [first, second] : [second, first]; }
 
 // Return every active offer on a listing (except one) to its buyer.
 async function closeOffers(store, c, listing, status, except = null) {
   const rows = (await c.query("SELECT * FROM ryo_market_offers WHERE scope=$1 AND listing_id=$2 AND status='active' FOR UPDATE", [store.scope, listing])).rows.filter(o => o.id !== except);
   for (const o of rows) {
-    await c.query('INSERT INTO ryo_accounts(scope,wallet,balance) VALUES($1,$2,$3) ON CONFLICT(scope,wallet) DO UPDATE SET balance=ryo_accounts.balance+EXCLUDED.balance', [store.scope, o.buyer, Number(o.amount)]);
+    await credit(store, c, o.buyer, Number(o.amount), o.funding);
     await c.query('UPDATE ryo_market_offers SET status=$3,settled_at=$4 WHERE scope=$1 AND id=$2', [store.scope, o.id, status, store.now()]);
   }
   return rows.length;
@@ -81,7 +88,7 @@ async function sweepLocked(store, c, wallet) {
   const lapsed = (await c.query(`SELECT o.* FROM ryo_market_offers o JOIN ryo_market_listings l ON l.scope=o.scope AND l.id=o.listing_id
     WHERE o.scope=$1 AND o.buyer=$2 AND o.status='active' AND (o.expires<=$3 OR l.expires<=$3 OR l.status IN ('sold','cancelled','expired')) FOR UPDATE OF o`, [store.scope, wallet, now])).rows;
   for (const o of lapsed) {
-    await c.query('UPDATE ryo_accounts SET balance=balance+$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, Number(o.amount)]);
+    await credit(store, c, wallet, Number(o.amount), o.funding);
     await c.query("UPDATE ryo_market_offers SET status='expired',settled_at=$3 WHERE scope=$1 AND id=$2", [store.scope, o.id, now]);
   }
   return rows.length + lapsed.length;
@@ -147,14 +154,16 @@ async function offer(store, wallet, body) {
     const min = MIN_PRICE[listing.rank], price = Number(listing.price);
     if (!Number.isSafeInteger(amount) || amount < min || amount >= price) fail(`Offer from ${min.toLocaleString('en-US')} up to ${(price - 1).toLocaleString('en-US')} Ryo, or buy now at the listed price.`);
     const previous = (await c.query("SELECT * FROM ryo_market_offers WHERE scope=$1 AND listing_id=$2 AND buyer=$3 AND status='active' FOR UPDATE", [store.scope, id, wallet])).rows[0];
-    const held = previous ? Number(previous.amount) : 0;
-    if (Number(account.balance) + held < amount) fail('Not enough Ryo in your balance for this offer.');
+    const held = previous ? Number(previous.amount) : 0, heldBonus = previous?.funding === 'bonus';
+    const funding = Number(account.bonus || 0) + (heldBonus ? held : 0) >= amount ? 'bonus' : Number(account.balance) + (heldBonus ? 0 : held) >= amount ? 'balance' : null;
+    if (!funding) fail('Not enough Ryo in your balance for this offer.');
     if (!previous && Number((await c.query("SELECT COUNT(*) AS n FROM ryo_market_offers WHERE scope=$1 AND buyer=$2 AND status='active'", [store.scope, wallet])).rows[0].n) >= MAX_OFFERS) fail(`You can have up to ${MAX_OFFERS} open offers at once.`, 409);
     if (previous) await c.query("UPDATE ryo_market_offers SET status='cancelled',settled_at=$3 WHERE scope=$1 AND id=$2", [store.scope, previous.id, store.now()]);
-    await c.query('UPDATE ryo_accounts SET balance=balance+$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, held - amount]);
+    if (previous) await credit(store, c, wallet, held, previous.funding);
+    await c.query(`UPDATE ryo_accounts SET ${funding}=${funding}-$3 WHERE scope=$1 AND wallet=$2`, [store.scope, wallet, amount]);
     const now = store.now();
-    const row = (await c.query('INSERT INTO ryo_market_offers(scope,id,listing_id,buyer,seller,amount,created,expires) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
-      [store.scope, crypto.randomUUID(), id, wallet, listing.seller, amount, now, Math.min(now + OFFER_MS, Number(listing.expires))])).rows[0];
+    const row = (await c.query('INSERT INTO ryo_market_offers(scope,id,listing_id,buyer,seller,amount,created,expires,funding) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
+      [store.scope, crypto.randomUUID(), id, wallet, listing.seller, amount, now, Math.min(now + OFFER_MS, Number(listing.expires)), funding])).rows[0];
     return { offer: publicOffer(row, now) };
   });
 }
@@ -166,7 +175,7 @@ async function withdrawOffer(store, wallet, body, by) {
     await lockBoth(store, c, o.buyer, o.seller);
     const row = (await c.query('SELECT * FROM ryo_market_offers WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, id])).rows[0];
     if (row.status !== 'active') fail('That offer is already closed.', 409);
-    await c.query('UPDATE ryo_accounts SET balance=balance+$3 WHERE scope=$1 AND wallet=$2', [store.scope, row.buyer, Number(row.amount)]);
+    await credit(store, c, row.buyer, Number(row.amount), row.funding);
     await c.query('UPDATE ryo_market_offers SET status=$3,settled_at=$4 WHERE scope=$1 AND id=$2', [store.scope, id, by === 'buyer' ? 'cancelled' : 'declined', store.now()]);
     return { offerId: id, status: by === 'buyer' ? 'cancelled' : 'declined' };
   });
@@ -190,9 +199,9 @@ async function accept(store, wallet, requestId, body, prepare) {
     await require('./adventure.cjs').settleLocked(store, c, o.buyer, profile, false);
     const economy = require('./economy.cjs'), hero = listing.hero, price = Number(o.amount);
     const q = { economyVersion: economy.VERSION, product: 'market', params: { listingId: listing.id, offerId: id }, title: 'Market offer · ' + hero.name, base: price, total: price, burn: 0, ...split(price),
-      sellerWallet: wallet, hero: { name: hero.name, rank: hero.rank, level: hero.level } };
+      sellerWallet: wallet, hero: { name: hero.name, rank: hero.rank, level: hero.level }, ...(o.funding === 'bonus' ? { funding: 'bonus' } : {}) };
     const after = economy.normalizeProfile(structuredClone(profile)); after.heroes.push(hero);
-    const tx = await prepare(q);
+    const tx = q.funding === 'bonus' ? bonusTx(o.buyer, requestId) : await prepare(q);
     // The offered Ryo is already held, so the buyer's balance is not debited again.
     await c.query("UPDATE ryo_market_listings SET status='pending',buyer=$3,request_id=$4 WHERE scope=$1 AND id=$2", [store.scope, listing.id, o.buyer, requestId]);
     await c.query("UPDATE ryo_market_offers SET status='accepted',settled_at=$3 WHERE scope=$1 AND id=$2", [store.scope, id, store.now()]);
@@ -248,18 +257,19 @@ async function buy(store, wallet, requestId, body, prepare) {
     const price = Number(row.price); if (price !== expected) fail('The price changed. Review the listing again before buying.', 409);
     // An open offer of this buyer on the same listing is returned first, so it can fund the purchase.
     const own = (await c.query("SELECT * FROM ryo_market_offers WHERE scope=$1 AND listing_id=$2 AND buyer=$3 AND status='active' FOR UPDATE", [store.scope, id, wallet])).rows[0];
-    const held = own ? Number(own.amount) : 0;
-    if (Number(account.balance) + held < price) fail('Not enough Ryo in your balance for this hero.');
+    const held = own ? Number(own.amount) : 0, heldBonus = own?.funding === 'bonus';
+    const funding = Number(account.bonus || 0) + (heldBonus ? held : 0) >= price ? 'bonus' : Number(account.balance) + (heldBonus ? 0 : held) >= price ? 'balance' : null;
+    if (!funding) fail('Not enough Ryo in your balance for this hero.');
     const profile = await store.profileLocked(c, wallet);
     if (profile.heroes.length >= MAX_HEROES) fail(`Your collection holds ${MAX_HEROES} heroes. Fuse heroes to free a slot first.`, 409);
     await require('./adventure.cjs').settleLocked(store, c, wallet, profile, false);
     const economy = require('./economy.cjs'), hero = row.hero;
     const q = { economyVersion: economy.VERSION, product: 'market', params: { listingId: id }, title: 'Market · ' + hero.name, base: price, total: price, burn: 0, ...split(price),
-      sellerWallet: row.seller, hero: { name: hero.name, rank: hero.rank, level: hero.level } };
+      sellerWallet: row.seller, hero: { name: hero.name, rank: hero.rank, level: hero.level }, ...(funding === 'bonus' ? { funding: 'bonus' } : {}) };
     const after = economy.normalizeProfile(structuredClone(profile)); after.heroes.push(hero);
-    const tx = await prepare(q);
-    if (own) await c.query("UPDATE ryo_market_offers SET status='cancelled',settled_at=$3 WHERE scope=$1 AND id=$2", [store.scope, own.id, store.now()]);
-    await c.query('UPDATE ryo_accounts SET balance=balance-$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, price - held]);
+    const tx = funding === 'bonus' ? bonusTx(wallet, requestId) : await prepare(q);
+    if (own) { await c.query("UPDATE ryo_market_offers SET status='cancelled',settled_at=$3 WHERE scope=$1 AND id=$2", [store.scope, own.id, store.now()]); await credit(store, c, wallet, held, own.funding); }
+    await c.query(`UPDATE ryo_accounts SET ${funding}=${funding}-$3 WHERE scope=$1 AND wallet=$2`, [store.scope, wallet, price]);
     await c.query("UPDATE ryo_market_listings SET status='pending',buyer=$3,request_id=$4 WHERE scope=$1 AND id=$2", [store.scope, id, wallet, requestId]);
     return (await c.query('INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,created) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *',
       [store.scope, wallet, requestId, 'market', JSON.stringify(q.params), JSON.stringify(q), JSON.stringify({ product: 'market', title: q.title, outputs: [hero], consumed: [] }), JSON.stringify(after), price, tx.signature, tx.wire, tx.lastHeight, store.now()])).rows[0];

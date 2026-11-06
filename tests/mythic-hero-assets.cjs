@@ -7,7 +7,7 @@ const sharp = require('sharp');
 const root = path.resolve(__dirname, '..'), dir = path.join(root, 'mythic-hero/assets'), meta = require(path.join(dir, 'metadata/tsukiyomi.json'));
 
 (async () => {
-  assert.deepEqual([meta.hero.name, meta.hero.rarity, meta.hero.rank, meta.hero.stars, meta.hero.id], ['Tsukiyomi', 'Mythic', 5, 7, 13]);
+  assert.deepEqual([meta.hero.name, meta.hero.rarity, meta.hero.rank, meta.hero.id, 'stars' in meta.hero], ['Tsukiyomi', 'Mythic', 5, 13, false]);
   for (const source of Object.values(meta.sources)) assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'mythic-hero', source.file))).digest('hex'), source.sha256, 'reference unchanged: ' + source.file);
   assert.deepEqual([meta.frame.width, meta.frame.height, meta.frame.anchor], [128, 128, [64, 124]]);
   const required = { idle: 8, walk_front: 8, walk_left: 8, walk_right: 8, walk_back: 8, run_front: 8, run_left: 8, run_right: 8, run_back: 8, attack_front: 6, attack_left: 6, attack_right: 6, attack_back: 6,
@@ -31,6 +31,12 @@ const root = path.resolve(__dirname, '..'), dir = path.join(root, 'mythic-hero/a
       assert(opaque > 2500, `${name} frame ${c} has the hero`);
       if (!['defeat', 'victory'].includes(name) && !name.startsWith('run') && !name.startsWith('walk')) assert(lowest >= 118 && lowest <= 126, `${name} frame ${c} stands on the anchor (${lowest})`);
     }
+  }
+  // Walking and running step: the leg region (below the hip) changes between opposite phases.
+  for (const name of ['walk_front', 'walk_right', 'run_left', 'run_back']) {
+    const { data, info } = await sharp(path.join(dir, meta.animations[name].path)).raw().toBuffer({ resolveWithObject: true });
+    let diff = 0; for (let y = 84; y < 126; y++) for (let x = 0; x < 128; x++) { const a = (y * info.width + 2 * 128 + x) * 4 + 3, b = (y * info.width + 6 * 128 + x) * 4 + 3; if ((data[a] > 100) !== (data[b] > 100)) diff++; }
+    assert(diff > 60, name + ' legs move between steps (' + diff + ')');
   }
   for (const dirName of ['front', 'left', 'right', 'back']) { const c = meta.character[dirName]; assert.equal(c.direction, dirName); await corners(c.path, 128, 128, 1); assert(meta.previews[dirName].height > 250, 'HD ' + dirName + ' view'); }
   const skills = { dragon_slash: 8, void_shuriken: 8, raijin_field: 10, mythic_dragon_ascension: 10 };
