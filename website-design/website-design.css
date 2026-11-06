@@ -235,8 +235,36 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 /* Market */
 #sbwLayer .sbw-mgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;background:#03021a;border-radius:6px;overflow:hidden}
 #sbwLayer .sbw-mgrid .sbw-empty{grid-column:1/-1;align-self:center}
-#sbwLayer .sbw-mcard{height:230px;border:2px solid #ffb02a;border-radius:8px;background:#0b0727;color:#fff;font:600 13px Rajdhani,sans-serif;text-align:left;padding:8px;cursor:pointer}
-#sbwLayer .sbw-mcard.on{outline:3px solid #ffd257}
+/* Player Market cards */
+#sbwLayer .sbw-mgrid{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));box-sizing:border-box;padding:4px}
+#sbwLayer .sbw-mcard{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;min-height:0;overflow:hidden;padding:6px 8px 8px;border:2px solid var(--rc,#ffb02a);border-radius:9px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--rc,#ffb02a) 18%,#0b0727),#06041a 62%);color:#fff;font:600 13px Rajdhani,sans-serif;text-align:left;cursor:pointer;box-shadow:0 0 10px color-mix(in srgb,var(--rc,#ffb02a) 40%,transparent)}
+#sbwLayer .sbw-mcard.on{outline:3px solid #ffd257;outline-offset:1px}
+#sbwLayer .sbw-mcard.sold{opacity:.7}
+#sbwLayer .sbw-mcard .mc-top{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+#sbwLayer .sbw-mcard .mc-top em{font-style:normal;padding:1px 6px;border:1px solid #ffffff3a;border-radius:6px;font-size:11px;color:#dfe6ff;white-space:nowrap}
+#sbwLayer .sbw-mcard canvas{width:100%;height:86px;object-fit:contain;flex:none}
+#sbwLayer .sbw-mcard .mc-name{font:800 15px Rajdhani,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-mcard .mc-sub{font-size:11.5px;color:#b9c4e6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-mcard .mc-perks{min-height:28px;font-size:11.5px;color:#ffd98a;line-height:1.2;overflow:hidden}
+#sbwLayer .sbw-mcard .mc-price{display:flex;align-items:center;gap:5px;margin-top:auto;font:800 16px Rajdhani,sans-serif;color:#ffd257}
+#sbwLayer .sbw-mcard .coin,#sbwLayer .sbw-md .coin{display:inline-block;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6b0,#ffc13a 45%,#c47a00)}
+#sbwLayer .sbw-mcard .mc-cancel{margin-top:4px;padding:6px;border:1px solid #ff8a8a;border-radius:6px;text-align:center;color:#ffd0d0;font-size:12px}
+#sbwLayer .sbw-mbadge{position:absolute;z-index:14;display:grid;place-items:center;border-radius:11px;background:#ffb02a;color:#2a1000;font:800 12px Rajdhani,sans-serif;font-style:normal;pointer-events:none;box-shadow:0 0 8px #ffb02a}
+#sbwLayer .sbw-mbadge.wide{background:#1a2a6a;color:#dfe6ff;box-shadow:none;border:1px solid #6a7fd8}
+#sbwLayer .sbw-mpages{position:absolute;z-index:13;display:flex;justify-content:center;align-items:center;gap:6px}
+#sbwLayer .sbw-mpages button{min-width:40px;height:36px;border:1px solid #3b4a8a;border-radius:7px;background:#0d1440;color:#dfe6ff;font:800 15px Rajdhani,sans-serif;cursor:pointer}
+#sbwLayer .sbw-mpages button.on{border-color:#ffd257;color:#ffd257;box-shadow:0 0 8px #ffb02a88}
+#sbwLayer .sbw-msub{margin:-4px 0 10px;color:#b9c4e6!important;font-size:15px!important}
+#sbwLayer .sbw-mstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+#sbwLayer .sbw-mstats span{display:flex;flex-direction:column;padding:6px 8px;border:1px solid #2d3a6a;border-radius:7px;background:#0b1030;font-size:11px;color:#9fb3d9}
+#sbwLayer .sbw-mstats b{font:800 19px Rajdhani,sans-serif;color:#fff}
+#sbwLayer .sbw-mstats small{font-size:11px;color:#7ee787}
+#sbwLayer .sbw-md h4{margin:6px 0;color:#ffd257;font:800 15px Rajdhani,sans-serif;letter-spacing:1px}
+#sbwLayer .sbw-mperk{display:flex;flex-direction:column;margin:0 0 6px;padding:5px 8px;border-left:3px solid #ffb02a;background:#140c34;font-size:13px!important}
+#sbwLayer .sbw-mperk b{color:#ffd98a}
+#sbwLayer .sbw-mlist p{margin:4px 0;font-size:14px!important}
+#sbwLayer .sbw-mlist em{color:#7ee787;font-style:normal}
 #sbwLayer .sbw-mdet{background:linear-gradient(180deg,#120a35,#05041a);border-radius:8px}
 #sbwLayer .sbw-md{padding:20px}
 #sbwLayer .sbw-md h3{margin:0 0 10px;font:800 24px Rajdhani,sans-serif;color:#fff}
@@ -573,3 +601,19 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-mpart{position:relative;flex:none;overflow:hidden}
 #sbwLayer .sbw-minner{width:max-content}
 #sbwLayer .sbw-minner.sbw-mparts{display:flex;align-items:flex-start}
+/* Market dialogs */
+.sbw-dialog .sbw-sell-price{display:flex;flex-direction:column;gap:6px;margin:10px 0 4px;font-weight:700}
+.sbw-dialog .sbw-sell-price input{min-height:44px;padding:8px 12px;border:1px solid #6a7fd8;border-radius:8px;background:#0b1030;color:#fff;font:800 20px Rajdhani,sans-serif}
+.sbw-dialog .sbw-sell-out{padding:8px 12px;border:1px solid #2fd35a66;border-radius:8px;background:#0b2416;color:#d8ffe4}
+.sbw-dialog .sbw-sell-out b{color:#7ee787}
+.sbw-dialog .sbw-mbuyline b{font-size:22px;color:#ffd257}
+.sbw-dialog .sbw-msg{color:#ff9a9a}
+.sbw-dialog.sbw-perks{max-width:min(560px,94vw)}
+.sbw-perk-list{display:grid;gap:6px;margin:8px 0 12px;max-height:56vh;overflow:auto}
+.sbw-perk-list label{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:8px 10px;border:1px solid #2d3a6a;border-radius:8px;background:#0b1030;cursor:pointer}
+.sbw-perk-list input{width:20px;height:20px;margin-top:2px;accent-color:#ffb02a}
+.sbw-perk-list span{display:flex;flex-direction:column}
+.sbw-perk-list small{color:#9fb3d9}
+#sbwLayer .sbw-mgrid.sbw-mflow{grid-template-rows:none;grid-auto-rows:auto}
+#sbwLayer .sbw-mgrid.sbw-mflow .sbw-mcard{min-height:236px}
+#sbwLayer .sbw-cover[hidden],#sbwLayer .sbw-mbadge[hidden]{display:none}

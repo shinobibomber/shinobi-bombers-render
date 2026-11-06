@@ -108,6 +108,18 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Player Market (owner request): heroes only. market/server.cjs (copied to
+  app/server/market.cjs by apply-market.cjs, last-but-one unpack step): ryo_market_listings; post
+  escrows the hero out of the profile (rank minimums 10k/25k/80k/200k/500k, max 100M, 7 days, 20 per
+  seller, keep 2 heroes); browse filters rank, perks (jsonb @>), name, sort, 10/page; cancel and
+  expiry (swept on state/mine) return the hero intact. market-buy reuses ryo_purchases: buy() reserves
+  the buyer's Ryo, signs studio 2% + treasury 8% transfers (no burn), quote.operations = 10% (reward
+  pool), settled() in store.settlePurchase credits the seller 80% on confirm or relists on refund.
+  The purchases pause gates market-buy/market-post. Perks and look became server-owned the same
+  day (identityPatches, assignIdentity) so trades are honest. UI: website-design.js MK/INIT/PAINT/
+  MODS.market, sellDialog replaces Market.openListing; market buys skip the summon reveal.
+  Tests: market-server, market (browser, tests/market-fixture.cjs), financial-server market-buy.
+
 - 2026-11-06 phone layout (owner request): portrait/narrow viewports (innerWidth <= 820 and taller
   than wide) switch website-design.js into phone mode: MOBILE[screen] lists regions in artwork
   coordinates; stack() re-parents each stage element into a pane window (.sbw-mshift keeps artwork

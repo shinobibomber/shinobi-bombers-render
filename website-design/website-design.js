@@ -779,48 +779,181 @@
     hero: () => go(1)
   };
 
-  /* ---------- Market (game page 4, mode 1): local practice market ---------- */
+  /* ---------- Market (game page 4, mode 1): the shared player Market ---------- */
+  // Heroes are listed for Ryo on the server (market.cjs). Buying runs through the token checkout;
+  // the seller receives 80%, the reward pool 10%, the treasury 8% and the studio 2%. Listings last
+  // 7 days. Perks are server-owned, so the Skills filter and every card show the real perks.
+  const MARKET_MIN = [10000, 25000, 80000, 200000, 500000];
+  const PERK_NAMES = () => (typeof PK !== 'undefined' ? PK : [['Bounty Hunter', ''], ['Armor Breaker', ''], ['Wind Step', ''], ['Fast Charge', ''], ['Chakra Saver', ''], ['Piercing Shuriken', ''], ['Swift Hands', '']]);
+  const MK = { tab: 'heroes', rank: -1, perks: [], sort: 'price-asc', search: '', page: 0, data: null, mine: null, sel: -1, busy: false, seq: 0, error: '', at: 0 };
+  const SORTS = { 'price-asc': 'Price ↑', 'price-desc': 'Price ↓', newest: 'Newest' };
+  function listingHero(l) { const h = l.hero; return { id: 9000 + (h.look || 0), look: h.look, r: h.rank, z: false, lv: h.level, pw: h.stats.pw, sp: h.stats.sp, st: h.stats.st, pk: h.perks, name: h.name }; }
+  function marketRows() { return MK.tab === 'mine' ? (MK.mine ? [...MK.mine.listings, ...MK.mine.sales.map(s => ({ ...s, status: 'sold' }))] : []) : (MK.data ? MK.data.listings : []); }
+  async function marketLoad() {
+    if (!account() || !window.RyoPayments?.market) return;
+    const seq = ++MK.seq; MK.busy = true; if (built.market) built.market.sig = '';
+    try {
+      if (MK.tab === 'mine') MK.mine = await RyoPayments.market('market-mine');
+      else MK.data = await RyoPayments.market('market-browse', { rank: MK.rank, perks: MK.perks, sort: MK.sort, search: MK.search, page: MK.page });
+      if (seq === MK.seq) { MK.error = ''; MK.at = Date.now(); if (MK.sel >= marketRows().length) MK.sel = -1; }
+    } catch (e) { if (seq === MK.seq) MK.error = e.message || 'The Market could not load.'; }
+    finally { if (seq === MK.seq) { MK.busy = false; if (built.market) built.market.sig = ''; } }
+  }
+  function marketReload(reset = true) { if (reset) { MK.page = 0; MK.sel = -1; } MK.data = MK.tab === 'mine' ? MK.data : null; MK.mine = MK.tab === 'mine' ? null : MK.mine; marketLoad(); refresh(); }
   INIT.market = b => {
     b.grid = cv(b, 72, 360, 1060, 494, 'sbw-mgrid');
     b.pager = cov(b, 380, 862, 440, 46, '#010d19', 15, '#9aa6c8');
     b.det = cv(b, 1162, 160, 446, 626, 'sbw-mdet');
-    ['dprev', 'dnext', 'dfav', 'dt1', 'dt2', 'dt3', 'dt4'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
+    ['dprev', 'dnext', 'dfav', 'dt1', 'dt2', 'dt3', 'dt4', 'pv', 'p1', 'p2', 'p3', 'p4', 'p5', 'nx'].forEach(id => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.hidden = true; });
     b.price = cov(b, 1176, 856, 160, 46, '#010d19', 18, '#ffd257');
     b.tabs = [1, 2].map(i => { const h = b.s.hs.find(x => x.id === 'tb' + (i + 1)); const e = cov(b, h.r[0] + 4, h.r[1] + 4, h.r[2] - h.r[0] - 8, h.r[3] - h.r[1] - 8, '#070b1e', 15, '#7d86a8'); e.textContent = i === 1 ? 'ITEMS · coming soon' : 'RESOURCES · coming soon'; return e; });
-    b.seller = cov(b, 1168, 786, 290, 60, '#050a17', 14, '#9aa6c8', 'sbw-left'); b.seller.textContent = 'Seller: local listings only';
+    b.seller = cov(b, 1168, 786, 290, 60, '#050a17', 14, '#9aa6c8', 'sbw-left');
+    // Filter state badges on the artwork's Skills / Price dropdowns and the search box.
+    const at = id => b.s.hs.find(x => x.id === id).r;
+    b.skillsBadge = place(mk('i', 'sbw-mbadge', b.st), at('dd2')[2] - 14, at('dd2')[1] - 8, 22, 22); b.skillsBadge.hidden = true;
+    b.sortBadge = place(mk('i', 'sbw-mbadge wide', b.st), at('dd3')[0] + 6, at('dd3')[1] - 12, 72, 20);
+    const s = at('srch'); b.searchText = artMatch(b, cov(b, s[0] + 34, s[1] + 6, s[2] - s[0] - 42, s[3] - s[1] - 12, '#070b1e', 14, '#e9eefc', 'sbw-left'), s[0] + 120); b.searchText.hidden = true;
+    // The grid and pager use their own buttons (the artwork's page numbers are fixed at 1–5).
+    b.pages = place(mk('div', 'sbw-mpages', b.st), 380, 864, 440, 42);
+    b.pages.addEventListener('click', e => { const p = e.target.closest('[data-p]'); if (!p) return; MK.page = +p.dataset.p; MK.sel = -1; marketLoad(); });
+    b.grid.addEventListener('click', e => {
+      const cancel = e.target.closest('[data-cancel]'); if (cancel) { e.stopPropagation(); return marketCancel(cancel.dataset.cancel); }
+      const card = e.target.closest('[data-i]'); if (!card) return; MK.sel = +card.dataset.i; b.sig = '';
+      if (layer.classList.contains('sbw-phone')) setTimeout(() => b.det.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' }), 60);
+    });
+    b.det.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (!a) return; if (a.dataset.act === 'buy') marketBuy(); if (a.dataset.act === 'cancel') marketCancel(a.dataset.id); if (a.dataset.act === 'browse') MODS.market.mtab(0); });
   };
-  function marketRows() { return [...document.querySelectorAll('#p4 [data-market-id]')].filter(e => !e.closest('#sbwLayer') && !e.matches('canvas')).map(e => ({ el: e, id: e.dataset.marketId, text: (e.innerText || '').replace(/\s+/g, ' ').trim() })); }
-  PAINT.market = b => {
-    const rows = marketRows(), note = nativeText('#p4', /Local listings only[^\n]*/) || 'Local listings only. Trading with other players needs a shared market service; buying is unavailable.';
-    const sig = rows.map(r => r.id + r.text).join('|') + (b.sel || '');
+  PAINT.market = (b, now) => {
+    if (!account()) { if (b.sig !== 'signed-out') { b.sig = 'signed-out'; b.grid.innerHTML = '<div class="sbw-empty"><b>Sign in to use the Market</b><p>Connect your wallet to browse and sell heroes.</p></div>'; } return; }
+    if (!MK.busy && ((MK.tab === 'mine' ? !MK.mine : !MK.data) || Date.now() - MK.at > 30000) && !MK.error) marketLoad();
+    for (let i = 0; i < 6; i++) { const e = $(`.hs[data-sbwid="f${i}"]`, b.st); if (e) e.classList.toggle('on2', i === MK.rank + 1); }
+    ['tb1', 'tb4'].forEach((id, i) => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.classList.toggle('on2', (i === 0) === (MK.tab === 'heroes')); });
+    setText(b.skillsBadge, String(MK.perks.length)); b.skillsBadge.hidden = !MK.perks.length; setText(b.sortBadge, SORTS[MK.sort]);
+    setText(b.searchText, MK.search); b.searchText.hidden = !MK.search;
+    const rows = marketRows(), sel = rows[MK.sel], perks = PERK_NAMES();
+    const sig = JSON.stringify([MK.tab, MK.busy, MK.error, MK.sel, MK.page, rows.map(r => [r.id, r.status, r.price, Math.floor(r.left / 60000)]), MK.data?.pages]);
     if (sig !== b.sig) {
       b.sig = sig;
-      b.grid.innerHTML = rows.length ? rows.slice(0, 10).map((r, i) => `<button type="button" class="sbw-mcard${r.id === b.sel ? ' on' : ''}" data-i="${i}">${esc(r.text)}</button>`).join('')
-        : `<div class="sbw-empty"><b>No listings yet</b><p>Open Heroes and choose <em>Sell · List on Market</em> to set an asking price.</p><p class="sbw-small">${esc(note)}</p><button type="button" class="sbw-btn" data-go="1">Browse Heroes</button></div>`;
-      $$('.sbw-mcard', b.grid).forEach(e => e.onclick = () => { const r = marketRows()[+e.dataset.i]; if (r) { r.el.click(); b.sel = r.id; b.sig = ''; } });
-      const bg = $('[data-go]', b.grid); if (bg) bg.onclick = () => go(1);
-      const sel = rows.find(r => r.id === b.sel);
-      b.det.innerHTML = `<div class="sbw-md"><h3>${sel ? 'Listing' : 'Select a hero'}</h3><p>${esc(sel ? sel.text : 'Choose a listing to inspect its stats, chakra, skills and asking price.')}</p><div class="sbw-note">MARKET · OFFLINE PROTOTYPE<br>${esc(note)}</div></div>`;
-    }
-    setText(b.pager, rows.length > 10 ? `Showing 10 of ${rows.length}` : '');
-    setText(b.price, '— Ryo');
-    const scope = ['heroes', 'mine'].find(s => { const e = nativeEl('#p4', x => (x.getAttribute('onclick') || '') === `Market.scope('${s}')`); return e && e.classList.contains('active'); }) || 'heroes';
-    const rk = [-1, 0, 1, 2, 3, 4].findIndex(v => { const e = nativeEl('#p4', x => (x.getAttribute('onclick') || '') === `Market.rank(${v})`); return e && e.classList.contains('active'); });
-    for (let i = 0; i < 6; i++) { const e = $(`.hs[data-sbwid="f${i}"]`, b.st); if (e) e.classList.toggle('on2', i === Math.max(0, rk)); }
-    ['tb1', 'tb4'].forEach((id, i) => { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.classList.toggle('on2', (i === 0 && scope === 'heroes') || (i === 1 && scope === 'mine')); });
+      const label = r => r.status === 'sold' ? 'SOLD' : r.status === 'pending' ? 'BUYER PAYING' : r.mine ? 'YOURS' : timeLeft(r.left);
+      b.grid.innerHTML = MK.error ? `<div class="sbw-empty"><b>Market unavailable</b><p>${esc(MK.error)}</p></div>`
+        : !rows.length ? (MK.busy ? '<div class="sbw-empty"><b>Loading the Market…</b></div>'
+          : MK.tab === 'mine' ? '<div class="sbw-empty"><b>You have no listings</b><p>Open Heroes, choose a hero and tap <em>SELL · List on Market</em>. You receive 80% when it sells.</p></div>'
+            : '<div class="sbw-empty"><b>No heroes match</b><p>Try another rank or fewer skills, or check back soon.</p></div>')
+        : rows.map((r, i) => { const h = r.hero; return `<button type="button" class="sbw-mcard${i === MK.sel ? ' on' : ''}${r.status === 'sold' ? ' sold' : ''}" data-i="${i}" style="--rc:${RCOL[h.rank]}">
+          <span class="mc-top"><b style="color:${RCOL[h.rank]}">${RNAME[h.rank].toUpperCase()}</b><em>${esc(label(r))}</em></span><canvas width="120" height="110"></canvas>
+          <span class="mc-name">${esc(h.name)}</span><span class="mc-sub">Lv. ${h.level} · PW ${h.stats.pw.toFixed(1)} · SP ${h.stats.sp.toFixed(1)} · ST ${h.stats.st.toFixed(1)}</span>
+          <span class="mc-perks">${(h.perks || []).map(k => esc((perks[k] || ['?'])[0])).join(' · ')}</span>
+          <span class="mc-price"><i class="coin"></i>${fmt(r.price)}</span>${MK.tab === 'mine' && r.status === 'active' ? `<span class="mc-cancel" role="button" tabindex="0" data-cancel="${esc(r.id)}">Cancel listing</span>` : ''}</button>`; }).join('');
+      $$('.sbw-mcard canvas', b.grid).forEach((c, i) => drawHero(c, listingHero(rows[i]), 2.1, now, 4));
+      const pages = MK.tab === 'mine' ? 1 : (MK.data?.pages || 1);
+      b.pages.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, p) => p).filter(p => Math.abs(p - MK.page) <= 3 || p === 0 || p === pages - 1).map(p => `<button type="button" data-p="${p}" class="${p === MK.page ? 'on' : ''}" aria-label="Page ${p + 1}">${p + 1}</button>`).join('') : '';
+      setText(b.pager, MK.tab === 'heroes' && MK.data ? (MK.data.total ? `${fmt(MK.data.total)} hero${MK.data.total === 1 ? '' : 'es'} for sale` : '') : '');
+      if (!sel) {
+        b.det.innerHTML = MK.tab === 'mine' && MK.mine
+          ? `<div class="sbw-md"><h3>My Listings</h3><p>${MK.mine.listings.length} active · ${MK.mine.sales.length} sold recently. Listings last 7 days; unsold heroes come back to you.</p>
+             <div class="sbw-mlist">${MK.mine.sales.slice(0, 6).map(s => `<p><b>${esc(s.hero.name)}</b> sold for ${fmt(s.price)} · you received <em>${fmt(s.payout)} Ryo</em></p>`).join('') || '<p class="sbw-small">No sales yet.</p>'}</div>
+             <button type="button" class="sbw-btn" data-act="browse">Browse heroes for sale</button></div>`
+          : `<div class="sbw-md"><h3>Select a hero</h3><p>Choose a listing to see its stats, perks and price.</p><div class="sbw-note">PLAYER MARKET<br>Sellers receive 80% · 10% reward pool · 8% treasury · 2% studio. Listings last 7 days.</div></div>`;
+        setText(b.price, '— Ryo'); setText(b.seller, '');
+      } else {
+        const h = sel.hero, bonus = k => h.bonus && h.bonus[k] ? ` <small>(+${h.bonus[k]})</small>` : '';
+        b.det.innerHTML = `<div class="sbw-md"><h3 style="color:${RCOL[h.rank]}">${esc(h.name)}</h3><p class="sbw-msub">${RNAME[h.rank]} · Lv. ${h.level} / 5 · ${esc(sel.status === 'sold' ? 'Sold' : timeLeft(sel.left))}</p>
+          <div class="sbw-mstats"><span>POWER<b>${h.stats.pw.toFixed(1)}${bonus('pw')}</b></span><span>SPEED<b>${h.stats.sp.toFixed(1)}${bonus('sp')}</b></span><span>STAMINA<b>${h.stats.st.toFixed(1)}${bonus('st')}</b></span></div>
+          <h4>PERKS</h4>${(h.perks || []).map(k => `<p class="sbw-mperk"><b>✦ ${esc((perks[k] || ['?'])[0])}</b>${esc((perks[k] || ['', ''])[1])}</p>`).join('')}
+          ${MK.tab === 'mine' ? (sel.status === 'active' ? `<p class="sbw-small">You receive ${fmt(sel.payout)} Ryo (80%) when it sells.</p><button type="button" class="sbw-btn sbw-alt" data-act="cancel" data-id="${esc(sel.id)}">Cancel listing</button>` : `<p class="sbw-small">${sel.status === 'sold' ? 'Sold · you received ' + fmt(sel.payout) + ' Ryo' : 'A buyer is paying for this hero.'}</p>`) : sel.mine ? '<p class="sbw-small">This is your listing. Manage it in My Listings.</p>' : ''}</div>`;
+        setText(b.price, fmt(sel.price) + ' Ryo'); setText(b.seller, MK.tab === 'mine' ? '' : 'Seller: ' + sel.seller);
+      }
+    } else $$('.sbw-mcard canvas', b.grid).forEach((c, i) => rows[i] && drawHero(c, listingHero(rows[i]), 2.1, now, 4));
   };
+  function marketBuy() {
+    const l = marketRows()[MK.sel];
+    if (MK.tab !== 'heroes' || !l) return toast('Select a hero for sale first.');
+    if (l.mine) return toast('This is your own listing.');
+    const balance = Number(ledger().balance) || 0;
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    dlg.className = 'sbw-dialog'; dlg.onclick = null;
+    dlg.innerHTML = `<h2>Buy ${esc(l.hero.name)}?</h2><p>${RNAME[l.hero.rank]} · Lv. ${l.hero.level} · ${(l.hero.perks || []).map(k => esc((PERK_NAMES()[k] || ['?'])[0])).join(', ')}</p>
+      <p class="sbw-mbuyline">Price <b>${fmt(l.price)} Ryo</b><br><span class="sbw-small">Your balance after: ${fmt(balance - l.price)} Ryo</span></p>
+      <p class="sbw-msg" hidden></p><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Cancel</button><button type="button" class="sbw-btn" data-k="buy"${balance < l.price ? ' disabled' : ''}>Buy · ${fmt(l.price)} Ryo</button></div>
+      ${balance < l.price ? '<p class="sbw-small">Not enough Ryo. Deposit Ryo from your Chest first.</p>' : ''}`;
+    dlg.onclick = async e => {
+      const k = e.target.dataset && e.target.dataset.k; if (!k) return; if (k === 'x') return dlg.close();
+      const buttons = $$('button', dlg); buttons.forEach(x => { x.disabled = true; });
+      try {
+        const result = await RyoPayments.marketBuy(l); dlg.close();
+        toast(result?.status === 'confirmed' ? `${l.hero.name} joined your heroes!` : 'Purchase submitted. It finalizes automatically.');
+      } catch (err) { const m = $('.sbw-msg', dlg); m.hidden = false; m.textContent = err.message || 'The purchase failed. No Ryo was taken.'; buttons.forEach(x => { x.disabled = false; }); }
+      MK.sel = -1; marketReload(false);
+    };
+    if (!dlg.open) dlg.showModal();
+  }
+  async function marketCancel(id) {
+    try { await RyoPayments.market('market-cancel', { listingId: id }); toast('Listing cancelled. The hero is back in your collection.'); }
+    catch (e) { notice('Market', e.message || 'The listing could not be cancelled.'); }
+    MK.sel = -1; MK.mine = null; marketLoad();
+  }
+  // "Sell · List on Market" (Heroes) opens this dialog for a token hero.
+  function sellDialog(h) {
+    const a = account(); if (!h) return;
+    if (!a || !h.tokenId || h.tokenOwner !== a) return notice('Market', 'Only heroes from your signed-in token collection can be listed. Practice heroes cannot be sold.');
+    const min = (MK.data?.rules?.minPrice || MARKET_MIN)[h.r] || MARKET_MIN[0];
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    dlg.className = 'sbw-dialog sbw-sell'; dlg.onclick = null;
+    dlg.innerHTML = `<h2>List ${esc(h.name)}</h2><p>${RNAME[h.r]} · Lv. ${h.lv} · ${(h.pk || []).map(k => esc((PERK_NAMES()[k] || ['?'])[0])).join(', ')}</p>
+      <label class="sbw-sell-price">Price (Ryo)<input type="number" inputmode="numeric" min="${min}" max="100000000" step="1000" value="${min}"></label>
+      <p class="sbw-small">Minimum for ${RNAME[h.r]}: ${fmt(min)} Ryo · maximum 100,000,000 Ryo · listed for 7 days</p>
+      <p class="sbw-sell-out"></p><p class="sbw-msg" hidden></p>
+      <div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Cancel</button><button type="button" class="sbw-btn" data-k="post">List on Market</button></div>`;
+    const input = $('input', dlg), out = $('.sbw-sell-out', dlg), msg = $('.sbw-msg', dlg);
+    const update = () => { const p = Math.floor(Number(input.value) || 0), part = n => Math.floor(p * n / 100); out.innerHTML = `You receive <b>${fmt(p - part(2) - part(8) - part(10))} Ryo</b> (80%) · reward pool ${fmt(part(10))} · treasury ${fmt(part(8))} · studio ${fmt(part(2))}`; };
+    input.addEventListener('input', update); update();
+    dlg.onclick = async e => {
+      const k = e.target.dataset && e.target.dataset.k; if (!k) return; if (k === 'x') return dlg.close();
+      const price = Math.floor(Number(input.value) || 0);
+      if (price < min || price > 100000000) { msg.hidden = false; msg.textContent = `Set a price from ${fmt(min)} to 100,000,000 Ryo.`; return; }
+      $$('button', dlg).forEach(x => { x.disabled = true; });
+      try { await RyoPayments.market('market-post', { heroId: h.tokenId, price }); dlg.close(); toast(`${h.name} is on the Market for ${fmt(price)} Ryo (7 days).`); MK.mine = null; MK.data = null; }
+      catch (err) { msg.hidden = false; msg.textContent = err.message || 'The hero could not be listed.'; $$('button', dlg).forEach(x => { x.disabled = false; }); }
+    };
+    if (!dlg.open) dlg.showModal(); input.focus(); input.select();
+  }
+  function perkPicker() {
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    dlg.className = 'sbw-dialog sbw-perks'; dlg.onclick = null;
+    dlg.innerHTML = `<h2>Filter by skills</h2><p class="sbw-small">Show heroes that have every skill you tick.</p><div class="sbw-perk-list">${PERK_NAMES().map(([n, d], k) => `<label><input type="checkbox" value="${k}"${MK.perks.includes(k) ? ' checked' : ''}><span><b>${esc(n)}</b><small>${esc(d)}</small></span></label>`).join('')}</div>
+      <div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="clear">Clear</button><button type="button" class="sbw-btn" data-k="apply">Show heroes</button></div>`;
+    dlg.onclick = e => { const k = e.target.dataset && e.target.dataset.k; if (!k) return;
+      MK.perks = k === 'clear' ? [] : $$('input:checked', dlg).map(x => +x.value); dlg.close(); MK.tab = 'heroes'; marketReload(); };
+    if (!dlg.open) dlg.showModal();
+  }
+  function searchDialog() {
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    dlg.className = 'sbw-dialog'; dlg.onclick = null;
+    dlg.innerHTML = `<h2>Search heroes</h2><form><label class="sbw-sell-price">Hero name<input maxlength="40" value="${esc(MK.search)}" placeholder="e.g. Hidden Leaf"></label><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Cancel</button><button class="sbw-btn">Search</button></div></form>`;
+    const input = $('input', dlg); $('[data-k="x"]', dlg).onclick = () => dlg.close();
+    $('form', dlg).onsubmit = e => { e.preventDefault(); MK.search = input.value.trim(); MK.tab = 'heroes'; dlg.close(); marketReload(); };
+    if (!dlg.open) dlg.showModal(); input.focus();
+  }
   MODS.market = {
-    mtab: a => { const s = { 0: 'heroes', 3: 'mine' }[+a]; if (!s) return notice('Market', 'Items and resources are not in the game yet. Only heroes can be listed (practice market).'); window.Market && Market.scope(s); built.market.sig = ''; },
-    rar: a => { const i = ['All', 'Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'].indexOf(a); window.Market && Market.rank(i - 1); built.market.sig = ''; },
-    dd: a => { if (a === 'price') { const n = nativeEl('#p4', x => (x.getAttribute('onclick') || '') === "Market.sort('price')"); const by = n && n.classList.contains('active') ? 'newest' : 'price'; window.Market && Market.sort(by); toast('Sorted by ' + (by === 'price' ? 'price' : 'newest')); built.market.sig = ''; } else notice('Market filters', 'Element and skill filters are not available yet.'); },
-    search: () => toast('Search is not available in the practice market yet.'),
-    reset: () => { if (window.Market) { Market.scope('heroes'); Market.rank(-1); } built.market.sig = ''; },
-    card: a => { const r = marketRows()[+a]; if (r) { r.el.click(); built.market.sel = r.id; built.market.sig = ''; } },
-    page: () => toast('All listings fit on one page.'), cyc: () => {}, fav: () => toast('Favourites are not available yet.'), dtab: () => {},
-    listings: () => { window.Market && Market.scope('mine'); built.market.sig = ''; },
-    buy: () => notice('Buying is unavailable', 'This market is a local practice prototype. Buying from other players needs a shared market service that is not available yet. No Ryo is charged.'),
-    offer: () => notice('Offers are unavailable', 'Making offers needs a shared market service that is not available yet.')
+    mtab: a => { const t = { 0: 'heroes', 3: 'mine' }[+a]; if (!t) return notice('Market', 'Items and resources are coming soon. Only heroes can be traded for now.'); MK.tab = t; MK.sel = -1; marketReload(); },
+    rar: a => { MK.rank = ['All', 'Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'].indexOf(a) - 1; MK.tab = 'heroes'; marketReload(); },
+    dd: a => {
+      if (a === 'skills') return perkPicker();
+      if (a === 'price') { const order = Object.keys(SORTS); MK.sort = order[(order.indexOf(MK.sort) + 1) % order.length]; toast('Sorted: ' + SORTS[MK.sort]); MK.tab = 'heroes'; return marketReload(); }
+      notice('Element filter', 'Hero elements are coming soon. Filter by rank and skills for now.');
+    },
+    search: () => searchDialog(),
+    reset: () => { Object.assign(MK, { rank: -1, perks: [], sort: 'price-asc', search: '', tab: 'heroes' }); marketReload(); },
+    card: a => { if (marketRows()[+a]) { MK.sel = +a; if (built.market) built.market.sig = ''; } },
+    page: a => { const pages = MK.data?.pages || 1; MK.page = a === '-1' ? Math.max(0, MK.page - 1) : a === '+1' ? Math.min(pages - 1, MK.page + 1) : Math.min(pages - 1, (+a || 1) - 1); MK.sel = -1; marketLoad(); },
+    cyc: () => {}, fav: () => toast('Favourites are coming soon.'), dtab: () => {},
+    listings: () => MODS.market.mtab(3),
+    buy: () => marketBuy(),
+    offer: () => notice('Offers', 'Making offers is coming soon. Buy at the listed price for now.')
   };
+  window.ShinobiMarket = { sell: sellDialog, reload: () => marketReload(false) };
+  // The game's own 'Sell · List on Market' buttons (Heroes) open the shared Market listing dialog.
+  if (window.Market) window.Market.openListing = id => sellDialog(((gs() && gs().h) || []).find(h => h.id === id));
 
   /* ---------- Boss Hunt (game page 8): the real sanctuary canvas inside your frame ---------- */
   const GUARD = ['Akuma · Fallen Shinobi', 'Yuki Onna · Frozen Moon', 'Raijin · Thunder Lord', 'Daichi · Ancient Golem', 'Orochi · Serpent King', 'Shadow Emperor'];
@@ -983,7 +1116,7 @@
     'dojo-upg': [[55, 98, 440, 142, { fit: 1 }], [45, 132, 584, 860], [596, 130, 1632, 852, { pan: 0.65 }]],
     'dojo-sen': [[56, 96, 330, 144], [826, 140, 1604, 372, { fit: 1 }], { parts: [[858, 374, 1120, 420], [1306, 374, 1584, 420]] }, [858, 420, 1592, 452, { fit: 1 }],
       { parts: [[862, 462, 1110, 650], [1300, 462, 1592, 650]] }, [842, 662, 1600, 830, { fit: 1 }], [72, 138, 806, 842, { fit: 1 }]],
-    market: [[60, 120, 500, 235, { fit: 1 }], [70, 248, 1135, 356, { pan: 0.75 }], { flow: '.sbw-mgrid', zoom: 0.85, cols: 2 }, [1158, 158, 1612, 912]],
+    market: [[60, 120, 500, 235, { fit: 1 }], [70, 248, 1135, 356, { pan: 0.75 }], { flow: '.sbw-mgrid', zoom: 0.85, cols: 2 }, [376, 856, 824, 912, { fit: 1 }], [1158, 158, 1612, 912]],
     'boss-hunt': [[20, 108, 660, 192, { fit: 1 }], [1015, 195, 1512, 882], [28, 200, 1000, 334, { pan: 0.6 }], [222, 336, 1000, 718, { fit: 1 }], [40, 348, 222, 716],
       [25, 722, 1000, 886, { pan: 0.7 }], [1015, 888, 1512, 1006], [25, 888, 1000, 1006, { pan: 0.7 }]],
     codex: [[20, 108, 960, 200, { fit: 1 }], [20, 208, 292, 726], [305, 210, 1205, 724, { pan: 0.7 }], [1215, 210, 1652, 420], [1215, 425, 1652, 666], [1215, 672, 1652, 906],

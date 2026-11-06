@@ -291,15 +291,15 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "8b0ebc67439c3c4623e6f0642828b4cfeeb4e6a0e3d99d555d1f47bad81387ee"
+      "sha256": "52d877bae80dd33981e0c3447ae58666254c996b40cf58d184ab316ccb8c5001"
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "307596db29933a4307643ac6dd744e208a1ead9529590dbcfa82604a7583f942"
+      "sha256": "568583bdf4cd07f3c43fce6d7de4e1d22c8c018f9c68ba7552e2484cddfae202"
     },
     {
       "path": "app/server/store.cjs",
-      "sha256": "bc321cb3d6b05e52a5426b18be782e1786ca447b7564c7cb7299a991a83dd735"
+      "sha256": "c115fbb9966bd3aa4a132c11d15a2c37683472b0911417438a6b76f458d912ff"
     },
     {
       "path": "app/server/transaction-review.cjs",

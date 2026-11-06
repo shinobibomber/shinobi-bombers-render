@@ -20,6 +20,21 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Player Market)**
+
+**✨ New**
+• **Player Market is open!** Buy and sell heroes with other players for Ryo. (Items and Resources are coming soon.)
+• **Sell a hero:** Heroes → choose a hero → **SELL · List on Market**, set your price and see exactly what you'll receive before listing. Listings stay up for **7 days**; unsold heroes come back to you automatically, and you can cancel any time in **My Listings**.
+• **Minimum prices:** Genin 10,000 · Chunin 25,000 · Jonin 80,000 · Elite 200,000 · Legend 500,000 Ryo (maximum 100,000,000).
+• **Fair split on every sale:** the seller receives **80%**, **10%** goes to the reward pool (more Adventure loot for everyone), **8%** to the treasury and **2%** studio fee.
+• **Find the right hero:** filter by rank and by **Skills** (perks) — tick the skills you want and see only heroes that have all of them — sort by price or newest, and search by name.
+• **Buy Now** shows the price and your balance after; the hero joins your collection with its level, training and perks exactly as listed.
+• Works on phones too, with two cards per row.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Permanent hero perks)**
 
 **🔄 Changes**

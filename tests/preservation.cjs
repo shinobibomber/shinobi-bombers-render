@@ -9,6 +9,8 @@ const {walletPatches,apiPatches}=require('../apply-transaction-safety.cjs');
 for(const [before,after]of [...walletPatches,...apiPatches].reverse()){assert.equal(html.split(after).length-1,1,'one reviewed SOL gas preflight hook');html=html.replace(after,()=>before)}
 // Reverse only the reviewed cinematic presentation hooks, then compare every
 // original module against its existing frozen hash. No economy/wallet exception.
+const {marketPatches}=require('../apply-market.cjs');
+for(const [before,after]of marketPatches){assert.equal(html.split(after).length-1,1,'one reviewed Market client hook');html=html.replace(after,()=>before)}
 const {cinematicPatches}=require('../apply-reveal-design.cjs');
 for(const [before,after]of cinematicPatches){assert.equal(html.split(after).length-1,1,'one exact cinematic presentation hook: '+before);html=html.replace(after,before)}
 const {startupPatches}=require('../apply-loading-design.cjs');

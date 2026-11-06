@@ -3,7 +3,8 @@ const crypto=require('node:crypto');
 const {fail}=require('./store.cjs');
 const MARKER='ryo-economic-dashboard-v1';
 const PAUSES=['purchases','withdrawals','claims'];
-const GATES={purchase:'purchases',withdraw:'withdrawals','claim-adventure':'claims'};
+// Market buys and new listings follow the purchases pause.
+const GATES={purchase:'purchases','market-buy':'purchases','market-post':'purchases',withdraw:'withdrawals','claim-adventure':'claims'};
 const DEFAULTS={vaults:[],seasons:[],financial:null,monitor:{concentrationPercent:40,claimRyo:100000,pendingMinutes:30}};
 const canonical=x=>x&&typeof x==='object'?(Array.isArray(x)?'['+x.map(canonical).join(',')+']':'{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+canonical(x[k])).join(',')+'}'):JSON.stringify(x);
 const digest=x=>crypto.createHash('sha256').update(canonical(x)).digest('hex');
@@ -50,7 +51,7 @@ async function guard(store,action,wallet,body={}){
  const row=(await store.pool.query('SELECT pauses FROM ryo_admin_control WHERE scope=$1',[store.scope])).rows[0];
  if(row?.pauses?.[gate]){
   // A persisted order can only replay its original operation; core Store validation remains in force.
-  const table=action==='purchase'?'ryo_purchases':action==='withdraw'?'ryo_withdrawals':null;
+  const table=action==='purchase'||action==='market-buy'?'ryo_purchases':action==='withdraw'?'ryo_withdrawals':null;
   if(table&&wallet&&typeof body.requestId==='string'&&(await store.pool.query('SELECT request_id FROM '+table+' WHERE scope=$1 AND wallet=$2 AND request_id=$3',[store.scope,wallet,body.requestId])).rows.length)return;
   fail('New '+gate+' are temporarily paused by the operator. Existing balances and pending transaction recovery remain available.',503);
  }
