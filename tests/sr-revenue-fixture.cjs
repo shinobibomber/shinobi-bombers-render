@@ -18,4 +18,10 @@ async function configure(store, treasury, lockedTreasury) {
  await store.pool.query("INSERT INTO ryo_admin_control(scope,config,version,installed) VALUES($1,$2,1,$3) ON CONFLICT(scope) DO UPDATE SET config=$2", [store.scope, JSON.stringify({ revenueRouting: cfg }), store.now()]);
  return cfg;
 }
-module.exports = { stamp, multisig, configure };
+// Model Mainnet economy selection inside an isolated process, without RPC or changing the actual build.
+function liveEconomy() {
+ const network=require('../app/server/network.cjs');network.built=()=>network.NETWORKS.mainnet;
+ // Explicitly open only this in-memory test process, so financial/admin checks get past launch gates.
+ for(const name of Object.values(require('../app/server/launch-gates.cjs').GATES))process.env[name]='on';
+}
+module.exports = { stamp, multisig, configure, liveEconomy };

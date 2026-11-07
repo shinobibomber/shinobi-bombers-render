@@ -43,6 +43,9 @@ const temps = [];
     const after = hashes(devDir);
     assert.deepEqual(Object.keys(after).filter(f => after[f] !== before[f]).sort(), ['server/network-build.json', 'server/network.cjs']);
     assert.equal(network.built(path.join(devDir, 'server')).key, 'devnet');
+    const betaEconomy=require(path.join(devDir,'server/sr-revenue.cjs'));
+    assert.equal(betaEconomy.enabled(),false);assert.equal(betaEconomy.publicPolicy().mode,'beta-legacy');
+    assert.equal(require(path.join(devDir,'server/economy.cjs')).quote({heroes:[]},'summon',{quantity:1}).revenueDistribution,undefined);
     assert.deepEqual(network.startupProblems({}, path.join(devDir, 'server')), []);
     assert.match(network.startupProblems({ SOLANA_NETWORK: 'mainnet' }, path.join(devDir, 'server')).join('\n'), /built for Solana Devnet/);
 
@@ -54,6 +57,11 @@ const temps = [];
     for (const rel of MAINNET_REMOVED) assert.equal(fs.existsSync(path.join(mainDir, rel)), false, 'removed on Mainnet: ' + rel);
     const server = f => fs.readFileSync(path.join(mainDir, 'server', f), 'utf8'), page = fs.readFileSync(path.join(mainDir, 'public/index.html'), 'utf8');
     assert.equal(require(path.join(mainDir, 'server/service.cjs')).GENESIS, NETWORKS.mainnet.genesis);
+    const liveEconomy=require(path.join(mainDir,'server/sr-revenue.cjs'));
+    assert.equal(liveEconomy.enabled(),true);assert.equal(liveEconomy.publicPolicy().mode,'live-sr');
+    const liveQuote=require(path.join(mainDir,'server/economy.cjs')).quote({heroes:[]},'summon',{quantity:1});
+    assert.deepEqual([liveQuote.treasury,liveQuote.operations,liveQuote.community,liveQuote.reserve,liveQuote.burn,liveQuote.studioFee],[12500,7500,2500,2500,0,0]);
+    assert.match(page,/Active Adventure Rewards/);assert.doesNotMatch(fs.readFileSync(path.join(devDir,'public/index.html'),'utf8'),/Active Adventure Rewards/);
     assert.match(server('service.cjs'), /NETWORK='solana-mainnet'/);
     assert.match(server('service.cjs'), /Treasury RPC is not Solana Mainnet\./);
     assert.match(server('netlify-handler.cjs'), /new Connection\(process\.env\.SOLANA_RPC_URL,'finalized'\)/);
@@ -86,6 +94,10 @@ const temps = [];
     // The launch gates ship in the Mainnet build and default to closed there.
     const liveGates = require(path.join(mainDir, 'server/launch-gates.cjs'));
     assert.deepEqual(Object.values(liveGates.publicGates({})), [false, false, false, false, false]);
+    // The real Mainnet pre-launch host publishes policy without mounting or contacting money services.
+    const verifyLive=`(async()=>{const assert=require('node:assert/strict'),{server,prelaunch}=require('./server/site-server.cjs');await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;try{const policy=await(await fetch(base+'/economy-policy.json')).json();assert.equal(policy.mode,'live-sr');assert.equal(policy.network,'mainnet');assert.equal(policy.prelaunch,true);assert.equal(policy.monetaryEndpointsMounted,false);assert.deepEqual(policy.ratesBps,{lockedTreasury:5000,activeRewards:3000,communityRewards:1000,economicReserve:1000});assert.equal((await fetch(base+'/api/ryo',{method:'POST',body:'{}'})).status,403);assert.equal((await fetch(base+'/admin/')).status,404);}finally{await new Promise(r=>server.close(r));await prelaunch.close();}})().catch(e=>{console.error(e);process.exitCode=1});`;
+    const liveRun=spawnSync(process.execPath,['-e',verifyLive],{cwd:root,encoding:'utf8',timeout:20000,env:{...process.env,...pre,GAME_RUNTIME_DIR:mainDir,STARTER_PACK:'off',RYO_TREASURY_SECRET:'',RYO_TOKEN_MINT:'',RYO_STUDIO_WALLET:'',RYO_REVENUE_WALLET:''}});
+    assert.equal(liveRun.status,0,liveRun.stderr);
 
     // render-server (also `npm run start:game-only`) refuses an unsafe environment, and publishes the browser RPC.
     const { createServer } = require(path.join(mainDir, 'server/render-server.cjs'));

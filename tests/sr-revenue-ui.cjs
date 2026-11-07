@@ -1,8 +1,10 @@
 /* Actual checkout: approved SR breakdown, blocked configuration, bonus funding. No wallet or RPC. */
 const path=require('node:path'),{withGame}=require('./harness.cjs');
+require('./sr-revenue-fixture.cjs').liveEconomy();
 (async()=>{
  await withGame(async({p,f,errors,assert})=>{
   f.holdAdventure=false;
+  f.config.revenueDistribution={applicable:true};
   await p.locator('#loginPhantom').click();
   await p.waitForFunction(()=>RyoPayments.state.authenticated&&!RyoPayments.state.busy&&!LoginScreen.active);
   let ready=false,bonus=false;
@@ -40,6 +42,7 @@ const path=require('node:path'),{withGame}=require('./harness.cjs');
   await p.waitForFunction(()=>document.querySelector('.gc-dialog[open]').textContent.includes('Starter Ryo | no token revenue distributed'));
   assert(!await p.locator('.gc-dialog[open]').getByText(/Treasury 50%/).count());
   assert.deepEqual(errors,[]);
- });
- console.log('PASS: SR checkout exact allocations, disabled Pay before approved configuration, starter funding disclosure, responsive layout and one confirmed purchase.');
+ },{}, {srRevenue:true});
+ const dashboard=require('node:child_process').spawnSync(process.execPath,[path.join(__dirname,'economic-dashboard.cjs'),'--live-economy'],{stdio:'inherit'});if(dashboard.status!==0)throw Error('Live economy dashboard regression failed.');
+ console.log('PASS: live SR checkout allocations, approval gating, starter disclosure, responsive history and live-only admin controls.');
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -62,6 +62,8 @@ function applyNetwork(appDir = path.join(__dirname, 'app'), env = process.env) {
   if (net.key === 'devnet') { console.log('Network: Solana Devnet (test server build).'); return net; }
 
   if (!/^https:\/\//.test(String(env.RYO_SITE_ORIGIN || ''))) throw Error('Mainnet build: set RYO_SITE_ORIGIN to the live https:// origin before building (the Mythic Box NFT metadata is baked with it).');
+  const liveCheckout=path.join(appDir,'public/index.html');
+  fs.writeFileSync(liveCheckout,require('./apply-sr-revenue.cjs').clientText(fs.readFileSync(liveCheckout,'utf8')));
   for (const patch of mainnetPatches) {
     const p = path.join(appDir, patch[0]);
     fs.writeFileSync(p, patchOnce(fs.readFileSync(p, 'utf8'), patch));

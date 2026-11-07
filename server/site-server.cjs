@@ -137,6 +137,14 @@ const game = loadGame();
 const server = http.createServer((req, res) => {
   let url; try { url = new URL(req.url, 'http://localhost'); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
+  // Read-only release policy: available during pre-launch without mounting any game or money API.
+  if(name==='/economy-policy.json'){
+    if(!['GET','HEAD'].includes(req.method))return sendSite(req,res,405,'GET or HEAD required.');
+    try { const policy=require(path.join(GAME_DIR,'server/sr-revenue.cjs')).publicPolicy();
+      res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...SITE_HEADERS});
+      return res.end(req.method==='HEAD'?'':JSON.stringify({...policy,prelaunch:PRELAUNCH,monetaryEndpointsMounted:!PRELAUNCH}));
+    }catch{return sendSite(req,res,503,'Economy policy is unavailable until the game build is installed.');}
+  }
   if (PRELAUNCH && prelaunchRoute(req, res, url, name) !== null) return;
   // Public login shell only. Every data read and mutation uses the wallet-authenticated Ryo API.
   if (name === '/admin') { res.writeHead(308, { Location: '/admin/', 'Cache-Control': 'no-store' }); return res.end(); }

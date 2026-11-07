@@ -1,4 +1,5 @@
 'use strict';
+require('./sr-revenue-fixture.cjs').liveEconomy();
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {PGlite}=require('@electric-sql/pglite'),web3=require('../app/node_modules/@solana/web3.js'),spl=require('../app/node_modules/@solana/spl-token'),bs58=require('../app/node_modules/bs58');
 const {Store}=require('../app/server/store.cjs'),router=require('../app/server/sr-revenue.cjs'),admin=require('../app/server/economic-dashboard.cjs'),economy=require('../app/server/economy.cjs');

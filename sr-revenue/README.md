@@ -1,5 +1,16 @@
 # SR Revenue Distribution
 
+**Live server only.** The validated Mainnet build selects this economy. Beta/Devnet keeps
+its original 80% Adventure operations / 10% treasury / 8% burn / 2% studio service model,
+including its original Market-fee reward funding. No beta admin approval can enable the
+live router. The build stamp controls this choice; request bodies and runtime flags cannot
+override it. Both branches carry the selector so later merges preserve the separation.
+
+`GET /economy-policy.json` reports the selected policy without a wallet, database query or
+transaction. The live pre-launch service publishes its policy while `/api/ryo` stays blocked,
+`/play/` redirects and `/admin/` stays unavailable. Deploying this policy does not launch
+Mainnet payments or substitute for the vault approvals below.
+
 SR means Ryo. Approved real-token service payments use the full-price **50 / 30 / 10 / 10**
 allocation. A 25,000 SR summon assigns 12,500 to Locked Treasury, 7,500 to Active Adventure
 Rewards, 2,500 to Community Rewards and 2,500 to Economic Reserve. No service studio share

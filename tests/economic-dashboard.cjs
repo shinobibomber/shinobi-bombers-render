@@ -1,4 +1,5 @@
 'use strict';
+const LIVE_ECONOMY=process.argv.includes('--live-economy');if(LIVE_ECONOMY)require('./sr-revenue-fixture.cjs').liveEconomy();
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),http=require('node:http');
 const {PGlite}=require('@electric-sql/pglite'),{chromium}=require('playwright');
 const root=path.resolve(__dirname,'..'),{Keypair}=require('../app/node_modules/@solana/web3.js'),{TOKEN_PROGRAM_ID}=require('../app/node_modules/@solana/spl-token');
@@ -27,6 +28,7 @@ const {Store,hash}=require('../app/server/store.cjs'),{createService,GENESIS}=re
  await assert.rejects(call(vw,'admin-pause',{control:'claims',reason:'test'}),e=>e.status===403);
  let s=await call(vw,'admin-snapshot');assert.equal(s.flow.spent,0);assert.equal(s.runway,null);assert.equal(s.chain.circulating,null);assert.equal(s.chain.supplyRaw,'900000000000000');assert.equal(s.role,'viewer');assert.equal(s.nft.minted,0);assert.equal(s.nft.supply,20);
  const propose=async(kind,payload)=>call(ow,'admin-propose',{kind,payload,reason:'Verified isolated test evidence',version:(await call(ow,'admin-snapshot')).control.version});
+ if(!LIVE_ECONOMY)await assert.rejects(propose('revenueRouting',{}),/only on the live server/);assert.equal(s.revenueDistribution.applicable,LIVE_ECONOMY);
  const approve=async p=>call(aw,'admin-review',{id:p.id,approve:true,reason:'Independent evidence review complete'});
  const proposal=await propose('vaults',{vaults:[{label:'Rewards allocation',wallet:addr(vault),evidence:'Approved allocation document'}]});
  await assert.rejects(call(ow,'admin-review',{id:proposal.id,approve:true,reason:'self'}),/approver role/);
@@ -94,13 +96,13 @@ const {Store,hash}=require('../app/server/store.cjs'),{createService,GENESIS}=re
   await p.addInitScript(wallet=>{window.phantom={solana:{isPhantom:true,connect:async()=>({publicKey:{toString:()=>wallet}}),signMessage:async()=>({signature:new Uint8Array(64)})}}},ow);
   await p.goto('http://127.0.0.1:'+server.address().port+'/admin/');assert.equal(await p.locator('#dashboard').isHidden(),true);await p.locator('#connect').click();await p.waitForSelector('#dashboard:not([hidden])');
   await p.waitForFunction(()=>!document.querySelector('#refresh').disabled);assert.match(await p.locator('#metrics').innerText(),/900,000,000/);
-  assert.match(await p.locator('#revenue-cards').innerText(),/Locked Treasury.*50%/s);assert.match(await p.locator('#revenue-cards').innerText(),/Active Adventure Rewards.*30%/s);
-  assert.match(await p.locator('#revenue-status').innerText(),/Awaiting two-wallet approval/);assert.match(await p.locator('#revenue-custody').innerText(),/not a separate on-chain wallet/);
+  assert.equal(await p.locator('#service-revenue').isHidden(),!LIVE_ECONOMY,'SR controls are live-only');assert.equal(await p.locator('#kind').inputValue(),LIVE_ECONOMY?'revenueRouting':'vaults');assert.equal(await p.locator('#kind option[value="revenueRouting"]').evaluate(e=>e.disabled),!LIVE_ECONOMY);
+  if(LIVE_ECONOMY){assert.match(await p.locator('#revenue-cards').innerText(),/Locked Treasury.*50%/s);assert.match(await p.locator('#revenue-status').innerText(),/Awaiting two-wallet approval/);}
   const screenshotDir=path.join(__dirname,'out');fs.mkdirSync(screenshotDir,{recursive:true});await p.screenshot({path:path.join(screenshotDir,'economic-dashboard-desktop.png'),fullPage:true});
-  await p.locator('#service-revenue').screenshot({path:path.join(screenshotDir,'sr-revenue-dashboard-desktop.png')});
+  await p.locator(LIVE_ECONOMY?'#service-revenue':'#governance').screenshot({path:path.join(screenshotDir,LIVE_ECONOMY?'live-economy-dashboard-desktop.png':'beta-economy-dashboard-desktop.png')});
   await p.locator('#controls button').first().click();await p.waitForSelector('#confirm[open]');assert.equal(await p.locator('#confirm button[value="confirm"]').isEnabled(),true);await p.locator('#confirm button[value="cancel"]').click();await p.waitForFunction(()=>!document.querySelector('#refresh').disabled);
   await p.setViewportSize({width:390,height:844});await p.screenshot({path:path.join(screenshotDir,'economic-dashboard-mobile.png'),fullPage:true});assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);
-  await p.locator('#service-revenue').screenshot({path:path.join(screenshotDir,'sr-revenue-dashboard-mobile.png')});
+  await p.locator(LIVE_ECONOMY?'#service-revenue':'#governance').screenshot({path:path.join(screenshotDir,LIVE_ECONOMY?'live-economy-dashboard-mobile.png':'beta-economy-dashboard-mobile.png')});
   await p.locator('#disconnect').click();assert.equal(await p.locator('#dashboard').isHidden(),true);
  }finally{await browser?.close();await new Promise(r=>server.close(r))}
  console.log('PASS: economic dashboard permissions, exact ledger sums, scope isolation, finalized RPC/unavailable states, claim atomicity and replay, approvals/self-review/stale versions, audited emergency gates/recovery, finance runway, concentration signals and desktop/mobile UI.');

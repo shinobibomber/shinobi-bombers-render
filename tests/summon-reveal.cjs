@@ -9,13 +9,14 @@ const { withGame } = require('./harness.cjs');
 const output = path.join(__dirname, 'out');
 fs.mkdirSync(output, { recursive: true });
 
-// Run the actual server fulfillment code with a deterministic rarity RNG only.
+// Run the actual server fulfillment code with deterministic rarity and appearance rolls.
 // Names, stats, IDs and all probability thresholds still use the real module.
 function fulfillWithRolls(rolls) {
   const file = path.resolve(__dirname, '../app/server/economy.cjs');
   const requireEconomy = createRequire(file), record = { exports: {} };
+  let nextLook=0;
   const randomInt = (...args) => args.length === 1 && args[0] === 10000 && rolls.length
-    ? rolls.shift() : crypto.randomInt(...args);
+    ? rolls.shift() : args.length === 1 && args[0] === 8 ? nextLook++%8 : crypto.randomInt(...args);
   vm.runInNewContext(fs.readFileSync(file, 'utf8'), {
     module: record, exports: record.exports, structuredClone,
     require: name => name === 'node:crypto' ? { ...crypto, randomInt } : requireEconomy(name)

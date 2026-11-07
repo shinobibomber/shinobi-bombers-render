@@ -6,6 +6,12 @@ const RATES = Object.freeze({ lockedTreasury: 5000, activeRewards: 3000, communi
 const APPROVED = Object.freeze(['summon', 'fusion', 'dojo', 'training']);
 const OPTIONAL = Object.freeze(['sensei', 'sensei-rental']);
 const FIELDS = Object.keys(RATES);
+// Bound to the validated build stamp; a request or environment override cannot enable this on beta.
+const enabled = () => require('./network.cjs').built(__dirname).key === 'mainnet';
+function publicPolicy() {
+ return enabled() ? { marker:'sr-economy-live-only-v1', mode:'live-sr', network:'mainnet', ratesBps:RATES, serviceBurnBps:0, serviceStudioBps:0 }
+  : { marker:'sr-economy-live-only-v1', mode:'beta-legacy', network:'devnet', ratesBps:{operations:8000,treasury:1000,burn:800,studio:200}, serviceBurnBps:800, serviceStudioBps:200 };
+}
 const raw = value => { try { if (!/^[0-9]+$/.test(String(value))) throw Error(); return BigInt(value); } catch { fail('Invalid SR base-unit amount.'); } };
 function split(base) {
  if (!Number.isSafeInteger(base) || base < 1) fail('Invalid service price.');
@@ -30,6 +36,7 @@ function validateConfig(payload) {
  return { enabled: payload.enabled, destinations, products, evidence: payload.evidence.trim(), version: VERSION };
 }
 async function config(store, c = store.pool, lock = false) {
+ if (!enabled()) return null;
  const row = (await c.query('SELECT config,version FROM ryo_admin_control WHERE scope=$1' + (lock ? ' FOR SHARE' : ''), [store.scope])).rows[0];
  const value = row?.config?.revenueRouting;
  return value ? { ...validateConfig(value), configVersion: Number(row.version) } : null;
@@ -64,6 +71,7 @@ async function verifyVaults(ctx, cfg) {
 }
 async function instructions(ctx, q, requestId, transferTo, memo) {
  try {
+ if (!enabled()) fail('SR revenue routing is available only on the live server.', 403);
  if (typeof ctx.wallet !== 'string' || !ctx.wallet) fail('Missing SR payment owner.', 503);
  if (!q.revenueDistribution || q.revenueDistribution.version !== VERSION || q.burn !== 0 || q.studioFee !== 0) fail('Refresh the approved SR service quote.', 409);
  const cfg = await config(ctx.store, ctx.client || ctx.store.pool, !!ctx.client);
@@ -92,6 +100,7 @@ async function settled(store, c, row) {
 const INCOME_SQL = "SELECT COALESCE(SUM((quote->>'operations')::numeric),0) AS n FROM ryo_purchases WHERE scope=$1 AND status='confirmed' AND COALESCE(quote->>'funding','')<>'bonus' AND COALESCE(quote->>'adventureEligible','true')<>'false'";
 async function income(store, c) {
  const base = (await c.query(INCOME_SQL, [store.scope])).rows[0];
+ if (!enabled()) return { n:Number(base.n) };
  const topups = (await c.query('SELECT COALESCE(SUM(amount_raw),0) AS n FROM ryo_revenue_replenishments WHERE scope=$1', [store.scope])).rows[0];
  return { n: Number(base.n) + Number(topups.n) / Number(UNIT) };
 }
@@ -127,6 +136,7 @@ async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
  return { sourceAta: source, destinationAta: target, mint: ctx.mint, amountRaw: payload.amountRaw, commitment: 'finalized', slot: tx.slot };
 }
 async function applyApproval(ctx, c, kind, value, proposal) {
+ if (!enabled()) fail('SR revenue configuration is available only on the live server.', 403);
  if (kind === 'revenueRouting') {
   const cfg = validateConfig(value); await verifyVaults(ctx, cfg);
   return { revenueRouting: cfg };
@@ -140,12 +150,13 @@ async function applyApproval(ctx, c, kind, value, proposal) {
  return {};
 }
 async function summary(ctx, c) {
+ if (!enabled()) return { ...publicPolicy(), applicable:false, ready:false, config:null };
  const cfg = await config(ctx.store, c), aggregate = (await c.query(`SELECT COUNT(*) AS count,${FIELDS.map(k => `COALESCE(SUM((allocations->>'${k}')::numeric),0) AS "${k}"`).join(',')} FROM ryo_service_revenue WHERE scope=$1`, [ctx.store.scope])).rows[0];
  const totals = Object.fromEntries(FIELDS.map(k => [k, String(aggregate[k])]));
  const replenished = (await c.query('SELECT source,COALESCE(SUM(amount_raw),0) AS raw FROM ryo_revenue_replenishments WHERE scope=$1 GROUP BY source', [ctx.store.scope])).rows;
- return { marker: MARKER, ratesBps: RATES, basis: 'full-service-payment', config: cfg, ready: !!cfg?.enabled, totalsRaw: totals, transactions: Number(aggregate.count), replenished,
+ return { marker: MARKER, applicable:true, ratesBps: RATES, basis: 'full-service-payment', config: cfg, ready: !!cfg?.enabled, totalsRaw: totals, transactions: Number(aggregate.count), replenished,
    custody: 'Active Rewards is a segregated ledger allocation backed by the game custody wallet; it is not a separate on-chain wallet balance.',
    lockedTreasury: 'New checkouts require finalized external SPL multisig verification. This is not a timelock or vesting guarantee.',
    exclusions: ['Sensei SOL', 'Market sale proceeds', 'Boss Hunt prizes', 'PvP', 'buybacks', 'bonus-funded purchases'] };
 }
-module.exports = { MARKER, VERSION, UNIT, RATES, APPROVED, split, validateConfig, config, preview, verifyVaults, instructions, settled, INCOME_SQL, income, validateReplenishment, verifyReplenishment, applyApproval, summary };
+module.exports = { MARKER, VERSION, UNIT, RATES, APPROVED, enabled, publicPolicy, split, validateConfig, config, preview, verifyVaults, instructions, settled, INCOME_SQL, income, validateReplenishment, verifyReplenishment, applyApproval, summary };

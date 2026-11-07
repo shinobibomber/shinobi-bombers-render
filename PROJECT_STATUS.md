@@ -108,6 +108,20 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 OWNER CORRECTION: SR economy is LIVE ONLY, never beta. Build-stamped Mainnet
+  selects 50/30/10/10; Devnet keeps 80% operations / 10% treasury / 8% burn / 2% studio and
+  its old Market-fee Adventure funding. Live controls are hidden and server-rejected on beta.
+  Both branches share the selector, so future main -> live merges preserve the distinction.
+  GET /economy-policy.json is read-only and works during pre-launch. Do not open Mainnet
+  money gates, change RYO_SCOPE, create a token or move funds just to publish this policy.
+  Live pre-launch and approved-vault requirements remain in place. Source SR modules/schema
+  exist in both builds for compatibility and pending recovery; new routing is Mainnet-only.
+  Validation: Node 22 fresh build, lint, check:site, check:rewards, all 51 game suites and
+  website checks passed. Both signed-payment models, both admin UI modes, beta checkout and
+  the actual isolated Mainnet pre-launch host are covered. Only economy/service frozen
+  hashes changed. Reveal test appearance rolls are deterministic so cross-rarity duplicates
+  are always tested; production rarity/appearance rolls are unchanged.
+
 - 2026-11-07 SR Revenue Distribution (owner's 50/30/10/10 diagram): sr-revenue/README.md,
   server.cjs/schema.sql + apply-sr-revenue.cjs (before network/performance). Full SR service
   payment, no extra service studio allocation/burn; exact integer base units, three SPL

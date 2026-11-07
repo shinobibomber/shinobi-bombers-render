@@ -80,7 +80,7 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
    let p=make(3,rank,1);
    for(let level=1;level<5;level++){
     const q=economy.quote(p,'training',{heroId:'hero-0'});
-    assert.equal(q.base,go.trainingPrice(rank,level));assert.equal(q.total,q.base,'the full approved SR price is distributed');assert.deepEqual([q.treasury,q.operations,q.community,q.reserve,q.burn,q.studioFee].map(n=>n*100/q.base),[50,30,10,10,0,0],'50/30/10/10 distribution without automatic burn');
+    assert.equal(q.base,go.trainingPrice(rank,level));assert.equal(q.total,q.base,'the full approved SR price is distributed');assert.deepEqual([q.treasury,q.operations,q.burn,q.studioFee].map(n=>n*100/q.base),[10,80,8,2],'beta retains its original economy');assert.equal(q.revenueDistribution,undefined);
     const r=economy.fulfill(p,q);p=r.profile;
     assert.deepEqual(r.result.training,{heroId:'hero-0',level:level+1,gains:{pw:level===4?2:1}},'Genin/Chunin gain Power ('+level+'→'+(level+1)+')');
    }

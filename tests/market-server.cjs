@@ -78,7 +78,7 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
   assert.equal(await balance(SELLER), 800000, 'the seller is credited 80%');
   const poolAfter = Number((await store.pool.query("SELECT COALESCE(SUM((quote->>'operations')::numeric),0) AS n FROM ryo_purchases WHERE scope=$1 AND status='confirmed'", [store.scope])).rows[0].n);
   assert.equal(poolAfter - poolBefore, 100000, 'the separate Market fee reserve retains 10%');
-  assert.equal(Number((await require('../app/server/sr-revenue.cjs').income(store,store.pool)).n),adventureBefore,'new marketplace revenue is not automatically approved Adventure funding');
+  assert.equal(Number((await require('../app/server/sr-revenue.cjs').income(store,store.pool)).n),adventureBefore+100000,'beta Market fees retain their original Adventure funding');
   const mine = await market.handle(store, SELLER, 'market-mine', {});
   assert.equal(mine.sales.length, 1); assert.equal(mine.sales[0].payout, 800000); assert.equal(mine.listings.length, 1);
   assert.equal((await market.handle(store, BUYER, 'market-mine', {})).bought.length, 1);

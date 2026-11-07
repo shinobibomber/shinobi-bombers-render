@@ -25,12 +25,12 @@ function applySrRevenue(appDir = path.join(__dirname, 'app')) {
  const patch = (file, before, after) => { const p = path.join(appDir, file), s = fs.readFileSync(p, 'utf8'); fs.writeFileSync(p, replace(s, before, after, file + ':' + before.slice(0, 50))); };
  fs.copyFileSync(path.join(__dirname, 'sr-revenue/server.cjs'), path.join(appDir, 'server/sr-revenue.cjs'));
  const schema = path.join(appDir, 'server/schema.sql'); if (!fs.readFileSync(schema, 'utf8').includes('-- SR Revenue Distribution v1:')) fs.appendFileSync(schema, '\n' + fs.readFileSync(path.join(__dirname, 'sr-revenue/schema.sql'), 'utf8').replace(/\r\n?/g, '\n') + '\n');
- patch('server/economy.cjs', "const split=require('./gameplay-options.cjs').purchaseSplit(base),studioFee=split.studioFee;", "const split=require('./sr-revenue.cjs').split(base),studioFee=split.studioFee;");
- patch('server/economy.cjs', "operations:split.operations,...(product==='fusion'", "operations:split.operations,community:split.community,reserve:split.reserve,revenueDistribution:split.revenueDistribution,...(product==='fusion'");
+ patch('server/economy.cjs', "const split=require('./gameplay-options.cjs').purchaseSplit(base),studioFee=split.studioFee;", "const sr=require('./sr-revenue.cjs'),split=sr.enabled()?sr.split(base):require('./gameplay-options.cjs').purchaseSplit(base),studioFee=split.studioFee;");
+ patch('server/economy.cjs', "operations:split.operations,...(product==='fusion'", "operations:split.operations,...(split.revenueDistribution?{community:split.community,reserve:split.reserve,revenueDistribution:split.revenueDistribution}:{}),...(product==='fusion'");
  patch('server/service.cjs', "spl.getAssociatedTokenAddressSync(key(mint),owner);return [", "spl.getAssociatedTokenAddressSync(key(mint),owner,true);return [");
  const wire = "return signedTransaction([...(q.studioFee>0?transferTo(studioAddress,BigInt(q.studioFee)*UNIT):[]),...(q.treasury>0?transferTo(revenueAddress,BigInt(q.treasury)*UNIT):[]),...(q.burn>0?[spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6)]:[]),memo('shinobi-purchase-v2:'+id)]);";
  if (!fs.readFileSync(path.join(appDir,'server/service.cjs'),'utf8').includes("await require('./sr-revenue.cjs').instructions(")) patch('server/service.cjs', wire, "return signedTransaction(q.revenueDistribution?await require('./sr-revenue.cjs').instructions({store,connection,mint,treasuryAddress,studioAddress,checkNetwork},q,id,transferTo,memo):[...(q.studioFee>0?transferTo(studioAddress,BigInt(q.studioFee)*UNIT):[]),...(q.treasury>0?transferTo(revenueAddress,BigInt(q.treasury)*UNIT):[]),...(q.burn>0?[spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6)]:[]),memo('shinobi-purchase-v2:'+id)]);");
- patch('server/service.cjs', 'purchaseTreasuryBps:1000,purchaseBurnBps:800,purchaseStudioBps:200,purchaseOperationsBps:8000,', 'purchaseTreasuryBps:5000,purchaseBurnBps:0,purchaseStudioBps:0,purchaseOperationsBps:3000,purchaseCommunityBps:1000,purchaseReserveBps:1000,revenueDistribution:{marker:\'sr-revenue-distribution-v1\',basis:\'full-service-payment\',ratesBps:require(\'./sr-revenue.cjs\').RATES,configured:!!(await require(\'./sr-revenue.cjs\').config(store))?.enabled},');
+ patch('server/service.cjs', 'purchaseTreasuryBps:1000,purchaseBurnBps:800,purchaseStudioBps:200,purchaseOperationsBps:8000,', "economyPolicy:require('./sr-revenue.cjs').publicPolicy(),...(require('./sr-revenue.cjs').enabled()?{purchaseTreasuryBps:5000,purchaseBurnBps:0,purchaseStudioBps:0,purchaseOperationsBps:3000,purchaseCommunityBps:1000,purchaseReserveBps:1000,revenueDistribution:{marker:'sr-revenue-distribution-v1',applicable:true,basis:'full-service-payment',ratesBps:require('./sr-revenue.cjs').RATES,configured:!!(await require('./sr-revenue.cjs').config(store))?.enabled}}:{purchaseTreasuryBps:1000,purchaseBurnBps:800,purchaseStudioBps:200,purchaseOperationsBps:8000}),");
  patch('server/service.cjs', "if(action==='quote')return economy.quote(await store.profile(wallet),body.product,body.params||{});", "if(action==='quote')return require('./sr-revenue.cjs').preview(store,wallet,economy.quote(await store.profile(wallet),body.product,body.params||{}));");
  const storeFile=path.join(appDir,'server/store.cjs');let storeText=fs.readFileSync(storeFile,'utf8');
  storeText=storeText.replace("if(status==='confirmed'){await require('./sr-revenue.cjs').settled(this,c,row);await require('./chat.cjs')", "if(status==='confirmed'){await require('./chat.cjs')");fs.writeFileSync(storeFile,storeText);
@@ -49,14 +49,8 @@ function applySrRevenue(appDir = path.join(__dirname, 'app')) {
   if (s.split(income).length !== 3) throw Error('SR Revenue adventure income anchor count changed');
   fs.writeFileSync(adventure, s.split(income).join("const income=await require('./sr-revenue.cjs').income(store,c);"));
  }
- patch('server/market.cjs', 'return { studioFee, treasury, operations, seller:', 'return { adventureEligible: false, studioFee, treasury, operations, seller:');
- // Market quote builders spread split fields in some versions and select fields in others.
- const marketFile=path.join(appDir,'server/market.cjs');let market=fs.readFileSync(marketFile,'utf8');
- market=market.replaceAll(/operations: s.operations,(?! adventureEligible: false,)/g,'operations: s.operations, adventureEligible: false,');
- fs.writeFileSync(marketFile,market);
- const html = path.join(appDir, 'public/index.html'); let text = fs.readFileSync(html, 'utf8');
- for (const [before, after] of clientPatches) text = replace(text, before, after, 'checkout'); fs.writeFileSync(html, text);
- console.log('SR Revenue Distribution: 50/30/10/10, no automatic service burn, protected-vault approval and separate market revenue.');
+ console.log('Economy isolation: live SR routing adapter installed; beta uses its legacy economy.');
 }
-module.exports = { applySrRevenue, clientPatches };
+function clientText(text) { for(const [before,after] of clientPatches)text=replace(text,before,after,'live checkout');return text; }
+module.exports = { applySrRevenue, clientPatches, clientText };
 if (require.main === module) applySrRevenue();

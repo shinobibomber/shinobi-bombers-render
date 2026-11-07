@@ -191,6 +191,9 @@ function keyPair() {
     }
     for (const p of ['/rules', '/privacy', '/terms', '/whitepaper', '/pl/prelaunch.js', '/pl/wallet.js', '/pl/i18n/pt-BR.json', '/pl/announcements.json', '/pl/assets/logo.webp', '/play/assets/login-exact/login-reference.webp']) assert.equal((await get(p)).status, 200, p);
     assert.deepEqual(await (await get('/healthz')).json(), { status: 'ok', mode: 'prelaunch' });
+    const policy=await (await get('/economy-policy.json')).json();
+    assert.equal(policy.marker,'sr-economy-live-only-v1');assert.equal(policy.prelaunch,true);assert.equal(policy.monetaryEndpointsMounted,false);
+    assert.equal((await get('/economy-policy.json',{method:'POST'})).status,405,'policy endpoint cannot submit payments');
     // Every game and money action is unreachable: the game API is not mounted at all.
     for (const action of ['purchase', 'deposit', 'withdraw', 'market-post', 'market-buy', 'creator-player-claim', 'claim-adventure', 'box-mint', 'hunt-enter', 'adventure', 'state', 'login', 'challenge']) for (const p of ['/api/ryo', '/.netlify/functions/ryo']) {
       const r = await get(p, { method: 'POST', headers: { 'content-type': 'application/json', origin: siteOrigin }, body: JSON.stringify({ action, product: 'summon' }) });

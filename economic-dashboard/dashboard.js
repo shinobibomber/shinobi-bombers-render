@@ -21,7 +21,10 @@
   clear(['revenue-cards','metrics','vaults','runway','flow-cards','seasons','products','risk-metrics','concentration','leaders','alerts','transactions','controls','proposals','audit']);
   $('timestamp').textContent='Snapshot '+date(s.serverTime);$('role').textContent=s.role.toUpperCase()+' · CONFIG v'+s.control.version;
   const c=s.chain,rr=s.rewards,l=s.liabilities;
-  const rev=s.revenueDistribution;if(rev){$('revenue-status').textContent=(rev.ready?'Approved vault configuration; each checkout re-verifies custody and the Locked Treasury multisig.':'Awaiting two-wallet approval of vault configuration. New real-token service payments remain blocked.')+' Cumulative finalized allocations, not current wallet balances. Routed service payments: '+rev.transactions;
+  const rev=s.revenueDistribution,live=rev?.applicable===true;$('service-revenue').hidden=!live;
+  for(const option of $('kind').options)if(option.value.startsWith('revenue')){option.hidden=!live;option.disabled=!live;}
+  if(!live&&$('kind').value.startsWith('revenue')){$('kind').value='vaults';$('kind').onchange();}
+  if(live){$('revenue-status').textContent=(rev.ready?'Approved vault configuration; each checkout re-verifies custody and the Locked Treasury multisig.':'Awaiting two-wallet approval of vault configuration. New real-token service payments remain blocked.')+' Cumulative finalized allocations, not current wallet balances. Routed service payments: '+rev.transactions;
    $('revenue-custody').textContent=rev.custody+' '+rev.lockedTreasury;
    for(const [name,label]of [['lockedTreasury','Locked Treasury'],['activeRewards','Active Adventure Rewards'],['communityRewards','Community Rewards'],['economicReserve','Economic Reserve']])metric($('revenue-cards'),label+' - '+rev.ratesBps[name]/100+'%',rawRyo(rev.totalsRaw[name],6)+' Ryo',rev.config?.destinations?.[name]||'Vault not configured');}
 

@@ -135,6 +135,7 @@ async function handle(ctx,wallet,action,body){
    await audit(store,c,wallet,'emergency.pause',{control:body.control,reason});return {ok:true};
   }
   if(action==='admin-propose'){
+   if(['revenueRouting','revenueReplenishment'].includes(body.kind)&&!require('./sr-revenue.cjs').enabled())fail('SR revenue configuration is available only on the live server.',403);
    if(body.version!==Number(ctl.version))fail('Configuration changed. Refresh before proposing.',409);
    const payload=validate(body.kind,body.payload,now),id=crypto.randomUUID();
    await c.query('INSERT INTO ryo_admin_proposals(scope,id,kind,payload,proposer,reason,version,created) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[store.scope,id,body.kind,JSON.stringify(payload),wallet,reason,ctl.version,now]);

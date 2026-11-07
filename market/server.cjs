@@ -4,7 +4,7 @@
  * the listing until it sells, is cancelled, or expires (7 days), when it returns to the seller intact.
  * Buying reuses the token purchase flow: the buyer's Ryo is reserved with a signed custody transfer
  * of the treasury (8%) and studio (2%) shares; when it finalizes the buyer receives the hero, the
- * seller is credited 80%, and a separate Market fee reserve keeps 10%. It does not automatically fund Adventure.
+ * seller is credited 80%. On live the retained 10% is a separate Market fee reserve; beta keeps its original Adventure funding.
  * A refunded transfer restores the buyer's Ryo and puts the listing back on sale.
  *
  * Offers: a buyer offers less than the asking price (at least the rank minimum). The offered Ryo is
@@ -42,7 +42,7 @@ CREATE INDEX IF NOT EXISTS ryo_market_offers_buyer ON ryo_market_offers(scope,bu
 
 function split(price) {
   const studioFee = Math.floor(price * SHARES.studio / 100), treasury = Math.floor(price * SHARES.treasury / 100), operations = Math.floor(price * SHARES.pool / 100);
-  return { adventureEligible: false, studioFee, treasury, operations, seller: price - studioFee - treasury - operations };
+  return { ...(require('./sr-revenue.cjs').enabled()?{adventureEligible:false}:{}), studioFee, treasury, operations, seller: price - studioFee - treasury - operations };
 }
 const short = wallet => wallet.slice(0, 4) + '…' + wallet.slice(-4);
 function publicHero(hero) {

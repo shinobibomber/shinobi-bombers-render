@@ -20,6 +20,15 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Live Economy Separation)**
+
+• The 50% Locked Treasury / 30% Adventure Rewards / 10% Community / 10% Reserve economy is now reserved for the live server.
+• Beta keeps its original test economy, checkout and reward funding. Live vault approval controls cannot be enabled on beta.
+• Live remains in pre-launch mode. Payments require the approved vault setup and launch authorization before activation.
+• Existing balances, transaction recovery, gas-fee protection and real-time rewards are preserved.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · SR Revenue Distribution)**
 
 **🔄 Changes**
