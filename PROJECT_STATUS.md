@@ -108,6 +108,30 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 SR Revenue Distribution (owner's 50/30/10/10 diagram): sr-revenue/README.md,
+  server.cjs/schema.sql + apply-sr-revenue.cjs (before network/performance). Full SR service
+  payment, no extra service studio allocation/burn; exact integer base units, three SPL
+  transfers (50/10/10) and 30% retained in custody, separately capped for Adventure. Active
+  owner must be existing custody; no separate external Active wallet adapter is claimed.
+  Treasury requires finalized initialized SPL multisig m>=2, external signers, no delegate;
+  multisig is not a timelock or universal spending restriction. Independent admin approvals
+  configure four distinct owner destinations / approved SR products. Until approved, paid
+  service checkout is fail-closed (Pay disabled; no stuck saved request on pre-submit failure).
+  Default products summon/fusion/dojo/training; SR Sensei/rental require explicit approval.
+  Sensei SOL, deposits/withdrawals, Boss Hunt/PvP, Community payouts and buybacks excluded.
+  New Market fee reserve stays separate (adventureEligible:false), historical quotes preserved.
+  Finalized successful settlement journals allocations once; bonus/refund/pending excluded.
+  Replenishments from Treasury or Reserve need finalized exact transfer/balance evidence and
+  different reviewer, unique receipt, audit and pool lock. No game-signed protected debit.
+  Existing Adventure cadence/formulas/guard unchanged. No Mainnet launch/env/funds activation.
+  Owner's public vaults/locking mechanism are pending; never substitute guessed addresses.
+  Owner confirmed full service payment replaces the studio share. Routing memos bind scope,
+  authenticated wallet and request ID; identical IDs from two wallets cannot share a transfer.
+  Verified on Node 22: fresh unpack, lint, check:site, check:rewards, all 50 game suites and
+  test:site passed. Looked at checkout, history and admin screenshots on desktop/mobile.
+  Only six intentionally changed generated server hashes updated. Live-rewards tests now
+  install their defeat observer before login (no lost early observations; no guard loosening).
+
 - 2026-11-07 LIVE SERVER DEPLOYED (pre-launch portal): https://shinobibombers.onrender.com
   - Render web service `ShinobiBombers` (srv-dbnel5bl550s73f0moa0): starter plan, Singapore, branch `live`,
     health check `/healthz`.

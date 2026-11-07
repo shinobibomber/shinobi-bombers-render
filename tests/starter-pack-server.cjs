@@ -43,14 +43,14 @@ const ON = { STARTER_PACK: 'on' }, never = async () => { throw Error('A starter-
   await store.settlePurchase('veteran', 'starter-summon-0001', 'confirmed');
   assert.equal((await store.profile('veteran')).heroes.length, 22, 'the summoned heroes arrive');
   // Reward-pool income ignores starter-funded purchases.
-  const income = (await db.query("SELECT COALESCE(SUM((quote->>'operations')::numeric),0) AS n FROM ryo_purchases WHERE scope=$1 AND status='confirmed' AND COALESCE(quote->>'funding','')<>'bonus'", [store.scope])).rows[0].n;
-  assert.equal(Number(income), 0); assert.match(fs.readFileSync(path.join(root, 'adventure.cjs'), 'utf8'), /COALESCE\(quote->>'funding',''\)<>'bonus'/);
+  const income = await require('../app/server/sr-revenue.cjs').income(store, pool);
+  assert.equal(Number(income.n), 0, 'starter-funded service payments never fund Adventure');
   assert.match(fs.readFileSync(path.join(root, 'service.cjs'), 'utf8'), /row\.quote\?\.funding==='bonus'\)return publicOperation\(await settle\('confirmed'\)/);
   // A purchase larger than the starter pot falls back to the deposited balance (with its on-chain transaction).
   await db.query('UPDATE ryo_accounts SET bonus=1000 WHERE scope=$1 AND wallet=$2', [store.scope, 'veteran']);
   q = economy.quote(await store.profile('veteran'), 'summon', { quantity: 1 });
   let prepared = 0;
-  const paid = await store.purchase('veteran', 'starter-summon-0002', 'summon', { quantity: 1 }, q.total, async () => { prepared++; return { signature: 'S'.repeat(88), wire: 'd2lyZQ==', lastHeight: 1 }; });
+  const paid = await store.purchase('veteran', 'starter-summon-0002', 'summon', { quantity: 1 }, q.total, async q => { prepared++; return require('./sr-revenue-fixture.cjs').stamp(q, { signature: 'S'.repeat(88), wire: 'd2lyZQ==', lastHeight: 1 }); });
   assert.deepEqual([prepared, paid.quote.funding, (await acct('veteran')).balance], [1, undefined, String(500000 - q.total)]);
   await store.settlePurchase('veteran', 'starter-summon-0002', 'confirmed');
   await db.query('UPDATE ryo_accounts SET bonus=10000000 WHERE scope=$1 AND wallet=$2', [store.scope, 'veteran']);

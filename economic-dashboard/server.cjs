@@ -21,6 +21,8 @@ function int(value,min,max){if(!Number.isSafeInteger(value)||value<min||value>ma
 function address(value){try{const {PublicKey}=require('@solana/web3.js');if(new PublicKey(value).toBase58()!==value)throw Error();return value}catch{fail('Invalid Solana wallet address.')}}
 function validate(kind,payload,now){
  if(!payload||typeof payload!=='object'||Array.isArray(payload))fail('Configuration payload must be an object.');
+ if(kind==='revenueRouting')return {revenueRouting:require('./sr-revenue.cjs').validateConfig(payload.revenueRouting||payload)};
+ if(kind==='revenueReplenishment')return {revenueReplenishment:require('./sr-revenue.cjs').validateReplenishment(payload.revenueReplenishment||payload)};
  if(kind==='vaults'){
   if(!Array.isArray(payload.vaults)||payload.vaults.length>16)fail('Configure at most 16 allocation vaults.');
   const seen=new Set();return {vaults:payload.vaults.map(v=>{const wallet=address(v.wallet);if(seen.has(wallet))fail('Allocation vault addresses must be unique.');seen.add(wallet);return {label:text(v.label,60),wallet,evidence:text(v.evidence,240)}})};
@@ -71,7 +73,8 @@ async function readChain(ctx,vaults){
   })));
   const monitored=[...balances.values()].reduce((n,v)=>n+BigInt(v.amountRaw),0n);
   const custody=balances.get(ctx.treasuryAddress).amountRaw;
-  return {status:'verified',commitment:'finalized',supplyRaw:supply.value.amount,decimals:supply.value.decimals,slot:supply.context.slot,custodyRaw:custody,vaults:rows.map(v=>({...v,...balances.get(v.wallet),lockStatus:'Not verifiable: no lock/vesting program evidence configured'})),outsideMonitoredRaw:String(BigInt(supply.value.amount)-monitored),circulating:null,locked:null,coverage:'Outside monitored wallets is a residual, not a verified circulating supply. Wallet balances do not prove a contractual lock. Slots can differ.'};
+  let srLock=null;if(ctx.revenueConfig)try{srLock=await require('./sr-revenue.cjs').verifyVaults(ctx,ctx.revenueConfig)}catch{}
+  return {status:'verified',commitment:'finalized',supplyRaw:supply.value.amount,decimals:supply.value.decimals,slot:supply.context.slot,custodyRaw:custody,vaults:rows.map(v=>({...v,...balances.get(v.wallet),lockStatus:srLock&&v.wallet===ctx.revenueConfig.destinations.lockedTreasury?'Verified external SPL multisig '+srLock.required+' of '+srLock.members+'; no timelock claimed':'Not verifiable: no lock/vesting program evidence configured'})),outsideMonitoredRaw:String(BigInt(supply.value.amount)-monitored),circulating:null,locked:null,coverage:'Outside monitored wallets is a residual, not a verified circulating supply. Wallet balances do not prove a contractual lock. Slots can differ.'};
  }catch{return unavailableChain()}
 }
 async function chain(ctx,vaults){
@@ -82,7 +85,7 @@ async function snapshot(ctx,wallet){
  const result=await store.transaction(async c=>{
   await c.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
   const ctl=await control(store,c),config={...DEFAULTS,...ctl.config},q=async(sql,args=[])=> (await c.query(sql,[store.scope,...args])).rows;
-  const purchase=(await q("SELECT COUNT(*) AS orders,COALESCE(SUM(amount),0) AS spent,COALESCE(SUM((quote->>'base')::numeric),0) AS base,COALESCE(SUM((quote->>'operations')::numeric),0) AS recycled,COALESCE(SUM((quote->>'treasury')::numeric),0) AS treasury,COALESCE(SUM((quote->>'burn')::numeric),0) AS burned,COALESCE(SUM((quote->>'studioFee')::numeric),0) AS fees FROM ryo_purchases WHERE scope=$1 AND status='confirmed' AND COALESCE(quote->>'funding','')<>'bonus'"))[0];
+  const purchase=(await q("SELECT COUNT(*) AS orders,COALESCE(SUM(amount),0) AS spent,COALESCE(SUM((quote->>'base')::numeric),0) AS base,COALESCE(SUM(CASE WHEN COALESCE(quote->>'adventureEligible','true')<>'false' THEN (quote->>'operations')::numeric ELSE 0 END),0) AS recycled,COALESCE(SUM((quote->>'treasury')::numeric),0) AS treasury,COALESCE(SUM((quote->>'burn')::numeric),0) AS burned,COALESCE(SUM((quote->>'studioFee')::numeric),0) AS fees FROM ryo_purchases WHERE scope=$1 AND status='confirmed' AND COALESCE(quote->>'funding','')<>'bonus'"))[0];
   const [liabilities]=await q("SELECT (SELECT COALESCE(SUM(balance),0) FROM ryo_accounts WHERE scope=$1) AS balances,(SELECT COALESCE(SUM(amount),0) FROM ryo_purchases WHERE scope=$1 AND status='pending') AS purchases,(SELECT COALESCE(SUM(amount),0) FROM ryo_withdrawals WHERE scope=$1 AND status='pending') AS withdrawals,(SELECT COALESCE(SUM(amount),0) FROM ryo_market_offers WHERE scope=$1 AND status='active') AS offers,(SELECT COALESCE((SELECT SUM(e.prize) FROM ryo_hunt_entries e JOIN ryo_purchases p ON p.scope=e.scope AND p.wallet=e.wallet AND p.request_id=e.id JOIN ryo_hunt_days d ON d.scope=e.scope AND d.day=e.day WHERE e.scope=$1 AND p.status='confirmed' AND NOT d.settled),0)+COALESCE((SELECT SUM(carry) FROM ryo_hunt_days WHERE scope=$1 AND NOT settled),0)) AS hunt_pool,(SELECT COALESCE(SUM((data->>'pending')::numeric),0)/1000 FROM ryo_adventures WHERE scope=$1) AS chests,(SELECT COALESCE(SUM((data->>'claimed')::numeric),0) FROM ryo_adventures WHERE scope=$1) AS claimed");
   const products=await q("SELECT product,COUNT(*) AS orders,COALESCE(SUM(amount),0) AS spent,COALESCE(SUM(jsonb_array_length(COALESCE(result->'outputs','[]'::jsonb))),0) AS outputs,COALESCE(SUM(CASE WHEN product='fusion' THEN jsonb_array_length(COALESCE(result->'consumed','[]'::jsonb))/3 ELSE 0 END),0) AS attempts FROM ryo_purchases WHERE scope=$1 AND status='confirmed' GROUP BY product ORDER BY spent DESC");
   const [activity]=await q("SELECT COUNT(DISTINCT p.wallet) AS active,COUNT(DISTINCT p.wallet) FILTER(WHERE EXISTS(SELECT 1 FROM ryo_profiles r WHERE r.scope=p.scope AND r.wallet=p.wallet AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(r.data->'heroes','[]'::jsonb)) h WHERE NOT (r.data ? 'battleReady') OR COALESCE(r.data->'battleReady','[]'::jsonb) ? (h->>'tokenId')))) AS eligible FROM ryo_presence p WHERE p.scope=$1 AND p.last_seen>$2",[now-90000]);
@@ -104,13 +107,15 @@ async function snapshot(ctx,wallet){
   const alerts=claimAlerts.map(r=>({wallet:r.wallet,signal:'High claim volume (24h)',detail:safeNum(r.amount)+' Ryo across '+r.claims+' claims',severity:'review'}));
   if(top1>=config.monitor.concentrationPercent&&total)alerts.push({wallet:leaders[0].wallet,signal:'Reward concentration',detail:top1.toFixed(2)+'% of lifetime claimed Ryo',severity:'review'});
   for(const r of transactions)if(r.status==='pending'&&now-safeNum(r.created)>config.monitor.pendingMinutes*60000)alerts.push({wallet:r.wallet,signal:'Stale pending transaction',detail:r.kind+' '+r.request_id,severity:'review'});
-  return {marker:MARKER,serverTime:now,role:role(wallet),wallet,scope:store.scope,control:{version:ctl.version,config,pauses:ctl.pauses,installed:safeNum(ctl.installed)},flow,products:products.map(numRow),liabilities:{...liability,reserved:liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool,total:liability.balances+liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool+liability.chests},rewards:{claimed:total,recorded,unassignedHistory:Math.max(0,total-recorded),outsideSeasons:safeNum(claimTotals.outside),seasons,pool:Math.max(0,flow.recycled-total)},activity:numRow(activity),concentration:{top1Percent:top1,top10Percent:top10,earners:safeNum(pop.earners),leaders:leaders.map(numRow)},alerts,transactions,transactionCounts:txCounts.map(numRow),proposals,audits,nft:{minted:null,reason:'The beta stores hero entitlements. No NFT mint/escrow service is deployed.'}};
+  const revenueIncome=await require('./sr-revenue.cjs').income(store,c);
+   return {revenueDistribution:await require('./sr-revenue.cjs').summary(ctx,c),marker:MARKER,serverTime:now,role:role(wallet),wallet,scope:store.scope,control:{version:ctl.version,config,pauses:ctl.pauses,installed:safeNum(ctl.installed)},flow,products:products.map(numRow),liabilities:{...liability,reserved:liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool,total:liability.balances+liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool+liability.chests},rewards:{claimed:total,recorded,unassignedHistory:Math.max(0,total-recorded),outsideSeasons:safeNum(claimTotals.outside),seasons,pool:Math.max(0,Number(revenueIncome.n)-total)},activity:numRow(activity),concentration:{top1Percent:top1,top10Percent:top10,earners:safeNum(pop.earners),leaders:leaders.map(numRow)},alerts,transactions,transactionCounts:txCounts.map(numRow),proposals,audits,nft:{minted:null,reason:'The beta stores hero entitlements. No NFT mint/escrow service is deployed.'}};
  });
  // Limited Mythic NFT Box sales (SOL, outside the Ryo ledger).
  try{result.nft=await require('./mythic-box.cjs').stats(ctx.store)}catch{}
  // Test-server starter Ryo: spend-only, never backed by custody, so outside the liabilities above.
  try{result.starter=await require('./starter-pack.cjs').stats(ctx.store)}catch{}
- result.chain=await chain(ctx,result.control.config.vaults);
+ const revenueConfig=result.revenueDistribution.config, revenueVaults=revenueConfig?Object.entries(revenueConfig.destinations).map(([label,wallet])=>({label:'SR revenue · '+label,wallet})):[];
+ result.chain=await chain({...ctx,revenueConfig},[...result.control.config.vaults,...revenueVaults]);
  result.solvency=result.chain.status==='verified'?{custodyRyo:Number(BigInt(result.chain.custodyRaw))/10**result.chain.decimals,knownLiabilities:result.liabilities.total}:null;
  if(result.solvency)result.solvency.surplus=result.solvency.custodyRyo-result.solvency.knownLiabilities;
  const f=result.control.config.financial;result.runway=f?{...f,months:f.cashMinor/f.monthlyCostMinor,stale:now-f.asOf>31*86400000,verification:'Entered evidence reviewed by a distinct authorized approver; not a bank feed.'}:null;
@@ -145,7 +150,10 @@ async function handle(ctx,wallet,action,body){
    if(body.approve){
     if(Number(p.version)!==Number(ctl.version))fail('Proposal is stale. Re-propose against the current configuration.',409);
     const payload=validate(p.kind,['financial','monitor'].includes(p.kind)?p.payload[p.kind]:p.payload,now);
-    if(p.kind==='resume'){
+    if(['revenueRouting','revenueReplenishment'].includes(p.kind)){
+     const applied=await require('./sr-revenue.cjs').applyApproval(ctx,c,p.kind,payload[p.kind],p);
+     await c.query('UPDATE ryo_admin_control SET config=$2,version=version+1 WHERE scope=$1',[store.scope,JSON.stringify({...ctl.config,...applied})]);
+    }else if(p.kind==='resume'){
      const pauses={...ctl.pauses};delete pauses[payload.control];await c.query('UPDATE ryo_admin_control SET pauses=$2,version=version+1 WHERE scope=$1',[store.scope,JSON.stringify(pauses)]);
     }else await c.query('UPDATE ryo_admin_control SET config=$2,version=version+1 WHERE scope=$1',[store.scope,JSON.stringify({...ctl.config,...payload})]);
    }

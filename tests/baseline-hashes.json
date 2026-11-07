@@ -259,7 +259,7 @@
     },
     {
       "path": "app/server/adventure.cjs",
-      "sha256": "2102387a7658b3944b71f49a12cd10a1a20c3325c8083425a0ce4834d401080e"
+      "sha256": "ee8a74843e6d8e727a15566ac216bd42f0319a16e57105893a495706252bc3d2"
     },
     {
       "path": "app/server/create-treasury.cjs",
@@ -271,7 +271,7 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "8f59300f5705f830ac445ca3b3455e184f8f498733e6bde4f43ec42e1a518be1"
+      "sha256": "674cbc6b42253638b6b7565879155ae8df515e0e62f0c0fcdc8ab656e95ee99b"
     },
     {
       "path": "app/server/gameplay-options.cjs",
@@ -283,7 +283,7 @@
     },
     {
       "path": "app/server/netlify-handler.cjs",
-      "sha256": "3f623c423adaf3d09569aedd503437640bdcf9ba64c6e6906243d9f4f8512e36"
+      "sha256": "9e21c28bf31d41a2e772c6b9a40a8463f4ddc2716af1faf4434dd75ba2159da5"
     },
     {
       "path": "app/server/render-server.cjs",
@@ -291,15 +291,15 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "28ef98255345b265f5d862f32c6b97c172c96e413805536639a0def627924757"
+      "sha256": "93811b92aac1eaeec4c758cf79468e9d001862fa0fcd9e0f9450f20652b1741b"
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "bb317964419df7c879853095abf734e32fcf606037fe7fab2e7360140c1abf42"
+      "sha256": "16aeac15d0edcd8ae2bccad0aed3d3dfe554711c404addd63ccfcf6f2c71883e"
     },
     {
       "path": "app/server/store.cjs",
-      "sha256": "b520d22ddb0b377155b6855bab9be56b34db711536f3296719671a1e418cf858"
+      "sha256": "054330ad3e497be4536a49e30a901f3b8f443e8acbf063cc9342f5cd757f47d7"
     },
     {
       "path": "app/server/transaction-review.cjs",

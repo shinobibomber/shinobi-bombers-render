@@ -94,9 +94,13 @@ const {Store,hash}=require('../app/server/store.cjs'),{createService,GENESIS}=re
   await p.addInitScript(wallet=>{window.phantom={solana:{isPhantom:true,connect:async()=>({publicKey:{toString:()=>wallet}}),signMessage:async()=>({signature:new Uint8Array(64)})}}},ow);
   await p.goto('http://127.0.0.1:'+server.address().port+'/admin/');assert.equal(await p.locator('#dashboard').isHidden(),true);await p.locator('#connect').click();await p.waitForSelector('#dashboard:not([hidden])');
   await p.waitForFunction(()=>!document.querySelector('#refresh').disabled);assert.match(await p.locator('#metrics').innerText(),/900,000,000/);
+  assert.match(await p.locator('#revenue-cards').innerText(),/Locked Treasury.*50%/s);assert.match(await p.locator('#revenue-cards').innerText(),/Active Adventure Rewards.*30%/s);
+  assert.match(await p.locator('#revenue-status').innerText(),/Awaiting two-wallet approval/);assert.match(await p.locator('#revenue-custody').innerText(),/not a separate on-chain wallet/);
   const screenshotDir=path.join(__dirname,'out');fs.mkdirSync(screenshotDir,{recursive:true});await p.screenshot({path:path.join(screenshotDir,'economic-dashboard-desktop.png'),fullPage:true});
+  await p.locator('#service-revenue').screenshot({path:path.join(screenshotDir,'sr-revenue-dashboard-desktop.png')});
   await p.locator('#controls button').first().click();await p.waitForSelector('#confirm[open]');assert.equal(await p.locator('#confirm button[value="confirm"]').isEnabled(),true);await p.locator('#confirm button[value="cancel"]').click();await p.waitForFunction(()=>!document.querySelector('#refresh').disabled);
   await p.setViewportSize({width:390,height:844});await p.screenshot({path:path.join(screenshotDir,'economic-dashboard-mobile.png'),fullPage:true});assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);
+  await p.locator('#service-revenue').screenshot({path:path.join(screenshotDir,'sr-revenue-dashboard-mobile.png')});
   await p.locator('#disconnect').click();assert.equal(await p.locator('#dashboard').isHidden(),true);
  }finally{await browser?.close();await new Promise(r=>server.close(r))}
  console.log('PASS: economic dashboard permissions, exact ledger sums, scope isolation, finalized RPC/unavailable states, claim atomicity and replay, approvals/self-review/stale versions, audited emergency gates/recovery, finance runway, concentration signals and desktop/mobile UI.');

@@ -11,6 +11,7 @@ const claimHook=[
 function applyEconomicDashboard(appDir=path.join(__dirname,'app')){
  for(const [file,hook]of [['service.cjs',serviceHook],['adventure.cjs',claimHook]]){
   const target=path.join(appDir,'server',file),text=fs.readFileSync(target,'utf8');
+  if(file==='adventure.cjs'&&text.includes('INSERT INTO ryo_reward_claims('))continue; // Creator settlement wraps this existing observation; never insert it twice.
   if(!text.includes(hook[1])){if(text.split(hook[0]).length!==2)throw Error('Economic dashboard patch mismatch: '+file);fs.writeFileSync(target,text.replace(hook[0],()=>hook[1]))}
  }
  const schemaFile=path.join(appDir,'server/schema.sql'),schema=fs.readFileSync(schemaFile,'utf8');

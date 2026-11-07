@@ -5,6 +5,7 @@ suites.push('gas-preflight.cjs');
 suites.push('creators-server.cjs','creators-portal.cjs');
 suites.push('player-referrals.cjs');
 suites.push('network-guard.cjs');
+suites.push('sr-revenue.cjs','sr-revenue-ui.cjs');
 suites.push('referral-bound.cjs','prelaunch-server.cjs','prelaunch-creators.cjs','prelaunch-page.cjs');
 if(fs.existsSync(path.join(__dirname,'archive.cjs')))suites.unshift('archive.cjs');
 console.log('Global Chest regression runner · Node '+process.version+' · isolated fixtures only');

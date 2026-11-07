@@ -68,7 +68,8 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
   assert.equal(await balance(BUYER), 2000000);
   assert.equal((await market.handle(store, OTHER, 'market-browse', {})).total, 2, 'a refunded sale returns to the Market');
 
-  // Confirmed: the buyer owns the identical hero, the seller receives 80%, the pool gains 10%.
+  // Confirmed: the buyer owns the identical hero, the seller receives 80%, and separate Market fees retain 10%.
+  const adventureBefore=Number((await require('../app/server/sr-revenue.cjs').income(store,store.pool)).n);
   const poolBefore = Number((await store.pool.query("SELECT COALESCE(SUM((quote->>'operations')::numeric),0) AS n FROM ryo_purchases WHERE scope=$1 AND status='confirmed'", [store.scope])).rows[0].n);
   await market.buy(store, BUYER, 'req-3', { listingId: listed.id, expectedPrice: 1000000 }, prepare);
   await store.settlePurchase(BUYER, 'req-3', 'confirmed');
@@ -76,7 +77,8 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
   for (const key of ['rank', 'level', 'perks', 'look', 'bonus', 'baseStats', 'name']) assert.deepEqual(bought[key], legendBefore[key], 'the buyer receives the same hero: ' + key);
   assert.equal(await balance(SELLER), 800000, 'the seller is credited 80%');
   const poolAfter = Number((await store.pool.query("SELECT COALESCE(SUM((quote->>'operations')::numeric),0) AS n FROM ryo_purchases WHERE scope=$1 AND status='confirmed'", [store.scope])).rows[0].n);
-  assert.equal(poolAfter - poolBefore, 100000, 'the reward pool income grows by 10%');
+  assert.equal(poolAfter - poolBefore, 100000, 'the separate Market fee reserve retains 10%');
+  assert.equal(Number((await require('../app/server/sr-revenue.cjs').income(store,store.pool)).n),adventureBefore,'new marketplace revenue is not automatically approved Adventure funding');
   const mine = await market.handle(store, SELLER, 'market-mine', {});
   assert.equal(mine.sales.length, 1); assert.equal(mine.sales[0].payout, 800000); assert.equal(mine.listings.length, 1);
   assert.equal((await market.handle(store, BUYER, 'market-mine', {})).bought.length, 1);
@@ -154,5 +156,5 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
   assert.deepEqual(market.rules().shares, { seller: 80, studio: 2, treasury: 8, pool: 10 });
   assert.deepEqual(market.MIN_PRICE, [10000, 25000, 80000, 200000, 500000]);
   await db.close();
-  console.log('PASS: Market escrow, rank minimums and maximum, perks/rank/search/sort browsing, buy reserve/refund/confirm with the identical hero, 80/10/8/2 split with reward pool income, cancel and expiry returns, offers (held Ryo, change, decline, accept at the offered price, refund, expiry, close on sale or cancel) and the purchases pause.');
+  console.log('PASS: Market escrow, rank minimums and maximum, perks/rank/search/sort browsing, buy reserve/refund/confirm with the identical hero, 80/10/8/2 split with a separate Market fee reserve, cancel and expiry returns, offers (held Ryo, change, decline, accept at the offered price, refund, expiry, close on sale or cancel) and the purchases pause.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -2,6 +2,14 @@
  * Adventure "Session gained" banner follow it live. Isolated fixtures only. */
 const { withGame } = require('./harness.cjs');
 const economy = require('../app/server/economy.cjs');
+// Register before authentication: a live battle can defeat a target during the login wait.
+// Observe the entire authenticated session, exactly as the real cumulative kill report does.
+const observeKills = (p, details=false) => p.evaluate(details => {
+  window.__k=details?[]:0;
+  addEventListener('shinobi-enemy-defeated', e => {
+    if(RyoPayments.state.authenticated&&e.detail.kind>=2&&e.detail.kind<=5){if(details)__k.push(e.detail);else __k++;}
+  });
+}, details);
 
 (async () => {
   await withGame(async ({ p, f, errors, assert }) => {
@@ -43,9 +51,10 @@ const economy = require('../app/server/economy.cjs');
     f.holdAdventure = false; f.realAdventure = { rate: 60 };
     const heroes = [0, 1, 2, 3, 4].map(i => ({ tokenId: 'e2e-' + i, rank: i, level: 1, name: 'E ' + i, baseStats: { pw: [2, 4.5, 7.5, 10.5, 13.5][i], sp: [2, 4.5, 7.5, 10.5, 13.5][i], st: [2, 4.5, 7.5, 10.5, 13.5][i] } }));
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
+    await observeKills(p,true);
     await p.locator('#loginPhantom').click();
     await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready);
-    await p.evaluate(() => { go(0); Experience.workAll(); window.__k = []; addEventListener('shinobi-enemy-defeated', e => { if (e.detail.kind <= 5) __k.push(e.detail); }); });
+    await p.evaluate(() => { go(0); Experience.workAll(); });
     await p.waitForFunction(() => __k.length >= 12, null, { timeout: 90000 });
     // Stop the battle so no kill lands after the comparison, then let the final sync settle.
     await p.evaluate(() => Experience.restAll());
@@ -64,8 +73,9 @@ const economy = require('../app/server/economy.cjs');
     const heroes = [0, 1, 2, 3, 4].map(i => ({ tokenId: 'cls-' + i, rank: i, level: 1, name: 'C ' + i, baseStats: { pw: [2, 4.5, 7.5, 10.5, 13.5][i], sp: [2, 4.5, 7.5, 10.5, 13.5][i], st: [2, 4.5, 7.5, 10.5, 13.5][i] } }));
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
     const signIn = async () => { await p.locator('#loginPhantom').click(); await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready); };
+    await observeKills(p);
     await signIn();
-    await p.evaluate(() => { go(0); Experience.workAll(); window.__k = 0; addEventListener('shinobi-enemy-defeated', e => { if (e.detail.kind <= 5) __k++; }); });
+    await p.evaluate(() => { go(0); Experience.workAll(); });
     await p.waitForFunction(() => __k >= 6, null, { timeout: 90000 });
     // Stop the scheduled sync, then close the page the moment more kills are unsent.
     await p.waitForFunction(() => KillReport.pending > 0, null, { timeout: 30000 });
@@ -92,9 +102,10 @@ const economy = require('../app/server/economy.cjs');
     const heroes = [0, 1, 2, 3, 4].map(i => ({ tokenId: 'off-' + i, rank: i, level: 1, name: 'O ' + i, baseStats: { pw: [2, 4.5, 7.5, 10.5, 13.5][i], sp: [2, 4.5, 7.5, 10.5, 13.5][i], st: [2, 4.5, 7.5, 10.5, 13.5][i] } }));
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId), sensei: true, senseiEnabled: true });
     const signIn = async () => { await p.locator('#loginPhantom').click(); await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready); };
+    await observeKills(p);
     await signIn();
     assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'GO OFFLINE');
-    await p.evaluate(() => { go(0); Experience.workAll(); window.__k = 0; addEventListener('shinobi-enemy-defeated', e => { if (e.detail.kind <= 5) __k++; }); });
+    await p.evaluate(() => { go(0); Experience.workAll(); });
     await p.waitForFunction(() => __k >= 5 && KillReport.pending > 0, null, { timeout: 90000 });
     await p.locator('.sbw-hdr [data-sbwid="wallet"]').click();
     await p.waitForSelector('.sbw-offline[open]');

@@ -350,7 +350,7 @@
     <section id="sr-economy" aria-labelledby="h-sr">
       <span class="section-kicker">Chapter 04</span>
       <h2 id="h-sr">SR Revenue Distribution</h2>
-      <p>Eligible net SR revenue received through approved game services follows the proposed allocation below.</p>
+      <p>The full SR payment for an approved game service follows the 50/30/10/10 distribution below. This replaces the service studio allocation and automatic service burn; deposit and withdrawal fees keep their separate rules.</p>
       <div class="allocation" role="img" aria-label="50 percent locked treasury, 30 percent active reward pool, 10 percent community, 10 percent stability reserve">
         <div class="a" style="flex:50">50%</div><div class="b" style="flex:30">30%</div><div class="c" style="flex:10">10%</div><div class="d" style="flex:10">10%</div>
       </div>
@@ -364,8 +364,8 @@
         <div class="card"><div class="stat">10%</div><h3>Economic Stability Reserve</h3><p>Holds supplementary SR for approved economic and reward-system requirements.</p></div>
       </div>
       <h3>Locked Treasury Rules</h3>
-      <p>The intended vault design restricts direct selling and permits only authorized, budgeted transfers to approved reward destinations.</p>
-      <p>Actual enforcement requires verified on-chain controls, clear governance, disclosed authorities, and public transaction reporting. Merely labeling a wallet "locked" is not sufficient.</p>
+      <p>Service checkout verifies an external SPL multisig Treasury requiring at least two signers and excluding the game custody signer. Treasury or Reserve replenishment is recognized only after a successful finalized transfer and independent administrative approval.</p>
+      <p>A wallet label is not proof of a lock. The current adapter verifies multisig restrictions, not a timelock or a prohibition on all possible signer actions. The Active Reward allocation remains in game custody with a separate Adventure funding cap; Community and Reserve use separate destinations. Boss Hunt, PvP, Sensei SOL and marketplace proceeds are not automatically funded by this pool. Activation requires approved vault configuration.</p>
       <div class="callout">
         <strong>Important Accounting Distinction</strong>
         The 5% SR deduction collected from player withdrawals goes directly to the Locked Treasury. It is not split again under the 50/30/10/10 service-revenue allocation.
@@ -526,7 +526,7 @@
       </ol>
       <h3>Three Potential Treasury Funding Sources</h3>
       <div class="grid three">
-        <div class="card"><div class="stat">50%</div><div class="stat-label">Of eligible net SR game-service revenue</div></div>
+        <div class="card"><div class="stat">50%</div><div class="stat-label">Of full approved SR game-service payments</div></div>
         <div class="card"><div class="stat">5%</div><div class="stat-label">Of successful gross SR withdrawals</div></div>
         <div class="card"><div class="stat">Optional</div><div class="stat-label">SR bought with approved surplus SOL</div></div>
       </div>

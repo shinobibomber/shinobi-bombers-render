@@ -23,8 +23,8 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
  const db=new PGlite();await db.exec(fs.readFileSync(path.join(root,'schema.sql'),'utf8'));const pool={query:(s,a)=>db.query(s,a),async connect(){return{query:(s,a)=>db.query(s,a),release(){}}}};let clock=now;const store=new Store(pool,'test-options',()=>clock),wallet='local-test';
  await store.transaction(async c=>{await store.locked(c,wallet);await c.query('UPDATE ryo_accounts SET balance=1000000');await store.profileLocked(c,wallet);await c.query('UPDATE ryo_profiles SET data=$1',[JSON.stringify(make(8))])});
  const oldProfile=await store.profile(wallet);const params={...economy.quote(oldProfile,'fusion',{heroIds:oldProfile.heroes.slice(0,6).map(h=>h.tokenId)}).params,fusionRulesAccepted:1};
- await assert.rejects(store.purchase(wallet,'stale-fusion-request','fusion',{heroIds:params.heroIds},50000,async()=>({signature:'test',wire:'test',lastHeight:99})),/rules changed/);
- crypto.randomInt=(...args)=>args.length===1&&args[0]===100?99:originalRandom(...args);const purchase=await store.purchase(wallet,'new-fusion-request','fusion',params,50000,async()=>({signature:'test-signature',wire:'test',lastHeight:99}));crypto.randomInt=originalRandom;
+ await assert.rejects(store.purchase(wallet,'stale-fusion-request','fusion',{heroIds:params.heroIds},50000,async q => require('./sr-revenue-fixture.cjs').stamp(q, {signature:'test',wire:'test',lastHeight:99})),/rules changed/);
+ crypto.randomInt=(...args)=>args.length===1&&args[0]===100?99:originalRandom(...args);const purchase=await store.purchase(wallet,'new-fusion-request','fusion',params,50000,async q => require('./sr-revenue-fixture.cjs').stamp(q, {signature:'test-signature',wire:'test',lastHeight:99}));crypto.randomInt=originalRandom;
  assert.equal(purchase.result.fusion.failed,2);assert.equal((await store.profile(wallet)).heroes.length,8,'pending fusion has not yet consumed heroes');
  await assert.rejects(saveSenseiSettings(store,wallet,{returnPercent:50,enabled:true}),/pending purchase/);
  await store.settlePurchase(wallet,'new-fusion-request','confirmed');assert.equal((await store.profile(wallet)).heroes.length,2);assert.equal(await store.balance(wallet),950000);
@@ -80,7 +80,7 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
    let p=make(3,rank,1);
    for(let level=1;level<5;level++){
     const q=economy.quote(p,'training',{heroId:'hero-0'});
-    assert.equal(q.base,go.trainingPrice(rank,level));assert.equal(q.total,q.base,'the 2% studio share is inside the price');assert.deepEqual([q.operations,q.treasury,q.burn,q.studioFee].map(n=>n*100/q.base),[80,10,8,2],'80/10/8/2 split');
+    assert.equal(q.base,go.trainingPrice(rank,level));assert.equal(q.total,q.base,'the full approved SR price is distributed');assert.deepEqual([q.treasury,q.operations,q.community,q.reserve,q.burn,q.studioFee].map(n=>n*100/q.base),[50,30,10,10,0,0],'50/30/10/10 distribution without automatic burn');
     const r=economy.fulfill(p,q);p=r.profile;
     assert.deepEqual(r.result.training,{heroId:'hero-0',level:level+1,gains:{pw:level===4?2:1}},'Genin/Chunin gain Power ('+level+'→'+(level+1)+')');
    }

@@ -20,6 +20,22 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · SR Revenue Distribution)**
+
+**🔄 Changes**
+• Approved SR game-service payments now use the full-price 50% Locked Treasury / 30% Active Adventure Rewards / 10% Community Rewards / 10% Economic Reserve model, with no automatic service burn or separate service studio allocation.
+• Community and Reserve funding stay separate. Marketplace proceeds, unapproved Market fees, Boss Hunt prizes, PvP and Sensei SOL payments do not automatically enter this distribution.
+• The admin dashboard shows routed allocations, configured vaults and approval status. Checkout and history display the new split.
+
+**🛡️ Protections**
+• New real-token service payments wait for independently approved vault configuration and verified Treasury multisig restrictions. No payment is submitted when those checks fail.
+• Protected-vault replenishment needs a successful finalized transfer and review by a different authorized approver before it funds Adventure.
+• Existing balances, pending transaction recovery, reward formulas and real-time kill credit are preserved. Starter-funded actions create no token revenue.
+
+Active Rewards remains separately accounted within game custody. Multisig verification does not claim a timelock. Production activation requires the approved public vault addresses; no Mainnet money features are opened by this update.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Creator Program opens)**
 
 **✨ New**

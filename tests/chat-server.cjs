@@ -56,7 +56,7 @@ const {Store}=require(path.join(root,'store.cjs')),chat=require(path.join(root,'
  await shop.transaction(async c=>{await shop.locked(c,buyer);await c.query('UPDATE ryo_accounts SET balance=1000000 WHERE scope=$1 AND wallet=$2',[shop.scope,buyer]);await shop.profileLocked(c,buyer)});
  clock+=3000;await chat.handle(shop,buyer,'chat-send',{channel:'global',text:'wish me luck',name:'Hikari'});
  const buy=async(id,rolls)=>{const q=economy.quote(await shop.profile(buyer),'summon',{quantity:rolls.length});crypto.randomInt=(...args)=>args.length===1&&args[0]===10000?rolls.shift():originalRandom(...args);
-  try{return await shop.purchase(buyer,id,'summon',{quantity:q.params.quantity},q.total,async()=>({signature:'sig-'+id,wire:'wire',lastHeight:1}))}finally{crypto.randomInt=originalRandom}};
+  try{return await shop.purchase(buyer,id,'summon',{quantity:q.params.quantity},q.total,async q => require('./sr-revenue-fixture.cjs').stamp(q, {signature:'sig-'+id,wire:'wire',lastHeight:1}))}finally{crypto.randomInt=originalRandom}};
  const systemFeed=async()=>(await chat.handle(shop,alice,'chat-list',{channel:'global',systemAfter:0})).system;
  await buy('legend-order-0001',[9950,100,9999,200,300]);
  assert.deepEqual(await systemFeed(),[],'a pending order announces nothing');
@@ -82,7 +82,7 @@ const {Store}=require(path.join(root,'store.cjs')),chat=require(path.join(root,'
  const elites=economy.normalizeProfile({dojo:0,sensei:true,battleReady:[],heroes:Array.from({length:8},(_,i)=>({tokenId:'elite-'+i,rank:3,level:10,name:'Elite '+i,baseStats:{pw:10,sp:10,st:10}}))});
  await forge.transaction(async c=>{await forge.locked(c,fuser);await c.query('UPDATE ryo_accounts SET balance=1000000 WHERE scope=$1 AND wallet=$2',[forge.scope,fuser]);await forge.profileLocked(c,fuser);await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[forge.scope,fuser,JSON.stringify(elites)])});
  const fuse=async(id,ids,roll)=>{const q=economy.quote(await forge.profile(fuser),'fusion',{heroIds:ids});crypto.randomInt=(...args)=>args.length===1&&args[0]===100?roll:originalRandom(...args);
-  try{await forge.purchase(fuser,id,'fusion',{...q.params,fusionRulesAccepted:1},q.total,async()=>({signature:'sig-'+id,wire:'wire',lastHeight:1}))}finally{crypto.randomInt=originalRandom}
+  try{await forge.purchase(fuser,id,'fusion',{...q.params,fusionRulesAccepted:1},q.total,async q => require('./sr-revenue-fixture.cjs').stamp(q, {signature:'sig-'+id,wire:'wire',lastHeight:1}))}finally{crypto.randomInt=originalRandom}
   return forge.settlePurchase(fuser,id,'confirmed')};
  const fusionFeed=async()=>(await chat.handle(forge,alice,'chat-list',{channel:'system'})).messages;
  const failed=await fuse('fusion-order-001',['elite-0','elite-1','elite-2'],99);assert.equal(failed.result.outputs.length,0);

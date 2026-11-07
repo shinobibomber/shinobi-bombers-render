@@ -330,7 +330,7 @@
       return { quantity, card, price: footer.querySelector('strong') };
     });
     const fee = cov(b, 1277, 356, 360, 17, '#08091b', 13, '#d4d9e8');
-    fee.classList.add('sbw-summon-fee'); fee.textContent = 'Price includes the 2% studio share';
+    fee.classList.add('sbw-summon-fee'); fee.textContent = 'SR revenue: 50 / 30 / 10 / 10 · no burn';
   };
   function summonQty() { const sel = nativeEl('#p2', e => /Combat\.quantity\(\d+\)/.test(e.getAttribute('onclick') || '') && e.classList.contains('selected')); const m = sel && /\((\d+)\)/.exec(sel.getAttribute('onclick')); return m ? +m[1] : 1; }
   PAINT.summon = b => {
@@ -855,7 +855,7 @@
 
   /* ---------- Market (game page 4, mode 1): the shared player Market ---------- */
   // Heroes are listed for Ryo on the server (market.cjs). Buying runs through the token checkout;
-  // the seller receives 80%, the reward pool 10%, the treasury 8% and the studio 2%. Listings last
+  // the seller receives 80%, the separate Market reserve 10%, the treasury 8% and the studio 2%. Listings last
   // 7 days. Offers hold the offered Ryo until the seller accepts or declines (48 hours at most).
   // The artwork keeps its title and frames; tabs, filters, cards, details and actions are live HTML
   // drawn over the two panels, so no printed placeholder text or buttons show through.
@@ -957,7 +957,7 @@
       <p>Select a listing to see offers, accept or decline them, or cancel it.</p><button type="button" class="sbw-mbtn" data-act="sell">Sell a hero</button></div>`;
     if (MK.tab === 'offers' && MK.mine) return `<div class="sbw-md idle"><h3>My Offers</h3><p>${fmt(MK.mine.held)} Ryo held in open offers. Offers last up to 48 hours; declined, expired or outbid offers return your Ryo.</p></div>`;
     return `<div class="sbw-md idle"><h3>Select a hero</h3><p>Choose a hero to see its stats, skills and price. Buy it now or make an offer.</p>
-      <div class="md-split"><b>On every sale</b><span>Seller <em>80%</em></span><span>Reward pool <em>10%</em></span><span>Treasury <em>8%</em></span><span>Studio <em>2%</em></span></div></div>`;
+      <div class="md-split"><b>On every sale</b><span>Seller <em>80%</em></span><span>Market reserve <em>10%</em></span><span>Treasury <em>8%</em></span><span>Studio <em>2%</em></span></div></div>`;
   }
   PAINT.market = (b, now) => {
     if (!account()) { if (b.sig !== 'signed-out') { b.sig = 'signed-out'; b.grid.innerHTML = '<div class="sbw-empty"><b>Sign in to use the Market</b><p>Connect your wallet to browse and sell heroes.</p></div>'; b.det.innerHTML = ''; b.pages.innerHTML = ''; } return; }
