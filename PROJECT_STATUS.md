@@ -126,6 +126,9 @@ that they are unavailable.
   Verified fresh unpack, site build check, lint, rewards guard, all 43 isolated game suites
   and 20 website assertions on Node22; desktop/mobile referral and hero-only shop screenshots
   inspected. Real signed-login tests use fixture keys only; no live wallet or reward issued.
+  GitHub is public again (owner confirmed); release download HTTP200 with the locked SHA.
+  Deploy9639cba succeeded on retry; no bundled archive or repository privacy changes committed.
+  Signed-out player view prompts wallet connection to invite friends, with no application label.
 
 - 2026-11-07 Creator popup redesign: Home's `tut` hotspot is now an opaque Creator
   button; original ten header hotspots restored, extra Creator navigation removed.

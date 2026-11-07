@@ -59,7 +59,7 @@
   function render() {
     if (!snapshot) return;
     const available = tabs(); if (!available.some(([key]) => key === section)) section = 'overview';
-    $('.cp-wallet').textContent = wallet() ? 'Authenticated · ' + short(wallet()) : 'Connect your game wallet to apply';
+    $('.cp-wallet').textContent = wallet() ? 'Authenticated · ' + short(wallet()) : mode === 'player' ? 'Connect your game wallet to invite friends' : 'Connect your game wallet to apply';
     const tabIcons = { overview: '◈', apply: '✎', dashboard: '▦', referrals: '♧', points: '✦', shop: '◆', history: '◷', admin: '⚙' };
     $('.cp-sections').innerHTML = '<p class="cp-nav-label">' + (mode === 'player' ? 'PLAYER REFERRALS' : 'CREATOR PROGRAM') + '</p>' + available.map(([key, label]) => `<button type="button" id="cp-tab-${key}" role="tab" aria-controls="cp-page" tabindex="${section === key ? 0 : -1}" aria-selected="${section === key}" data-tab="${key}"><span aria-hidden="true">${tabIcons[key]}</span>${label}<i aria-hidden="true">›</i></button>`).join('');
     content.setAttribute('aria-labelledby', 'cp-tab-' + section);

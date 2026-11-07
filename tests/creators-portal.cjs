@@ -133,6 +133,9 @@ async function fixture(p, f, account, snapshot) {
  for (const width of [1440,390]) await withGame(async ({p,f,errors,account,snapshot,assert}) => {
    const {store,db}=await fixture(p,f,account,snapshot);
    try {
+     await p.evaluate(()=>CreatorsPortal.openPlayer());await p.waitForFunction(()=>CreatorsPortal.snapshot?.rules&&!document.querySelector('#creatorsPanel').hasAttribute('aria-busy'));
+     assert.match(await p.locator('.cp-topline .cp-wallet').innerText(),/invite friends/);assert.equal(await p.locator('#cp-tab-apply').count(),0,'signed-out referral overview does not offer an application');
+     await p.keyboard.press('Escape');
      await login(p);
      const button=p.locator('[data-sbwid="news"]'); await button.scrollIntoViewIfNeeded();
      assert.equal(await button.getAttribute('aria-label'),'Referral');

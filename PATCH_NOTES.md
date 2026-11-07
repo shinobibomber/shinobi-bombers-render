@@ -29,6 +29,7 @@ Thanks for playing — see you on the battlefield! 🥷
 
 **🔄 Changes**
 • **Creator Shop simplified**: only the Standard Hero Summon Pass remains. Previously delivered cosmetics stay owned.
+• The signed-out Referral view asks players to connect and invite friends, with no application prompt.
 • One permanent referral attribution applies across Creator and player programs. Self-referrals, circular referrals, free/starter-funded heroes, reward heroes, fusion, Market purchases and refunded or failed orders do not qualify.
 
 Player referrals award hero passes without ongoing CP or Ryo commissions. Creator rewards keep their existing rules. Server-verified stage progress can lag the browser arena.
