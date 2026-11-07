@@ -108,6 +108,17 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 LIVE SERVER DEPLOYED (pre-launch portal): https://shinobibombers.onrender.com
+  - Render web service `ShinobiBombers` (srv-dbnel5bl550s73f0moa0): starter plan, Singapore, branch `live`,
+    health check `/healthz`.
+  - Render Postgres `shinobibombers-db` (dpg-dbnekvbl550s73f0m7dg-a): basic_256mb, Postgres 16, Singapore.
+  - Environment: SOLANA_NETWORK=mainnet, PRELAUNCH_MODE=on, RYO_SCOPE=solana-mainnet:live (never change it),
+    RYO_SITE_ORIGIN, REFERRAL_ENROLLMENT_LIMIT=100000, DISCORD_URL, DATABASE_URL. No money settings.
+  - First live deploy was commit afdf592.
+  - Verified: pages 200; /play/ redirects to /; /api/ryo returns 403 PRELAUNCH for every action; admin and config
+    404; database connected; test server unchanged.
+  - To release later code: merge main into live and push.
+
 - 2026-11-07 Pre-launch portal + referral-bound heroes + launch gates (owner request):
   - **PRELAUNCH_MODE=on** (live only): server/site-server.cjs serves prelaunch/ (landing page, /rules, /privacy,
     /terms, /pl/* assets, POST /api/prelaunch). It does not mount the game: /api/ryo is 403, /play/* redirects to
