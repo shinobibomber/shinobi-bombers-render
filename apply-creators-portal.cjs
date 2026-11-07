@@ -3,14 +3,14 @@ const fs = require('node:fs'), path = require('node:path');
 const marker = '<!-- creators-portal-v1 -->';
 // All client hooks are reversible by preservation.cjs. No game combat formula changes.
 const creatorPatches = [
-  ['window.RyoPayments={displaySettings:', "window.RyoPayments={creators:(action,body={})=>{if(!/^creator-(public|state|apply|attribute|redeem|migrate|admin|admin-action|appeal|terms)$/.test(action))throw Error('Unknown Creators Portal action.');return api(action,body,action!=='creator-public').then(data=>{if(data.profile)accept(data);return data})},displaySettings:", 1],
+  ['window.RyoPayments={displaySettings:', "window.RyoPayments={creators:(action,body={})=>{if(!/^creator-(public|state|apply|attribute|redeem|migrate|admin|admin-action|appeal|terms|player-state|player-claim)$/.test(action))throw Error('Unknown Creators Portal action.');return api(action,body,action!=='creator-public').then(data=>{if(data.profile)accept(data);return data})},displaySettings:", 1],
   ["session=await api('login',{wallet:address,nonce:challenge.nonce,signature},false)", "session=await api('login',{wallet:address,nonce:challenge.nonce,signature,...(window.CreatorsPortal?.referralCode()?{creatorCode:window.CreatorsPortal.referralCode()}:{})},false)", 1],
   ["if(session.wallet!==address||typeof session.token!=='string')throw Error('Invalid Ryo session.');sessionVersion++;", "if(session.wallet!==address||typeof session.token!=='string')throw Error('Invalid Ryo session.');window.CreatorsPortal?.attributionResult(session);sessionVersion++;", 1]
 ];
 const serviceHooks = [
   ["  if(action==='config'){", "  if(action==='creator-public')return require('./creators-portal.cjs').handle({store,origin},null,action,body);\n  if(action==='config'){"],
   ["return store.login(wallet,body.nonce,message=>verifySignature(wallet,message,body.signature))", "const session=await store.login(wallet,body.nonce,message=>verifySignature(wallet,message,body.signature));if(body.creatorCode&&require('./creators-portal.cjs').enabled()){try{await require('./creators-portal.cjs').attribute(store,wallet,{code:body.creatorCode});session.referralAccepted=true}catch(e){session.referralMessage=e.message}}return session"],
-  ["  if(action==='sensei-settings'){", "  if(typeof action==='string'&&action.startsWith('creator-')){const result=await require('./creators-portal.cjs').handle({store,origin},wallet,action,body);return action==='creator-redeem'?{...result,...await state(wallet)}:result}\n  if(action==='sensei-settings'){"]
+  ["  if(action==='sensei-settings'){", "  if(typeof action==='string'&&action.startsWith('creator-')){const result=await require('./creators-portal.cjs').handle({store,origin},wallet,action,body);return ['creator-redeem','creator-player-claim'].includes(action)?{...result,...await state(wallet)}:result}\n  if(action==='sensei-settings'){"]
 ];
 const storeHooks = [
   ["if(status==='confirmed')await require('./chat.cjs').announceLegends(this,c,wallet,row);", "if(status==='confirmed'){await require('./chat.cjs').announceLegends(this,c,wallet,row);await require('./creators-portal.cjs').settledPurchase(this,c,row);}"]
@@ -37,7 +37,9 @@ function applyCreatorsPortal(appDir = path.join(__dirname, 'app')) {
   for (const file of ['portal.js', 'portal.css']) fs.copyFileSync(path.join(src, file), path.join(dest, file));
   for (const rank of [0, 3, 4]) fs.copyFileSync(path.join(__dirname, 'website/assets', 'hero' + rank + '.webp'), path.join(dest, 'hero' + rank + '.webp'));
   fs.copyFileSync(path.join(src, 'server.cjs'), path.join(server, 'creators-portal.cjs'));
+  fs.copyFileSync(path.join(src, 'player-server.cjs'), path.join(server, 'player-referrals.cjs'));
   const schema = path.join(server, 'schema.sql'); if (!fs.readFileSync(schema, 'utf8').includes('-- Creators Portal v1:')) fs.appendFileSync(schema, '\n' + fs.readFileSync(path.join(src, 'schema.sql'), 'utf8').replace(/\r\n?/g, '\n') + '\n');
+  if (!fs.readFileSync(schema, 'utf8').includes('-- Player Referrals v1:')) fs.appendFileSync(schema, '\n' + fs.readFileSync(path.join(src, 'player-schema.sql'), 'utf8').replace(/\r\n?/g, '\n') + '\n');
   for (const [file, hooks] of [['service.cjs', serviceHooks], ['store.cjs', storeHooks], ['adventure.cjs', adventureHooks]]) {
     const p = path.join(server, file); fs.writeFileSync(p, hooks.reduce((s, hook, i) => replace(s, hook, file + ':' + i), fs.readFileSync(p, 'utf8')));
   }

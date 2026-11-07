@@ -179,7 +179,7 @@
     'logo': () => {}, 'prof': editNickname, 'mng': () => go(1), 't1': () => go(1), 't2': () => go(1), 't3': () => go(1), 't4': () => go(1), 't5': () => go(1),
     'ev': () => openBox(),
     'go1': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go2': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go3': () => notice('Daily missions', 'Daily missions are not available yet.'),
-    'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => window.CreatorsPortal?.open(), 'news': () => { location.href = '/whitepaper'; },
+    'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => window.CreatorsPortal?.open(), 'news': () => window.CreatorsPortal?.openPlayer(),
     'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
   };
   function act(k, h, el) {
@@ -253,6 +253,8 @@
     // Replace the whole Tutorial slice, including the baked-in label and question icon.
     const creator = b.st.querySelector('[data-sbwid="tut"]');
     if (creator) { creator.classList.add('sbw-creator-button'); creator.setAttribute('aria-label', 'Creator'); creator.setAttribute('aria-haspopup', 'dialog'); creator.setAttribute('aria-controls', 'creatorsPanel'); creator.innerHTML = '<span aria-hidden="true">✦</span><span>Creator</span>'; }
+    const referral = b.st.querySelector('[data-sbwid="news"]');
+    if (referral) { referral.classList.add('sbw-creator-button'); referral.setAttribute('aria-label', 'Referral'); referral.setAttribute('aria-haspopup', 'dialog'); referral.setAttribute('aria-controls', 'creatorsPanel'); referral.innerHTML = '<span aria-hidden="true">♧</span><span>Referral</span>'; }
     const cover = (x, y, w, h, bg, fs, color, cls = '') => { const e = place(mk('span', 'sbw-cover sbw-left ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; };
     b.name = cover(1380, 138, 80, 28, '#01060e', 25, '#ffffff', 'sbw-click'); b.name.title = 'Set your nickname';
     b.name.addEventListener('click', editNickname);

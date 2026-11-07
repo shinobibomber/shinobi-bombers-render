@@ -19,7 +19,7 @@ async function fixture(p, f, account, snapshot) {
    const req = route.request().postDataJSON(); if (!req.action?.startsWith('creator-')) return route.fallback();
    try {
      const result = await creators.handle(ctx, req.action === 'creator-public' ? null : account, req.action, req);
-     if (req.action === 'creator-redeem') { f.profile = await store.profile(account); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...result, ...snapshot() }) }); }
+     if (['creator-redeem','creator-player-claim'].includes(req.action)) { f.profile = await store.profile(account); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...result, ...snapshot() }) }); }
      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(result) });
    } catch (e) { return route.fulfill({ status: e.status || 400, contentType: 'application/json', body: JSON.stringify({ error: e.message }) }); }
  });
@@ -89,15 +89,8 @@ async function fixture(p, f, account, snapshot) {
      await p.locator('.cp-modal button[value="confirm"]').click();
      await p.waitForFunction(() => CreatorsPortal.snapshot?.points?.balanceMilli === '100000000');
      assert(f.profile.heroes.some(h => h.creatorReward), 'shop delivers a real hero into the current game profile');
-     await p.locator('[data-redeem="creator-aura"]').click(); await p.locator('.cp-modal button[value="confirm"]').click();
-     await p.waitForFunction(() => RyoPayments.state.profile.creatorCosmetics?.aura === 'creator-aura');
-     for (const item of ['creator-frame','creator-badge','creator-bomb']) { await p.locator('[data-redeem="'+item+'"]').click(); await p.locator('.cp-modal button[value="confirm"]').click(); await p.waitForFunction(id => Object.values(RyoPayments.state.profile.creatorCosmetics || {}).includes(id), item); }
-     assert(await p.evaluate(() => document.body.classList.contains('cp-has-frame') && document.body.classList.contains('cp-has-badge')));
-     const cosmetic = await p.evaluate(() => {
-       const ctx = document.createElement('canvas').getContext('2d'); let strokes = 0; const original = ctx.stroke.bind(ctx); ctx.stroke = (...a) => { strokes++; return original(...a); };
-       const damage = GameBalance.damage(S.h[0]); CharacterAnimations.drawActorEffects(ctx, { id: -1234 }, performance.now(), { x: 50, y: 50, scale: 1 });
-       return { installed: CharacterAnimations.creatorCosmeticsInstalled, strokes, damage, after: GameBalance.damage(S.h[0]) };
-     }); assert(cosmetic.installed && cosmetic.strokes > 0); assert.equal(cosmetic.damage, cosmetic.after, 'cosmetics do not modify damage');
+     assert.equal(await p.locator('[data-redeem]').count(), 1, 'only Standard Hero Summon Pass remains');
+     assert.equal(await p.locator('[data-redeem="creator-aura"]').count(), 0);
      await p.locator('#creatorsPanel [data-tab="history"]').click(); assert.match(await p.locator('.cp-table').innerText(), /not an NFT/);
      await p.locator('#creatorsPanel [data-tab="admin"]').click();
      await p.screenshot({ path: path.join(root, 'tests/out/creators-admin-desktop.png') });
@@ -137,5 +130,39 @@ async function fixture(p, f, account, snapshot) {
      assert.deepEqual(errors, []);
    } finally { await db.close(); }
  }, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
- console.log('PASS: integrated Creators Portal — Home Creator replaces Tutorial without stale artwork, original header, themed desktop/mobile modal, keyboard focus/Escape/tabs, public overview, wallet application, admin approval, atomic CP shop/profile, privacy and existing navigation preservation.');
+ for (const width of [1440,390]) await withGame(async ({p,f,errors,account,snapshot,assert}) => {
+   const {store,db}=await fixture(p,f,account,snapshot);
+   try {
+     await login(p);
+     const button=p.locator('[data-sbwid="news"]'); await button.scrollIntoViewIfNeeded();
+     assert.equal(await button.getAttribute('aria-label'),'Referral');
+     assert.equal(await button.locator('.sl').count(),0,'old News label and icon are removed');
+     const a=await p.locator('[data-sbwid="tut"]').boundingBox(), b=await button.boundingBox(); assert(a.x+a.width<=b.x+1,'Referral sits beside Creator');
+     await button.click(); await p.waitForFunction(()=>CreatorsPortal.snapshot?.marker==='shinobi-player-referrals-v1');
+     await p.waitForFunction(()=>!document.querySelector('#creatorsPanel').hasAttribute('aria-busy'));
+     assert.equal(await p.locator('#creatorsPanel [data-tab="apply"]').count(),0,'players never apply');
+     assert.equal(await p.locator('#creatorsPanel [data-tab="shop"]').count(),0,'no CP shop for regular referrals');
+     assert.match(await p.locator('.cp-link').innerText(),/\/?referral=RP/);
+     assert.equal((await creators.summary(store,account,'http://fixture')).creator,null,'no automatic creator account');
+     const state=await p.evaluate(()=>CreatorsPortal.snapshot), invitee='AGpFskd9re9Q9vopk1JXXhw7ziDFGuvV7783rn1AqCiQ';
+     await creators.attribute(store,invitee,{code:state.code});
+     await store.transaction(async c=>{await c.query('UPDATE ryo_player_referrals SET paid_mints=15,stage5=$3 WHERE scope=$1 AND wallet=$2',[store.scope,invitee,Date.now()]); const r=(await c.query('SELECT * FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2',[store.scope,invitee])).rows[0];await require('../app/server/player-referrals.cjs').qualify(store,c,r)});
+     await p.evaluate(()=>CreatorsPortal.openPlayer());await p.waitForFunction(()=>Number(CreatorsPortal.snapshot?.passes?.available)===2);
+     await p.locator('#cp-tab-dashboard').click();
+     await p.screenshot({path:path.join(root,`tests/out/player-referrals-${width}.png`)});
+     const bounds=await p.locator('.cp-shell').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,scroll:el.scrollWidth,width:el.clientWidth}});
+     assert(bounds.left>=0&&bounds.right<=width&&bounds.scroll<=bounds.width+1,'referral popup fits the screen');
+     const initial=f.profile.heroes.length;await p.locator('[data-player-claim="2"]').click();await p.locator('.cp-modal button[value="confirm"]').click();
+     await p.waitForFunction(()=>Number(CreatorsPortal.snapshot?.passes?.claimed)===2);
+     assert.equal(f.profile.heroes.length,initial+2);assert(f.profile.heroes.slice(-2).every(h=>h.referralReward));
+     assert.equal(await p.locator('[data-player-claim="2"]').isDisabled(),true);
+     await p.locator('#cp-tab-history').click();assert.match(await p.locator('.cp-table').innerText(),/not NFTs/);
+     await p.locator('#cp-tab-referrals').click();assert.match(await p.locator('.cp-table').innerText(),/2 passes unlocked/);assert(!(await p.locator('#creatorsPanel').innerText()).includes(invitee));
+     await p.keyboard.press('Escape');assert.equal(await p.locator('#creatorsPanel').isVisible(),false);
+     await p.locator('[data-sbwid="tut"]').click();await p.waitForFunction(()=>CreatorsPortal.snapshot?.marker==='shinobi-creators-portal-v1');
+     assert.equal(await p.locator('#cp-tab-apply').count(),1,'creator application stays separate');assert.equal(await p.locator('[data-player-claim]').count(),0);
+     assert.deepEqual(errors,[]);
+   } finally {await db.close()}
+ },{viewport:{width,height:width===390?844:1000},...(width===390?{isMobile:true,hasTouch:true}:{})});
+ console.log('PASS: Creator and player referrals — separate Home buttons, hero-only Creator Shop, no-application player dashboard, immediate two-pass rewards, real profile claim and history, private referrals, desktop/mobile modal layouts and existing game preservation.');
 })().catch(e => { console.error(e); process.exitCode = 1; });

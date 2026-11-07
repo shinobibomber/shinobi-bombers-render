@@ -6,11 +6,7 @@ const DEFAULTS = { applicationsPaused: false, enrollmentPaused: false, enrollmen
   eligibleProducts: ['summon', 'fusion', 'dojo', 'sensei', 'sensei-rental', 'training'], season: 'launch', promotionalSupply: 100 };
 const PRODUCTS = DEFAULTS.eligibleProducts;
 const ITEMS = [
-  ['hero-pass', 'Standard Hero Summon Pass', 'hero', 25000, 100, 2, 'One regular in-game Shrine hero, not an on-chain NFT. Same rarity odds. Not a paid referral mint.'],
-  ['creator-aura', 'Moonlit Creator Aura', 'aura', 40000, 500, 1, 'A cosmetic moonlit aura. No damage or reward multiplier.'],
-  ['creator-frame', 'Sakura Profile Frame', 'frame', 15000, 1000, 1, 'A gold and sakura profile frame. Cosmetic only.'],
-  ['creator-bomb', 'Sakura Bomb Effect', 'bomb', 30000, 500, 1, 'A cosmetic sakura impact. Respects Display & Accessibility settings.'],
-  ['creator-badge', 'Founding Creator Badge', 'badge', 10000, 1000, 1, 'An account-bound creator collectible badge.']
+  ['hero-pass', 'Standard Hero Summon Pass', 'hero', 25000, 100, 2, 'One regular in-game Shrine hero, not an on-chain NFT. Same rarity odds. Not a paid referral mint.']
 ];
 const enabled = () => /^(on|true|1)$/i.test(String(process.env.CREATORS_PORTAL_ENABLED || 'on').trim());
 const text = (v, max = 160) => { if (typeof v !== 'string' || !v.trim() || v.length > max) fail('Enter text between 1 and ' + max + ' characters.'); return v.trim(); };
@@ -39,17 +35,15 @@ async function program(store, c = store.pool, lock = false) {
 }
 async function initialize(store) {
   await program(store);
-  const [count] = await query(store.pool, 'SELECT COUNT(*) AS n FROM ryo_creator_shop WHERE scope=$1', [store.scope]);
-  if (number(count.n) >= ITEMS.length) return;
   for (const [itemId, name, kind, price, supply, monthly, detail] of ITEMS) await store.pool.query(`INSERT INTO ryo_creator_shop(scope,id,name,kind,price,supply,monthly_limit,detail)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING`, [store.scope, itemId, name, kind, price * 1000, supply, monthly, detail]);
 }
 async function publicInfo(store, origin) {
   const p = await program(store), [n] = await query(store.pool, 'SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1', [store.scope]);
-  return { marker: MARKER, enabled: enabled(), rules: { ...p.config, version: p.version, eligibleProducts: [...p.config.eligibleProducts],
+  return { marker: MARKER, enabled: enabled(), playerReferrals: { marker: 'shinobi-player-referrals-v1', passesPerReferral: 2, applicationRequired: false, paidHeroes: 15, clearedStage: 5 }, rules: { ...p.config, version: p.version, eligibleProducts: [...p.config.eligibleProducts],
     milestone: 50000, paidHeroes: 15, clearedStage: 5, adventurePercent: 5, purchasePercent: 5,
-    enrollmentRemaining: Math.max(0, p.config.enrollmentLimit - number(n.n)), origin, cpWithdrawable: false,
-    attribution: 'First valid creator link, accepted before any paid order or recorded Adventure progress. One creator per verified wallet; attribution never changes. Local link expires after 7 days.',
+    enrollmentRemaining: Math.max(0, p.config.enrollmentLimit - number(n.n) - await require('./player-referrals.cjs').count(store)), origin, cpWithdrawable: false,
+    attribution: 'First valid referral link, accepted before any paid order or recorded Adventure progress. One referrer across both programs per verified wallet; attribution never changes. Local link expires after 7 days.',
     progression: 'Stage 5 must be cleared in the server combat verifier (100 server-simulated defeats). A client stage number is never evidence.',
     shopDelivery: 'Standard passes deliver regular in-game Shrine heroes. They are not on-chain NFTs.' } };
 }
@@ -122,23 +116,38 @@ async function application(store, wallet, body) {
 }
 function safeUrl(v) { try { const u = new URL(text(v, 500)); if (u.protocol !== 'https:' || u.username || u.password) throw Error(); return u.href; } catch { fail('Use an HTTPS channel/profile URL.'); } }
 const codeFor = () => 'SB' + crypto.randomBytes(7).toString('hex').toUpperCase();
+async function assertNewPlayer(store, c, wallet) {
+  const [used] = await query(c, `SELECT EXISTS(SELECT 1 FROM ryo_purchases WHERE scope=$1 AND wallet=$2) OR EXISTS(SELECT 1 FROM ryo_spends WHERE scope=$1 AND wallet=$2)
+    OR EXISTS(SELECT 1 FROM ryo_adventures WHERE scope=$1 AND wallet=$2 AND (COALESCE((data->>'kills')::numeric,0)>0 OR COALESCE((data->>'pending')::numeric,0)>0)) AS used`, [store.scope, wallet]);
+  if (used.used) fail('Referral links are for new players before their first order or Adventure progress.', 409);
+}
+function paidSummonQuantity(row) {
+  if (row.product !== 'summon' || row.quote?.funding === 'bonus' || String(row.signature).startsWith('bonus:') || !row.signature || !row.wire) return 0;
+  const outputs = row.result?.outputs || [], quantity = row.params?.quantity;
+  if (![1, 5, 10, 15].includes(quantity) || outputs.length !== quantity || new Set(outputs.map(h => h.tokenId)).size !== quantity || outputs.some(h => !h.tokenId || h.starter || h.creatorReward || h.referralReward)) fail('Settled summon output evidence is inconsistent.', 503);
+  return quantity;
+}
+function advanceProof(store, profile, proof, active, report) {
+  return require('./adventure.cjs').advance(Object.keys(proof || {}).length ? proof : undefined, profile, store.now(), active || !!require('./gameplay-options.cjs').killReport(report), 50, null);
+}
 async function attribute(store, wallet, body) {
   const code = text(body.code, 32).toUpperCase();
+  if (code.startsWith('RP')) return require('./player-referrals.cjs').attribute(store, wallet, code);
   return store.transaction(async c => {
     const { config } = await program(store, c, true);
     await store.locked(c, wallet);
+    if (await require('./player-referrals.cjs').referral(store, c, wallet)) fail('Your referral attribution is permanent and cannot be overwritten.', 409);
     const old = await referral(store, c, wallet);
     if (old) { const cr = (await query(c, 'SELECT code FROM ryo_creators WHERE scope=$1 AND id=$2', [store.scope, old.creator_id]))[0]; if (cr.code !== code) fail('Your referral attribution is permanent and cannot be overwritten.', 409); return { ok: true, existing: true }; }
     if (config.enrollmentPaused) fail('New referral enrollment is paused. Previously accepted referrals keep their rewards.', 409);
     const [n] = await query(c, 'SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1', [store.scope]);
-    if (number(n.n) >= config.enrollmentLimit) fail('The public referral enrollment limit has been reached.', 409);
+    if (number(n.n) + await require('./player-referrals.cjs').count(store, c) >= config.enrollmentLimit) fail('The public referral enrollment limit has been reached.', 409);
     const creator = (await query(c, "SELECT * FROM ryo_creators WHERE scope=$1 AND code=$2 AND status='APPROVED'", [store.scope, code]))[0];
     if (!creator) fail('That creator link is unavailable.', 404);
     if (!creator.application?.termsAt) fail('This creator must accept the program terms before enrolling referrals.', 409);
     if ((await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('Creator identities cannot refer themselves or other creator accounts.', 409);
-    const [used] = await query(c, `SELECT EXISTS(SELECT 1 FROM ryo_purchases WHERE scope=$1 AND wallet=$2) OR EXISTS(SELECT 1 FROM ryo_spends WHERE scope=$1 AND wallet=$2)
-      OR EXISTS(SELECT 1 FROM ryo_adventures WHERE scope=$1 AND wallet=$2 AND (COALESCE((data->>'kills')::numeric,0)>0 OR COALESCE((data->>'pending')::numeric,0)>0)) AS used`, [store.scope, wallet]);
-    if (used.used) fail('Creator links are for new players before their first order or Adventure progress.', 409);
+    if ((await query(c, 'SELECT 1 FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2', [store.scope, wallet])).length) fail('An existing referrer cannot become a newly referred player.', 409);
+    await assertNewPlayer(store, c, wallet);
     await c.query('INSERT INTO ryo_creator_referrals(scope,wallet,creator_id,attributed) VALUES($1,$2,$3,$4)', [store.scope, wallet, creator.id, store.now()]);
     await recordEvent(store, c, 'attributed:' + wallet, wallet, 'attributed', { creatorId: creator.id });
     return { ok: true };
@@ -148,14 +157,13 @@ async function attribute(store, wallet, body) {
 // Called inside the real Store.settlePurchase transaction, after finalized success only.
 async function settledPurchase(store, c, row) {
   // Existing accepted cohorts retain their promised settlement even while new portal access is off.
-  const r = await referral(store, c, row.wallet); if (!r) return;
+  const r = await referral(store, c, row.wallet); if (!r) return require('./player-referrals.cjs').settledPurchase(store, c, row);
   const eventId = 'purchase:' + row.wallet + ':' + row.request_id;
   if (!await recordEvent(store, c, eventId, row.wallet, 'purchase', { product: row.product, funding: row.quote?.funding || 'balance', signature: row.signature })) return;
   if (row.quote?.funding === 'bonus' || String(row.signature).startsWith('bonus:') || !row.signature || !row.wire) return;
   const wasQualified = !!r.qualified, settledAt = store.now();
   if (row.product === 'summon') {
-    const outputs = row.result?.outputs || [], quantity = row.params?.quantity;
-    if (![1, 5, 10, 15].includes(quantity) || outputs.length !== quantity || new Set(outputs.map(h => h.tokenId)).size !== quantity || outputs.some(h => !h.tokenId || h.starter || h.creatorReward)) fail('Settled summon output evidence is inconsistent.', 503);
+    const quantity = paidSummonQuantity(row);
     r.paid_mints = number(r.paid_mints) + quantity;
     await c.query('UPDATE ryo_creator_referrals SET paid_mints=$3 WHERE scope=$1 AND wallet=$2', [store.scope, row.wallet, r.paid_mints]);
     await qualify(store, c, r);
@@ -175,10 +183,9 @@ async function commission(store, c, r, source, kind, srMilli) {
 // totals or stage input, only for attributed players until five 20-defeat stages are cleared.
 // This does not change Adventure rewards, combat, map selection, timing or the real-time guard.
 async function beginAdventure(store, c, wallet, profile, old, active, report) {
-  const r = await referral(store, c, wallet); if (!r) return null;
+  const r = await referral(store, c, wallet); if (!r) { await require('./player-referrals.cjs').beginAdventure(store, c, wallet, profile, active, report); return null; }
   if (!r.stage5) {
-    const proof = Object.keys(r.proof || {}).length ? r.proof : undefined;
-    const d = require('./adventure.cjs').advance(proof, profile, store.now(), active || !!require('./gameplay-options.cjs').killReport(report), 50, null);
+    const d = advanceProof(store, profile, r.proof, active, report);
     // A map value of 5 means entered; 100 verified defeats means stage 5 actually cleared.
     if (number(d.kills) >= 100) {
       r.stage5 = store.now();
@@ -237,7 +244,7 @@ async function summary(store, wallet, origin, body = {}) {
   const referrals = await query(store.pool, `SELECT wallet,paid_mints,stage5,qualified,expires,attributed FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2 ORDER BY attributed DESC,wallet LIMIT 20 OFFSET $3`, [...args, offset]);
   const entries = await query(store.pool, 'SELECT sequence,kind,delta,source_sr,detail,created FROM ryo_creator_ledger WHERE scope=$1 AND creator_id=$2 ORDER BY sequence DESC LIMIT 20 OFFSET $3', [...args, offset]);
   const redemptions = await query(store.pool, 'SELECT id,item_id,price,status,result,created FROM ryo_creator_redemptions WHERE scope=$1 AND creator_id=$2 ORDER BY created DESC,id LIMIT 20 OFFSET $3', [...args, offset]);
-  const shop = await query(store.pool, 'SELECT * FROM ryo_creator_shop WHERE scope=$1 ORDER BY price,id', [store.scope]);
+  const shop = await query(store.pool, "SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id='hero-pass' ORDER BY price,id", [store.scope]);
   const [used] = await query(store.pool, "SELECT COUNT(*) AS n FROM ryo_creator_redemptions r JOIN ryo_creator_shop s ON s.scope=r.scope AND s.id=r.item_id WHERE r.scope=$1 AND s.kind='hero' AND r.season=$2 AND r.status='fulfilled'", [store.scope, result.rules.season]);
   return { ...result, stats, points: { balanceMilli: String(creator.balance), earnedMilli: String(points.earned), redeemedMilli: String(points.redeemed), commissionMilli: String(points.commission), pendingMilli: String(BigInt(pending.n) * 5n / 100n) },
     link: origin.replace(/\/$/, '') + '/?creator=' + creator.code, referrals: referrals.map(r => ({ ...r, wallet: undefined, player: privateId(r.wallet) })), ledger: entries.map(r => ({ ...r, detail: { referral: r.detail.referral, item: r.detail.item, version: r.detail.version, percent: r.detail.percent, reasonCode: r.detail.reasonCode } })),
@@ -246,6 +253,7 @@ async function summary(store, wallet, origin, body = {}) {
 }
 async function redeem(store, wallet, body) {
   const redemptionId = requestId(body.requestId), itemId = text(body.itemId, 60);
+  if (itemId !== 'hero-pass') fail('This reward has been retired from the Creator Shop.', 409);
   return store.transaction(async c => {
     // All redemptions lock the same program row first: global seasonal supply cannot race.
     const { config } = await program(store, c, true);
@@ -296,7 +304,7 @@ async function adminSnapshot(store, wallet, body) {
   const entries = body.creatorId ? await query(store.pool, 'SELECT * FROM ryo_creator_ledger WHERE scope=$1 AND creator_id=$2 ORDER BY sequence DESC LIMIT 40 OFFSET $3', [store.scope, text(body.creatorId, 80), offset]) : [];
   const signals = await query(store.pool, `SELECT creator_id,COUNT(*) AS recent_referrals FROM ryo_creator_referrals WHERE scope=$1 AND attributed>=$2 GROUP BY creator_id HAVING COUNT(*)>=10 ORDER BY COUNT(*) DESC LIMIT 20`, [store.scope, store.now() - DAY]);
   return { role, creators: creators.map(r => ({ ...publicCreator(r), wallet: r.wallet, application: r.application, reviewedBy: r.reviewed_by })), referrals: refs.map(r => ({ ...r, proof: { kills: r.proof?.kills || 0, verifiedStage: r.proof?.map || 1 } })), capacity,
-    program: await program(store), shop: await query(store.pool, 'SELECT * FROM ryo_creator_shop WHERE scope=$1 ORDER BY id', [store.scope]), audits, ledger: entries, signals: signals.map(r => ({ ...r, signal: 'High referral enrollment in 24 hours; review, not proof of abuse' })), page: page(body) };
+    program: await program(store), shop: await query(store.pool, "SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id='hero-pass' ORDER BY id", [store.scope]), audits, ledger: entries, signals: signals.map(r => ({ ...r, signal: 'High referral enrollment in 24 hours; review, not proof of abuse' })), page: page(body) };
 }
 async function adminAction(store, wallet, body) {
   const access = adminRole(wallet, true), action = text(body.operation, 40), reason = text(body.reason, 500);
@@ -305,7 +313,7 @@ async function adminAction(store, wallet, body) {
     const p = await program(store, c, true); let target = body.creatorId || 'program', detail = {};
     if (action === 'manual-add') {
       const address = walletAddress(body.wallet);
-      if (await creatorByWallet(store, c, address) || await referral(store, c, address) || (await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, address])).length) fail('This wallet already has a creator or referral identity.', 409);
+      if (await creatorByWallet(store, c, address) || await referral(store, c, address) || await require('./player-referrals.cjs').referral(store, c, address) || (await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, address])).length) fail('This wallet already has a creator or referral identity.', 409);
       const creatorId = id(); target = creatorId;
       await c.query(`INSERT INTO ryo_creators(scope,id,wallet,display_name,status,code,reviewed_by,created,reviewed,application) VALUES($1,$2,$3,$4,'APPROVED',$5,$6,$7,$7,$8)`, [store.scope, creatorId, address, text(body.displayName, 60), codeFor(), wallet, store.now(), JSON.stringify({ manual: true, termsRequired: true })]);
       await c.query('INSERT INTO ryo_creator_wallets(scope,wallet,creator_id) VALUES($1,$2,$3)', [store.scope, address, creatorId]); detail = { wallet: address };
@@ -314,7 +322,7 @@ async function adminAction(store, wallet, body) {
       if (!creator) fail('Creator not found.', 404);
       const transitions = { PENDING: ['APPROVED', 'REJECTED'], APPROVED: ['SUSPENDED'], REJECTED: ['APPROVED'], SUSPENDED: ['APPROVED'] };
       if (!transitions[creator.status]?.includes(body.status)) fail('Invalid creator status transition.', 409);
-      if (body.status === 'APPROVED' && (await query(c, 'SELECT 1 FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [store.scope, creator.wallet])).length) fail('A referred player cannot become a creator without an audited identity review. Existing attribution cannot be erased.', 409);
+      if (body.status === 'APPROVED' && ((await query(c, 'SELECT 1 FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [store.scope, creator.wallet])).length || await require('./player-referrals.cjs').referral(store, c, creator.wallet))) fail('A referred player cannot become a creator without an audited identity review. Existing attribution cannot be erased.', 409);
       await c.query('UPDATE ryo_creators SET status=$3,reviewed_by=$4,reviewed=$5,public_note=$6 WHERE scope=$1 AND id=$2', [store.scope, creator.id, body.status, wallet, store.now(), body.publicNote ? text(body.publicNote, 240) : '']); detail = { previous: creator.status, status: body.status };
     } else if (action === 'adjust') {
       const creatorId = text(body.creatorId, 80), delta = integer(body.deltaMilli, -1000000000000, 1000000000000); if (!delta) fail('An adjustment must be non-zero.');
@@ -330,6 +338,7 @@ async function adminAction(store, wallet, body) {
       const itemId = text(body.itemId, 60), price = integer(body.priceCp, 1, 1000000000), supply = integer(body.supply, 0, 1000000), monthly = integer(body.monthlyLimit, 1, 100);
       if (typeof body.enabled !== 'boolean') fail('Choose an enabled state.');
       const item = (await query(c, 'SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, itemId]))[0];
+      if (itemId !== 'hero-pass') fail('This reward has been retired from the Creator Shop.', 409);
       if (!item || item.version !== body.version || supply < item.used) fail('Item changed, is unavailable, or supply is below fulfilled rewards.', 409);
       await c.query('UPDATE ryo_creator_shop SET price=$3,supply=$4,monthly_limit=$5,enabled=$6,version=version+1 WHERE scope=$1 AND id=$2', [store.scope, itemId, price * 1000, supply, monthly, body.enabled]); detail = { itemId, price, supply, monthly, enabled: body.enabled };
     } else if (action === 'review-referral') {
@@ -346,7 +355,7 @@ async function migrate(store, wallet, body) {
     if (body.accept === true) {
       const r = (await query(c, 'SELECT * FROM ryo_creator_migrations WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, text(body.id, 80)]))[0];
       if (!r || r.new_wallet !== wallet || r.accepted || number(r.expires) <= store.now()) fail('Migration is unavailable or expired.', 409);
-      if ((await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length || await referral(store, c, wallet)) fail('The receiving wallet already has a creator/referral identity.', 409);
+      if ((await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length || await referral(store, c, wallet) || await require('./player-referrals.cjs').referral(store, c, wallet) || (await query(c, 'SELECT 1 FROM ryo_player_referrers WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('The receiving wallet already has a creator/referral identity.', 409);
       const creator = await approved(store, c, r.old_wallet, true); if (creator.id !== r.creator_id) fail('Creator identity changed.', 409);
       if ((await query(c, "SELECT 1 FROM ryo_purchases WHERE scope=$1 AND wallet=$2 AND status='pending'", [store.scope, r.old_wallet])).length) fail('Settle the old wallet pending purchase first.', 409);
       // CP/referrals follow the creator ID. Game assets and Ryo do not silently move wallets.
@@ -368,6 +377,8 @@ async function handle(ctx, wallet, action, body = {}) {
   const { store, origin } = ctx;
   if (action === 'creator-public') return publicInfo(store, origin);
   if (action === 'creator-state') return summary(store, wallet, origin, body);
+  if (action === 'creator-player-state') return require('./player-referrals.cjs').summary(store, wallet, origin, body);
+  if (action === 'creator-player-claim') return require('./player-referrals.cjs').claim(store, wallet, body);
   if (action === 'creator-terms') {
     if (body.terms !== true) fail('Accept the Creator Program Terms.');
     return store.transaction(async c => { const creator = await approved(store, c, wallet, true); await c.query('UPDATE ryo_creators SET application=$3 WHERE scope=$1 AND id=$2', [store.scope, creator.id, JSON.stringify({ ...creator.application, termsAt: store.now(), termsVersion: 1 })]); await audit(store, c, wallet, 'terms.accepted', creator.id, 'Honest marketing and referral disclosure accepted'); return { ok: true }; });
@@ -381,4 +392,4 @@ async function handle(ctx, wallet, action, body = {}) {
   if (action === 'creator-appeal') { const message = text(body.message, 1000); return store.transaction(async c => { await store.locked(c, wallet); const r = await referral(store, c, wallet); const creator = !r && await creatorByWallet(store, c, wallet, true); if (!r && !creator) fail('No creator application or referral attribution found.', 404); if (r?.appeal || creator?.application?.appeal) fail('An appeal is already recorded. An administrator will review it.', 409); if (r) await c.query('UPDATE ryo_creator_referrals SET appeal=$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, message]); else await c.query('UPDATE ryo_creators SET application=$3 WHERE scope=$1 AND id=$2', [store.scope, creator.id, JSON.stringify({ ...creator.application, appeal: { message, at: store.now() } })]); await audit(store, c, wallet, 'review.appeal', creator?.id || privateId(wallet), 'Player submitted an appeal', { message }); return { ok: true }; }); }
   fail('Unknown Creators Portal action.', 404);
 }
-module.exports = { MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole };
+module.exports = { program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole };

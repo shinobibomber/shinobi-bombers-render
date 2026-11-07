@@ -20,6 +20,21 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Player referrals)**
+
+**✨ New**
+• **Referral for every player**: Home’s News button is now Referral, beside Creator. Open your personal link, referral progress and claim history without applying or waiting for creator approval.
+• **Two hero passes per qualified referral**: invite a new player before their first order or Adventure progress. They must complete 15 settled paid Shrine summons and clear Stage 5 in the server combat verifier. Two Standard Hero Summon Passes unlock immediately when both requirements are verified.
+• **Claim your heroes**: claim one or two passes at a time, with normal Shrine rarity odds and no SOL payment or CP cost. Rewards deliver regular in-game heroes, not NFTs. Full collections and pending purchases keep passes available for later.
+
+**🔄 Changes**
+• **Creator Shop simplified**: only the Standard Hero Summon Pass remains. Previously delivered cosmetics stay owned.
+• One permanent referral attribution applies across Creator and player programs. Self-referrals, circular referrals, free/starter-funded heroes, reward heroes, fusion, Market purchases and refunded or failed orders do not qualify.
+
+Player referrals award hero passes without ongoing CP or Ryo commissions. Creator rewards keep their existing rules. Server-verified stage progress can lag the browser arena.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Creator popup & design)**
 
 **🔄 Changes**

@@ -108,6 +108,25 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Player referrals + hero-only Creator Shop: Home News hotspot now Referral
+  beside Creator; shared themed popup has independent player dashboard/progress/claim history.
+  No application or approval; two standard in-game hero passes unlock per referred wallet on
+  15 finalized paid Shrine outputs + Stage 5 cleared by the shared server auto-combat verifier.
+  Shared first signed-login attribution (player link ?referral=RP..., creator ?creator=SB...),
+  program-row locking, immutable cross-program choice, self/cycle/new-player checks and shared
+  enrollment controls. Source player-server.cjs/player-schema.sql in creators-portal/, copied
+  and appended by apply-creators-portal.cjs. Existing creator settlement/Adventure hooks dispatch
+  player verification when no creator attribution exists. No CP/ongoing player commissions.
+  Atomic 1/2-pass claims update profile + FIFO entitlements + request receipt + audit together;
+  capacity500, pending purchase recovery, idempotent retry, purchases emergency gate apply.
+  Rewards use normal Shrine odds, creatorReward/referralReward markers, no paid-order/pool income.
+  Retired shop IDs filtered from all shop views and rejected by redemption/admin writes;
+  historical deliveries and cosmetic ownership remain intact. Marker shinobi-player-referrals-v1.
+  Only intentional pinned schema/service hashes changed; no combat or reward guard relaxation.
+  Verified fresh unpack, site build check, lint, rewards guard, all 43 isolated game suites
+  and 20 website assertions on Node22; desktop/mobile referral and hero-only shop screenshots
+  inspected. Real signed-login tests use fixture keys only; no live wallet or reward issued.
+
 - 2026-11-07 Creator popup redesign: Home's `tut` hotspot is now an opaque Creator
   button; original ten header hotspots restored, extra Creator navigation removed.
   `creators-portal/portal.js` uses a native modal dialog (focus trap, Escape/backdrop,

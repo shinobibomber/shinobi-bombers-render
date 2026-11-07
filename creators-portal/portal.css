@@ -71,6 +71,8 @@
 .cp-table th{color:#e8c273;background:#211034;font-weight:700}.cp-table td{color:#d0c4e4}.cp-table tbody tr:nth-child(even){background:#140b24}.cp-table small{display:block;color:#a497b8;margin-top:4px}
 .cp-progress{display:block;width:115px;height:5px;border-radius:4px;background:#302142;margin-top:7px;overflow:hidden}.cp-progress i{display:block;height:100%;background:linear-gradient(90deg,#7d45df,#33c8ff)}
 .cp-shop{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cp-shop:has(>.cp-card:only-child){grid-template-columns:minmax(0,560px)}
+.cp-referral-claim,.cp-referral-link{margin-top:16px}
 .cp-reward-icon{display:grid;place-items:center;width:56px;height:56px;border:1px solid #aa62e0;border-radius:10px;background:radial-gradient(circle,#5b2583,#1a0d32);font-size:29px;color:#ffcf4a;margin-bottom:14px;box-shadow:0 0 15px #8b3dff26}
 .cp-shop .cp-card{display:flex;flex-direction:column;position:relative}.cp-shop .cp-card p{flex:1}.cp-shop button{align-self:stretch;margin-top:16px}.cp-shop .cp-price{font-size:24px;color:#ffcf4a;font-weight:700}
 .cp-pages{display:flex;justify-content:flex-end;gap:10px;align-items:center;margin-top:15px;font-size:14px}.cp-empty{padding:28px 18px;text-align:center;color:#ada0c4}

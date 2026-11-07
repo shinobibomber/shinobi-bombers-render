@@ -15,8 +15,8 @@ const addr = k => k.publicKey.toBase58(), newWallet = () => addr(web3.Keypair.ge
    fs.copyFileSync(path.join(root, 'app/public/index.html'), path.join(fixture, 'public/index.html'));
    const expected = originalRead(path.join(root, 'app/server/schema.sql'), 'utf8'), at = expected.indexOf('\n-- Creators Portal v1:'); assert(at > 0);
    fs.writeFileSync(path.join(fixture, 'server/schema.sql'), expected.slice(0, at));
-   const source = path.join(root, 'creators-portal/schema.sql');
-   fs.readFileSync = function (name, options) { const value = originalRead.apply(this, arguments); return path.resolve(String(name)) === source && options === 'utf8' ? value.replace(/\r?\n/g, '\r\n') : value; };
+   const sources = ['schema.sql','player-schema.sql'].map(file => path.join(root, 'creators-portal',file));
+   fs.readFileSync = function (name, options) { const value = originalRead.apply(this, arguments); return sources.includes(path.resolve(String(name))) && options === 'utf8' ? value.replace(/\r?\n/g, '\r\n') : value; };
    require('../apply-creators-portal.cjs').applyCreatorsPortal(fixture);
    assert.equal(originalRead(path.join(fixture, 'server/schema.sql'), 'utf8'), expected, 'CRLF checkout assembles identical migration bytes');
  } finally {
@@ -154,16 +154,27 @@ const addr = k => k.publicKey.toBase58(), newWallet = () => addr(web3.Keypair.ge
    await call(owner, 'creator-redeem', { ...order, requestId: crypto.randomUUID() });
    await assert.rejects(call(owner, 'creator-redeem', { ...order, requestId: crypto.randomUUID() }), /monthly/);
    const heroLedger = await rows("SELECT COUNT(*) AS n FROM ryo_purchases WHERE scope=$1 AND wallet=$2", [owner]); assert.equal(number(heroLedger[0].n), 0, 'CP rewards create no paid order or reward-pool income');
-   item = state.shop.find(i => i.id === 'creator-aura'); const aura = { requestId: crypto.randomUUID(), itemId: item.id, version: item.version, expectedPriceMilli: item.price };
-   const beforeFailure = await balance(); failProfile = true; await assert.rejects(call(owner, 'creator-redeem', aura), /delivery failed/);
-   assert.equal(await balance(), beforeFailure); assert.equal((await rows('SELECT COUNT(*) AS n FROM ryo_creator_redemptions WHERE scope=$1 AND id=$2', [aura.requestId]))[0].n, 0);
-   await call(owner, 'creator-redeem', aura); assert.equal((await store.profile(owner)).creatorCosmetics.aura, 'creator-aura');
-   // Global supply and account ownership cannot be bypassed with concurrent request IDs.
-   const shopSettings = (await cp.adminSnapshot(store, admin, {})).shop.find(i => i.id === 'creator-frame');
-   await call(admin, 'creator-admin-action', { operation: 'shop', itemId: shopSettings.id, priceCp: 1, supply: 1, monthlyLimit: 1, enabled: true, version: shopSettings.version, reason: 'One fixture item' });
-   const concurrent = await Promise.allSettled([0, 1, 2].map(() => call(owner, 'creator-redeem', { requestId: crypto.randomUUID(), itemId: 'creator-frame', version: 2, expectedPriceMilli: '1000' })));
-   assert.equal(concurrent.filter(x => x.status === 'fulfilled').length, 1);
-   await assert.rejects(call(manual, 'creator-redeem', { requestId: crypto.randomUUID(), itemId: 'creator-bomb', version: 1, expectedPriceMilli: '30000000' }), /Creator Points/);
+   assert.deepEqual(state.shop.map(i => i.id), ['hero-pass']);
+   for (const itemId of ['creator-aura','creator-frame','creator-badge','creator-bomb']) {
+     await assert.rejects(call(owner, 'creator-redeem', { requestId: crypto.randomUUID(), itemId, version: 1, expectedPriceMilli: '1000' }), /retired/);
+     await assert.rejects(call(admin, 'creator-admin-action', { operation: 'shop', itemId, priceCp: 1, supply: 1, monthlyLimit: 1, enabled: true, version: 1, reason: 'cannot reopen retired reward' }), /retired/);
+   }
+   // Retired inventory may exist in an upgraded database but is never returned or redeemable.
+   await pool.query("INSERT INTO ryo_creator_shop(scope,id,name,kind,price,supply,monthly_limit) VALUES($1,'creator-aura','Legacy aura','aura',1000,100,1)", [store.scope]);
+   const legacyProfile = await store.profile(owner); legacyProfile.creatorCosmetics = { aura: 'creator-aura', frame: 'creator-frame' };
+   await pool.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2', [store.scope, owner, JSON.stringify(legacyProfile)]);
+   assert.deepEqual((await call(owner, 'creator-state')).shop.map(i => i.id), ['hero-pass']);
+   assert.deepEqual((await cp.adminSnapshot(store, admin, {})).shop.map(i => i.id), ['hero-pass']);
+   const beforeFailure = await balance(), beforeRollbackHeroes = (await store.profile(owner)).heroes.length;
+   const shopSettings = (await cp.adminSnapshot(store, admin, {})).shop[0];
+   await call(admin, 'creator-admin-action', { operation: 'shop', itemId: 'hero-pass', priceCp: 1, supply: 3, monthlyLimit: 100, enabled: true, version: shopSettings.version, reason: 'One remaining fixture hero' });
+   const remaining = { requestId: crypto.randomUUID(), itemId: 'hero-pass', version: 2, expectedPriceMilli: '1000' };
+   failProfile = true; await assert.rejects(call(owner, 'creator-redeem', remaining), /delivery failed/);
+   assert.equal(await balance(), beforeFailure); assert.equal((await store.profile(owner)).heroes.length, beforeRollbackHeroes);
+   assert.equal((await rows('SELECT COUNT(*) AS n FROM ryo_creator_redemptions WHERE scope=$1 AND id=$2', [remaining.requestId]))[0].n, 0);
+   const concurrent = await Promise.allSettled([0,1,2].map(() => call(owner, 'creator-redeem', {...remaining,requestId:crypto.randomUUID()})));
+   assert.equal(concurrent.filter(x=>x.status==='fulfilled').length,1,'global last hero supply cannot race');
+   assert.deepEqual((await store.profile(owner)).creatorCosmetics, legacyProfile.creatorCosmetics, 'already delivered cosmetics remain owned after new hero redemptions');
    await call(operator, 'creator-admin-action', { operation: 'status', creatorId: own.id, status: 'SUSPENDED', reason: 'Review signal; preserve earned points' });
    await assert.rejects(call(owner, 'creator-redeem', { ...order, requestId: crypto.randomUUID() }), /approved/);
    assert.equal((await call(owner, 'creator-state')).points, undefined);

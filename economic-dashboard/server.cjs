@@ -4,7 +4,7 @@ const {fail}=require('./store.cjs');
 const MARKER='ryo-economic-dashboard-v1';
 const PAUSES=['purchases','withdrawals','claims'];
 // Market buys and new listings follow the purchases pause.
-const GATES={purchase:'purchases','market-buy':'purchases','market-post':'purchases','market-offer':'purchases','market-accept':'purchases','hunt-enter':'purchases','box-mint':'purchases','creator-redeem':'purchases',withdraw:'withdrawals','claim-adventure':'claims'};
+const GATES={purchase:'purchases','market-buy':'purchases','market-post':'purchases','market-offer':'purchases','market-accept':'purchases','hunt-enter':'purchases','box-mint':'purchases','creator-redeem':'purchases','creator-player-claim':'purchases',withdraw:'withdrawals','claim-adventure':'claims'};
 const DEFAULTS={vaults:[],seasons:[],financial:null,monitor:{concentrationPercent:40,claimRyo:100000,pendingMinutes:30}};
 const canonical=x=>x&&typeof x==='object'?(Array.isArray(x)?'['+x.map(canonical).join(',')+']':'{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+canonical(x[k])).join(',')+'}'):JSON.stringify(x);
 const digest=x=>crypto.createHash('sha256').update(canonical(x)).digest('hex');

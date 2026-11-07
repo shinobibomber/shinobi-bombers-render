@@ -49,7 +49,8 @@ On first use the scoped defaults are:
 - Eligible Ryo services: summon, fusion, training, Dojo, Sensei and Sensei rental.
 - Season `launch`, global seasonal promotional hero supply 100.
 - A 25,000-CP standard hero pass, initially two per creator per UTC calendar month.
-- Aura 40,000 CP, frame 15,000 CP, bomb effect 30,000 CP and badge 10,000 CP.
+- Only the Standard Hero Summon Pass remains in the Creator Shop. Retired cosmetic inventory
+  may remain in old databases for historical records, but is never listed, sold or re-enabled.
 - Shop price, item supply, monthly limit, availability, season and seasonal supply are configurable.
 
 Enrollment limits and pauses act before acceptance. Existing accepted referrals can still qualify
@@ -141,13 +142,14 @@ Pending game purchases must settle first to avoid overwriting the delivered prof
 Hero passes use normal 60/25/10/4/1 rarity odds and normal stats. They carry `creatorReward` and
 redemption provenance, are not paid orders, do not qualify referrals and add no reward-pool income.
 They do not alter the 10 deployed/50 battle-ready limits, chakra or existing funded claim caps.
-No free Ryo or new Ryo issuance is introduced. Cosmetics are account-bound flags: aura renders
+No free Ryo or new Ryo issuance is introduced. Previously delivered cosmetics remain account-bound flags: aura renders
 through existing actor hooks, bomb petals through impact hooks, frame/badge in the player header.
 All respect reduced motion and explosion controls and change no combat/reward values.
 
 ## Database migration
 
-`schema.sql` is additive and idempotent. Build assembly appends it to generated server/schema.sql;
+`schema.sql` and `player-schema.sql` are additive and idempotent. Build assembly appends each
+once by its own marker to generated server/schema.sql;
 the normal `npm run build` / `db:init` path applies it. Tables:
 
 `ryo_creator_program`, `ryo_creators`, `ryo_creator_wallets`, `ryo_creator_referrals`,

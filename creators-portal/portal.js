@@ -4,30 +4,45 @@
   const KEY = 'sb-creator-referral-v1', esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const cp = v => (Number(v || 0) / 1000).toLocaleString(undefined, { maximumFractionDigits: 3 }), num = v => Number(v || 0).toLocaleString(), date = v => v ? new Date(Number(v)).toLocaleString() : '—';
   const short = v => v ? v.slice(0, 6) + '…' + v.slice(-5) : 'Not signed in';
-  let snapshot = null, admin = null, section = 'overview', busy = false, page = 0, lastWallet = null, responseEpoch = 0, refreshAt = 0;
+  let snapshot = null, admin = null, section = 'overview', mode = 'creator', busy = false, page = 0, lastWallet = null, responseEpoch = 0, refreshAt = 0;
   const wallet = () => window.RyoPayments?.state.authenticated ? window.RyoPayments.state.account : null;
   const api = (action, body = {}) => window.RyoPayments.creators(action, body);
   function referralCode() {
     try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && /^[A-Z0-9]{4,32}$/.test(r.code) && Date.now() - r.created < 7 * 86400000) return r.code; localStorage.removeItem(KEY); } catch {}
     return null;
   }
-  try { const code = new URL(location.href).searchParams.get('creator')?.toUpperCase(); if (code && /^[A-Z0-9]{4,32}$/.test(code) && !referralCode()) localStorage.setItem(KEY, JSON.stringify({ code, created: Date.now() })); } catch {}
+  try { const params = new URL(location.href).searchParams, code = (params.get('creator') || params.get('referral'))?.toUpperCase(); if (code && /^[A-Z0-9]{4,32}$/.test(code) && !referralCode()) localStorage.setItem(KEY, JSON.stringify({ code, created: Date.now() })); } catch {}
   const root = document.createElement('dialog'); root.id = 'creatorsPanel'; root.hidden = true; root.setAttribute('aria-labelledby', 'cp-title'); root.dataset.design = 'creator-popup-v2';
   root.innerHTML = '<div class="cp-shell"><div class="cp-topline"><strong><span aria-hidden="true">✦</span> CREATOR HQ</strong><span class="cp-wallet"></span><button type="button" data-cp="close" aria-label="Close Creators Portal" title="Back to game">✕</button></div><header class="cp-hero"><div class="cp-hero-copy"><p class="cp-eyebrow">SHINOBI BOMBERS · CREATOR PROGRAM</p><h1 id="cp-title">CREATORS <span>PORTAL</span></h1><p class="cp-tagline">CREATE • INVITE • EARN</p><p>Your community. Your ninja way.<br>Turn your creativity into in-game rewards.</p></div><div class="cp-hero-art" aria-hidden="true"><i class="cp-torii"></i><img loading="lazy" src="assets/creators-portal/hero3.webp" alt="" width="135" height="131"><img loading="lazy" src="assets/creators-portal/hero0.webp" alt="" width="135" height="131"><img loading="lazy" src="assets/creators-portal/hero4.webp" alt="" width="135" height="131"><span>FORGE YOUR COMMUNITY</span></div></header><div class="cp-workspace"><nav class="cp-sections" role="tablist" aria-label="Creators Portal sections" aria-orientation="vertical"></nav><div class="cp-content"><p class="cp-notice" role="status" aria-live="polite"></p><div id="cp-page" class="cp-section" role="tabpanel" tabindex="-1"></div></div></div></div>';
   document.body.append(root);
   const $ = sel => root.querySelector(sel), content = $('.cp-section');
   function top() { $('.cp-sections').setAttribute('aria-orientation', matchMedia('(max-width: 760px)').matches ? 'horizontal' : 'vertical'); }
   function notice(message, error = false) { $('.cp-notice').textContent = message || ''; $('.cp-notice').classList.toggle('error', error); }
-  async function run(fn) { if (busy) return; busy = true; root.setAttribute('aria-busy', 'true'); root.querySelectorAll('button:not([data-cp="close"])').forEach(b => b.disabled = true); try { await fn(); } catch (e) { notice(e.message, true); } finally { busy = false; root.removeAttribute('aria-busy'); root.querySelectorAll('button').forEach(b => b.disabled = b.dataset.unavailable === 'true'); } }
+  async function run(fn) { if (busy) return; busy = true; root.setAttribute('aria-busy', 'true'); root.querySelectorAll('button:not([data-cp="close"])').forEach(b => b.disabled = true); try { await fn(); } catch (e) { notice(e.message, true); } finally { busy = false; root.removeAttribute('aria-busy'); root.querySelectorAll('button').forEach(b => b.disabled = b.dataset.unavailable === 'true'); if (root.open && reloadAfterBusy) { reloadAfterBusy = false; open(mode); } } }
   async function refresh() {
-    const epoch = ++responseEpoch, account = wallet();
-    const data = await api(account ? 'creator-state' : 'creator-public', { page });
-    if (epoch !== responseEpoch || wallet() !== account) return;
+    const epoch = ++responseEpoch, account = wallet(), view = mode;
+    const data = await api(account ? mode === 'player' ? 'creator-player-state' : 'creator-state' : 'creator-public', { page });
+    if (epoch !== responseEpoch || wallet() !== account || mode !== view) return;
     snapshot = data; lastWallet = account; if (data.attribution) try { localStorage.removeItem(KEY); } catch {}
     if (section === 'admin' && data.adminRole) admin = await api('creator-admin', { page });
     render();
   }
-  async function open() { root.hidden = false; top(); if (!root.open) root.showModal(); if (busy) return; notice('Loading creator program…'); await run(async () => { await refresh(); notice(''); }); if (root.open) $('.cp-section').focus({ preventScroll: true }); }
+  let reloadAfterBusy = false;
+  async function open(view = 'creator') {
+    view = view === 'player' ? 'player' : 'creator';
+    if (view !== mode) { responseEpoch++; mode = view; snapshot = null; admin = null; section = 'overview'; page = 0; content.replaceChildren(); $('.cp-sections').replaceChildren(); }
+    root.dataset.design = mode === 'player' ? 'player-referrals-v1' : 'creator-popup-v2';
+    $('.cp-topline strong').innerHTML = '<span aria-hidden="true">✦</span> ' + (mode === 'player' ? 'REFERRAL HQ' : 'CREATOR HQ');
+    $('#cp-title').innerHTML = mode === 'player' ? 'PLAYER <span>REFERRALS</span>' : 'CREATORS <span>PORTAL</span>';
+    $('.cp-eyebrow').textContent = 'SHINOBI BOMBERS · ' + (mode === 'player' ? 'PLAYER REFERRAL PROGRAM' : 'CREATOR PROGRAM');
+    $('.cp-tagline').textContent = mode === 'player' ? 'INVITE • QUALIFY • CLAIM' : 'CREATE • INVITE • EARN';
+    $('.cp-hero-copy p:last-child').innerHTML = mode === 'player' ? 'Bring your friends into the village.<br>Unlock two hero passes per qualified referral.' : 'Your community. Your ninja way.<br>Turn your creativity into in-game rewards.';
+    $('[data-cp="close"]').setAttribute('aria-label', mode === 'player' ? 'Close Player Referrals' : 'Close Creators Portal');
+    root.setAttribute('aria-label', mode === 'player' ? 'Player Referrals' : 'Creators Portal');
+    migrateLink.hidden = mode === 'player' || !wallet();
+    root.hidden = false; top(); if (!root.open) root.showModal(); if (busy) { reloadAfterBusy = true; return; }
+    notice('Loading ' + (mode === 'player' ? 'referrals' : 'creator program') + '…'); await run(async () => { await refresh(); notice(''); }); if (root.open) $('.cp-section').focus({ preventScroll: true });
+  }
   function close() { root.close(); root.hidden = true; }
   root.addEventListener('close', () => { if (!root.open) root.hidden = true; });
   root.addEventListener('cancel', e => { e.preventDefault(); close(); });
@@ -36,9 +51,9 @@
     if (!session.referralAccepted && !session.referralMessage) return;
     try { localStorage.removeItem(KEY); sessionStorage.setItem('sb-creator-attribution:' + session.wallet, session.referralAccepted ? 'Your creator referral was accepted.' : session.referralMessage); } catch {}
   }
-  window.CreatorsPortal = { open, close, referralCode, attributionResult, get snapshot() { return snapshot; }, get isOpen() { return root.open; } };
+  window.CreatorsPortal = { open, openPlayer: () => open('player'), close, referralCode, attributionResult, get snapshot() { return snapshot; }, get isOpen() { return root.open; } };
   const approved = () => snapshot?.creator?.status === 'APPROVED';
-  const tabs = () => [['overview', 'Overview'], ['apply', 'Apply'], ...(approved() ? [['dashboard', 'Dashboard'], ['referrals', 'My Referrals'], ['points', 'Creator Points'], ['shop', 'Creator Shop'], ['history', 'Reward History']] : []), ...(snapshot?.adminRole ? [['admin', 'Creator Management']] : [])];
+  const tabs = () => mode === 'player' ? [['overview', 'Overview'], ...(wallet() ? [['dashboard', 'Dashboard'], ['referrals', 'My Referrals'], ['history', 'Claim History']] : [])] : [['overview', 'Overview'], ['apply', 'Apply'], ...(approved() ? [['dashboard', 'Dashboard'], ['referrals', 'My Referrals'], ['points', 'Creator Points'], ['shop', 'Creator Shop'], ['history', 'Reward History']] : []), ...(snapshot?.adminRole ? [['admin', 'Creator Management']] : [])];
   const card = (label, value, detail) => `<article class="cp-card"><h3>${esc(label)}</h3><strong class="cp-number">${esc(value)}</strong><small>${esc(detail)}</small></article>`;
   const pages = () => `<div class="cp-pages"><button data-cp="previous" ${page === 0 ? 'disabled data-unavailable="true"' : ''}>Previous</button><span>Page ${page + 1}</span><button data-cp="next">Next</button></div>`;
   function render() {
@@ -46,16 +61,25 @@
     const available = tabs(); if (!available.some(([key]) => key === section)) section = 'overview';
     $('.cp-wallet').textContent = wallet() ? 'Authenticated · ' + short(wallet()) : 'Connect your game wallet to apply';
     const tabIcons = { overview: '◈', apply: '✎', dashboard: '▦', referrals: '♧', points: '✦', shop: '◆', history: '◷', admin: '⚙' };
-    $('.cp-sections').innerHTML = '<p class="cp-nav-label">CREATOR PROGRAM</p>' + available.map(([key, label]) => `<button type="button" id="cp-tab-${key}" role="tab" aria-controls="cp-page" tabindex="${section === key ? 0 : -1}" aria-selected="${section === key}" data-tab="${key}"><span aria-hidden="true">${tabIcons[key]}</span>${label}<i aria-hidden="true">›</i></button>`).join('');
+    $('.cp-sections').innerHTML = '<p class="cp-nav-label">' + (mode === 'player' ? 'PLAYER REFERRALS' : 'CREATOR PROGRAM') + '</p>' + available.map(([key, label]) => `<button type="button" id="cp-tab-${key}" role="tab" aria-controls="cp-page" tabindex="${section === key ? 0 : -1}" aria-selected="${section === key}" data-tab="${key}"><span aria-hidden="true">${tabIcons[key]}</span>${label}<i aria-hidden="true">›</i></button>`).join('');
     content.setAttribute('aria-labelledby', 'cp-tab-' + section);
-    content.innerHTML = ({ overview, apply, dashboard, referrals, points, shop, history, admin: adminView }[section] || overview)();
+    content.innerHTML = mode === 'player' ? playerView() : ({ overview, apply, dashboard, referrals, points, shop, history, admin: adminView }[section] || overview)();
   }
+  function playerView() {
+    const rules = '<div class="cp-note"><strong>Same verified eligibility</strong><p>Your invited player must use your link before their first order or Adventure progress, complete <strong>15 settled paid Shrine summons</strong> and <strong>clear Stage 5 in the server combat verifier</strong> (100 verified defeats). Both are required, in either order.</p><p>Starter-funded orders, free heroes, referral rewards, Creator Shop heroes, fusion, Market trades, transfers, refunds and failed orders do not count. One permanent referrer per wallet across both programs; self-referrals and circular chains are blocked.</p></div>';
+    if (!wallet()) return '<h2>Invite friends. Claim two heroes.</h2><p>No application or creator approval. Sign in to get your personal link and earn two Standard Hero Summon Passes for every qualified referral.</p>' + rules;
+    if (section === 'referrals') return `<h2>My Referrals</h2><p class="cp-muted">Server-verified progress. Player identities are kept private.</p><div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Player</th><th>Paid heroes</th><th>Stage 5</th><th>Reward</th></tr></thead><tbody>${snapshot.referrals.map(r => `<tr><td>${esc(r.player)}<small>${date(r.attributed)}</small></td><td>${esc(r.paid_mints)}/15</td><td>${r.stage5 ? 'Cleared ✓' : 'Not cleared'}</td><td>${r.qualified ? '2 passes unlocked' : 'Pending qualification'}</td></tr>`).join('') || '<tr><td colspan="4" class="cp-empty">No referrals yet. Share your personal link with new players.</td></tr>'}</tbody></table></div>${pages()}`;
+    if (section === 'history') return `<h2>Claim History</h2><div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Heroes delivered</th><th>Delivery</th><th>Date</th></tr></thead><tbody>${snapshot.claims.map(r => `<tr><td>${esc(r.quantity)} Standard Hero Summon Pass${r.quantity === 1 ? '' : 'es'}<small>${r.result.outputs.map(h => esc(h.name || RANK_NAMES[h.rank] || 'Shinobi')).join(', ')}</small></td><td>In-game heroes · not NFTs</td><td>${date(r.created)}</td></tr>`).join('') || '<tr><td colspan="3" class="cp-empty">No claims yet.</td></tr>'}</tbody></table></div>${pages()}`;
+    const p = snapshot.passes;
+    return `<h2>${section === 'dashboard' ? 'Your referral dashboard' : 'Invite friends. Claim two heroes.'}</h2><p class="cp-muted">Open to every signed-in player. No application. No creator approval.</p><div class="cp-grid">${card('Claimable hero passes', num(p.available), 'Two passes become available immediately after each referral qualifies.')}${card('Qualified referrals', num(snapshot.stats.qualified), num(snapshot.stats.pending) + ' pending · ' + num(snapshot.stats.total) + ' total')}${card('Heroes claimed', num(p.claimed), 'Standard Shrine odds. Regular in-game heroes, not NFTs.')}</div><article class="cp-card cp-referral-claim"><h3>Standard Hero Summon Pass</h3><p>One pass delivers one regular Shrine hero. Claim one or two at a time; unclaimed passes stay available. No SOL payment or CP required.</p><div class="cp-inline">${[1, 2].map(n => `<button class="cp-primary" data-player-claim="${n}" ${Number(p.available) < n ? 'disabled data-unavailable="true"' : ''}>Claim ${n} hero${n === 1 ? '' : 'es'}</button>`).join('')}</div></article><article class="cp-card cp-referral-link"><h3>Your personal referral link</h3><code class="cp-link">${esc(snapshot.link)}</code><button data-cp="copy">Copy referral link</button><p class="cp-muted">Invite new players. No Ryo or CP commissions in the player program.</p></article>${rules}<p class="cp-note">Rewards follow normal Shrine odds (Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1%). Collection capacity and pending purchase recovery apply. Player passes are separate from the Creator Shop monthly and seasonal limits. Server progress can lag the browser stage.</p>`;
+  }
+  const RANK_NAMES = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'];
   function overview() {
     const r = snapshot.rules || {};
     let attributionNotice = ''; try { attributionNotice = wallet() && sessionStorage.getItem('sb-creator-attribution:' + wallet()) || ''; } catch {}
     return `<h2>A program for creators who play</h2>${attributionNotice ? '<p class="cp-note">' + esc(attributionNotice) + '</p>' : ''}<div class="cp-grid">${card('Qualified referral', '50,000 CP', 'Guaranteed once both qualification requirements are verified.')}${card('Adventure commission', '5% in CP', 'Added after eligible Adventure earnings settle through a successful claim. Your referral keeps their full Ryo.')}${card('Game-service commission', '5% in CP', 'Eligible finalized Ryo purchases during the commission period.')}</div>
       <div class="cp-note"><strong>How a referral qualifies</strong><p>Use your link before the player starts. They must complete <strong>15 paid Shrine hero summons</strong> and <strong>clear Stage 5 in the server combat verifier</strong>. Both are required, in either order. Entering Stage 5 is not enough.</p><p>Free starter heroes, Creator Shop heroes, fusion outputs, Marketplace purchases, transfers, failed orders and refunds do not count. The qualifying summon order earns no additional purchase commission.</p></div>
-      <div class="cp-grid two"><article class="cp-card"><h3>What Creator Points unlock</h3><p>Standard in-game hero passes, an exclusive aura, a profile frame, a bomb effect and a creator badge.</p><p>CP cannot be withdrawn, transferred, sold or converted to Ryo, SOL or cash. Shop pricing uses an internal 1 CP : 1 SR-equivalent reference, not an exchange rate.</p><button data-tab="${approved() ? 'shop' : 'apply'}">${approved() ? 'Visit Creator Shop' : 'Apply as Creator'}</button></article><article class="cp-card"><h3>Transparent program limits</h3><p>Commission period: <strong>${esc(r.commissionDays || 90)} days</strong> after qualification. Rules are saved when each referral qualifies.</p><p>Enrollment: ${esc(r.enrollmentRemaining ?? '—')} of ${esc(r.enrollmentLimit ?? '—')} places remaining${r.enrollmentPaused ? ' · PAUSED' : ''}. Existing accepted referrals retain their milestone eligibility.</p><p>Hero passes: initially 2 per creator per UTC calendar month, subject to item inventory and seasonal supply. CP issuance does not guarantee inventory availability.</p></article></div>
+      <div class="cp-grid two"><article class="cp-card"><h3>What Creator Points unlock</h3><p>Standard Hero Summon Passes using the normal Shrine rarity odds.</p><p>CP cannot be withdrawn, transferred, sold or converted to Ryo, SOL or cash. Shop pricing uses an internal 1 CP : 1 SR-equivalent reference, not an exchange rate.</p><button data-tab="${approved() ? 'shop' : 'apply'}">${approved() ? 'Visit Creator Shop' : 'Apply as Creator'}</button></article><article class="cp-card"><h3>Transparent program limits</h3><p>Commission period: <strong>${esc(r.commissionDays || 90)} days</strong> after qualification. Rules are saved when each referral qualifies.</p><p>Enrollment: ${esc(r.enrollmentRemaining ?? '—')} of ${esc(r.enrollmentLimit ?? '—')} places remaining${r.enrollmentPaused ? ' · PAUSED' : ''}. Existing accepted referrals retain their milestone eligibility.</p><p>Hero passes: initially 2 per creator per UTC calendar month, subject to item inventory and seasonal supply. CP issuance does not guarantee inventory availability.</p></article></div>
       <details class="cp-note"><summary>Program Terms & attribution policy</summary><p>${esc(r.attribution || '')}</p><p>${esc(r.progression || '')}</p><p>Promote honestly and disclose material referral rewards. No self-referrals, wash trading, purchased fake accounts or misleading earnings promises. Wallet verification is not proof that every wallet belongs to a different person. Staff review suspicious activity and accept appeals.</p><p>Approved wallet access is managed in game by administrators. No Discord approval is required. Regular hero passes deliver in-game hero records, not NFTs.</p></details>${snapshot.attribution ? `<div class="cp-note">Your referral progress: ${esc(snapshot.attribution.paidMints)}/15 paid heroes · Stage 5 ${snapshot.attribution.stage5 ? 'verified cleared' : 'not yet verified'} · ${snapshot.attribution.qualified ? 'QUALIFIED' : 'PENDING'}.</div>` : ''}`;
   }
   function apply() {
@@ -109,6 +133,11 @@
     if (b.dataset.cp === 'close') return close();
     if (b.dataset.cp === 'login') { close(); document.getElementById('loginPhantom')?.click(); return; }
     run(async () => {
+      if (b.dataset.playerClaim) {
+        const quantity = Number(b.dataset.playerClaim), ok = await confirm('Claim ' + quantity + ' hero' + (quantity === 1 ? '' : 'es'), 'Spend ' + quantity + ' qualified referral pass' + (quantity === 1 ? '' : 'es') + ' to receive regular in-game Shrine heroes. No SOL payment.'); if (!ok) return;
+        const key = 'sb-player-claim:' + wallet() + ':' + quantity; let requestId = sessionStorage.getItem(key); if (!requestId) { requestId = crypto.randomUUID(); sessionStorage.setItem(key, requestId); }
+        await api('creator-player-claim', { requestId, quantity }); sessionStorage.removeItem(key); await refresh(); notice(quantity + ' hero' + (quantity === 1 ? '' : 'es') + ' delivered. Open Heroes to view your rewards.'); return;
+      }
       if (b.dataset.cp === 'copy') { await navigator.clipboard.writeText(snapshot.link); notice('Referral link copied. Disclose your referral rewards when sharing.'); return; }
       if (b.dataset.cp === 'terms') { await api('creator-terms', { terms: true }); await refresh(); notice('Creator Program Terms accepted.'); return; }
       if (b.dataset.cp === 'previous' || b.dataset.cp === 'next') { page = Math.max(0, page + (b.dataset.cp === 'next' ? 1 : -1)); await refresh(); return; }
@@ -144,11 +173,11 @@
   }); const migrationFooter = document.createElement('div'); migrationFooter.className = 'cp-migration-entry'; migrationFooter.append(migrateLink); $('.cp-content').append(migrationFooter);
   function accountChanged() {
     const account = wallet();
-    if (account !== lastWallet) { responseEpoch++; snapshot = null; admin = null; lastWallet = account; section = 'overview'; page = 0; document.querySelectorAll('dialog.cp-modal[open]').forEach(d => d.close('cancel')); content.replaceChildren(); $('.cp-sections').replaceChildren(); if (!account) close(); else if (!root.hidden && !busy) run(refresh); }
+    if (account !== lastWallet) { responseEpoch++; snapshot = null; admin = null; lastWallet = account; section = 'overview'; page = 0; document.querySelectorAll('dialog.cp-modal[open]').forEach(d => d.close('cancel')); content.replaceChildren(); $('.cp-sections').replaceChildren(); if (!account) close(); else if (root.open) { if (busy) reloadAfterBusy = true; else run(refresh); } }
     const cosmetics = window.RyoPayments?.state.profile?.creatorCosmetics || {};
     document.body.classList.toggle('cp-has-frame', !!account && !!cosmetics.frame); document.body.classList.toggle('cp-has-badge', !!account && !!cosmetics.badge);
     document.body.classList.toggle('cp-reduced', !!window.DisplaySettings?.v.reduceMotion);
-    migrateLink.hidden = !account;
+    migrateLink.hidden = mode === 'player' || !account;
     if (!root.hidden && !busy && account && Date.now() - refreshAt > 15000) { refreshAt = Date.now(); run(refresh); }
   }
   addEventListener('shinobi-ryo-ledger', accountChanged); addEventListener('shinobi-beta-wallet', accountChanged); addEventListener('sb-display-change', accountChanged); addEventListener('resize', top);
