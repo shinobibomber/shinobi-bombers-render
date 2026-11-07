@@ -20,6 +20,18 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Play the demo)**
+
+**✨ New**
+• **Play the demo before launch**: the pre-launch site now has a **Play the Demo** button. It opens our public test server so investors and players can try heroes, the Summoning Shrine, Adventure, Boss Hunt and the Market today.
+
+**🔄 Changes**
+• The demo runs on Solana Devnet with test tokens only, so no real money is used. Demo accounts and progress don't carry over to the official launch. Register on the pre-launch site to keep your account and referral link.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Pre-launch registration)**
 
 **✨ New**

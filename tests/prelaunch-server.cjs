@@ -23,7 +23,7 @@ function keyPair() {
   const lock = async () => { let release; const before = tail; tail = new Promise(r => release = r); await before; return release; };
   const pool = { async query(s, a) { const release = await lock(); try { return await db.query(s, a); } finally { release(); } }, async connect() { const release = await lock(); return { query: (s, a) => db.query(s, a), release }; } };
   let clock = Date.UTC(2026, 10, 7, 12);
-  const env = { SOLANA_NETWORK: 'devnet', RYO_SITE_ORIGIN: ORIGIN, RYO_SCOPE: SCOPE, DISCORD_URL: 'https://discord.gg/example', X_URL: 'javascript:alert(1)', SUPPORT_URL: 'mailto:support@example.com', LAUNCH_AT: 'not a date' };
+  const env = { SOLANA_NETWORK: 'devnet', RYO_SITE_ORIGIN: ORIGIN, RYO_SCOPE: SCOPE, DISCORD_URL: 'https://discord.gg/example', X_URL: 'javascript:alert(1)', SUPPORT_URL: 'mailto:support@example.com', DEMO_URL: 'https://shinobi-bombers-beta.onrender.com/', LAUNCH_AT: 'not a date' };
   let portal = createPrelaunch({ gameDir: app, env, pool, now: () => clock });
   const server = http.createServer((req, res) => portal.handle(req, res));
   await new Promise(r => server.listen(0, '127.0.0.1', r));
@@ -53,6 +53,7 @@ function keyPair() {
     const st = await call('status'); assert.equal(st.status, 200);
     assert.equal(st.body.prelaunch, true); assert.equal(st.body.launchAt, null);
     assert.equal(st.body.links.discord, 'https://discord.gg/example'); assert.equal(st.body.links.x, null); assert.equal(st.body.links.support, 'mailto:support@example.com');
+    assert.equal(st.body.links.demo, 'https://shinobi-bombers-beta.onrender.com/', 'the demo (test server) link is published');
     assert.ok(st.body.announcements.length >= 1); assert.deepEqual(st.body.referralProgram, { paidHeroes: 15, clearedStage: 5, heroesPerReferral: 2, bound: true });
 
     // CSRF / request shape.

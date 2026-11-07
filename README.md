@@ -97,6 +97,7 @@ With `PRELAUNCH_MODE=on` the live server runs **only** the pre-launch portal fro
   | `RYO_SITE_ORIGIN` | the live https origin |
   | `DATABASE_URL` | the live database |
   | `DISCORD_URL`, `X_URL`, `SUPPORT_URL` | optional; hidden until set |
+  | `DEMO_URL` | optional https link to the test server, shown as "Play the demo" and labelled Devnet / test tokens / progress does not carry over |
   | `LAUNCH_AT` | optional ISO date-time; shows a countdown. Unset = "To be announced" |
   | `REFERRAL_ENROLLMENT_LIMIT` | the shared referral cap, default 1000 |
   | `REGISTRATION_ENABLED`, `REFERRALS_ENABLED` | default on |

@@ -50,7 +50,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
   const store = new Store(pool, env.RYO_SCOPE, now);
   const flags = { registration: on(env.REGISTRATION_ENABLED, true), referrals: on(env.REFERRALS_ENABLED, true) };
   const launchAt = (() => { const t = Date.parse(env.LAUNCH_AT || ''); return Number.isFinite(t) ? new Date(t).toISOString() : null; })();
-  const links = { discord: safeUrl(env.DISCORD_URL), x: safeUrl(env.X_URL), support: safeUrl(env.SUPPORT_URL, true) };
+  const links = { discord: safeUrl(env.DISCORD_URL), x: safeUrl(env.X_URL), support: safeUrl(env.SUPPORT_URL, true), demo: safeUrl(env.DEMO_URL) };
   const buckets = new Map(); let board = null;
 
   function limit(ip, kind) {

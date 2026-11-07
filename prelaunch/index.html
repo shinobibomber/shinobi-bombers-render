@@ -27,6 +27,7 @@
     <a href="#intro" data-i18n="nav.intro">Game</a>
     <a href="#referral" data-i18n="nav.referral">Referral Program</a>
     <a href="#rewards" data-i18n="nav.rewards">Rewards</a>
+    <a href="#demo" class="demo-nav" data-i18n="nav.demo" hidden>Demo</a>
     <a href="#faq" data-i18n="nav.faq">FAQ</a>
     <a href="#community" data-i18n="nav.community">Community</a>
   </nav>
@@ -50,6 +51,7 @@
       <div class="hero-cta">
         <button id="heroConnect" class="btn btn-gold" type="button" data-i18n="hero.connect">CONNECT SOLANA WALLET</button>
         <a class="btn btn-ghost" href="#referral" data-i18n="hero.explore">EXPLORE REFERRAL REWARDS</a>
+        <a id="heroDemo" class="btn btn-violet" href="#demo" data-i18n="hero.demo" hidden>PLAY THE DEMO</a>
       </div>
       <p id="launchStatus" class="launch" data-i18n="hero.launchTbd">OFFICIAL LAUNCH: TO BE ANNOUNCED</p>
       <p id="countdown" class="countdown" hidden></p>
@@ -115,6 +117,19 @@
         <article class="feature"><img src="/pl/assets/dojo.webp" width="560" height="206" alt="" loading="lazy"><h3 data-i18n="intro.f6.t">Market, Dojo &amp; Sensei</h3><p data-i18n="intro.f6.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
       </div>
       <p class="note center" data-i18n="intro.note">Every game feature opens at the official launch.</p>
+    </div>
+  </section>
+
+  <section id="demo" class="section demo" aria-labelledby="demoTitle" hidden>
+    <div class="wrap demo-card">
+      <div>
+        <p class="badge demo-badge"><span data-i18n="demo.badge">TEST SERVER · DEMO</span></p>
+        <h2 id="demoTitle" data-i18n="demo.title">TRY THE GAME BEFORE LAUNCH</h2>
+        <p class="lead" data-i18n="demo.text">Investors and players can try Shinobi Bombers right now on our test server.</p>
+        <ul class="demo-list" data-i18n-list="demo.items"></ul>
+        <div class="hero-cta left"><a id="demoLink" class="btn btn-violet" href="#" target="_blank" rel="noopener noreferrer" data-i18n="demo.cta">OPEN THE DEMO ↗</a></div>
+      </div>
+      <img src="/pl/assets/boss-hunt.webp" width="560" height="303" alt="" loading="lazy">
     </div>
   </section>
 

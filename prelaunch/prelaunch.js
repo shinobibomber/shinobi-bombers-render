@@ -82,6 +82,10 @@
       const tick = () => { const ms = Date.parse(status.launchAt) - Date.now(); if (ms <= 0) { cd.hidden = true; return; } const m = Math.floor(ms / 60000); cd.textContent = t('hero.countdown', { d: Math.floor(m / 1440), h: Math.floor(m / 60) % 24, m: m % 60 }); cd.hidden = false; };
       tick(); countdownTimer = setInterval(tick, 30000);
     } else if (launch) { launch.textContent = t('hero.launchTbd'); if (cd) cd.hidden = true; }
+    // The demo (test server) appears only when DEMO_URL is configured.
+    const demo = status.links?.demo;
+    $$('.demo-nav, #heroDemo, #demo').forEach(n => { n.hidden = !demo; });
+    const demoLink = $('#demoLink'); if (demoLink && demo) demoLink.href = demo;
     const discord = $('#discordLink'), soon = $('#discordSoon'), x = $('#xLink'), support = $('#supportLink');
     if (discord) { discord.hidden = !status.links?.discord; if (status.links?.discord) discord.href = status.links.discord; soon.hidden = !!status.links?.discord; }
     if (x) { x.hidden = !status.links?.x; if (status.links?.x) x.href = status.links.x; }

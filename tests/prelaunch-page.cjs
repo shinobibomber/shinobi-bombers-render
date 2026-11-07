@@ -38,7 +38,7 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
   class Pool { async query(s, a) { const r = await lock(); try { return await db.query(s, a); } finally { r(); } } async connect() { const r = await lock(); return { query: (s, a) => db.query(s, a), release: r }; } end() {} }
   require.cache[require.resolve('pg', { paths: [APP_SERVER] })] = { id: 'pg', loaded: true, exports: { Pool } };
   const port = 20000 + Math.floor(Math.random() * 20000), url = 'http://localhost:' + port;
-  Object.assign(process.env, { SOLANA_NETWORK: 'devnet', PRELAUNCH_MODE: 'on', RYO_SCOPE: 'solana-devnet:page-test', DATABASE_URL: 'postgres://pglite', RYO_SITE_ORIGIN: url, DISCORD_URL: 'https://discord.gg/example' });
+  Object.assign(process.env, { SOLANA_NETWORK: 'devnet', PRELAUNCH_MODE: 'on', RYO_SCOPE: 'solana-devnet:page-test', DATABASE_URL: 'postgres://pglite', RYO_SITE_ORIGIN: url, DISCORD_URL: 'https://discord.gg/example', DEMO_URL: 'https://demo.example/' });
   for (const k of ['RYO_TREASURY_SECRET', 'RYO_TOKEN_MINT', 'RYO_STUDIO_WALLET', 'RYO_REVENUE_WALLET', 'STARTER_PACK', 'LAUNCH_AT']) delete process.env[k];
   const { server } = require(path.join(ROOT, 'server/site-server.cjs'));
   await new Promise(r => server.listen(port, '127.0.0.1', r));
@@ -89,6 +89,11 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     assert.equal(await p.getAttribute('#discordLink', 'href'), 'https://discord.gg/example');
     assert.equal(await p.isVisible('#discordSoon'), false, 'the placeholder hides once a Discord link is set');
     assert.equal(await p.isVisible('#xLink'), false, 'no X link is shown when none is configured');
+    // The demo (test server) is offered from the hero, the menu and its own section, clearly labelled.
+    assert.ok(await p.isVisible('#heroDemo')); assert.ok(await p.isVisible('#demo')); assert.ok(await p.isVisible('#navLinks a[href="#demo"]'));
+    assert.equal(await p.getAttribute('#demoLink', 'href'), 'https://demo.example/'); assert.equal(await p.getAttribute('#demoLink', 'target'), '_blank');
+    assert.match(await p.textContent('#demo'), /test server \(Solana Devnet\)[\s\S]*do not carry over to the official launch/);
+    assert.equal(await p.locator('#demo li').count(), 5);
     assert.equal(await p.locator('#newsList article').count(), 1);
     assert.equal(await p.locator('[data-i18n]').evaluateAll(els => els.filter(e => /^[a-z]+\.[a-zA-Z0-9.]+$/.test(e.textContent.trim())).length), 0, 'no raw keys on screen');
     await p.screenshot({ path: path.join(OUT, 'prelaunch-desktop.png'), fullPage: true });
