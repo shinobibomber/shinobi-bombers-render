@@ -8,6 +8,10 @@
   const dict = { en: null, cur: null };
   let lang = 'en', status = null, me = null, refPage = 0, lbPage = 0, countdownTimer = null;
   let intent = null, cr = null, crPage = 0, admPage = 0, admSearch = '';   // creator program state
+  let authBusy = false, authAttempt = 0, drawWallets = null;
+  let sessionReset = Promise.resolve();
+  const walletTriggers = () => $$('#connectBtn, #heroConnect, #refCta, #creatorCta');
+  walletTriggers().forEach(button => { button.disabled = true; button.setAttribute('aria-busy','true'); });
 
   /* ---------- i18n ---------- */
   function t(key, vars = {}) {
@@ -65,10 +69,12 @@
 
   /* ---------- API ---------- */
   async function api(action, body = {}) {
+    const sessionAtRequest = authAttempt;
     let r;
     try { r = await fetch('/api/prelaunch', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-SB-Prelaunch': '1' }, body: JSON.stringify({ ...body, action }) }); }
     catch { throw Object.assign(Error('network'), { code: 'NETWORK' }); }
     let data = {}; try { data = await r.json(); } catch {}
+    if (sessionAtRequest !== authAttempt && !['status', 'leaderboard', 'challenge', 'login', 'logout'].includes(action)) throw Object.assign(Error('session changed'), { code:'SIGN_IN', status:401 });
     if (!r.ok) throw Object.assign(Error(data.error || 'error'), { code: data.code || 'SERVER_ERROR', status: r.status });
     return data;
   }
@@ -113,44 +119,55 @@
   /* ---------- wallet sign-in ---------- */
   function openWallets() {
     const dlg = $('#walletDialog'), list = $('#walletList'), st = $('#walletStatus');
+    if (dlg.open) { drawWallets?.(); return; }
     st.textContent = ''; st.classList.remove('err');
     const draw = () => {
       const wallets = window.SBWallet?.list() || [];
-      if (!wallets.length) {
-        list.replaceChildren(el('p', { class: 'note', text: t('wallet.none') }),
-          el('a', { class: 'btn btn-ghost btn-sm', href: 'https://phantom.app/download', target: '_blank', rel: 'noopener noreferrer', text: t('wallet.getPhantom') }),
-          el('a', { class: 'btn btn-ghost btn-sm', href: 'https://solflare.com/download', target: '_blank', rel: 'noopener noreferrer', text: t('wallet.getSolflare') }));
-        return;
-      }
-      list.replaceChildren(...wallets.map(w => {
-        const b = el('button', { type: 'button' }, w.icon ? el('img', { src: w.icon, alt: '' }) : el('span', { class: 'wl-letter', 'aria-hidden': 'true', text: w.name[0] }), el('span', { text: w.name }), el('small', { text: t('wallet.detected') }));
-        b.addEventListener('click', () => signIn(w));
-        return b;
-      }));
+      const row = (w, name, label, href) => {
+        const n = w ? el('button', { type: 'button', 'data-wallet': w.kind }) : el('a', { href, target: '_blank', rel: 'noopener noreferrer', 'data-wallet': name.toLowerCase() });
+        if (label === 'wallet.recommended') n.classList.add('wallet-primary');
+        const fallback = el('span', { class: 'wl-letter', 'aria-hidden': 'true', text: name[0] }), icon = w?.icon ? el('img', { src: w.icon, alt: '' }) : fallback;
+        if (icon !== fallback) icon.addEventListener('error', () => icon.replaceWith(fallback), { once:true });
+        n.append(icon,
+          el('span', { class: 'wallet-name' }, el('strong', { text: name }), el('span', { text: t(label) })), el('small', { text: t(w ? 'wallet.detected' : 'wallet.install') }));
+        if (w) { n.disabled = authBusy; n.addEventListener('click', () => signIn(w)); }
+        return n;
+      };
+      list.replaceChildren(...(!wallets.length ? [el('p', { class: 'note', text: t('wallet.none') })] : []),
+        row(wallets.find(w => w.kind === 'phantom'), 'Phantom', 'wallet.recommended', 'https://phantom.app/download'),
+        row(wallets.find(w => w.kind === 'solflare'), 'Solflare', 'wallet.supported', 'https://solflare.com/download'),
+        ...wallets.filter(w => w.kind === 'other').map(w => row(w, w.name, 'wallet.standard')));
     };
-    draw(); const off = window.SBWallet?.onChange(draw);
-    dlg.addEventListener('close', () => off?.(), { once: true });
+    drawWallets = draw; draw(); const off = window.SBWallet?.onChange(draw);
+    dlg.addEventListener('close', () => { off?.(); drawWallets = null; if (authBusy) authAttempt++; }, { once: true });
     if (!dlg.open) dlg.showModal();
   }
   async function signIn(w) {
-    const st = $('#walletStatus'), buttons = $$('#walletList button');
-    buttons.forEach(b => { b.disabled = true; }); st.classList.remove('err');
+    if (authBusy) return;
+    authBusy = true; const attempt = ++authAttempt, current = () => attempt === authAttempt && $('#walletDialog').open;
+    const st = $('#walletStatus'); drawWallets?.(); st.classList.remove('err');
     try {
+      await sessionReset; if (!current()) return;
       st.textContent = t('wallet.connecting', { wallet: w.name });
       const { address } = await SBWallet.connect(w.id);
+      if (!current()) return;
       const challenge = await api('challenge', { wallet: address });
-      // The message is built by the server; check it names this site and wallet before signing.
-      if (!challenge.message.startsWith(location.host + ' wants you to sign in') || !challenge.message.includes('\n' + address + '\n') || !challenge.message.includes('URI: ' + location.origin)) throw Object.assign(Error('origin'), { code: 'ORIGIN' });
+      if (!current()) return;
+      SBWallet.validateChallenge(challenge, address, status?.network);
       st.textContent = t('wallet.signing', { wallet: w.name });
       const signature = await SBWallet.signMessage(challenge.message);
-      me = await api('login', { wallet: address, nonce: challenge.nonce, signature });
+      if (!current()) return;
+      const session = await api('login', { wallet: address, nonce: challenge.nonce, signature });
+      if (!current()) { try { await api('logout'); } catch {} return; }
+      me = session;
       try { localStorage.setItem(SESSION_KEY, '1'); } catch {}
       $('#walletDialog').close();
       afterSignIn();
     } catch (e) {
+      if (!current()) return;
       const code = ['NETWORK', 'ORIGIN', 'RATE_LIMITED', 'SIGNATURE_INVALID', 'WALLET_INVALID', 'SERVER_ERROR'].includes(e.code) ? e.code : window.SBWallet?.errorCode(e) || 'default';
       st.textContent = errText({ code }); st.classList.add('err');
-    } finally { buttons.forEach(b => { b.disabled = false; }); }
+    } finally { authBusy = false; drawWallets?.(); }
   }
   function afterSignIn() {
     if (!me) return;
@@ -357,9 +374,15 @@
     toggle?.addEventListener('click', () => { const open = !links.classList.contains('open'); links.classList.toggle('open', open); toggle.setAttribute('aria-expanded', String(open)); });
     links?.addEventListener('click', e => { if (e.target.closest('a')) { links.classList.remove('open'); toggle?.setAttribute('aria-expanded', 'false'); } });
     await setLang(initialLang(), false);
-    if (document.body.dataset.page === 'doc') return;   // legal pages: language + comfort only
+    if (document.body.dataset.page === 'doc') { document.body.dataset.portalReady='true'; return; }   // legal pages: language + comfort only
 
     captureReferral();
+    SBWallet.onChange(event => {
+      if (event.type !== 'session') return;
+      authAttempt++; signedOut(true);
+      for (const id of ['#walletDialog', '#registerDialog', '#creatorDialog']) if ($(id)?.open) $(id).close();
+      sessionReset = api('logout').catch(() => {});
+    });
     for (const id of ['#connectBtn', '#heroConnect', '#refCta']) $(id)?.addEventListener('click', connectOrDashboard);
     // "Apply as a creator": sign in and register first if needed, then the application opens by itself.
     $('#creatorCta')?.addEventListener('click', () => { intent = 'creator'; if (me?.player) runIntent(); else if (me && !me.registered) openRegister(); else openWallets(); });
@@ -388,6 +411,8 @@
     // Only ask for the session when this browser signed in before (avoids a needless 401 for new visitors).
     let hint = false; try { hint = localStorage.getItem(SESSION_KEY) === '1'; } catch {}
     if (hint) try { me = await api('me'); if (me.player?.language && me.player.language !== lang) await setLang(me.player.language); afterSignInQuiet(); } catch { signedOut(); }
+    walletTriggers().forEach(button => { button.disabled = false; button.removeAttribute('aria-busy'); });
+    document.body.dataset.portalReady='true';
   }
   function afterSignInQuiet() { if (me?.player) showDashboard(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

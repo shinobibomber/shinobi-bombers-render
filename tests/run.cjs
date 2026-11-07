@@ -8,6 +8,7 @@ suites.push('network-guard.cjs');
 suites.push('sr-revenue.cjs','sr-revenue-ui.cjs');
 suites.push('beta-economy.cjs');
 suites.push('referral-bound.cjs','prelaunch-server.cjs','prelaunch-creators.cjs','prelaunch-page.cjs');
+suites.push('prelaunch-wallet-security.cjs');
 if(fs.existsSync(path.join(__dirname,'archive.cjs')))suites.unshift('archive.cjs');
 console.log('Global Chest regression runner · Node '+process.version+' · isolated fixtures only');
 for(const name of suites){console.log('\nRunning '+name);const result=spawnSync(process.execPath,[path.join(__dirname,name)],{stdio:'inherit',env:process.env});if(result.status!==0){console.error('FAILED: '+name);process.exit(result.status||1)}}

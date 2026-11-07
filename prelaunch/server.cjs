@@ -191,11 +191,19 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
   }
 
   async function authenticated(req) {
-    const token = (String(req.headers.cookie || '').split(/;\s*/).find(c => c.startsWith(COOKIE + '=')) || '').slice(COOKIE.length + 1);
+    const token = sessionToken(req);
     if (!token) fail('Sign in with your wallet.', 401, 'SIGN_IN');
-    return { wallet: await store.authenticate(decodeURIComponent(token)), token: decodeURIComponent(token) };
+    return { wallet: await store.authenticate(token), token };
+  }
+  function sessionToken(req) {
+    const raw=(String(req.headers.cookie||'').split(/;\s*/).find(c=>c.startsWith(COOKIE+'='))||'').slice(COOKIE.length+1);
+    try { const token=decodeURIComponent(raw);return token.length<=100?token:''; }catch{return '';}
   }
   const cookie = (token, maxAge) => COOKIE + '=' + (token ? encodeURIComponent(token) : '') + '; Path=/api/prelaunch; HttpOnly; SameSite=Strict; Max-Age=' + maxAge + (secureCookie ? '; Secure' : '');
+  const siwsMessage = (w, nonce, t) => [new URL(origin).host + ' wants you to sign in with your Solana account:', w, '',
+    'Sign in to Shinobi Bombers. This is free: it does not send a transaction or move any funds.', '',
+    'URI: ' + origin, 'Version: 1', 'Chain ID: ' + net.key, 'Nonce: ' + nonce,
+    'Issued At: ' + new Date(t).toISOString(), 'Expiration Time: ' + new Date(t + 120000).toISOString()].join('\n');
 
   async function dispatch(req, body, ip) {
     const action = body.action; limit(ip, action);
@@ -203,22 +211,22 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     if (action === 'leaderboard') return { data: await leaderboard(body) };
     if (action === 'challenge') {
       const w = wallet(body.wallet), nonce = crypto.randomBytes(16).toString('hex'), t = now();
-      const message = [new URL(origin).host + ' wants you to sign in with your Solana account:', w, '',
-        'Sign in to Shinobi Bombers. This is free: it does not send a transaction or move any funds.', '',
-        'URI: ' + origin, 'Version: 1', 'Chain ID: ' + net.key, 'Nonce: ' + nonce,
-        'Issued At: ' + new Date(t).toISOString(), 'Expiration Time: ' + new Date(t + 120000).toISOString()].join('\n');
+      const message = siwsMessage(w, nonce, t);
       return { data: await store.challenge(w, message, nonce) };
     }
     if (action === 'login') {
       const w = wallet(body.wallet);
       if (typeof body.signature !== 'string' || body.signature.length > 100 || typeof body.nonce !== 'string') fail('Invalid wallet signature.', 400, 'SIGNATURE_INVALID');
-      const session = await store.login(w, body.nonce, message => verifySignature(w, message, body.signature));
+      const session = await store.login(w, body.nonce, message => {
+        const issued=Date.parse(message.match(/\nIssued At: ([^\n]+)\n/)?.[1]||'');
+        return Number.isFinite(issued)&&issued<=now()&&now()<issued+120000&&message===siwsMessage(w,body.nonce,issued)&&verifySignature(w,message,body.signature);
+      });
       await rows('UPDATE ryo_players SET last_login=$3 WHERE scope=$1 AND wallet=$2', [w, now()]);
       return { data: await me(w), cookie: cookie(session.token, 3600) };
     }
     if (action === 'logout') {
-      const token = (String(req.headers.cookie || '').split(/;\s*/).find(c => c.startsWith(COOKIE + '=')) || '').slice(COOKIE.length + 1);
-      if (token) await rows('DELETE FROM ryo_sessions WHERE scope=$1 AND token_hash=$2', [hash(decodeURIComponent(token))]);
+      const token = sessionToken(req);
+      if (token) await rows('DELETE FROM ryo_sessions WHERE scope=$1 AND token_hash=$2', [hash(token)]);
       return { data: { ok: true }, cookie: cookie('', 0) };
     }
     const { wallet: w } = await authenticated(req);

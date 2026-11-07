@@ -79,6 +79,10 @@ function siteConfig() {
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8',
   '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
 const SITE_HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'X-Frame-Options': 'SAMEORIGIN' };
+// Portal-only policy: the game/whitepaper have separate script requirements. No inline/external JS,
+// framing, remote API or object embeds are required for off-chain wallet message authentication.
+const PRELAUNCH_HEADERS = { 'Content-Security-Policy': "default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'", 'X-Frame-Options':'DENY',
+  ...(String(process.env.RYO_SITE_ORIGIN||'').startsWith('https://')?{'Strict-Transport-Security':'max-age=31536000'}:{}) };
 
 function sendSite(req, res, status, body, type) {
   res.writeHead(status, { 'Content-Type': type || 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache', ...SITE_HEADERS });
@@ -95,7 +99,7 @@ async function serveFrom(base, req, res, name, allowed = null) {
   if (!target.startsWith(root + path.sep) || (await fs.promises.stat(target)).isDirectory()) return sendSite(req, res, 404, 'Not found.');
   const ext = path.extname(target).toLowerCase(), type = TYPES[ext];
   if (!type || (allowed && !allowed.has(ext))) return sendSite(req, res, 404, 'Not found.');
-  res.writeHead(200, { 'Content-Type': type, 'Cache-Control': IMAGE_TYPES.has(ext) ? 'public, max-age=86400' : 'no-cache', ...SITE_HEADERS });
+  res.writeHead(200, { 'Content-Type': type, 'Cache-Control': IMAGE_TYPES.has(ext) ? 'public, max-age=86400' : 'no-cache', ...SITE_HEADERS, ...(root===fs.realpathSync(PRELAUNCH_DIR)?PRELAUNCH_HEADERS:{}) });
   if (req.method === 'HEAD') return res.end();
   fs.createReadStream(target).on('error', () => res.destroy()).pipe(res);
 }

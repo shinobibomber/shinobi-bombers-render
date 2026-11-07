@@ -15,6 +15,9 @@ assert.deepEqual(Object.keys(pt).sort(), Object.keys(en).sort(), 'PT-BR has exac
 const used = new Set();
 for (const f of ['index.html', 'rules.html', 'privacy.html', 'terms.html']) {
   const html = fs.readFileSync(path.join(ROOT, 'prelaunch', f), 'utf8');
+  const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+  assert.deepEqual(scripts.map(m=>m[1].match(/\bsrc="([^"]+)"/)?.[1]),f==='index.html'?['/pl/wallet.js','/pl/prelaunch.js']:['/pl/prelaunch.js'],'portal script inventory: '+f);
+  assert(scripts.every(m=>!m[2].trim()),'portal has no inline scripts: '+f);
   for (const m of html.matchAll(/data-i18n(?:-list)?="([^"]+)"/g)) used.add(m[1]);
   for (const m of html.matchAll(/data-i18n-attr="([^"]+)"/g)) m[1].split(';').forEach(p => used.add(p.split(':')[1]));
 }
@@ -49,23 +52,33 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
 
   async function open(viewport, wallet, extra = {}) {
     const ctx = await browser.newContext({ viewport, ...extra }), p = await ctx.newPage();
+    const goto=p.goto.bind(p);p.goto=async(...args)=>{const response=await goto(...args);await p.waitForSelector('body[data-portal-ready="true"]',{state:'attached'});return response};
     p.on('pageerror', e => errors.push(e.message));
+    p.on('request',r=>{if(r.resourceType()==='script'&&new URL(r.url()).origin!==url)errors.push('Unexpected external script: '+new URL(r.url()).host)});
     p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
     await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
     if (wallet) {
       await p.exposeFunction('__testSign', bytes => wallet.sign(bytes));
-      await p.addInitScript(address => {
-        const w = { version: '1.0.0', name: 'Test Wallet', icon: 'data:image/svg+xml;base64,PHN2Zy8+', chains: ['solana:devnet'], accounts: [],
-          features: { 'standard:connect': { version: '1.0.0', connect: async () => ({ accounts: [{ address, chains: ['solana:devnet'], features: ['solana:signMessage'] }] }) },
-            'solana:signMessage': { version: '1.0.0', signMessage: async ({ message }) => [{ signedMessage: message, signature: new Uint8Array(await window.__testSign([...message])) }] } } };
-        addEventListener('wallet-standard:app-ready', e => e.detail.register(w));
-      }, wallet.wallet);
+      await p.addInitScript(({address,fixture,legacy}) => {
+        window.__walletOps={connect:[],sign:[],transactions:0};window.__walletEvents={};
+        const forbidden=()=>{__walletOps.transactions++;throw Error('Registration requested a transaction')};
+        const account={address,chains:['solana:devnet'],features:['solana:signMessage']};
+        const sign=async(name,message)=>{__walletOps.sign.push(name);if(window.__walletWarning)throw Error('Continue at your own risk. This site shows signs of phishing or wallet-draining activity.');if(window.__holdWalletSign)await new Promise(r=>window.__releaseWalletSign=r);return new Uint8Array(await window.__testSign([...message]))};
+        const make=name=>({version:'1.0.0',name,icon:'data:image/svg+xml;base64,PHN2Zy8+',chains:['solana:devnet'],accounts:[],features:{
+          'standard:connect':{connect:async()=>{__walletOps.connect.push(name);return{accounts:[account]}}},
+          'standard:events':{on:(_event,fn)=>{__walletEvents[name]=fn;return()=>delete __walletEvents[name]}},
+          'solana:signMessage':{signMessage:async({message})=>[{signedMessage:message,signature:await sign(name,message)}]},
+          'solana:signTransaction':{signTransaction:forbidden},'solana:signAndSendTransaction':{signAndSendTransaction:forbidden}}});
+        if(legacy)window.solflare={isSolflare:true,publicKey:{toString:()=>address},connect:async()=>{__walletOps.connect.push('Solflare')},signMessage:async message=>({signature:await sign('Solflare',message)}),signTransaction:forbidden,signAndSendTransaction:forbidden};
+        else addEventListener('wallet-standard:app-ready',e=>{window.__registerWallet=name=>e.detail.register(make(name));for(const name of fixture?['MetaMask','Other Wallet','Solflare','Meta Mask (Solana)','Phantom']:['Test Wallet'])__registerWallet(name)});
+        window.ethereum={request:forbidden};
+      }, {address:wallet.wallet,fixture:!!wallet.fixture,legacy:!!wallet.legacy});
     }
     return p;
   }
-  async function register(p, username) {
+  async function register(p, username, walletName='Test Wallet') {
     await p.click('#heroConnect');
-    await p.getByRole('button', { name: /Test Wallet/ }).click();
+    await p.getByRole('button', { name: new RegExp(walletName) }).click();
     await p.waitForSelector('#registerDialog[open]');
     await p.fill('#registerForm input[name=username]', username);
     await p.check('#registerForm input[name=accept]');
@@ -215,6 +228,67 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await p.goto(url + '/terms'); await p.waitForSelector('.draft'); assert.match(await p.textContent('.draft'), /DRAFT/);
     await p.goto(url + '/privacy'); await p.selectOption('#langSelect', 'pt-BR'); await p.waitForFunction(() => document.querySelector('h1').textContent === 'Aviso de Privacidade');
     await p.close();
+  });
+  await check('wallet selector: Phantom recommended, Solflare second, MetaMask hidden, other standard wallets retained',async()=>{
+    const p=await open({width:1440,height:900},{...keyPair(),fixture:true});await p.goto(url+'/');await p.click('#heroConnect');
+    assert.deepEqual(await p.locator('#walletList button .wallet-name strong').allTextContents(),['Phantom','Solflare','Other Wallet']);
+    assert.match(await p.locator('#walletList .wallet-primary').innerText(),/Phantom.*Recommended/s);assert.equal(await p.locator('#walletList').getByText(/MetaMask|Meta Mask/).count(),0);
+    await p.waitForFunction(()=>document.querySelectorAll('#walletList .wl-letter').length===3,'bad wallet icons use a clean fallback');
+    assert.deepEqual(await p.evaluate(()=>__walletOps.connect),[],'discovery never auto-connects');
+    await p.locator('#walletDialog').screenshot({path:path.join(OUT,'wallet-selector-desktop.png')});
+    await p.setViewportSize({width:390,height:844});await p.selectOption('#langSelect','pt-BR');await p.waitForFunction(()=>document.querySelector('#langSelect').value==='pt-BR');
+    await p.keyboard.press('Escape');await p.click('#heroConnect');assert.match(await p.locator('#walletList .wallet-primary').innerText(),/recomendada/);
+    assert.equal(await p.locator('#walletDialog').evaluate(e=>e.scrollWidth>e.clientWidth),false);
+    await p.locator('#walletDialog').screenshot({path:path.join(OUT,'wallet-selector-phone-pt.png')});await p.close();
+  });
+  await check('wallet buttons wait for startup so an early click cannot be lost',async()=>{
+    const p=await browser.newPage();let release;
+    await p.route('**/pl/i18n/en.json',async route=>{await new Promise(r=>{release=r});await route.continue()});
+    await p.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());await p.goto(url+'/');
+    assert(release);assert.equal(await p.locator('#heroConnect').isDisabled(),true);assert.equal(await p.locator('#creatorCta').isDisabled(),true);
+    const click=p.locator('#heroConnect').click();release();await click;await p.waitForSelector('#walletDialog[open]');
+    assert.equal(await p.locator('#heroConnect').isEnabled(),true);assert.equal(await p.locator('#walletList a[data-wallet=phantom]').count(),1);await p.close();
+  });
+  await check('Phantom SIWS registration, HttpOnly session, account-change logout and zero spending requests',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),fixture:true});await p.goto(url+'/');await register(p,'PhantomGuest','Phantom');
+    assert.deepEqual(await p.evaluate(()=>__walletOps.connect),['Phantom']);assert.deepEqual(await p.evaluate(()=>__walletOps.sign),['Phantom']);assert.equal(await p.evaluate(()=>__walletOps.transactions),0);
+    const cookies=await p.context().cookies();assert(cookies.some(c=>c.name==='sb_pl'&&c.httpOnly));
+    const loggedOut=p.waitForResponse(r=>r.url().endsWith('/api/prelaunch')&&r.request().postDataJSON().action==='logout');
+    await p.evaluate(()=>__walletEvents.Phantom({accounts:[]}));await loggedOut;await p.waitForSelector('#dashboard[hidden]',{state:'attached'});
+    assert.equal((await p.evaluate(async()=>{const r=await fetch('/api/prelaunch',{method:'POST',headers:{'Content-Type':'application/json','X-SB-Prelaunch':'1'},body:JSON.stringify({action:'me'})});return r.status})),401);await p.close();
+  });
+  await check('Solflare legacy message signing preserves registration and referral attribution without transactions',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),legacy:true});await p.goto(url+'/?ref='+code);await register(p,'SolflareGuest','Solflare');
+    assert.match(await p.locator('#dReferredBy').innerText(),/Akira/);assert.deepEqual(await p.evaluate(()=>__walletOps.sign),['Solflare']);assert.equal(await p.evaluate(()=>__walletOps.transactions),0);await p.close();
+  });
+  await check('wallet phishing warning stops sign-in without fallback or spending prompts',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),fixture:true});const actions=[];p.on('request',r=>{if(r.url().endsWith('/api/prelaunch'))actions.push(r.postDataJSON().action)});
+    await p.goto(url+'/');await p.evaluate(()=>window.__walletWarning=true);await p.click('#heroConnect');await p.locator('#walletList button[data-wallet=phantom]').click();
+    await p.waitForFunction(()=>document.querySelector('#walletStatus').textContent.includes('security warning'));
+    assert.deepEqual(await p.evaluate(()=>__walletOps.connect),['Phantom']);assert(!actions.includes('login'));assert.equal(await p.evaluate(()=>__walletOps.transactions),0);assert.equal(await p.locator('#registerDialog').isVisible(),false);await p.close();
+  });
+  await check('cancelled signatures and wallet discovery changes cannot create a late login',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),fixture:true});const actions=[];p.on('request',r=>{if(r.url().endsWith('/api/prelaunch'))actions.push(r.postDataJSON().action)});
+    await p.goto(url+'/');await p.evaluate(()=>window.__holdWalletSign=true);await p.click('#heroConnect');await p.locator('#walletList button[data-wallet=phantom]').click();await p.waitForFunction(()=>typeof __releaseWalletSign==='function');
+    await p.evaluate(()=>__registerWallet('Late Wallet'));assert(await p.locator('#walletList button').evaluateAll(xs=>xs.every(x=>x.disabled)));
+    await p.keyboard.press('Escape');await p.evaluate(()=>__releaseWalletSign());await p.waitForTimeout(150);assert(!actions.includes('login'));assert.equal(await p.locator('#registerDialog').isVisible(),false);await p.close();
+  });
+  await check('an account change discards an in-flight registration response',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),fixture:true});let release;
+    await p.route('**/api/prelaunch',async route=>{
+      if(route.request().postDataJSON().action!=='register')return route.continue();
+      const response=await route.fetch();await new Promise(r=>{release=r});await route.fulfill({response});
+    });
+    await p.goto(url+'/');await p.click('#heroConnect');await p.locator('#walletList button[data-wallet=phantom]').click();await p.waitForSelector('#registerDialog[open]');
+    await p.fill('#registerForm input[name=username]','LateAccount');await p.check('#registerForm input[name=accept]');await p.click('#registerForm button[type=submit]');
+    for(let i=0;i<100&&!release;i++)await new Promise(r=>setTimeout(r,10));assert(release);
+    await p.evaluate(()=>__walletEvents.Phantom({accounts:[]}));release();await p.waitForTimeout(150);
+    assert.equal(await p.locator('#dashboard').isHidden(),true);assert.equal(await p.locator('#registerDialog').isVisible(),false);await p.close();
+  });
+  await check('portal CSP blocks external and inline scripts without changing wallet warning settings',async()=>{
+    const p=await browser.newPage();const response=await p.goto(url+'/');const csp=response.headers()['content-security-policy'];assert(csp.includes("script-src 'self'"));assert(!csp.includes('unsafe-inline'));assert(csp.includes("frame-ancestors 'none'"));
+    await p.evaluate(()=>{window.__violations=[];addEventListener('securitypolicyviolation',e=>__violations.push(e.blockedURI));const a=document.createElement('script');a.src='https://security-test.invalid/test.js';document.head.append(a);const b=document.createElement('script');b.textContent='window.__untrustedRan=true';document.head.append(b)});
+    await p.waitForFunction(()=>__violations.includes('inline')&&__violations.some(x=>x.includes('security-test.invalid')));assert.equal(await p.evaluate(()=>!!window.__untrustedRan),false);await p.close();
   });
   await check('no page errors anywhere', async () => assert.deepEqual(errors, []));
 

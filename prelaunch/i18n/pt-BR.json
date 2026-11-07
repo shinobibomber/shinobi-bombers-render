@@ -215,6 +215,12 @@
   "wallet.connecting": "Conectando à {wallet}…",
   "wallet.signing": "Aprove a mensagem de login na {wallet}…",
   "wallet.detected": "Detectada",
+  "wallet.recommended": "Carteira Solana recomendada",
+  "wallet.supported": "Carteira Solana compatível",
+  "wallet.standard": "Compatível com Wallet Standard",
+  "wallet.install": "Instalar",
+  "wallet.safety": "Pare se sua carteira exibir um alerta de segurança. O cadastro nunca exige transação, aprovação de gastos ou transferência de SOL.",
+  "err.WALLET_SECURITY_WARNING": "Sua carteira informou um alerta de segurança. Pare aqui e não aprove até que ele seja investigado.",
 
   "reg.title": "CRIE SUA CONTA SHINOBI",
   "reg.lead": "Falta só um passo. Esta conta continua valendo no jogo oficial.",

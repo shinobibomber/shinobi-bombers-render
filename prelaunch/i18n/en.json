@@ -215,6 +215,12 @@
   "wallet.connecting": "Connecting to {wallet}…",
   "wallet.signing": "Approve the sign-in message in {wallet}…",
   "wallet.detected": "Detected",
+  "wallet.recommended": "Recommended Solana wallet",
+  "wallet.supported": "Supported Solana wallet",
+  "wallet.standard": "Wallet Standard compatible",
+  "wallet.install": "Install",
+  "wallet.safety": "Stop if your wallet shows a security warning. Registration never needs a transaction, spending approval or SOL transfer.",
+  "err.WALLET_SECURITY_WARNING": "Your wallet reported a security warning. Stop here and do not approve until it has been investigated.",
 
   "reg.title": "CREATE YOUR SHINOBI ACCOUNT",
   "reg.lead": "One step left. This account carries over to the live game.",

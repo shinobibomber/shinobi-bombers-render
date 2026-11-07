@@ -108,6 +108,20 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 WALLET REVIEW ONLY — owner expressly said DO NOT AUTO-DEPLOY. Local branch
+  review/prelaunch-wallet-security-2026-11-07. Do not push main/live or change Render settings.
+  Phantom recommended; Solflare second; MetaMask names/isMetaMask providers temporarily hidden;
+  compatible other Wallet Standard signMessage wallets remain. No native transaction methods.
+  Strict canonical SIWS client/server binding, exact expiry, malformed cookie handling, cancelled
+  prompt/account-change guards, portal-only CSP and HTTPS HSTS. Accounts/scope/referrals/schema
+  and Mainnet pre-launch payment block unchanged. See docs/PRELAUNCH_WALLET_SECURITY_REVIEW.md.
+  Reported warning remains unresolved; do not label it a false positive or bypass any warning.
+  Verified: lint/site/rewards guard, website checks and all 52 suites across full runs plus
+  targeted reruns; final pre-launch browser test has 17 passing checks and inspected images.
+  Full-run history is disclosed in the review: existing GO OFFLINE flake passed unchanged on
+  rerun; new origin test now isolates its wallet from the 3s challenge limit. No limits or
+  guards loosened. No single uninterrupted green npm test run is claimed. No push/deploy.
+
 - 2026-11-07 OWNER CORRECTION: SR economy is LIVE ONLY, never beta. Build-stamped Mainnet
   selects 50/30/10/10; Devnet keeps 80% operations / 10% treasury / 8% burn / 2% studio and
   its old Market-fee Adventure funding. Live controls are hidden and server-rejected on beta.

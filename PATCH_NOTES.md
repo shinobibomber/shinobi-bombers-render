@@ -20,6 +20,18 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**DRAFT FOR REVIEW — NOT DEPLOYED**
+
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Pre-launch Wallet Selection)**
+
+• Phantom is now the recommended Solana wallet, with Solflare as the second supported option. Other compatible Solana Wallet Standard wallets remain available.
+• MetaMask is temporarily hidden while the reported phishing/security warning is investigated. Wallet warnings must never be bypassed.
+• Registration continues to use a free, server-verified Sign-In With Solana message. No transactions, spending approvals or SOL transfers are requested.
+• Sign-in checks now enforce the exact site, wallet, nonce and expiry. Cancelled prompts and wallet-account changes cannot complete a stale login.
+• Added pre-launch script and framing protections. Existing player accounts, registrations and referral tracking are preserved; deposits and withdrawals remain disabled.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Live Economy Separation)**
 
 • The 50% Locked Treasury / 30% Adventure Rewards / 10% Community / 10% Reserve economy is now reserved for the live server.
