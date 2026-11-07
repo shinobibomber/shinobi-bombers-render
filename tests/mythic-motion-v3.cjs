@@ -15,7 +15,7 @@ const digest=b=>crypto.createHash('sha256').update(b).digest('hex');
   const meta=await sharp(file).metadata();assert.deepEqual([meta.width,meta.height,meta.channels],[clip.frames*128,128,4]);
   const hashes=[];for(let i=0;i<clip.frames;i++)hashes.push(digest(await sharp(file).extract({left:i*128,top:0,width:128,height:128}).raw().toBuffer()));
   assert.equal(new Set(hashes).size,clip.frames,name+' has distinct frames');
-  if(!name.startsWith('attack')){
+  if(name.startsWith('walk')||name.startsWith('run')){
    const regions=[{left:28,top:73,width:72,height:25},{left:40,top:103,width:48,height:22}];
    for(const region of regions){const a=await sharp(file).extract({...region,left:region.left+2*128}).raw().toBuffer(),b=await sharp(file).extract({...region,left:region.left+6*128}).raw().toBuffer();let changed=0;for(let i=0;i<a.length;i+=4)if(Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2])+Math.abs(a[i+3]-b[i+3])>30)changed++;assert(changed>45,name+' independent '+(region.top>100?'feet':'arms')+' pixels: '+changed)}
   }
@@ -53,5 +53,5 @@ const digest=b=>crypto.createHash('sha256').update(b).digest('hex');
   await p.waitForTimeout(1000);await p.screenshot({path:path.join(out,'mythic-v3-ten-heroes.png')});
   assert.deepEqual(errors,[]);console.log(JSON.stringify(result));
  });
- console.log('PASS: approved-source hashes, 88 distinct motion frames, moving feet/arms in four directions, gait during attacks/ultimate, transparent VFX margins, zero warm-frame allocations, 10 Mythics and preserved game state.');
+ console.log('PASS: approved-source hashes, 120 distinct motion frames, moving feet/arms in four directions, gait during attacks/ultimate, transparent VFX margins, zero warm-frame allocations, 10 Mythics and preserved game state.');
 })().catch(e=>{console.error(e);process.exitCode=1});

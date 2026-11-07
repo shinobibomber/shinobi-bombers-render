@@ -1,4 +1,4 @@
-/* Tsukiyomi animation adapter v3: articulated locomotion and celestial VFX.
+/* Tsukiyomi animation adapter v4: expressive gestures and readable reactions.
  * Observes authoritative gameplay events; never applies damage. Approved views are skinned,
  * not replaced with another hero. See metadata/animations.json and ASSET_AUDIT.md. */
 (() => {
@@ -153,22 +153,13 @@
     if(bodies.has(key))return bodies.get(key);
     const c=document.createElement('canvas');c.width=320;c.height=400;c.designSprite=true;c.mythicBody=true;
     const ctx=c.getContext('2d'),view=api.source.character[dir],img=api.getTexture(view.path);
-    const phase=index/clip.frames*Math.PI*2;let sx=1,sy=1,rot=0,dx=0,dy=0;
-    // Explicit pose-rig fallback: stable foot pivot, unchanged costume, bounded motion.
-    if(state==='IDLE')sy=1+.008*Math.sin(phase);
-    if(state==='BOMB_PLACE')sy=1-.12*Math.sin(index/(clip.frames-1)*Math.PI);
-    if(state==='HURT'){rot=-.035*(1-index/clip.frames);dx=-3*(1-index/clip.frames)}
-    if(state==='DEFEAT'){sy=1-.25*index/7;rot=-.15*index/7}
-    if(state==='VICTORY')dy=-8*Math.sin(index/7*Math.PI);
-    if(state==='ATTACK'||state.startsWith('SKILL_'))rot=.03*Math.sin(index/(clip.frames-1)*Math.PI)*(dir==='left'?-1:1);
     const atlas=authored.get(clip.directionTextures?.[dir] || clip.texture);
-    ctx.save();ctx.translate(160+(atlas?0:dx),352+(atlas?0:dy));ctx.rotate(atlas?0:rot);ctx.scale(atlas?1:sx,atlas?1:sy);
+    // Shared baked idle/movement/attack; rare reactions use the same fixed-foot rig once
+    // per cache miss. Do not scale/tilt the entire character on top of the articulated pose.
+    ctx.save();ctx.translate(160,352);
     if(atlas){const columns=clip.columns||clip.frames;ctx.drawImage(atlas,index%columns*128,Math.floor(index/columns)*128,128,128,-64*2.5,-124*2.5,320,320)}
     else TsukiyomiRig.paint(ctx,img,state,index,dir,clip.frames);ctx.restore();
-    if(!atlas && state.startsWith('EMOTE_')){
-      const labels={EMOTE_ALERT:'!',EMOTE_QUESTION:'?',EMOTE_LIKE:'♥',EMOTE_CELEBRATE:'✦'};
-      ctx.save();ctx.fillStyle='#dfb6ff';ctx.font='bold 30px system-ui';ctx.textAlign='center';ctx.fillText(labels[state],260,70-Math.sin(index/3*Math.PI)*5);ctx.restore();
-    }
+    TsukiyomiRig.expression(ctx,state,index,clip.frames);
     c.playerModel={model:'tsukiyomi',key,direction:frameInfo(h,'mythic:'+state+':'+index+':'+dir).name};
     c.mythicAnimation={state,frame:index,direction:dir,assetStatus:clip.assetStatus};
     bodies.set(key,c);if(bodies.size>manifest.limits.textureFrames)bodies.delete(bodies.keys().next().value);

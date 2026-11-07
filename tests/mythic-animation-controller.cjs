@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {create}=require('../mythic-hero/animation-controller.js'),data=require('../mythic-hero/assets/metadata/animations.json');
 const events=[],c=create(data,e=>events.push(e)),hero={id:7},h2={id:8};
 assert.equal(data.hero.stars,7);assert.equal(data.hero.rank,5);
-assert.equal(data.presentationVersion,3);assert.equal(data.assetStatus,'articulated-views-and-celestial-vfx');
+assert.equal(data.presentationVersion,4);assert.equal(data.assetStatus,'articulated-views-and-celestial-vfx');
 const required={IDLE:8,WALK_FRONT:8,WALK_LEFT:8,WALK_RIGHT:8,WALK_BACK:8,RUN:8,ATTACK:6,BOMB_PLACE:6,HURT:4,DEFEAT:8,VICTORY:8,EMOTE_ALERT:4,EMOTE_QUESTION:4,EMOTE_LIKE:4,EMOTE_CELEBRATE:4,SKILL_DRAGON_SLASH:8,SKILL_VOID_SHURIKEN:8,SKILL_RAIJIN_FIELD:10,ULTIMATE_DRAGON_ASCENSION:12};
 for(const [name,count]of Object.entries(required)){
   const s=data.states[name];assert.equal(s.frames,count);assert.deepEqual(s.anchor,[64,124]);assert.equal(s.frameWidth,128);assert.equal(s.frameHeight,128);

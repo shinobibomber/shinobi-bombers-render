@@ -108,6 +108,22 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-08 MYTHIC EXPRESSIONS V4 — continued polish authorized for TEST SERVER ONLY.
+  Targets main / shinobi-bombers-beta; never push live. See mythic-hero/MOTION_V4.md.
+  Added localized idle blink/breathing, attack anticipation/recovery, articulated bomb,
+  hurt/kneeling defeat/victory/emote gestures and font-independent expression symbols.
+  Fixed non-looping actions bypassing reduced motion without changing event timing.
+  Existing rig-v3 bake format now contains 16 atlases / 120 frames (4 new idle atlases);
+  walk/run files are unchanged. Manifest schema v2, presentationVersion 4. No new aura,
+  VFX, ownership, combat, wallet or economy changes. Hurt/defeat/emotes use the existing
+  cosmetic integration point/preview; no new health or death rules were added.
+  Fresh unpack and focused tests passed; all-state rendered gallery inspected.
+  Release validation: fresh unpack, lint, rewards guard, all 55 suites and website checks
+  passed. Logs: tests/out/mythic-v4-{build,lint,rewards,tests-final}.log. First full run
+  exposed a Dojo fixture race: late profile responses restored its old rental time.
+  Updated the simulated server expiry along with the browser; same assertion/4s timeout.
+  Untracked Shinobi_Bombers_Live_Treasury_Integration_Pack/ remains unrelated owner work.
+
 - 2026-11-07 MYTHIC MOTION V3 — TEST SERVER ONLY, owner requested the feet/arms and
   skill presentation fixed and optimized. Targets main / shinobi-bombers-beta only.
   See mythic-hero/MOTION_V3.md. Added separate limb skinning of the approved views,

@@ -10,7 +10,7 @@ withGame(async({p,f})=>{
  await p.evaluate(async()=>{
   await MythicHero.runtimeReady;await MythicHero.preload();go(0);Experience.workAll();
   const box=document.createElement('aside');box.style.cssText='position:fixed;right:12px;bottom:12px;z-index:99999;width:310px;padding:12px;border:1px solid #b885ff;background:#100923;color:#efe2ff;border-radius:12px;font:14px system-ui';
-  const title=document.createElement('b');title.textContent='LOCAL FIXTURE / MYTHIC V3';box.append(title,document.createElement('br'));
+  const title=document.createElement('b');title.textContent='LOCAL FIXTURE / MYTHIC V4';box.append(title,document.createElement('br'));
   const select=document.createElement('select'),direction=document.createElement('select'),size=document.createElement('select');
   for(const s of Object.keys(MythicHero.animationSource.states)){const o=document.createElement('option');o.value=o.textContent=s;select.append(o)}
   for(const s of ['front','left','right','back']){const o=document.createElement('option');o.value=o.textContent=s;direction.append(o)}

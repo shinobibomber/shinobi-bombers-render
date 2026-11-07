@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "presentationVersion": 3,
+  "presentationVersion": 4,
   "hero": {
     "id": 13,
     "key": "tsukiyomi",
@@ -43,7 +43,13 @@
       "events": {},
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
-      "fallback": "approved-view-skeletal-mesh"
+      "fallback": "approved-view-skeletal-mesh",
+      "directionTextures": {
+        "front": "animations/rig-v3/idle_front.png",
+        "left": "animations/rig-v3/idle_left.png",
+        "right": "animations/rig-v3/idle_right.png",
+        "back": "animations/rig-v3/idle_back.png"
+      }
     },
     "WALK_FRONT": {
       "frames": 8,
@@ -161,6 +167,7 @@
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
       "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 3,
       "directionTextures": {
         "front": "animations/rig-v3/attack_front.png",
         "left": "animations/rig-v3/attack_left.png",
@@ -186,7 +193,8 @@
       },
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
-      "fallback": "approved-view-skeletal-mesh"
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 2
     },
     "HURT": {
       "frames": 4,
@@ -206,7 +214,8 @@
       },
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
-      "fallback": "approved-view-skeletal-mesh"
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1
     },
     "DEFEAT": {
       "frames": 8,
@@ -226,7 +235,8 @@
       },
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
-      "fallback": "approved-view-skeletal-mesh"
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 7
     },
     "VICTORY": {
       "frames": 8,
@@ -246,7 +256,8 @@
       },
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
-      "fallback": "approved-view-skeletal-mesh"
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 3
     },
     "EMOTE_ALERT": {
       "frames": 4,
@@ -266,7 +277,8 @@
       },
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
-      "fallback": "approved-view-skeletal-mesh"
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1
     },
     "EMOTE_QUESTION": {
       "frames": 4,
@@ -286,7 +298,8 @@
       },
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
-      "fallback": "approved-view-skeletal-mesh"
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1
     },
     "EMOTE_LIKE": {
       "frames": 4,
@@ -306,7 +319,8 @@
       },
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
-      "fallback": "approved-view-skeletal-mesh"
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1
     },
     "EMOTE_CELEBRATE": {
       "frames": 4,
@@ -326,7 +340,8 @@
       },
       "texture": null,
       "assetStatus": "runtime-skinned-approved-views",
-      "fallback": "approved-view-skeletal-mesh"
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1
     },
     "SKILL_DRAGON_SLASH": {
       "frames": 8,

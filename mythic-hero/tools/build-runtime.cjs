@@ -10,9 +10,11 @@ function buildRuntime() {
   add('RUN',8,600,true,0);add('ATTACK',6,550,false,2,{blade:3,recover:5});add('BOMB_PLACE',6,600,false,2,{place:2});
   add('HURT',4,400,false,4,{recoil:0});add('DEFEAT',8,1000,false,5,{down:7});add('VICTORY',8,1200,false,1,{sparkle:3});
   for(const name of ['ALERT','QUESTION','LIKE','CELEBRATE'])add('EMOTE_'+name,4,600,false,1,{expression:1});
+  // Sample a readable static pose under reduced motion, without changing event timing.
+  for(const [state,frame]of Object.entries({ATTACK:3,BOMB_PLACE:2,HURT:1,DEFEAT:7,VICTORY:3,EMOTE_ALERT:1,EMOTE_QUESTION:1,EMOTE_LIKE:1,EMOTE_CELEBRATE:1}))states[state].reducedFrame=frame;
   for(const direction of ['front','left','right','back']){
     states['WALK_'+direction.toUpperCase()].texture='animations/rig-v3/walk_'+direction+'.png';
-    for(const state of ['RUN','ATTACK']){states[state].directionTextures||={};states[state].directionTextures[direction]='animations/rig-v3/'+state.toLowerCase()+'_'+direction+'.png'}
+    for(const state of ['RUN','ATTACK','IDLE']){states[state].directionTextures||={};states[state].directionTextures[direction]='animations/rig-v3/'+state.toLowerCase()+'_'+direction+'.png'}
   }
   const skills={};
   for(const [key,count]of Object.entries({dragon_slash:8,void_shuriken:8,raijin_field:10,mythic_dragon_ascension:12})) {
@@ -20,7 +22,7 @@ function buildRuntime() {
     add(state,count,durationMs,false,3,{visualPeak:Math.floor(count*.65)});
     skills[key]={name:s.name,path:null,frameWidth:320,frameHeight:320,frameCount:count,fps:s.fps,anchor:[160,160],requiredFrames:count,durationMs,frames:Array.from({length:count},(_,i)=>i),eventsMs:Object.fromEntries(Object.entries(s.events||{}).map(([k,v])=>[k,v*1000/s.fps])),renderer:'celestial-v3',assetStatus:'procedural-vfx-with-generated-dragon',legacySource:{path:s.path,frameCount:s.frameCount},damage:false};
   }
-  const data={version:2,presentationVersion:3,hero:meta.hero,frame:meta.frame,states,skills,vfxSources:[{path:'skills/dragon-spirit-v3.png',width:1254,height:1254,kind:'generated-single-sprite'}],aura:{source:'metadata/tsukiyomi.json',unchanged:true,quality:'legacy-extracted-layers'},limits:{actors:128,effects:48,lowEffects:12,textureFrames:160},assetStatus:'articulated-views-and-celestial-vfx'};
+  const data={version:2,presentationVersion:4,hero:meta.hero,frame:meta.frame,states,skills,vfxSources:[{path:'skills/dragon-spirit-v3.png',width:1254,height:1254,kind:'generated-single-sprite'}],aura:{source:'metadata/tsukiyomi.json',unchanged:true,quality:'legacy-extracted-layers'},limits:{actors:128,effects:48,lowEffects:12,textureFrames:160},assetStatus:'articulated-views-and-celestial-vfx'};
   fs.writeFileSync(path.join(dir,'tsukiyomi.json'),JSON.stringify(meta,null,2)+'\n');
   fs.writeFileSync(path.join(dir,'animations.json'),JSON.stringify(data,null,2)+'\n');
   return data;

@@ -1,5 +1,7 @@
 # Tsukiyomi movement and celestial effects v3 — beta only
 
+Historical v3 release notes. [MOTION_V4.md](MOTION_V4.md) documents the subsequent character-expression polish and current 120-frame bake output.
+
 The owner reported frozen feet/arms and underwhelming skill effects. This release targets `main` / `shinobi-bombers-beta` only. Production's `live` branch, server environment and accounts are unchanged.
 
 ## Movement fix

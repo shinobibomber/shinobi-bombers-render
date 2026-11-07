@@ -53,7 +53,7 @@
       if (!clip.loop) {
         const current=Math.min(clip.frames-1,Math.floor(age/clip.durationMs*clip.frames));
         for (const [name,frame] of Object.entries(clip.events || {})) if (frame>r.emitted && frame<=current) emit(r,name,frame);
-        r.emitted=Math.max(r.emitted,current); r.frame=current;
+        r.emitted=Math.max(r.emitted,current); r.frame=context.reducedMotion?(clip.reducedFrame??0):current;
         if (age<clip.durationMs) return r;
         emit(r,'complete',clip.frames-1);
         enter(r,'IDLE',now,null);

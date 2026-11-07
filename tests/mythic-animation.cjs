@@ -60,6 +60,7 @@ const out=path.join(__dirname,'out');
   // Exercise the real authored-atlas import path with synthetic test pixels, not production art.
   const sharp=require('sharp'),runtime=structuredClone(require('../mythic-hero/assets/metadata/animations.json'));
   runtime.states.IDLE.texture='animations/test-idle.png';runtime.states.IDLE.columns=4;runtime.states.IDLE.assetStatus='test-fixture';
+  delete runtime.states.IDLE.directionTextures;
   const atlas=await sharp({create:{width:512,height:256,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite(Array.from({length:8},(_,i)=>({input:{create:{width:80,height:100,channels:4,background:{r:i===0?255:0,g:0,b:i===0?0:255,alpha:1}}},left:(i%4)*128+24,top:Math.floor(i/4)*128+24}))).png().toBuffer();
   await p.route('**/mythic-hero/metadata/animations.json',r=>r.fulfill({contentType:'application/json',body:JSON.stringify(runtime)}));
   await p.route('**/mythic-hero/animations/test-idle.png',r=>r.fulfill({contentType:'image/png',body:atlas}));

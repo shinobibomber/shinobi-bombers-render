@@ -20,7 +20,11 @@ const { withGame } = require('./harness.cjs');
     assert.deepEqual(motion.sort(), ['dcard:none', 'enter:none', 'msen:none', 'scard:none'], 'Dojo cards and their buttons never move or scale');
     assert.deepEqual(await read(), { tier: 'TIER II', name: 'SHINOBI DOJO', rate: '5/min', lvl: '2/6', rot: 'ON · 3h left', fit: true });
     // The rental ends while the page stays open: it must flip without a profile refresh.
-    await p.evaluate(() => { RyoPayments.state.profile.senseiRentalUntil = Date.now() + 1200; });
+    // Keep the simulated server authoritative too: a late display-settings/state
+    // response must not restore the fixture's old three-hour rental during this check.
+    const rentalUntil = Date.now() + 1200;
+    f.profile.senseiRentalUntil = rentalUntil;
+    await p.evaluate(until => { RyoPayments.state.profile.senseiRentalUntil = until; }, rentalUntil);
     await p.waitForFunction(() => document.querySelector('.sbw-scr.on .sbw-drot')?.textContent === 'NOT HIRED', null, { timeout: 4000 });
     // Sensei page without a Sensei: the locked chakra selector stays opaque so the artwork's printed
     // dropdown never ghosts through it (Chromium dims disabled selects to 70% by default).

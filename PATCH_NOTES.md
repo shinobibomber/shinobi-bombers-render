@@ -20,6 +20,19 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Tsukiyomi Expressions)**
+
+• Added gentle breathing and blinking to Tsukiyomi's idle animation in his approved character design.
+• Polished attack wind-up, follow-through and recovery, plus bomb-placement and victory gestures.
+• Improved the hurt, kneeling defeat and four emote animations available in the test preview.
+• Alert, Question, Like and Celebrate now use consistent, clear symbols across browsers.
+• Fixed action animations ignoring reduced-motion settings. Animation events retain their original timing.
+• Added shared idle frames and retained bounded caches. Combat, NFT ownership, the Mythic Aura and Ryo rewards are unchanged.
+
+Test server only. Production is unchanged.
+
+---
+
 **SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 7, 2026 · Mythic Motion & Effects)**
 
 • Tsukiyomi now moves his arms and legs while walking and running in all four directions. Attacks no longer freeze his footsteps.
