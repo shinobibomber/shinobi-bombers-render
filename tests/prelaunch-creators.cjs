@@ -1,5 +1,5 @@
 /* Creator Program on the pre-launch portal (in-memory Postgres, real HTTP, real ed25519 signatures):
- * apply (registered players only, referred wallets refused, validation, one application per wallet),
+ * apply (registered players including referrals, validation, one application per wallet),
  * admin review (admins only, approve/reject/suspend only, reason required, audited), approved creator link,
  * new players registering through ?creator= are permanently attributed and shown to the creator by username,
  * rejected/suspended creators' links stop enrolling, and the flag closes applications. */
@@ -56,10 +56,15 @@ function keyPair() {
     // A pending creator's link does not enroll anyone yet.
     const early = await player('Early', applied.body.creator.code);
     assert.equal(early.r.referral.accepted, false); assert.equal(early.r.referral.code, 'CREATOR_UNKNOWN');
-    // A wallet that joined through a referral link cannot apply.
+    // A referred player can apply without erasing or converting their referral.
     const referred = await player('Ref', st.body.creator?.code || (await call('me', {}, creator.c)).body.player.referralCode);
     assert.equal(referred.r.referral.accepted, true);
-    assert.equal((await call('creator-apply', application, referred.c)).body.code, 'CREATOR_REFERRED');
+    const originalPlayerReferral = (await pool.query('SELECT * FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2', [SCOPE, referred.k.wallet])).rows;
+    const referredApplication = await call('creator-apply', { ...application, displayName: 'Referred Streamer' }, referred.c);
+    assert.equal(referredApplication.status, 200, JSON.stringify(referredApplication.body));
+    assert.equal(referredApplication.body.creator.status, 'PENDING');
+    assert.equal(referredApplication.body.link, undefined, 'referral status does not auto-approve');
+    assert.equal((await call('creator-apply', application, referred.c)).body.code, 'CREATOR_EXISTS');
 
     // Admin review: admins only; only status changes; reason required; audited.
     assert.equal((await call('creator-admin', {}, creator.c)).body.code, 'ADMIN_ONLY');
@@ -77,6 +82,10 @@ function keyPair() {
     assert.equal(ok.status, 200, JSON.stringify(ok.body)); assert.equal(ok.body.creators.find(c => c.id === entry.id).status, 'APPROVED');
     const audit = (await pool.query("SELECT action, reason FROM ryo_creator_audit WHERE scope=$1 AND action='admin.status'", [SCOPE])).rows;
     assert.deepEqual(audit, [{ action: 'admin.status', reason: 'Verified channel' }]);
+    assert.equal((await call('creator-admin-action', { operation: 'status', creatorId: referredApplication.body.creator.id, status: 'APPROVED', reason: 'Reviewed referred creator channel' }, adminCookie)).status, 200);
+    assert.equal((await call('creator', {}, referred.c)).body.creator.status, 'APPROVED');
+    assert.deepEqual((await pool.query('SELECT * FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2', [SCOPE, referred.k.wallet])).rows, originalPlayerReferral);
+    assert.equal((await call('me', {}, referred.c)).body.referredBy, 'Akira');
 
     // The approved creator's link enrolls new players permanently; the creator sees them by username.
     st = await call('creator', {}, creator.c);
@@ -89,6 +98,22 @@ function keyPair() {
     assert.deepEqual({ ...st.body.referrals[0], joined: 0 }, { player: 'Fan1', joined: 0, status: 'IN_PROGRESS' });
     assert.ok(!JSON.stringify(st.body).includes(fan.k.wallet), 'no wallets in the creator view');
     assert.equal((await pool.query('SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1', [SCOPE])).rows[0].n, 1);
+    const originalCreatorReferral = (await pool.query('SELECT * FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [SCOPE, fan.k.wallet])).rows;
+    const fanApplication = await call('creator-apply', { ...application, displayName: 'Fan Creator' }, fan.c);
+    assert.equal(fanApplication.status, 200);
+    const fanId = fanApplication.body.creator.id;
+    const approveFan = () => call('creator-admin-action', { operation: 'status', creatorId: fanId, status: 'APPROVED', reason: 'Verified fan channel; keep original attribution' }, adminCookie);
+    assert.equal((await approveFan()).status, 200);
+    assert.equal((await call('creator-admin-action', { operation: 'status', creatorId: fanId, status: 'SUSPENDED', reason: 'Review fixture' }, adminCookie)).status, 200);
+    assert.equal((await approveFan()).status, 200, 're-approval also preserves referral');
+    assert.deepEqual((await pool.query('SELECT * FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [SCOPE, fan.k.wallet])).rows, originalCreatorReferral);
+    assert.equal((await call('me', {}, fan.c)).body.referredBy, 'Akira Plays');
+    const fanState = (await call('creator', {}, fan.c)).body;
+    assert.equal((await player('FanOfFan', fanState.creator.code)).r.referral.accepted, true, 'approved referred creator enrolls new players');
+    const approvalDetail = (await pool.query("SELECT detail FROM ryo_creator_audit WHERE scope=$1 AND target=$2 AND action='admin.status' ORDER BY sequence DESC LIMIT 1", [SCOPE, fanId])).rows[0].detail;
+    assert.deepEqual(approvalDetail.preservedAttribution, [{ kind: 'creator', referrer: entry.id }]);
+    assert.equal((await pool.query('SELECT COUNT(*) AS n FROM ryo_creator_ledger WHERE scope=$1', [SCOPE])).rows[0].n, 0, 'approval grants no CP or duplicate milestone');
+    assert.equal((await pool.query('SELECT COUNT(*) AS n FROM ryo_player_referral_rewards WHERE scope=$1', [SCOPE])).rows[0].n, 0, 'approval grants no hero passes');
 
     // Suspended creators' links stop enrolling; re-approval restores them.
     await call('creator-admin-action', { operation: 'status', creatorId: entry.id, status: 'SUSPENDED', reason: 'Review' }, adminCookie);
@@ -107,6 +132,6 @@ function keyPair() {
     const late = await player('Late');
     assert.equal((await call('creator', {}, late.c)).body.applicationsOpen, false);
     assert.equal((await call('creator-apply', application, late.c)).body.code, 'CREATOR_PAUSED');
-    console.log('PASS: Creator Program on the pre-launch portal — apply (registered, not referred, validated, once), admin-only review (approve/reject/suspend, reason, audit), creator link enrolls by username, suspended/rejected links closed, applications flag.');
+    console.log('PASS: Creator Program — referred players apply, admin approval/reactivation preserves both attribution types without rewards, audited review, creator links, application validation and pause.');
   } finally { server.close(); }
 })().catch(e => { console.error(e); process.exit(1); });

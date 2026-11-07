@@ -35,9 +35,13 @@ async function attribute(store, wallet, code) {
     if (owner.wallet === wallet) fail('You cannot refer yourself.', 409);
     if ((await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('Creator identities cannot become referred players.', 409);
     await cp().assertNewPlayer(store, c, wallet);
-    // A player may invite friends after being referred, but circular referral chains are never valid.
-    const cycle = await query(c, `WITH RECURSIVE ancestors(wallet) AS (
-      SELECT $2::text UNION SELECT r.referrer FROM ryo_player_referrals r JOIN ancestors a ON r.wallet=a.wallet WHERE r.scope=$1
+    // Follow both programs, including a creator's reserved wallets after migration.
+    // A referred player may now become a creator; RP-only traversal would miss mixed loops.
+    const cycle = await query(c, `WITH RECURSIVE edges(wallet,referrer) AS (
+      SELECT wallet,referrer FROM ryo_player_referrals WHERE scope=$1
+      UNION SELECT r.wallet,w.wallet FROM ryo_creator_referrals r JOIN ryo_creator_wallets w ON w.scope=r.scope AND w.creator_id=r.creator_id WHERE r.scope=$1
+    ), ancestors(wallet) AS (
+      SELECT $2::text UNION SELECT e.referrer FROM edges e JOIN ancestors a ON e.wallet=a.wallet
     ) SELECT 1 FROM ancestors WHERE wallet=$3`, [store.scope, owner.wallet, wallet]);
     if (cycle.length) fail('Circular referral chains are not allowed.', 409);
     await c.query('INSERT INTO ryo_player_referrals(scope,wallet,referrer,attributed) VALUES($1,$2,$3,$4)', [store.scope, wallet, owner.wallet, store.now()]);

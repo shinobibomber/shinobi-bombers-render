@@ -43,6 +43,13 @@ const address = () => web3.Keypair.generate().publicKey.toBase58();
   const final=await summon(invitee);assert.equal((await call(owner,'creator-player-state')).passes.available,2,'two passes immediately on qualification');
   await store.settlePurchase(invitee,final.request_id,'confirmed');await progress(invitee,100);assert.equal((await call(owner,'creator-player-state')).passes.earned,2,'qualification cannot replay');
   assert.equal((await rows('SELECT COUNT(*) AS n FROM ryo_creator_ledger WHERE scope=$1'))[0].n,0,'player referrals issue no CP');
+  const creatorForm={displayName:'Referred Creator',platform:'YouTube',channelUrl:'https://youtube.com/@fixture',reason:'Honest gameplay streams with referral disclosure.',terms:true};
+  const originalReferral=await rows('SELECT * FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2',[invitee]);
+  await call(invitee,'creator-apply',creatorForm);
+  const promoted=(await call(invitee,'creator-state')).creator;
+  await cp.adminAction(store,admin,{operation:'status',creatorId:promoted.id,status:'APPROVED',reason:'Reviewed referred player channel'});
+  assert.deepEqual(await rows('SELECT * FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2',[invitee]),originalReferral,'qualified progress and attribution survive promotion');
+  assert.equal((await call(owner,'creator-player-state')).passes.earned,2,'promotion does not repeat qualification rewards');
   await summon(invitee,5);assert.equal((await call(owner,'creator-player-state')).passes.earned,2,'no ongoing player commission');
   const otherInvitee=address();await register(otherInvitee);await call(otherInvitee,'creator-attribute',{code:state.code});await summon(otherInvitee,15);await progress(otherInvitee,80);assert.equal((await call(owner,'creator-player-state')).passes.available,2,'entering Stage 5 is insufficient');
   await progress(otherInvitee,100);assert.equal((await call(owner,'creator-player-state')).passes.available,4,'either eligibility order works');
@@ -63,6 +70,21 @@ const address = () => web3.Keypair.generate().publicKey.toBase58();
   const pendingId=crypto.randomUUID();await store.purchase(owner,pendingId,'summon',{quantity:1},25000,async q => require('./sr-revenue-fixture.cjs').stamp(q, {signature:'pending-fixture',wire:'fixture-wire',lastHeight:100}));
   await assert.rejects(call(owner,'creator-player-claim',{requestId:crypto.randomUUID(),quantity:1}),/pending game purchase/);assert.equal((await call(owner,'creator-player-state')).passes.available,2);await store.settlePurchase(owner,pendingId,'refunded');
   await call(owner,'creator-player-claim',{requestId:crypto.randomUUID(),quantity:1});assert.equal((await call(owner,'creator-player-state')).passes.available,1,'individual passes can be claimed');
+  // A -> RP B (promoted creator) -> CP C. A must not join C's player link.
+  const ancestor=address(), promotedWallet=address(), descendant=address();
+  const ancestorCode=(await call(ancestor,'creator-player-state')).code;
+  await call(promotedWallet,'creator-attribute',{code:ancestorCode});
+  await call(promotedWallet,'creator-apply',creatorForm);
+  const mixedCreator=(await call(promotedWallet,'creator-state')).creator;
+  await cp.adminAction(store,admin,{operation:'status',creatorId:mixedCreator.id,status:'APPROVED',reason:'Mixed-program cycle fixture'});
+  await call(descendant,'creator-attribute',{code:mixedCreator.code});
+  const descendantCode=(await call(descendant,'creator-player-state')).code;
+  await assert.rejects(call(ancestor,'creator-attribute',{code:descendantCode}),/Circular/);
+  const migrated=address(), migration=await call(promotedWallet,'creator-migrate',{wallet:migrated});
+  await call(migrated,'creator-migrate',{accept:true,id:migration.migrationId});
+  await assert.rejects(call(ancestor,'creator-attribute',{code:descendantCode}),/Circular/,'reserved creator identity keeps ancestry after migration');
+  assert.equal((await rows('SELECT COUNT(*) AS n FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2',[ancestor]))[0].n,0);
+  await call(address(),'creator-attribute',{code:descendantCode}); // valid mixed chain remains allowed
   // Shared emergency purchases gate blocks a new pass claim.
   await store.pool.query("INSERT INTO ryo_admin_control(scope,version,config,pauses,installed) VALUES($1,1,'{}','{\"purchases\":true}',$2) ON CONFLICT(scope) DO UPDATE SET pauses='{\"purchases\":true}'",[store.scope,now]);
   await assert.rejects(require('../app/server/economic-dashboard.cjs').guard(store,'creator-player-claim',owner,{requestId:crypto.randomUUID(),quantity:1}),/paused/);

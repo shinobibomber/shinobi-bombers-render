@@ -108,6 +108,24 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 REFERRED CREATOR APPLICATIONS: owner explicitly chose to allow referred players
+  to apply. Removed the pre-launch submission block and shared admin approval/reactivation
+  block; approval still requires an authorized reviewer and audit reason. Audit records keep
+  the original attribution kind/referrer. No attribution/progress/earned entitlement is
+  deleted or converted; approval creates no rewards. RP cycle detection now follows both
+  player and creator edges, including reserved creator identities after wallet migration.
+  EN/PT-BR dashboard, application and rules explain eligibility. Regressions cover both
+  referral types, review/reactivation, unchanged qualified progress, no duplicate rewards,
+  mixed-program cycles before/after migration and the referred applicant browser flow.
+  Release target is live; main/beta, account scope, wallet security and pre-launch money
+  gates remain unchanged. No database migration or environment changes required.
+  Validation: lint and one complete npm test run passed (52 suites plus website checks).
+  Desktop/mobile EN/PT-BR application screenshots inspected. Screenshot tests now use
+  reduced motion to avoid capturing an in-progress page scroll; no production UI override.
+  A subsequent screenshot rerun exposed a test-only startup race: page load preceded the
+  dictionary route callback. The fixture now waits explicitly for interception (5s bound)
+  before checking disabled buttons; all original readiness assertions remain.
+
 - 2026-11-07 OWNER APPROVED LIVE WALLET RELEASE: the later request "deploy to live server"
   supersedes the review-only restriction below for this reviewed change. Publish review
   commit ef20b54 and these release notes to branch live only, not main/beta. Keep PRELAUNCH_MODE

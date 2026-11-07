@@ -20,6 +20,14 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Creator Applications)**
+
+• Players who joined through a referral link can now apply to become creators. Team review and approval are still required.
+• Becoming a creator keeps your original referrer, referral progress and earned rewards intact. Approval does not grant extra CP or hero passes.
+• Updated the application guidance in English and Portuguese, and strengthened referral-loop protection across both programs.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Pre-launch Wallet Selection)**
 
 • Phantom is now the recommended Solana wallet, with Solflare as the second supported option. Other compatible Solana Wallet Standard wallets remain available.

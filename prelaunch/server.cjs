@@ -27,7 +27,7 @@ const fail = (message, status = 400, code = 'BAD_REQUEST') => { throw Object.ass
 const CODES = [
   [/already has a creator application/i, 'CREATOR_EXISTS'], [/supported primary platform/i, 'CREATOR_PLATFORM'], [/HTTPS channel/i, 'CREATOR_URL'],
   [/applications are temporarily paused/i, 'CREATOR_PAUSED'], [/authorized creator administrator|approver role is required/i, 'ADMIN_ONLY'],
-  [/Invalid creator status transition/i, 'CREATOR_TRANSITION'], [/referred player cannot become a creator/i, 'CREATOR_REFERRED'],
+  [/Invalid creator status transition/i, 'CREATOR_TRANSITION'],
   [/creator link is unavailable|must accept the program terms/i, 'CREATOR_UNKNOWN'], [/Creator not found/i, 'CREATOR_NOT_FOUND'],
   [/Creators Portal is not enabled/i, 'CREATOR_DISABLED'], [/Enter text between/i, 'TEXT_INVALID'], [/Enter a whole number/i, 'NUMBER_INVALID'],
   [/yourself/i, 'REFERRAL_SELF'], [/Circular/i, 'REFERRAL_CYCLE'], [/permanent|cannot become referred/i, 'REFERRAL_PERMANENT'],
@@ -160,9 +160,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
   async function creatorApply(w, body) {
     if (!flags.creatorApply) fail('Creator applications are temporarily paused.', 403, 'CREATOR_PAUSED');
     if (!await playerRow(w)) fail('Register first.', 409, 'NOT_REGISTERED');
-    // A wallet that joined through any referral link can never be approved, so say so before it applies.
-    if ((await rows('SELECT 1 FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2 UNION ALL SELECT 1 FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [w])).length)
-      fail('Wallets that joined through a referral link cannot become creators.', 409, 'CREATOR_REFERRED');
+    // Referred players may apply; approval never replaces their original attribution.
     const links = (Array.isArray(body.links) ? body.links : []).filter(x => typeof x === 'string' && x.trim()).slice(0, 5);
     const audience = body.audience === '' || body.audience == null ? null : Number(body.audience);
     await cp.handle(ctx, w, 'creator-apply', { displayName: body.displayName, platform: body.platform, channelUrl: body.channelUrl, links, audience, reason: body.reason, terms: body.terms === true });

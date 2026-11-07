@@ -324,8 +324,10 @@ async function adminAction(store, wallet, body) {
       if (!creator) fail('Creator not found.', 404);
       const transitions = { PENDING: ['APPROVED', 'REJECTED'], APPROVED: ['SUSPENDED'], REJECTED: ['APPROVED'], SUSPENDED: ['APPROVED'] };
       if (!transitions[creator.status]?.includes(body.status)) fail('Invalid creator status transition.', 409);
-      if (body.status === 'APPROVED' && ((await query(c, 'SELECT 1 FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [store.scope, creator.wallet])).length || await require('./player-referrals.cjs').referral(store, c, creator.wallet))) fail('A referred player cannot become a creator without an audited identity review. Existing attribution cannot be erased.', 409);
-      await c.query('UPDATE ryo_creators SET status=$3,reviewed_by=$4,reviewed=$5,public_note=$6 WHERE scope=$1 AND id=$2', [store.scope, creator.id, body.status, wallet, store.now(), body.publicNote ? text(body.publicNote, 240) : '']); detail = { previous: creator.status, status: body.status };
+      // Creator approval adds a role; it never deletes, converts or re-qualifies a referral.
+      const attribution = body.status === 'APPROVED' ? (await query(c,
+        "SELECT 'creator' AS kind, creator_id AS referrer FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2 UNION ALL SELECT 'player' AS kind, referrer FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2", [store.scope, creator.wallet])) : [];
+      await c.query('UPDATE ryo_creators SET status=$3,reviewed_by=$4,reviewed=$5,public_note=$6 WHERE scope=$1 AND id=$2', [store.scope, creator.id, body.status, wallet, store.now(), body.publicNote ? text(body.publicNote, 240) : '']); detail = { previous: creator.status, status: body.status, preservedAttribution: attribution };
     } else if (action === 'adjust') {
       const creatorId = text(body.creatorId, 80), delta = integer(body.deltaMilli, -1000000000000, 1000000000000); if (!delta) fail('An adjustment must be non-zero.');
       const key = requestId(body.requestId); await ledger(store, c, creatorId, 'adjust:' + key, 'adjustment', BigInt(delta), 0n, { reason, actor: wallet, reasonCode: text(body.reasonCode, 40) }); detail = { deltaMilli: delta, event: key };

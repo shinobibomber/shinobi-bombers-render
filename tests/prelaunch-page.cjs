@@ -141,9 +141,9 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     assert.equal(await p.isVisible('#dashboard'), false);
     await p.close();
   });
-  await check('creator program: apply after sign-in → pending → admin approves on the page → creator link', async () => {
-    const p = await open({ width: 1440, height: 900 }, creatorKey);
-    await p.goto(url + '/');
+  await check('referred creator: register with RP link → apply → audited approval → original referrer preserved', async () => {
+    const p = await open({ width: 1440, height: 900 }, creatorKey, { reducedMotion: 'reduce' });
+    await p.goto(url + '/?ref=' + code);
     assert.ok(await p.isVisible('#creators')); assert.ok(await p.isVisible('#navLinks a[href="#creators"]'));
     assert.match(await p.textContent('#creators'), /50,000 Creator Points[\s\S]*5% CP commission[\s\S]*no cash or crypto value/);
     // One click: sign in, register, and the application opens by itself.
@@ -151,6 +151,9 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await p.waitForSelector('#registerDialog[open]'); await p.fill('#registerForm input[name=username]', 'StreamKing'); await p.check('#registerForm input[name=accept]');
     await p.click('#registerForm button[type=submit]');
     await p.waitForSelector('#creatorDialog[open]');
+    assert.match(await p.textContent('#creatorDialog'), /Referred players can apply/);
+    assert.doesNotMatch(await p.textContent('#creatorDialog'), /can't become creators/);
+    assert.equal(await p.textContent('#dReferredBy'), 'Invited by Akira');
     assert.equal(await p.inputValue('#creatorForm input[name=displayName]'), 'StreamKing');
     await p.fill('#creatorForm input[name=displayName]', 'Stream King');
     await p.selectOption('#creatorForm select[name=platform]', 'Twitch');
@@ -159,6 +162,19 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await p.check('#creatorForm input[name=terms]'); await p.click('#creatorForm button[type=submit]');
     assert.match(await p.textContent('#apStatus'), /https:\/\//, 'http links are refused before sending');
     await p.fill('#creatorForm input[name=channelUrl]', 'https://twitch.tv/streamking'); await p.fill('#creatorForm input[name=audience]', '5400');
+    await p.locator('#creatorDialog').evaluate(d => { document.activeElement.blur(); d.scrollTop = 0; });
+    assert(await p.locator('#creatorDialog').evaluate(d => { const r=d.getBoundingClientRect(); return r.top>=0 && r.bottom<=innerHeight; }), 'dialog stays inside desktop viewport');
+    await p.screenshot({ path: path.join(OUT, 'referred-creator-application-desktop.png') });
+    await p.setViewportSize({ width: 390, height: 844 });
+    await p.selectOption('#langSelect', 'pt-BR', { force: true });
+    await p.waitForFunction(() => document.documentElement.lang === 'pt-BR');
+    assert.match(await p.textContent('#creatorDialog'), /Jogadores indicados podem se inscrever/);
+    assert(await p.locator('#creatorDialog').evaluate(d => d.scrollWidth <= d.clientWidth + 1), 'application has no horizontal overflow');
+    await p.locator('#creatorDialog').evaluate(d => { document.activeElement.blur(); d.scrollTop = 0; });
+    assert(await p.locator('#creatorDialog').evaluate(d => { const r=d.getBoundingClientRect(); return r.top>=0 && r.bottom<=innerHeight; }), 'dialog stays inside phone viewport');
+    await p.screenshot({ path: path.join(OUT, 'referred-creator-application-phone.png') });
+    await p.selectOption('#langSelect', 'en', { force: true });
+    await p.waitForFunction(() => document.documentElement.lang === 'en');
     await p.click('#creatorForm button[type=submit]');
     await p.waitForFunction(() => /APPLICATION UNDER REVIEW/.test(document.querySelector('#creatorBody').textContent));
     assert.equal(await p.isVisible('#adminPanel'), false, 'creators do not see the admin panel');
@@ -180,6 +196,7 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     const c = await open({ width: 1440, height: 900 }, creatorKey);
     await c.goto(url + '/'); await c.click('#heroConnect'); await c.getByRole('button', { name: /Test Wallet/ }).click();
     await c.waitForSelector('#creatorCode');
+    assert.equal(await c.textContent('#dReferredBy'), 'Invited by Akira');
     assert.match(await c.textContent('#creatorCode'), /^SB[0-9A-F]{14}$/);
     assert.doesNotMatch(await c.textContent('#creatorBody'), /null|undefined/, 'no empty placeholders');
     assert.equal(await c.inputValue('#creatorLink'), url + '/?creator=' + (await c.textContent('#creatorCode')));
@@ -242,9 +259,12 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await p.locator('#walletDialog').screenshot({path:path.join(OUT,'wallet-selector-phone-pt.png')});await p.close();
   });
   await check('wallet buttons wait for startup so an early click cannot be lost',async()=>{
-    const p=await browser.newPage();let release;
-    await p.route('**/pl/i18n/en.json',async route=>{await new Promise(r=>{release=r});await route.continue()});
+    const p=await browser.newPage();let release, observed;
+    const blocked=new Promise(resolve=>{observed=resolve});
+    await p.route('**/pl/i18n/en.json',async route=>{await new Promise(r=>{release=r;observed()});await route.continue()});
     await p.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());await p.goto(url+'/');
+    // Page load can finish before the async dictionary request reaches the route handler.
+    let timer;try{await Promise.race([blocked,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Startup dictionary request was not intercepted')),5000)})])}finally{clearTimeout(timer)}
     assert(release);assert.equal(await p.locator('#heroConnect').isDisabled(),true);assert.equal(await p.locator('#creatorCta').isDisabled(),true);
     const click=p.locator('#heroConnect').click();release();await click;await p.waitForSelector('#walletDialog[open]');
     assert.equal(await p.locator('#heroConnect').isEnabled(),true);assert.equal(await p.locator('#walletList a[data-wallet=phantom]').count(),1);await p.close();
