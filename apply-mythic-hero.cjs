@@ -19,6 +19,12 @@ const mythicPatches = [
   ["b.ultimate=h.r===4?'Nine-Tail Chakra Burst':'Thunder Dragon';b.kind=h.r===4?'rasengan':'lightning';", "b.ultimate=h.r===5?'Mythic Dragon Ascension':h.r===4?'Nine-Tail Chakra Burst':'Thunder Dragon';b.kind=h.r>=4?'rasengan':'lightning';", 1],
   ["type:'cast',legend:h.r===4,", "type:'cast',legend:h.r>=4,", 1],
   ["<p><b>Ultimate: ${h.r===4?'Nine-Tail Chakra Burst':'Thunder Dragon'}</b><span>Every 8 attacks · ${h.r===4?'2.2×':'1.8×'} damage", "<p><b>Ultimate: ${h.r===5?'Mythic Dragon Ascension':h.r===4?'Nine-Tail Chakra Burst':'Thunder Dragon'}</b><span>Every 8 attacks · ${h.r>=4?'2.2×':'1.8×'} damage", 1],
+  // Mythic attacks like a Legend (5 shots, 1 chakra each); its skills are visuals on those normal shots and
+  // the 8th-volley Mythic Dragon Ascension is a visual only (normal damage, no splash, no extra chakra).
+  ['h.bm=h.r+1;h.rg=h.r+1;h.statsVersion=3;return h}', 'h.bm=h.r+1;h.rg=h.r+1;if(h.r===5){h.bm=5;h.rg=5}h.statsVersion=3;return h}', 1],
+  ['bm:r+1,rg:r+1', 'bm:Math.min(r,4)+1,rg:Math.min(r,4)+1', 1],
+  ['if(h.r>=3&&charge%8===0){b.ultimate=h.r===5?', 'if(h.r===5&&charge%8===0)b.mythicUlt=1;else if(h.r>=3&&charge%8===0){b.ultimate=h.r===5?', 1],
+  ["damage + nearby splash</span>", "damage + nearby splash</span>${h.r===5?'<small> · Mythic: visual only, normal damage</small>':''}", 1],
   ["h.r===4?'#ffd36a':'#b9c7ff'", "h.r===5?'#e2b8ff':h.r===4?'#ffd36a':'#b9c7ff'", 1],
   ["h.r===4?'#ffb23a':'#8fa8ff'", "h.r===5?'#b36bff':h.r===4?'#ffb23a':'#8fa8ff'", 1],
   ["h.r===4?'#ffd36a':'#cfd8ff'", "h.r===5?'#e2b8ff':h.r===4?'#ffd36a':'#cfd8ff'", 1],

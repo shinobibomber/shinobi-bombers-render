@@ -10,8 +10,9 @@ const root = path.resolve(__dirname, '..'), dir = path.join(root, 'mythic-hero/a
   assert.deepEqual([meta.hero.name, meta.hero.rarity, meta.hero.rank, meta.hero.id, 'stars' in meta.hero], ['Tsukiyomi', 'Mythic', 5, 13, false]);
   for (const source of Object.values(meta.sources)) assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'mythic-hero', source.file))).digest('hex'), source.sha256, 'reference unchanged: ' + source.file);
   assert.deepEqual([meta.frame.width, meta.frame.height, meta.frame.anchor], [128, 128, [64, 124]]);
-  const required = { idle: 8, walk_front: 8, walk_left: 8, walk_right: 8, walk_back: 8, run_front: 8, run_left: 8, run_right: 8, run_back: 8, attack_front: 6, attack_left: 6, attack_right: 6, attack_back: 6,
-    bomb_place: 6, hurt: 4, defeat: 8, victory: 8, alert: 4, question: 4, like: 4, celebrate: 4 };
+  // Movement and attacks use the Fire hero's real frames (hands, feet, body) wearing Tsukiyomi's head.
+  const required = { idle: 4, walk_front: 10, walk_left: 6, walk_right: 6, walk_back: 4, run_front: 10, run_left: 6, run_right: 6, run_back: 4, attack_front: 6, attack_left: 6, attack_right: 6, attack_back: 6,
+    bomb_place: 3, hurt: 4, defeat: 8, victory: 5, alert: 4, question: 4, like: 4, celebrate: 4 };
   assert.deepEqual(Object.keys(meta.animations).sort(), Object.keys(required).sort(), 'every required animation');
   const corners = async (file, w, h, cells) => {
     const { data, info } = await sharp(path.join(dir, file)).raw().toBuffer({ resolveWithObject: true });
@@ -33,9 +34,9 @@ const root = path.resolve(__dirname, '..'), dir = path.join(root, 'mythic-hero/a
     }
   }
   // Walking and running step: the leg region (below the hip) changes between opposite phases.
-  for (const name of ['walk_front', 'walk_right', 'run_left', 'run_back']) {
+  for (const name of ['walk_front', 'walk_right', 'run_left', 'attack_right']) {
     const { data, info } = await sharp(path.join(dir, meta.animations[name].path)).raw().toBuffer({ resolveWithObject: true });
-    let diff = 0; for (let y = 84; y < 126; y++) for (let x = 0; x < 128; x++) { const a = (y * info.width + 2 * 128 + x) * 4 + 3, b = (y * info.width + 6 * 128 + x) * 4 + 3; if ((data[a] > 100) !== (data[b] > 100)) diff++; }
+    let diff = 0; for (let y = 84; y < 126; y++) for (let x = 0; x < 128; x++) { const a = (y * info.width + 1 * 128 + x) * 4 + 3, b = (y * info.width + 3 * 128 + x) * 4 + 3; if ((data[a] > 100) !== (data[b] > 100)) diff++; }
     assert(diff > 60, name + ' legs move between steps (' + diff + ')');
   }
   for (const dirName of ['front', 'left', 'right', 'back']) { const c = meta.character[dirName]; assert.equal(c.direction, dirName); await corners(c.path, 128, 128, 1); assert(meta.previews[dirName].height > 250, 'HD ' + dirName + ' view'); }

@@ -153,9 +153,11 @@
   function drawHuntProjectile(context, shot, x, y, now, owner, angle) {
     return drawEffect(context, effectFrame({ id: owner, projectile: shot }, 'projectile', now / 85), x, y, shot.ultimate ? 62 : 35, angle);
   }
+  const blast = () => window.DisplaySettings?.v.explosions || 'full';
   function drawHuntImpact(context, hit, position, owner) {
-    const age = Math.max(0, .8 - hit.life);
-    return drawEffect(context, effectFrame({ id: owner }, hit.ultimate ? 'skill' : 'explosion', age * 10), position.x, position.y, hit.ultimate ? 130 : 70, 0, Math.min(1, Math.max(0, hit.life / .2)));
+    if (blast() === 'off') return true;
+    const age = Math.max(0, .8 - hit.life), soft = blast() === 'reduced' ? .55 : 1;
+    return drawEffect(context, effectFrame({ id: owner }, hit.ultimate ? 'skill' : 'explosion', age * 10), position.x, position.y, (hit.ultimate ? 130 : 70) * (soft < 1 ? .8 : 1), 0, Math.min(1, Math.max(0, hit.life / .2)) * soft);
   }
   function drawActorEffects(context, hero, now, position) {
     const event = currentEvent(hero, now);
@@ -167,16 +169,17 @@
   function drawImpacts(context, now, geometry) {
     for (let i = impacts.length - 1; i >= 0; i--) {
       const impact = impacts[i], age = now - impact.started;
-      if (age > 650) { impacts.splice(i, 1); continue; }
+      if (age > 650 || blast() === 'off') { impacts.splice(i, 1); continue; }
+      const soft = blast() === 'reduced' ? .55 : 1;
       const p = geometry.proj(impact.x + .5, impact.y + .5, 12);
-      drawEffect(context, effectFrame({ id: impact.owner }, impact.ultimate ? 'skill' : 'explosion', age / 110), p[0], p[1], (impact.ultimate ? 100 : 55) * geometry.Sg(impact.y + .5), 0, Math.min(1, (650 - age) / 180));
+      drawEffect(context, effectFrame({ id: impact.owner }, impact.ultimate ? 'skill' : 'explosion', age / 110), p[0], p[1], (impact.ultimate ? 100 : 55) * geometry.Sg(impact.y + .5) * (soft < 1 ? .8 : 1), 0, Math.min(1, (650 - age) / 180) * soft);
     }
   }
 
   const previousThink = think;
   think = function (hero) {
     const count = bombs.length, result = previousThink.apply(this, arguments);
-    if (bombs.length > count) play(hero, bombs[bombs.length - 1].ultimate ? 'skill' : 'ranged');
+    if (bombs.length > count) { const last = bombs[bombs.length - 1]; play(hero, last.ultimate || last.mythicUlt ? 'skill' : 'ranged'); }
     return result;
   };
   const previousBoom = boom;

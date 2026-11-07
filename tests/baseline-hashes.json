@@ -47,7 +47,7 @@
     },
     {
       "path": "character-animations/character-animations.js",
-      "sha256": "b0f4698349a42def3f98fb1c377d02ea151508cb707bc210bce284ef86456261"
+      "sha256": "b8224f69ee15875e925d91810cd6fa8016d66d20baf0daf3cbac96ff2b5f4ecd"
     },
     {
       "path": "character-animations/manifest.json",
@@ -95,7 +95,7 @@
     },
     {
       "path": "gameplay-options/server.cjs",
-      "sha256": "00353d812423394928f7cc62503c5eb04e62456c7b1bd64f4998563306ea1e1a"
+      "sha256": "a4003c04a8364a194ab437711aad64740886da6ea22b2f3e3b777b30371c0249"
     },
     {
       "path": "heroes-design/heroes-design.css",
@@ -255,7 +255,7 @@
     },
     {
       "path": "tier-auras/tier-auras.js",
-      "sha256": "f4895a164eb90f55c6886324855acac2d82b5dbf326c19a17327c7b0f9837a47"
+      "sha256": "3c846b72eed3878f0c631d45bf785dc3655a19c8eedb8303bb2eca3fdf2ceff9"
     },
     {
       "path": "app/server/adventure.cjs",
@@ -275,7 +275,7 @@
     },
     {
       "path": "app/server/gameplay-options.cjs",
-      "sha256": "00353d812423394928f7cc62503c5eb04e62456c7b1bd64f4998563306ea1e1a"
+      "sha256": "a4003c04a8364a194ab437711aad64740886da6ea22b2f3e3b777b30371c0249"
     },
     {
       "path": "app/server/init-db.cjs",
@@ -295,7 +295,7 @@
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "9e8e672105556d5108f1dbddad3a9eb5676a84f7640751392c886f5781f4f8e0"
+      "sha256": "00dcf6b043f144d713070b065ba32ca9cdd67ecd4005d4c7d4c4c6b852eb829a"
     },
     {
       "path": "app/server/store.cjs",

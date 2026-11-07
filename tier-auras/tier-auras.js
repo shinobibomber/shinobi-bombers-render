@@ -140,7 +140,7 @@
   }
   // Animated layers: 8 cached phases per rank and layer at half resolution (arena actors are
   // small), at most 80 canvases. Low effects quality uses every other phase.
-  function still() { return motion.matches || (window.Arena3D?.cfg.fx ?? 1) === 0 || document.hidden; }
+  function still() { return motion.matches || !!window.DisplaySettings?.v.reduceMotion || (window.Arena3D?.cfg.fx ?? 1) === 0 || document.hidden; }
   function phaseAt(now) {
     const phase = Math.floor(Math.max(0, now) / (cycleMs / phaseCount)) % phaseCount;
     return (window.Arena3D?.cfg.fx ?? 1) === 1 ? phase - phase % 2 : phase;

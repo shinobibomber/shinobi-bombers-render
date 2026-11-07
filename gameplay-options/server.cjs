@@ -72,7 +72,8 @@ function trainedStats(h){
 // faster). Base stats alone under-count trained heroes, so their kills used to queue.
 function teamDps(roster){
  return roster.map(h=>{const s=trainedStats(h);
-  return (h.rank+1)*(Math.max(1,s.pw)+1)/(Math.max(.6,1.6-s.sp*.05)*.85)}).sort((a,b)=>b-a).slice(0,10).reduce((n,v)=>n+v,0);
+  // Mythic (rank 5) fires like a Legend: 5 shots per volley.
+  return (Math.min(h.rank,4)+1)*(Math.max(1,s.pw)+1)/(Math.max(.6,1.6-s.sp*.05)*.85)}).sort((a,b)=>b-a).slice(0,10).reduce((n,v)=>n+v,0);
 }
 /* Hero identity: perks (rank+1 distinct, the game's own perks(r) pool) and look (character model 0–7)
    are stored on the server, so every device and every Market buyer sees the same hero. Heroes

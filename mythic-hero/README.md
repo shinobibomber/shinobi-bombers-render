@@ -1,8 +1,8 @@
-# Tsukiyomi — 7-star Mythic Shinobi (hero 13, rank 5)
+# Tsukiyomi — Mythic Shinobi (hero 13, rank 5)
 
 The exclusive hero of the **Limited NFT Box** for initial investors. Mythic is a sixth rank above
-Legend: exactly seven stars, base stats 15–18, six perks, Legend's ultimate rules (2.2×, every 8th
-volley), Legend training prices, never summoned, fused or listed on the in-game Market.
+Legend: base stats 15–18, six perks, Legend volleys (5 shots, 1 chakra each; his skills are visuals on
+those shots and the 8th-volley Mythic Dragon Ascension is visual only), Legend training prices, never summoned, fused or listed on the in-game Market.
 
 ## Ownership (server: `server.cjs` → `app/server/mythic-hero.cjs`)
 
@@ -28,11 +28,10 @@ Set one or both on the Render service; until then the feature is dormant and nob
 * **Character** — the FRONT / LEFT / RIGHT / BACK views of `tsukiyomi-model.png`, cut from their
   backdrop (exterior flood fill, enclosed black clothing kept, soft un-blended edges). Previews keep
   the native resolution for menus; game frames are 128×128 RGBA with a centre-bottom anchor (64,124).
-* **Animations** — idle 8, walk/run 8 × 4 directions, attack 6 × 4 directions (with a Dragon Slash
-  trail), bomb place 6, hurt 4, defeat 8, victory 8, and alert / question / like / celebrate emotes 4.
-  Motion is made from the exact reference poses (anchored at the feet), so every frame shows the same
-  hero; the reference sheet's own sprite rows show a different (Hayate-based) model on a white
-  checkerboard and are not used. Hand-drawn sheets with the same cell size can replace these files.
+* **Animations** — idle, walk/run (front, sides, back), attacks, hurt, defeat, bomb place, victory and
+  emotes use the **Fire hero's real action frames** (hands, feet and body from the game's own sheets),
+  recoloured to violet, with **Tsukiyomi's own head** (hair, ponytail, crescent, headband, eyes, mask)
+  from his reference views placed on every frame. The back attack lunges his own back view.
 * **Skills** — Dragon Slash 8, Void Shuriken 8, Raijin Field 10 and Mythic Dragon Ascension from
   `mythic-animation-sheet.png`. The ultimate row draws 10 separable frames (5 is not drawn and 11 is
   hidden behind 12); its 12-step timeline holds frames 4 and 10 for one extra step.

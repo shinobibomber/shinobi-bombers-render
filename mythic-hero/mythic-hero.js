@@ -16,10 +16,10 @@
     get auraEnabled() { try { return localStorage.getItem(AURA_KEY) !== 'off'; } catch { return true; } },
     setAura(on) { try { localStorage.setItem(AURA_KEY, on ? 'on' : 'off'); } catch {} auraCache.clear(); dispatchEvent(new CustomEvent('mythic-aura-changed', { detail: { on: !!on } })); },
     skills: [
-      { key: 'dragon_slash', name: 'Dragon Slash', text: 'A violet crescent blade. Shown on his normal volleys.' },
+      { key: 'dragon_slash', name: 'Dragon Slash', text: 'A violet crescent blade on his normal shots (1 attack, 1 chakra).' },
       { key: 'void_shuriken', name: 'Void Shuriken', text: 'A spinning celestial shuriken. Alternates with Dragon Slash.' },
       { key: 'raijin_field', name: 'Raijin Field', text: 'A violet lightning field where his attacks land.' },
-      { key: 'mythic_dragon_ascension', name: 'Mythic Dragon Ascension', text: 'Ultimate every 8th volley: a spectral dragon rises around him.', ultimate: true }
+      { key: 'mythic_dragon_ascension', name: 'Mythic Dragon Ascension', text: 'Every 8th volley: a spectral dragon rises around him (visual only, normal damage).', ultimate: true }
     ]
   };
 
@@ -177,7 +177,7 @@
   }
   // 8 phases per layer, cached; arena copies are half size. Low effects or reduced motion use phase 0 (and fewer layers when off).
   function aura(layer, now, small) {
-    const level = fx(), still = motion.matches || level === 0 || document.hidden;
+    const level = fx(), still = motion.matches || !!window.DisplaySettings?.v.reduceMotion || level === 0 || document.hidden;
     let phase = still ? 0 : Math.floor(Math.max(0, now) / (CYCLE / PHASES)) % PHASES;
     if (level === 1) phase -= phase % 2;
     const rich = level >= 2 || !small, key = [layer, phase, small ? 's' : 'l', rich ? 'r' : 'p'].join(':');

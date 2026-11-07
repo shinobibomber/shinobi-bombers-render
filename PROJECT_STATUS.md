@@ -108,6 +108,12 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Display & Accessibility + Tsukiyomi animation (owner request): display-settings/README.md
+  (Comfort default; localStorage sb-display-v1 + profile.display newer-wins; hooks in arena shake/impacts/
+  glow/hit flash, Boss Hunt telegraph, character-animations impacts, tier/mythic aura still, overlay RM).
+  Tsukiyomi frames = Fire hero's real action cells recoloured violet + his own head (build-assets limbSource).
+  Mythic volley = Legend (bm 5, teamDps/teamCap min(rank,4)+1); 8th-volley ultimate is visual (mythicUlt).
+
 - 2026-11-07 Starter pack / whitepaper / Tsukiyomi motion (owner request): STARTER_PACK=on grants once 15
   heroes (non-NFT starter Tsukiyomi) + 10M starter Ryo (ryo_accounts.bonus; spend-anywhere when it covers
   the price, never withdrawn, no on-chain tx, no pool income; offers keep their pot) — starter-pack/README.md.

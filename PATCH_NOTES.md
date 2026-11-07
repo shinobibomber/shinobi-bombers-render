@@ -20,6 +20,24 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Display & Accessibility, Tsukiyomi animation)**
+
+**✨ New: Display & Accessibility settings** 👁️
+• Open **Tools (⚙) → Display & Accessibility** from the Main Menu or in game.
+• **Three presets:** 🟢 **Comfort** (default — softer effects, no flashes or shaking), 🌙 **Minimal effects** (calmest view) and 🔥 **Standard** (richer effects, still no strobing).
+• **Fine-tune it yourself:** brightness (20–100%), explosion effects (Full / Reduced / Off), flashing lights, screen shake, reduce motion, bloom & glow, high contrast and colorblind-friendly indicators.
+• With explosions **Off**, every hit tile still shows a clear marker — you never lose sight of the action.
+• A **live preview** shows your choices instantly. Settings save automatically and follow your account to other devices.
+• These are visual only — damage, timers and rewards are exactly the same for everyone.
+
+**🌙 Tsukiyomi**
+• Tsukiyomi now **walks, runs and attacks with full hand, foot and body animation**, in every direction.
+• His skills are visual effects on his normal attacks: he fires like a Legend (5 shots per volley, 1 chakra each), and **Mythic Dragon Ascension** is a visual flourish with normal damage.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Starter Pack, Whitepaper & Tsukiyomi moves)**
 
 **✨ New**

@@ -46,7 +46,7 @@ function prizes(pool, players = SHARES.length) {
 // no chakra): rank+1 projectiles of (trained power + Armor Breaker) per cooldown, Swift Hands applied.
 function teamCap(profile) {
   const { trainedStats } = require('./gameplay-options.cjs'), ready = new Set(profile.battleReady || []);
-  const rows = profile.heroes.filter(h => ready.has(h.tokenId)).map(h => { const s = trainedStats(h); return { dps: (h.rank + 1) * (Math.max(1, s.pw) + 1) / (Math.max(.6, 1.6 - s.sp * .05) * .85), volley: (h.rank + 1) * (Math.max(1, s.pw) + 1) }; })
+  const rows = profile.heroes.filter(h => ready.has(h.tokenId)).map(h => { const s = trainedStats(h); return { dps: (Math.min(h.rank, 4) + 1) * (Math.max(1, s.pw) + 1) / (Math.max(.6, 1.6 - s.sp * .05) * .85), volley: (Math.min(h.rank, 4) + 1) * (Math.max(1, s.pw) + 1) }; })
     .sort((a, b) => b.dps - a.dps).slice(0, 5);
   return { dps: rows.reduce((n, r) => n + r.dps, 0), volley: rows.reduce((n, r) => n + r.volley, 0) };
 }

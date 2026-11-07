@@ -1,0 +1,76 @@
+/* Display & Accessibility: classes on <html> set by display-settings.js. Presentation only. */
+:root { --sb-bright: 1; --sb-contrast: 1; }
+/* Brightness / contrast of the game scene only (menus, HUD and text are never dimmed). */
+#sbwLayer .sbw-mirror, #sbwLayer .sbw-bh-canvas, canvas#cv, #bossHuntMap { filter: brightness(var(--sb-bright)) contrast(var(--sb-contrast)); }
+
+/* Flashing lights off: no full-screen or brightness flashes. */
+html.sb-no-flash .rare-group-celebration::after { animation: none !important; opacity: 0 !important; }
+html.sb-no-flash .is-revealed { animation-name: none !important; }
+html.sb-no-flash #sbwLayer .hs.flash { animation: none !important; filter: none !important; }
+html.sb-no-flash #fxLayer { display: none !important; }
+
+/* Screen shake off. */
+html.sb-no-shake #sbwLayer .hs.shake { animation: none !important; }
+
+/* Reduce motion: the same calm state as the system "reduce motion" setting. */
+html.sb-reduce-motion #sbwLayer *, html.sb-reduce-motion #sbwLayer *::before, html.sb-reduce-motion #sbwLayer *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+html.sb-reduce-motion #sbwLayer .fx, html.sb-reduce-motion #sbwLayer .petals, html.sb-reduce-motion #bgMotes { display: none !important; }
+
+/* Bloom & glow off: no neon pulses on cards and buttons. */
+html.sb-no-bloom #sbwLayer .sbw-portrait-energy { display: none !important; }
+html.sb-no-bloom #sbwLayer .sbw-at-card.aura-elite, html.sb-no-bloom #sbwLayer .sbw-at-card.aura-legend, html.sb-no-bloom #sbwLayer .sbw-at-card.aura-mythic { box-shadow: none !important; }
+
+/* High contrast: stronger outlines and text on the overlay. */
+html.sb-high-contrast #sbwLayer { --sbds-hc: 1; }
+html.sb-high-contrast #sbwLayer .sbw-hcard, html.sb-high-contrast #sbwLayer .sbw-at-card, html.sb-high-contrast #sbwLayer .bh-rk, html.sb-high-contrast #sbwLayer .sbw-boxcard { outline: 2px solid #ffffff; outline-offset: -2px; }
+html.sb-high-contrast #sbwLayer small, html.sb-high-contrast #sbwLayer span { text-shadow: 0 1px 2px #000, 0 0 1px #000; }
+
+/* Colorblind-friendly: bars carry a pattern, never colour alone. */
+html.sb-colorblind #sbwLayer .sbw-bar i { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.35) 0 4px, transparent 4px 8px) !important; }
+
+/* The settings dialog (site theme). */
+.sbds { width: min(900px, 94vw); max-height: 92vh; overflow: auto; padding: 18px 20px; border: 2px solid #ffcf4a; border-radius: 14px; background: radial-gradient(circle at 50% 0, #2a1458, #0d0727 60%, #07041a); color: #f2ecff; font: 600 15px Rajdhani, 'Segoe UI', system-ui, sans-serif; box-shadow: 0 20px 60px #000c; }
+.sbds::backdrop { background: rgba(3, 2, 12, .72); }
+.sbds-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sbds h2 { margin: 0; color: #ffcf4a; font: 800 26px Rajdhani, sans-serif; letter-spacing: .03em; }
+.sbds-x { width: 40px; height: 40px; border: 1px solid #5a4a9a; border-radius: 10px; background: #160c36; color: #fff; font-size: 18px; cursor: pointer; }
+.sbds-note { margin: 2px 0 10px; color: #b9b0d3; }
+.sbds-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sbds-presets button { display: flex; flex-direction: column; gap: 3px; min-height: 64px; padding: 9px 12px; border: 2px solid #3a2a66; border-radius: 11px; background: #150b33; color: #f2ecff; text-align: left; font: inherit; cursor: pointer; }
+.sbds-presets button b { font: 800 17px Rajdhani, sans-serif; }
+.sbds-presets button small { color: #b9b0d3; font-weight: 600; }
+.sbds-presets button.on { border-color: #ffcf4a; background: linear-gradient(135deg, #3a2208, #1a0f05); box-shadow: 0 0 12px #ffb02a55; }
+.sbds-custom { margin: 6px 0 0; color: #ffd98a; font-weight: 700; }
+.sbds-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; margin-top: 12px; align-items: start; }
+.sbds-controls { display: flex; flex-direction: column; gap: 6px; }
+.sbds-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 6px 12px; border: 1px solid #2f2350; border-radius: 10px; background: #110a2a; cursor: pointer; }
+.sbds-row span { display: flex; flex-direction: column; min-width: 0; }
+.sbds-row b { color: #fff; font-size: 16px; }
+.sbds-row small { color: #aaa1c8; font-weight: 600; font-size: 13px; }
+.sbds-row input[type=checkbox] { appearance: none; flex: none; width: 46px; height: 26px; border-radius: 13px; background: #3a2a66; position: relative; cursor: pointer; transition: background .15s; }
+.sbds-row input[type=checkbox]::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; }
+.sbds-row input[type=checkbox]:checked { background: #35b86b; }
+.sbds-row input[type=checkbox]:checked::after { left: 23px; }
+.sbds-slider { flex-wrap: wrap; }
+.sbds-slider input[type=range] { flex: 1 1 180px; accent-color: #ffcf4a; min-height: 28px; }
+.sbds-seg { display: flex; flex: none; border: 1px solid #5a4a9a; border-radius: 9px; overflow: hidden; }
+.sbds-seg button { min-width: 64px; min-height: 34px; padding: 4px 10px; border: 0; background: #160c36; color: #e8e0ff; font: 700 14px Rajdhani, sans-serif; cursor: pointer; }
+.sbds-seg button + button { border-left: 1px solid #5a4a9a; }
+.sbds-seg button.on { background: #ffcf4a; color: #2a1000; }
+.sbds-preview { margin: 0; position: sticky; top: 0; }
+.sbds-preview canvas { display: block; width: 100%; height: auto; border: 1px solid #5a4a9a; border-radius: 12px; background: #1b2440; }
+.sbds-preview figcaption { margin-top: 4px; color: #b9b0d3; font-size: 13px; text-align: center; }
+.sbds-acts { display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.sbds-reset, .sbds-done { min-height: 44px; padding: 8px 18px; border-radius: 10px; font: 800 16px Rajdhani, sans-serif; cursor: pointer; }
+.sbds-reset { border: 1px solid #5a4a9a; background: #160c36; color: #e8e0ff; }
+.sbds-done { border: 0; background: linear-gradient(#ffe27a, #ffbb2a 45%, #f48c0c); color: #2a1000; }
+.sbds button:focus-visible, .sbds input:focus-visible { outline: 3px solid #33c8ff; outline-offset: 2px; }
+@media (max-width: 760px) {
+  .sbds { padding: 14px; }
+  .sbds-grid { grid-template-columns: 1fr; }
+  .sbds-preview { position: static; order: -1; }
+  .sbds-presets { grid-template-columns: 1fr; }
+  .sbds-presets button { min-height: 52px; }
+  .sbds-row { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) { .sbds * { transition: none !important; } }

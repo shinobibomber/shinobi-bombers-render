@@ -68,6 +68,8 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     assert.deepEqual(frames.size, [320, 400]); assert.equal(frames.attack, 'attack_right'); assert.equal(frames.legend, false, 'other heroes keep their models');
     assert.deepEqual(frames.fx.slice(1), ['raijin_field', 'mythic_dragon_ascension']); assert(['dragon_slash', 'void_shuriken'].includes(frames.fx[0]));
     assert.equal(frames.legendFx, false); assert.equal(frames.meta, 21);
+    // Skills are visuals on normal shots: Tsukiyomi volleys like a Legend (5 shots, 1 chakra each).
+    assert.deepEqual(await p.evaluate(() => { const h = S.h.find(x => x.r === 5), l = S.h.find(x => x.r === 4); return [h.bm, h.rg, l.bm]; }), [5, 5, 5]);
 
     // Adventure: he deploys, walks and fights with his own effects; nothing else changes.
     await p.evaluate(() => { go(0); Experience.workAll(); });

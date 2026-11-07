@@ -10,7 +10,7 @@
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
 const sharp = require('sharp');
-const { character, glow, keepMain, bounds } = require('./cutout.cjs');
+const { character, exterior, glow, keepMain, bounds } = require('./cutout.cjs');
 
 const ROOT = path.join(__dirname, '..'), REF = path.join(ROOT, 'reference'), OUT = path.join(ROOT, 'assets');
 const SOURCES = { model: 'tsukiyomi-model.png', animation: 'mythic-animation-sheet.png', aura: 'mythic-aura-sheet.png' };
@@ -68,6 +68,80 @@ async function warpPose(pose, w) {
   return { buffer: await sharp(out, { raw: { width: W, height: H, channels: 4 } }).png().toBuffer(), width: W, height: H, bodyHeight: body, pivot: [cx, H] };
 }
 
+/* ---------- 2b. Real limb animation: the Fire hero's frames wearing Tsukiyomi ----------
+ * The game's own Fire action cells (character-animations) and back views (player-models) give the
+ * hands, feet and body motion. Fire's red/orange is remapped to violet and Tsukiyomi's own head
+ * (hair, ponytail, crescent, headband, eyes, mask) from his reference views covers Fire's head,
+ * placed by Fire's white hair in each frame. One head scale per source keeps proportions steady. */
+const FIRE = 0, ROOT_REPO = path.join(ROOT, '..');
+const HEADS = { front: { view: 'front', cut: 138, hair: [22, 168] }, side: { view: 'right', cut: 140, hair: [62, 172] }, back: { view: 'back', cut: 150, hair: [12, 170] } };
+function hsv(r, g, b) { const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0; if (d) { h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; if (h < 0) h += 360; } return [h, mx ? d / mx : 0, mx / 255]; }
+function rgbOf(h, s, v) { const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c; const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x]; return [(r + m) * 255, (g + m) * 255, (b + m) * 255]; }
+async function limbSource() {
+  const anim = require(path.join(ROOT_REPO, 'character-animations/manifest.json')).models[FIRE];
+  const models = require(path.join(ROOT_REPO, 'player-models/frames.json')).models[FIRE];
+  const sheets = { anim: path.join(ROOT_REPO, 'character-animations', anim.file), back: path.join(ROOT_REPO, 'player-models/playermodel.png') };
+  const heads = {};
+  for (const [k, h] of Object.entries(HEADS)) { const file = path.join(OUT, 'previews', 'tsukiyomi_' + h.view + '.png'), m = await sharp(file).metadata(); heads[k] = { ...h, file, width: m.width }; }
+  const scale = {};
+  async function frame(sheet, cell, headKind, mirror) {
+    const [x, y, w, h] = cell.rect;
+    const { data, info } = await sharp(sheets[sheet]).extract({ left: x, top: y, width: w, height: h }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    exterior(data, w, h);
+    let top = 0; find: for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) if (data[(yy * w + xx) * 4 + 3] > 128) { top = yy; break find; }
+    let x0 = 1e9, x1 = -1, y0 = 1e9;
+    for (let yy = top; yy < Math.min(h, top + h * 0.32); yy++) for (let xx = 0; xx < w; xx++) {
+      const i = (yy * w + xx) * 4, lo = Math.min(data[i], data[i + 1], data[i + 2]), hi = Math.max(data[i], data[i + 1], data[i + 2]);
+      if (data[i + 3] > 128 && lo > 165 && hi - lo < 70) { x0 = Math.min(x0, xx); x1 = Math.max(x1, xx); y0 = Math.min(y0, yy); }
+    }
+    if (x1 < 0) { x0 = 0; x1 = w - 1; y0 = top; }
+    for (let i = 0; i < data.length; i += 4) {
+      if (!data[i + 3]) continue;
+      const [hh, sat, v] = hsv(data[i], data[i + 1], data[i + 2]);
+      if (sat > 0.35 && (hh < 55 || hh > 330)) { const [r, g, b] = rgbOf((278 - (hh > 330 ? hh - 360 : hh) * 0.5 + 360) % 360, Math.min(1, sat * 0.9), v); data[i] = r; data[i + 1] = g; data[i + 2] = b; }
+    }
+    const hd = heads[headKind];
+    if (!scale[sheet]) scale[sheet] = ((x1 - x0 + 1) * 1.08) / (heads.front.hair[1] - heads.front.hair[0]);
+    const k = sheet === 'back' ? ((x1 - x0 + 1) * 1.08) / (hd.hair[1] - hd.hair[0]) : scale[sheet];
+    const head = await sharp(hd.file).extract({ left: 0, top: 0, width: hd.width, height: hd.cut }).resize(Math.max(1, Math.round(hd.width * k)), Math.max(1, Math.round(hd.cut * k))).png().toBuffer();
+    const pad = 40, left = Math.round(pad + (x0 + x1) / 2 - ((hd.hair[0] + hd.hair[1]) / 2) * k), headTop = Math.round(pad + y0 - 3 * k - 4);
+    let buffer = await sharp({ create: { width: w + pad * 2, height: h + pad * 2, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: await sharp(data, { raw: info }).png().toBuffer(), left: pad, top: pad }, { input: head, left: Math.max(0, left), top: Math.max(0, headTop) }]).png().toBuffer();
+    // Feet on the lowest opaque row of the cut figure (some cells end above their listed pivot).
+    let bottom = h - 1; findb: for (let yy = h - 1; yy >= 0; yy--) for (let xx = 0; xx < w; xx++) if (data[(yy * w + xx) * 4 + 3] > 128) { bottom = yy; break findb; }
+    let pivot = [pad + cell.pivot[0], pad + bottom + 1];
+    const W = w + pad * 2, H = h + pad * 2;
+    if (mirror) { buffer = await sharp(buffer).flop().png().toBuffer(); pivot = [W - pivot[0], pivot[1]]; }
+    // Height from the top of the hair to the feet, for one body scale per source.
+    const raw = await sharp(buffer).raw().toBuffer({ resolveWithObject: true });
+    let figTop = 0; find2: for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) if (raw.data[(yy * W + xx) * 4 + 3] > 128) { figTop = yy; break find2; }
+    return { buffer, width: W, height: H, pivot, figure: pivot[1] - figTop };
+  }
+  const take = async (sheet, row, idx, headKind, mirror) => {
+    const cells = sheet === 'back' ? models.frames[row] : anim.rows[row].actors;
+    const out = []; for (const i of idx) out.push(await frame(sheet, cells[i], headKind, mirror));
+    return out;
+  };
+  const ref = (await take('anim', 'idle', [0], 'front'))[0], backRef = (await take('back', 'back', [0], 'back'))[0];
+  const norm = (list, r) => list.map(p => ({ ...p, bodyHeight: r.figure }));
+  const bodies = {};
+  bodies.idle = norm(await take('anim', 'idle', [0, 1, 2, 3], 'front'), ref);
+  bodies.walk_front = norm(await take('anim', 'walk', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'front'), ref);
+  bodies.walk_right = norm(await take('anim', 'run', [0, 1, 2, 3, 4, 5], 'side'), ref);
+  bodies.walk_left = norm(await take('anim', 'run', [0, 1, 2, 3, 4, 5], 'side', true), ref);
+  bodies.walk_back = norm(await take('back', 'back', [0, 1, 2, 1], 'back'), backRef);
+  bodies.run_front = bodies.walk_front; bodies.run_right = bodies.walk_right; bodies.run_left = bodies.walk_left; bodies.run_back = bodies.walk_back;
+  bodies.attack_right = norm(await take('anim', 'melee', [0, 1, 2, 3, 4, 5], 'side'), ref);
+  bodies.attack_left = norm(await take('anim', 'melee', [0, 1, 2, 3, 4, 5], 'side', true), ref);
+  bodies.attack_front = bodies.attack_right;
+  bodies.hurt = norm(await take('anim', 'hurt', [0, 1, 2, 3], 'front'), ref);
+  bodies.bomb_place = norm(await take('anim', 'bomb', [0, 1, 2], 'front'), ref);
+  bodies.victory = norm(await take('anim', 'victory', [0, 1, 2, 3, 4], 'front'), ref);
+  const die = norm(await take('anim', 'die', [0, 1], 'front'), ref);
+  bodies.defeat = [0, 0, 0, 0, 0, 0, 0, 0].map((d, i) => ({ ...die[d], fade: i < 2 ? 1 : 1 - (i - 1) * 0.08 }));
+  return bodies;
+}
+
 /* ---------- 2. Frame renderer: an exact pose, transformed about its foot pivot ---------- */
 const svgBuf = svg => Buffer.from(svg);
 async function renderFrame(pose, t = {}) {
@@ -75,7 +149,7 @@ async function renderFrame(pose, t = {}) {
   const k = BODY / (pose.bodyHeight || pose.height), sx = t.sx || 1, sy = t.sy || 1;
   const w = Math.max(1, Math.round(pose.width * k * sx)), h = Math.max(1, Math.round(pose.height * k * sy));
   let img = await sharp(pose.buffer).resize(w, h, { kernel: 'lanczos3' }).png().toBuffer();
-  let piv = [pose.pivot[0] * w / pose.width, h];
+  let piv = [pose.pivot[0] * w / pose.width, pose.pivot[1] * h / pose.height];
   let iw = w, ih = h;
   // Tint and fade the pose itself, before rotation adds transparent corners.
   if (t.tint) img = await sharp(img).composite([{ input: { create: { width: iw, height: ih, channels: 4, background: { ...t.tint } } }, blend: 'atop' }]).png().toBuffer();
@@ -298,10 +372,14 @@ async function build() {
     const at = { right: [96, 70], left: [32, 70], front: [64, 82], back: [64, 52] }[dir];
     return { input: buf, left: at[0] - m.width / 2, top: at[1] - m.height / 2, blend: 'screen' };
   };
-  const anim = motions();
-  for (const [name, steps] of Object.entries(anim)) {
-    const pose = P[POSE_OF(name)], frames = [];
+  const anim = motions(), limbs = await limbSource();
+  // Fire-based clips for every movement and attack; the back attack stays a lunge of his own back view.
+  const plan = Object.fromEntries(Object.keys(anim).map(name => [name, limbs[name] ? limbs[name].map(p => ({ pose: p, step: p.fade != null && p.fade < 1 ? { alpha: p.fade, tint: { r: 40, g: 16, b: 70, alpha: .1 } } : {} })) : null]));
+  for (const emote of ['alert', 'question', 'like', 'celebrate']) plan[emote] = anim[emote].map((st, i) => ({ pose: limbs.idle[i % limbs.idle.length], step: { emote: st.emote, scale: st.scale } }));
+  for (const [name, list] of Object.entries(plan)) {
+    const steps = list ? list.map(x => x.step) : anim[name], frames = [];
     for (let i = 0; i < steps.length; i++) {
+      const pose = list ? list[i].pose : P[POSE_OF(name)];
       const s = { ...steps[i] }, over = [], under = [];
       for (const o of s.over || []) if (o.kind === 'trail') over.push(await trailOf(o.frame, o.alpha, o.dir));
       if (s.glow) { under.push({ input: victoryGlow(s.glow), left: 0, top: 0 }); over.push({ input: sparkles(s.glow, s.sparkle), left: 0, top: 0, blend: 'screen' }); }
@@ -310,7 +388,7 @@ async function build() {
     }
     const rel = await sheet(`animations/${name}.png`, frames);
     const loop = /^(idle|walk|run)/.test(name), dir = POSE_OF(name);
-    const fpsOf = { idle: 6, walk: 10, run: 14, attack: 14, bomb_place: 10, hurt: 10, defeat: 8, victory: 8 };
+    const fpsOf = { idle: 5, walk: 11, run: 15, attack: 12, bomb_place: 8, hurt: 10, defeat: 8, victory: 7 };
     const kind = Object.keys(fpsOf).find(k => name.startsWith(k)) || 'emote';
     meta.animations[name] = { path: rel, frameWidth: CELL, frameHeight: CELL, frameCount: frames.length, fps: fpsOf[kind] || 8, loop, anchor: FOOT, direction: dir, layer: 'character',
       events: kind === 'attack' ? { slash: 2, recover: 4 } : kind === 'bomb_place' ? { place: 2 } : kind === 'defeat' ? { down: 7 } : undefined };

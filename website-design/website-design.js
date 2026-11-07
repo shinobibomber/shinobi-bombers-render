@@ -16,7 +16,8 @@
   let dojoView = 'dojo'; /* Dojo pages: 'dojo' (Services, landing), 'dojo-upg' (Enter Dojo), 'dojo-sen' (Manage Sensei) */
   const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a', '#c98bff'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'];
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
-  let RM = motionPreference.matches, geometryRevision = 0;
+  // Reduced motion: the system setting or the player's Display & Accessibility choice.
+  let RM = motionPreference.matches || !!window.DisplaySettings?.v.reduceMotion, geometryRevision = 0;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const fmt = n => (typeof n === 'number' && Number.isFinite(n) ? Math.floor(n).toLocaleString('en-US') : '—');
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1618,7 +1619,8 @@
     addEventListener('shinobi-chest', () => { refresh(); welcomeBack(); });
     // Defeats trigger verified Chest syncs in gameplay-options/options.js (KillReport).
     addEventListener('resize', fit);
-    motionPreference.addEventListener('change', event => { RM = event.matches; refresh(); });
+    motionPreference.addEventListener('change', event => { RM = event.matches || !!window.DisplaySettings?.v.reduceMotion; refresh(); });
+    addEventListener('sb-display-change', () => { RM = motionPreference.matches || !!window.DisplaySettings?.v.reduceMotion; refresh(); });
     document.addEventListener('visibilitychange', () => { syncEffects(); if (!document.hidden) sync(); });
     const nt = document.getElementById('toast'); if (nt) new MutationObserver(() => { if (cur && nt.textContent.trim()) toast(nt.textContent.trim()); }).observe(nt, { childList: true, characterData: true, subtree: true });
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
