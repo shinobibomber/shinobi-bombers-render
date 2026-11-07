@@ -20,6 +20,19 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Creators Portal — prepared, not deployed)**
+
+**✨ New**
+• **CREATORS PORTAL — CREATE • INVITE • EARN**: apply with your game wallet and track administrator review. Approved creators receive a referral link, private progress tracker and Creator Points history.
+• **50,000 CP per qualified referral**: a new referred player must complete 15 settled paid Shrine summons and clear Stage 5 in the server combat verifier. Free heroes, starter-funded orders, fusion and Market trades do not qualify.
+• **5% commissions in CP**: eligible Ryo game-service purchases and successfully claimed Adventure earnings earn CP during the referral’s saved commission period, initially 90 days. Players keep their full legitimate Ryo rewards.
+• **Creator Shop**: redeem CP for regular in-game hero passes and exclusive cosmetic aura, frame, bomb effect and badge rewards. Hero passes use normal Shrine odds and initially allow two per creator per month, subject to inventory and seasonal supply. These passes are not NFT mints.
+• **Creator Management**: authorized administrators can approve wallets, review referrals, manage inventory and program enrollment, and record audited corrections. Wallet migration requires both wallets to authenticate.
+
+CP cannot be withdrawn, transferred or exchanged for cryptocurrency. Server-verified progress can lag the browser’s arena stage. Existing Guild, combat, Ryo rewards and wallet payments are preserved.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Display & Accessibility, Tsukiyomi animation)**
 
 **✨ New: Display & Accessibility settings** 👁️

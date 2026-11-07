@@ -108,6 +108,21 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Creators Portal (prepared locally; deployment NOT authorized): sources in
+  creators-portal/, assembled by apply-creators-portal.cjs after gas safety and before performance.
+  Existing authenticated Ryo API and RYO_ADMIN_* roles; DB allowlist, applications, one permanent
+  referral, server-only Stage 5 verifier, settled paid summon output counting, exactly-once 50k CP,
+  90-day snapshotted 5% commissions, FIFO earned/claimed Adventure lots, limited atomic shop,
+  admin audit/corrections/reviews and dual-authenticated wallet migration. Owner selected regular
+  in-game Shrine hero delivery (not an NFT); creator outputs/bonus purchases never qualify.
+  Independent verifier reuses backend auto-combat without client killStage/kills; can lag browser
+  stage. No reward formula/timing, real-time guard, Ryo ledger, Guild or Mythic NFT changes.
+  New additive schema and creators-server/creators-portal suites; see creators-portal/README.md.
+  Verified Node 22.23.4: build:local, lint/typecheck, rewards guard, 42 suites and 20 website checks;
+  desktop/mobile/admin screenshots inspected. No production DB migration or live rewards issued.
+  Do not push main: Render auto-deploys and this feature request explicitly requires separate
+  deployment authorization. Review branch/local build only until authorized.
+
 - 2026-11-07 Display & Accessibility + Tsukiyomi animation (owner request): display-settings/README.md
   (Comfort default; localStorage sb-display-v1 + profile.display newer-wins; hooks in arena shake/impacts/
   glow/hit flash, Boss Hunt telegraph, character-animations impacts, tier/mythic aura still, overlay RM).
