@@ -20,6 +20,18 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 7, 2026 · Mythic Motion & Effects)**
+
+• Tsukiyomi now moves his arms and legs while walking and running in all four directions. Attacks no longer freeze his footsteps.
+• Comfort mode keeps a gentler walking cycle while reducing visual effects. System reduced-motion settings are still respected.
+• Upgraded Dragon Slash trails, spinning Void Shuriken, layered Raijin lightning and a new spectral dragon for Mythic Dragon Ascension.
+• Added 88 reusable movement/attack frames and bounded effect caches for smoother rendering with multiple Mythic heroes.
+• The approved character, existing Mythic Aura, combat stats, NFT ownership and Ryo rewards are preserved.
+
+Test server only. Production is unchanged.
+
+---
+
 **SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 7, 2026 · Tsukiyomi Animations)**
 
 Test server only; production unchanged.

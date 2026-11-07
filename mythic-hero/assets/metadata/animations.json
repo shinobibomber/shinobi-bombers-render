@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "presentationVersion": 3,
   "hero": {
     "id": 13,
     "key": "tsukiyomi",
@@ -41,8 +42,8 @@
       "direction": "facing",
       "events": {},
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "WALK_FRONT": {
       "frames": 8,
@@ -58,9 +59,9 @@
       ],
       "direction": "front",
       "events": {},
-      "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "texture": "animations/rig-v3/walk_front.png",
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "WALK_LEFT": {
       "frames": 8,
@@ -76,9 +77,9 @@
       ],
       "direction": "left",
       "events": {},
-      "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "texture": "animations/rig-v3/walk_left.png",
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "WALK_RIGHT": {
       "frames": 8,
@@ -94,9 +95,9 @@
       ],
       "direction": "right",
       "events": {},
-      "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "texture": "animations/rig-v3/walk_right.png",
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "WALK_BACK": {
       "frames": 8,
@@ -112,9 +113,9 @@
       ],
       "direction": "back",
       "events": {},
-      "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "texture": "animations/rig-v3/walk_back.png",
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "RUN": {
       "frames": 8,
@@ -131,8 +132,14 @@
       "direction": "facing",
       "events": {},
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh",
+      "directionTextures": {
+        "front": "animations/rig-v3/run_front.png",
+        "left": "animations/rig-v3/run_left.png",
+        "right": "animations/rig-v3/run_right.png",
+        "back": "animations/rig-v3/run_back.png"
+      }
     },
     "ATTACK": {
       "frames": 6,
@@ -152,8 +159,14 @@
         "recover": 5
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh",
+      "directionTextures": {
+        "front": "animations/rig-v3/attack_front.png",
+        "left": "animations/rig-v3/attack_left.png",
+        "right": "animations/rig-v3/attack_right.png",
+        "back": "animations/rig-v3/attack_back.png"
+      }
     },
     "BOMB_PLACE": {
       "frames": 6,
@@ -172,8 +185,8 @@
         "place": 2
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "HURT": {
       "frames": 4,
@@ -192,8 +205,8 @@
         "recoil": 0
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "DEFEAT": {
       "frames": 8,
@@ -212,8 +225,8 @@
         "down": 7
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "VICTORY": {
       "frames": 8,
@@ -232,8 +245,8 @@
         "sparkle": 3
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "EMOTE_ALERT": {
       "frames": 4,
@@ -252,8 +265,8 @@
         "expression": 1
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "EMOTE_QUESTION": {
       "frames": 4,
@@ -272,8 +285,8 @@
         "expression": 1
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "EMOTE_LIKE": {
       "frames": 4,
@@ -292,8 +305,8 @@
         "expression": 1
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "EMOTE_CELEBRATE": {
       "frames": 4,
@@ -312,8 +325,8 @@
         "expression": 1
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "SKILL_DRAGON_SLASH": {
       "frames": 8,
@@ -332,8 +345,8 @@
         "visualPeak": 5
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "SKILL_VOID_SHURIKEN": {
       "frames": 8,
@@ -352,8 +365,8 @@
         "visualPeak": 5
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "SKILL_RAIJIN_FIELD": {
       "frames": 10,
@@ -372,8 +385,8 @@
         "visualPeak": 6
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     },
     "ULTIMATE_DRAGON_ASCENSION": {
       "frames": 12,
@@ -392,28 +405,21 @@
         "visualPeak": 7
       },
       "texture": null,
-      "assetStatus": "missing-authored-frames",
-      "fallback": "approved-direction-pose-rig"
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
     }
   },
   "skills": {
     "dragon_slash": {
-      "label": "Dragon Slash",
-      "path": "skills/dragon_slash.png",
-      "frameWidth": 72,
-      "frameHeight": 80,
+      "path": null,
+      "frameWidth": 320,
+      "frameHeight": 320,
       "frameCount": 8,
       "fps": 16,
-      "loop": false,
       "anchor": [
-        36,
-        40
+        160,
+        160
       ],
-      "layer": "skill-front",
-      "direction": "right",
-      "events": {
-        "impact": 6
-      },
       "requiredFrames": 8,
       "durationMs": 500,
       "frames": [
@@ -429,26 +435,24 @@
       "eventsMs": {
         "impact": 375
       },
-      "assetStatus": "legacy-concept-extraction",
+      "renderer": "celestial-v3",
+      "assetStatus": "procedural-vfx-with-generated-dragon",
+      "legacySource": {
+        "path": "skills/dragon_slash.png",
+        "frameCount": 8
+      },
       "damage": false
     },
     "void_shuriken": {
-      "label": "Void Shuriken",
-      "path": "skills/void_shuriken.png",
-      "frameWidth": 64,
-      "frameHeight": 64,
+      "path": null,
+      "frameWidth": 320,
+      "frameHeight": 320,
       "frameCount": 8,
       "fps": 16,
-      "loop": false,
       "anchor": [
-        32,
-        32
+        160,
+        160
       ],
-      "layer": "skill-front",
-      "events": {
-        "launch": 5,
-        "impact": 6
-      },
       "requiredFrames": 8,
       "durationMs": 500,
       "frames": [
@@ -465,26 +469,24 @@
         "launch": 312.5,
         "impact": 375
       },
-      "assetStatus": "legacy-concept-extraction",
+      "renderer": "celestial-v3",
+      "assetStatus": "procedural-vfx-with-generated-dragon",
+      "legacySource": {
+        "path": "skills/void_shuriken.png",
+        "frameCount": 8
+      },
       "damage": false
     },
     "raijin_field": {
-      "label": "Raijin Field",
-      "path": "skills/raijin_field.png",
-      "frameWidth": 64,
-      "frameHeight": 80,
+      "path": null,
+      "frameWidth": 320,
+      "frameHeight": 320,
       "frameCount": 10,
       "fps": 14,
-      "loop": false,
       "anchor": [
-        32,
-        76
+        160,
+        160
       ],
-      "layer": "skill-front",
-      "events": {
-        "strike": 6,
-        "peak": 7
-      },
       "requiredFrames": 10,
       "durationMs": 714.2857142857143,
       "frames": [
@@ -503,52 +505,24 @@
         "strike": 428.57142857142856,
         "peak": 500
       },
-      "assetStatus": "legacy-concept-extraction",
+      "renderer": "celestial-v3",
+      "assetStatus": "procedural-vfx-with-generated-dragon",
+      "legacySource": {
+        "path": "skills/raijin_field.png",
+        "frameCount": 10
+      },
       "damage": false
     },
     "mythic_dragon_ascension": {
-      "label": "Mythic Dragon Ascension",
-      "path": "skills/mythic_dragon_ascension.png",
-      "frameWidth": 72,
-      "frameHeight": 88,
-      "frameCount": 10,
+      "path": null,
+      "frameWidth": 320,
+      "frameHeight": 320,
+      "frameCount": 12,
       "fps": 12,
-      "loop": false,
       "anchor": [
-        36,
-        84
+        160,
+        160
       ],
-      "layer": "ultimate",
-      "sheetLabels": [
-        1,
-        2,
-        3,
-        4,
-        6,
-        7,
-        8,
-        9,
-        10,
-        12
-      ],
-      "timeline": [
-        0,
-        1,
-        2,
-        3,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        8,
-        9
-      ],
-      "events": {
-        "burst": 10,
-        "end": 11
-      },
       "requiredFrames": 12,
       "durationMs": 1000,
       "frames": [
@@ -556,23 +530,36 @@
         1,
         2,
         3,
-        3,
         4,
         5,
         6,
         7,
         8,
-        8,
-        9
+        9,
+        10,
+        11
       ],
       "eventsMs": {
         "burst": 833.3333333333334,
         "end": 916.6666666666666
       },
-      "assetStatus": "legacy-concept-extraction",
+      "renderer": "celestial-v3",
+      "assetStatus": "procedural-vfx-with-generated-dragon",
+      "legacySource": {
+        "path": "skills/mythic_dragon_ascension.png",
+        "frameCount": 10
+      },
       "damage": false
     }
   },
+  "vfxSources": [
+    {
+      "path": "skills/dragon-spirit-v3.png",
+      "width": 1254,
+      "height": 1254,
+      "kind": "generated-single-sprite"
+    }
+  ],
   "aura": {
     "source": "metadata/tsukiyomi.json",
     "unchanged": true,
@@ -584,5 +571,5 @@
     "lowEffects": 12,
     "textureFrames": 160
   },
-  "assetStatus": "runtime-ready-authored-art-incomplete"
+  "assetStatus": "articulated-views-and-celestial-vfx"
 }

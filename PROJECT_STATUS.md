@@ -108,6 +108,23 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 MYTHIC MOTION V3 — TEST SERVER ONLY, owner requested the feet/arms and
+  skill presentation fixed and optimized. Targets main / shinobi-bombers-beta only.
+  See mythic-hero/MOTION_V3.md. Added separate limb skinning of the approved views,
+  12 baked PNG atlases (88 walk/run/attack frames), independent gait through volleys,
+  gentle Comfort locomotion, new procedural celestial VFX and isolated generated dragon.
+  Aura, stats, NFT ownership, economy and all production settings/branches are unchanged.
+  Rebuild atlases only after changing the rig: node mythic-hero/tools/bake-motion.cjs;
+  then node mythic-hero/tools/build-runtime.cjs and fresh unpack. Render uses committed
+  atlases and needs no Chrome. Provenance/source hashes and prompt are checked in.
+  New tests/mythic-motion-v3.cjs covers moving limb pixels, all four views, action/gait
+  concurrency, Comfort behavior, VFX margins, warm cache allocations and 10 Mythics.
+  Validation: fresh unpack, lint, rewards guard, all 54 suites and website checks passed
+  in one complete run. All 12 atlases passed alpha/edge validation; runtime screenshots
+  inspected. Logs: tests/out/mythic-v3-{final-build,lint,rewards,tests,motion}.log.
+  The untracked Shinobi_Bombers_Live_Treasury_Integration_Pack/ is unrelated owner work;
+  do not include it in this release. Existing v2 audit below is historical.
+
 - 2026-11-07 TSUKIYOMI — OWNER AUTHORIZED TEST SERVER ONLY. The latest instruction
   "deploy it to test server only" authorizes publishing the reviewed animation change
   from 0230af9 onto main for shinobi-bombers-beta (srv-dbib5q0m7kps73cddr90).

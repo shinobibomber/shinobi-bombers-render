@@ -1,5 +1,7 @@
 # Tsukiyomi animation review and beta release — November 7, 2026
 
+**Superseded movement/effects details:** the subsequent beta motion fix adds independently moving limbs, 88 baked movement/attack frames and new celestial VFX. See [MOTION_V3.md](MOTION_V3.md) for current behavior and asset provenance. The v2 findings below are retained as historical review evidence.
+
 The runtime is playable with a clearly identified pose-rig fallback. **The complete production animation art is not finished.** After local review of 0230af9, the owner authorized deployment to the test server only. Main/beta receives only this animation change; production's live branch/service, NFT minting, transfers and live wallets remain untouched.
 
 ## Inspected sources

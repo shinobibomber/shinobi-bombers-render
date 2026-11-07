@@ -1,5 +1,7 @@
 # Tsukiyomi — Mythic Shinobi (hero 13, rank 5)
 
+**Current beta movement/effects:** [MOTION_V3.md](MOTION_V3.md) documents the articulated motion, continuous gait during volleys, Comfort behavior, new skill renderer and tests. No production deployment is authorized for this update.
+
 **Animation v2 beta release:** see [ASSET_AUDIT.md](ASSET_AUDIT.md) for current behavior,
 the seven-star display, runtime/import contract, preview commands, test evidence and missing
 authored art. The legacy art generation description below is historical provenance, not a

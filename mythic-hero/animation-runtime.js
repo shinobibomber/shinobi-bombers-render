@@ -1,6 +1,6 @@
-/* Tsukiyomi animation adapter v2. Observes authoritative gameplay events; never applies damage.
- * Authored action sprites are still missing. The fallback rigs his approved directional poses,
- * not another hero's body. See metadata/animations.json and ASSET_AUDIT.md. */
+/* Tsukiyomi animation adapter v3: articulated locomotion and celestial VFX.
+ * Observes authoritative gameplay events; never applies damage. Approved views are skinned,
+ * not replaced with another hero. See metadata/animations.json and ASSET_AUDIT.md. */
 (() => {
   'use strict';
   const api=window.MythicHero, sprites=window.ShinobiSprites, ca=window.CharacterAnimations;
@@ -21,7 +21,8 @@
     const preload0=api.preload;let loadAuthored;
     const importPlan=new Map();
     for(const s of Object.values(data.states))for(const file of [s.texture,...Object.values(s.directionTextures||{})].filter(Boolean))importPlan.set(file,{width:(s.columns||s.frames)*128,height:Math.ceil(s.frames/(s.columns||s.frames))*128});
-    for(const s of Object.values(data.skills))if(!Object.values(api.source.skills).some(old=>old.path===s.path))importPlan.set(s.path,{width:s.frameWidth*s.frameCount,height:s.frameHeight});
+    for(const s of Object.values(data.skills))if(s.path&&!Object.values(api.source.skills).some(old=>old.path===s.path))importPlan.set(s.path,{width:s.frameWidth*s.frameCount,height:s.frameHeight});
+    for(const s of data.vfxSources||[])importPlan.set(s.path,{width:s.width,height:s.height});
     api.preload=()=>loadAuthored || (loadAuthored=preload0().then(()=>Promise.all([...importPlan].map(([file,size])=>new Promise((resolve,reject)=>{
       if(!/^(animations|skills)\/[a-zA-Z0-9_/-]+\.png$/.test(file))return reject(Error('Invalid authored sprite path'));
       const image=new Image();
@@ -41,6 +42,9 @@
       if(!api.isMythic(h))return oldPose.apply(this,arguments);
       if(time-sweepAt>1000){sweepAt=time;controller.sweep(new Set(S.h.map(h=>h.tokenId ?? h.id)),time)}
       const r=controller.sample(h,time,{...context,running:context.moving && Number(h.sp)>=8,reducedMotion:reduced()});
+      // Comfort reduces ambient motion/effects, not essential walking feedback. OS-level
+      // reduced motion still holds the sprite. Comfort uses the gentler walk amplitude.
+      if(r.moving && !['HURT','DEFEAT','BOMB_PLACE'].includes(r.state))return 'mythic:'+(Number(h.sp)>=8&&!reduced()?'RUN':'WALK_'+r.direction.toUpperCase())+':'+(motion.matches?0:r.moveFrame)+':'+r.direction;
       return 'mythic:'+r.state+':'+r.frame+':'+r.direction;
     };
     ca.play=function(h,state,time){if(api.isMythic(h))return play(h,state,{now:time});return oldPlay.apply(this,arguments)};
@@ -52,7 +56,9 @@
       // Travel remains entirely controlled by the native projectile; art never moves it.
       const progress=Number.isFinite(b.life)&&b.life>0?Math.max(0,Math.min(1,1-b.t/b.life)):0;
       const frame=shot.skill==='void_shuriken'?2+Math.floor(progress*4)%4:Math.min(7,Math.floor(progress*8));
-      draw(c,skillFrame(shot.skill,reduced()?4:frame),p.x,p.y,32*p.scale,p.angle,.85);return true;
+      const width=(level()===1?48:62)*p.scale;
+      if(!reduced()&&level()>1){const dx=Math.cos(p.angle)*10*p.scale,dy=Math.sin(p.angle)*10*p.scale;draw(c,skillFrame(shot.skill,frame),p.x-dx,p.y-dy,width*.8,p.angle,.16)}
+      draw(c,skillFrame(shot.skill,reduced()?4:frame),p.x,p.y,width,p.angle,.85);return true;
     };
     ca.drawActorEffects=function(c,h,time,p){
       if(!api.isMythic(h))return oldActor.apply(this,arguments);
@@ -60,11 +66,13 @@
       const r=controller.get(h);if(!r)return;
       if(['ATTACK','SKILL_DRAGON_SLASH'].includes(r.state)){
         const progress=Math.max(0,(time-r.started)/manifest.states[r.state].durationMs);
-        if(progress>.2 && progress<.9)draw(c,skillFrame('dragon_slash',Math.min(7,Math.floor(progress*8))),p.x+(p.flip?-1:1)*14*p.scale,p.y-16*p.scale,32*p.scale,p.flip?Math.PI:0,.6);
+        const angle=r.direction==='back'?-Math.PI/2:r.direction==='front'?Math.PI/2:p.flip?Math.PI:0;
+        if(progress>.2 && progress<.9)draw(c,skillFrame('dragon_slash',Math.min(7,Math.floor(progress*8))),p.x+Math.cos(angle)*10*p.scale,p.y-14*p.scale+Math.sin(angle)*8*p.scale,66*p.scale,angle,.62);
       }
       if(r.state==='ULTIMATE_DRAGON_ASCENSION'){
         const s=manifest.skills.mythic_dragon_ascension,index=Math.min(11,Math.floor((time-r.started)/s.durationMs*12));
-        draw(c,skillFrame('mythic_dragon_ascension',reduced()?7:index),p.x,p.y,level()===1?66:88,0,.65);
+        // The body stays visible below the rising dragon; no screen flash or camera shake.
+        draw(c,skillFrame('mythic_dragon_ascension',reduced()?7:index),p.x,p.y-3*p.scale,(level()===1?104:150)*p.scale,0,reduced()?.45:.82);
       }
       if(r.state==='VICTORY' && !reduced()){
         const progress=(time-r.started)/manifest.states.VICTORY.durationMs;
@@ -85,7 +93,7 @@
       const before=bombs.length,result=think0.apply(this,arguments);
       if(api.isMythic(h)&&bombs.length>before){const b=bombs[bombs.length-1];
         shots.set(b,{skill:shotSequence++%2?'void_shuriken':'dragon_slash'});
-        play(h,b.mythicUlt?'ULTIMATE_DRAGON_ASCENSION':Number.isFinite(b.tx)?'ATTACK':'BOMB_PLACE',{eventId:++sequence});
+        play(h,b.mythicUlt?'ULTIMATE_DRAGON_ASCENSION':Number.isFinite(b.tx)?'ATTACK':'BOMB_PLACE',{eventId:++sequence,coalesce:true});
       }return result;
     };
     const boom0=boom;boom=function(b){
@@ -104,11 +112,19 @@
       return true;
     };
     const hunt0=ca.drawHuntImpact;
+    const huntProjectile0=ca.drawHuntProjectile;
+    ca.drawHuntProjectile=function(c,shot,x,y,time,id,angle){
+      const h=owner(id);if(!h)return huntProjectile0.apply(this,arguments);
+      if(!allowFX())return true;
+      let record=shots.get(shot);if(!record){record={born:time,skill:shotSequence++%2?'void_shuriken':'dragon_slash'};shots.set(shot,record)}
+      const step=reduced()?4:Math.floor((time-record.born)/85)%6;
+      draw(c,skillFrame(record.skill,step),x,y,shot.ultimate?90:66,angle,.8);return true;
+    };
     ca.drawHuntImpact=function(c,hit,p,id){
       if(!owner(id))return hunt0.apply(this,arguments);
       if(!allowFX())return true;
       const name=hit.ultimate?'mythic_dragon_ascension':'raijin_field',s=manifest.skills[name],age=Math.max(0,.8-hit.life);
-      draw(c,skillFrame(name,Math.min(s.requiredFrames-1,Math.floor(age/.8*s.requiredFrames))),p.x,p.y,hit.ultimate?100:55,0,Math.min(1,hit.life/.2)*.65);return true;
+      draw(c,skillFrame(name,reduced()?5:Math.min(s.requiredFrames-1,Math.floor(age/.8*s.requiredFrames))),p.x,p.y,hit.ultimate?160:90,0,Math.min(1,hit.life/.2)*.75);return true;
     };
     api.spawnSkill=(skill,h,tile)=>spawn(skill,h,tile?.x,tile?.y);
     sprites.clearCache?.();return true;
@@ -140,7 +156,6 @@
     const phase=index/clip.frames*Math.PI*2;let sx=1,sy=1,rot=0,dx=0,dy=0;
     // Explicit pose-rig fallback: stable foot pivot, unchanged costume, bounded motion.
     if(state==='IDLE')sy=1+.008*Math.sin(phase);
-    if(state.startsWith('WALK')||state==='RUN'){sy=1-.018*Math.abs(Math.sin(phase));rot=.015*Math.sin(phase)}
     if(state==='BOMB_PLACE')sy=1-.12*Math.sin(index/(clip.frames-1)*Math.PI);
     if(state==='HURT'){rot=-.035*(1-index/clip.frames);dx=-3*(1-index/clip.frames)}
     if(state==='DEFEAT'){sy=1-.25*index/7;rot=-.15*index/7}
@@ -149,7 +164,7 @@
     const atlas=authored.get(clip.directionTextures?.[dir] || clip.texture);
     ctx.save();ctx.translate(160+(atlas?0:dx),352+(atlas?0:dy));ctx.rotate(atlas?0:rot);ctx.scale(atlas?1:sx,atlas?1:sy);
     if(atlas){const columns=clip.columns||clip.frames;ctx.drawImage(atlas,index%columns*128,Math.floor(index/columns)*128,128,128,-64*2.5,-124*2.5,320,320)}
-    else ctx.drawImage(img,0,0,128,128,-64*2.5,-124*2.5,320,320);ctx.restore();
+    else TsukiyomiRig.paint(ctx,img,state,index,dir,clip.frames);ctx.restore();
     if(!atlas && state.startsWith('EMOTE_')){
       const labels={EMOTE_ALERT:'!',EMOTE_QUESTION:'?',EMOTE_LIKE:'♥',EMOTE_CELEBRATE:'✦'};
       ctx.save();ctx.fillStyle='#dfb6ff';ctx.font='bold 30px system-ui';ctx.textAlign='center';ctx.fillText(labels[state],260,70-Math.sin(index/3*Math.PI)*5);ctx.restore();
@@ -164,6 +179,12 @@
     if(!api.assetsReady||!manifest?.skills[name])return null;
     const s=manifest.skills[name],step=Math.max(0,Math.min(s.requiredFrames-1,index|0)),frame=s.frames[step],key=name+':'+frame+':'+layer;
     if(textures.has(key))return textures.get(key);
+    if(s.renderer==='celestial-v3'){
+      const c=document.createElement('canvas');c.width=320;c.height=320;
+      TsukiyomiEffects.paint(c.getContext('2d'),name,step,s.requiredFrames,layer,authored.get('skills/dragon-spirit-v3.png'));
+      c.mythicEffect={skill:name,frame,step,layer,assetStatus:s.assetStatus};textures.set(key,c);
+      if(textures.size>120)textures.delete(textures.keys().next().value);return c;
+    }
     const [ax,ay]=s.anchor,w=Math.max(ax,s.frameWidth-ax)*2,h=Math.max(ay,s.frameHeight-ay)*2,c=document.createElement('canvas');c.width=w;c.height=h;
     const ctx=c.getContext('2d'),x=w/2-ax,y=h/2-ay;
     if(name==='raijin_field'&&layer!=='all'){ctx.beginPath();const split=y+s.frameHeight-14;ctx.rect(0,layer==='ground'?split:0,w,layer==='ground'?h-split:split);ctx.clip()}
@@ -189,7 +210,7 @@
       if(age>=duration||!owner(slot.owner)||!G[slot.y]?.[slot.x]){slot.active=false;continue}
       if(layer==='ground'&&slot.name!=='raijin_field')continue;
       const frame=reduced()?Math.min(s.requiredFrames-1,slot.startFrame+2):slot.startFrame+Math.floor(Math.max(0,age)*s.fps/1000),p=geo.proj(slot.x+.5,slot.y+.5,0),scale=geo.Sg(slot.y+.5);
-      draw(c,skillFrame(slot.name,frame,layer),p[0],p[1],(level()===1?44:56)*scale,0,Math.min(1,(duration-age)/150)*.7);
+      draw(c,skillFrame(slot.name,frame,layer),p[0],p[1],(level()===1?76:104)*scale,0,Math.min(1,(duration-age)/150)*.7);
     }
   }
 })();

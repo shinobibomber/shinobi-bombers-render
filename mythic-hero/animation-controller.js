@@ -15,7 +15,7 @@
       let r = actors.get(id);
       if (!r) {
         if (actors.size >= 128) actors.delete(actors.keys().next().value);
-        r = { id, state:'IDLE', started:now, seen:now, direction:'front', event:null, emitted:-1, generation:0, frame:0, cycles:0, phase:null, last:now, moving:false };
+        r = { id, state:'IDLE', started:now, seen:now, direction:'front', event:null, emitted:-1, generation:0, frame:0, cycles:0, phase:null, last:now, moving:false, gaitPhase:null, gaitCycles:0, moveFrame:0 };
         actors.set(id, r);
       }
       r.seen = now; return r;
@@ -33,6 +33,7 @@
       const r=record(hero,now); if (!r) return false;
       if (options.eventId != null && r.event === options.eventId) return false;
       const old=clips[r.state];
+      if(options.coalesce && r.state===state && !old.loop && now-r.started<old.durationMs)return false;
       if (!options.force && !old.loop && now-r.started < old.durationMs && old.priority>clip.priority) return false;
       r.direction=facing(options.direction || r.direction);
       enter(r,state,now,options.eventId ?? serial+1); emit(r,'start',0); return true;
@@ -41,6 +42,13 @@
       const r=record(hero,now); if (!r) return null;
       const dir=facing(context.direction || r.direction); r.direction=dir;
       if (context.sleeping) { if (r.state!=='IDLE') {emit(r,'cancel',r.frame);enter(r,'IDLE',now,null);} r.moving=false; r.frame=0; return r; }
+      r.moving=!!context.moving;
+      // Gait is independent of attacks and direction changes. Native shots cannot freeze feet.
+      if(Number.isFinite(context.phase)){
+        if(r.moving && r.gaitPhase!=null)r.gaitCycles+=Math.max(0,Math.min(4,context.phase-r.gaitPhase))/4;
+        r.gaitPhase=context.phase;
+        r.moveFrame=Math.floor(r.gaitCycles*8)%8;
+      }else r.moveFrame=Math.floor(now/(context.running?75:100))%8;
       let clip=clips[r.state], age=Math.max(0,now-r.started);
       if (!clip.loop) {
         const current=Math.min(clip.frames-1,Math.floor(age/clip.durationMs*clip.frames));
@@ -55,9 +63,7 @@
       clip=clips[r.state]; r.moving=!!context.moving;
       if (r.moving && Number.isFinite(context.phase)) {
         // The renderer's distance phase advances with actual tile motion, not wall time.
-        if (r.phase != null) r.cycles+=Math.max(0,Math.min(4,context.phase-r.phase))/4;
-        r.phase=context.phase;
-        r.frame=Math.floor(r.cycles*clip.frames)%clip.frames;
+        r.frame=r.moveFrame;
       } else r.frame=Math.floor(Math.max(0,now-r.started)/clip.durationMs*clip.frames)%clip.frames;
       if (context.reducedMotion) r.frame=0;
       r.last=now; return r;

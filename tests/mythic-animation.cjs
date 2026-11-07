@@ -6,7 +6,7 @@ const out=path.join(__dirname,'out');
   f.holdAdventure=false;
   const heroes=Array.from({length:10},(_,i)=>({tokenId:'animation-fixture-'+i,name:i<3?'Tsukiyomi':'Legend',rank:i<3?5:4,level:1,mythic:i<3?'tsukiyomi':undefined,nft:i<3?{mint:'fixture-'+i}:undefined,baseStats:{pw:16,sp:15,st:17}}));
   f.profile=economy.normalizeProfile({...f.profile,heroes,battleReady:heroes.map(h=>h.tokenId)});
-  const downloaded=[];p.on('request',r=>{if(r.url().includes('/mythic-hero/animations/'))downloaded.push(r.url())});
+  const downloaded=[];p.on('request',r=>{if(r.url().includes('/mythic-hero/animations/')&&!r.url().includes('/rig-v3/'))downloaded.push(r.url())});
   await p.locator('#loginPhantom').click();await p.waitForFunction(()=>RyoPayments.state.authenticated&&!LoginScreen.active);
   await p.evaluate(async()=>{await MythicHero.runtimeReady;await MythicHero.preload();go(1)});
   const details=await p.evaluate(()=>{
@@ -15,7 +15,7 @@ const out=path.join(__dirname,'out');
     gallery.style.cssText='position:fixed;inset:0;z-index:99999;background:#100c22';document.body.append(gallery);
     const c=gallery.getContext('2d');c.fillStyle='#100c22';c.fillRect(0,0,gallery.width,gallery.height);let row=0;
     for(const [state,clip]of Object.entries(manifest.states)){
-      c.fillStyle='#e4d3ff';c.font='12px system-ui';c.fillText(state,8,row*112+25);c.fillStyle='#b0a5c1';c.font='10px system-ui';c.fillText(clip.frames+' logical frames / pose fallback',8,row*112+44);
+      c.fillStyle='#e4d3ff';c.font='12px system-ui';c.fillText(state,8,row*112+25);c.fillStyle='#b0a5c1';c.font='10px system-ui';c.fillText(clip.frames+' frames / articulated views',8,row*112+44);
       for(let i=0;i<clip.frames;i++){const dir=state.startsWith('WALK_')?state.slice(5).toLowerCase():'front',img=m.renderFrame(h,state,i,dir);c.drawImage(img,228+i*66,row*112,66,83);c.fillText(String(i+1),248+i*66,row*112+100)}row++;
     }
     const after=JSON.stringify({ryo:S.ryo,map:S.map,heroes:S.h,bombs});
@@ -29,7 +29,7 @@ const out=path.join(__dirname,'out');
     document.querySelector('#mythic-animation-gallery').remove();const c=document.createElement('canvas');c.width=1100;c.height=520;c.id='mythic-skill-gallery';document.body.append(c);
     const ctx=c.getContext('2d');ctx.fillStyle='#100c22';ctx.fillRect(0,0,c.width,c.height);let row=0;const counts=[];
     for(const [name,s]of Object.entries(MythicHero.animationSource.skills)){
-      ctx.fillStyle='#efdeff';ctx.font='14px system-ui';ctx.fillText(name+' — legacy concept extraction',12,row*130+18);
+      ctx.fillStyle='#efdeff';ctx.font='14px system-ui';ctx.fillText(name+' — celestial VFX v3',12,row*130+18);
       const indices=[];for(let i=0;i<s.requiredFrames;i++){const img=MythicHero.skillFrame(name,i);indices.push(img.mythicEffect.step);ctx.drawImage(img,15+i*88,row*130+27,80,90)}counts.push(indices.length);row++;
     }return counts;
   });assert.deepEqual(effects,[8,8,10,12]);
