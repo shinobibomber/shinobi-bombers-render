@@ -20,7 +20,7 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
-**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Creators Portal — prepared, not deployed)**
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Creators Portal)**
 
 **✨ New**
 • **CREATORS PORTAL — CREATE • INVITE • EARN**: apply with your game wallet and track administrator review. Approved creators receive a referral link, private progress tracker and Creator Points history.

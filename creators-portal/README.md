@@ -164,8 +164,8 @@ website build checks, the unchanged real-time rewards guard, all **42 game suite
 Desktop, mobile, shop and administrator screenshots were visually inspected. No real wallet,
 live reward, external service transaction, Mainnet mint or production database migration was used.
 
-The ordinary production `npm run build` additionally runs `db:init`; that final live database step
-is reserved for a separately authorized deployment. The existing installer uses the machine's
+The ordinary production `npm run build` additionally runs `db:init`; that database step is part
+of the owner's authorized beta deployment. The existing installer uses the machine's
 global npm (Node 26), while game assembly and the complete test runner were run with Node 22.
 
 1. Review this implementation and back up the target database before applying the migration.
@@ -174,8 +174,10 @@ global npm (Node 26), while game assembly and the complete test runner were run 
 4. Test application/approval, a funded referral, Stage 5 evidence, both commissions and redemption
    on the test server. Keep founder/starter bonus separate from qualifying paid orders.
 5. Review timing, pool solvency, audit records and operational alerts before enabling enrollment.
-6. Authorize deployment separately. **Pushing main auto-deploys; this request did not authorize it.**
-   This feature does not authorize live CP awards, funds movement or Mainnet NFTs.
+6. The owner explicitly authorized the existing beta deployment on November 7, 2026 after the
+   implementation review. **Pushing main auto-deploys.** Deploy the tested implementation to the
+   existing Devnet beta and verify the build/migration and public portal API. Mainnet token launch,
+   funds movement and NFT minting remain separate operations.
 
 ## Known limits
 

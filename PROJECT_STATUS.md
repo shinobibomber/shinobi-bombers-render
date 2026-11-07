@@ -108,7 +108,7 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
-- 2026-11-07 Creators Portal (prepared locally; deployment NOT authorized): sources in
+- 2026-11-07 Creators Portal (beta deployment authorized by owner): sources in
   creators-portal/, assembled by apply-creators-portal.cjs after gas safety and before performance.
   Existing authenticated Ryo API and RYO_ADMIN_* roles; DB allowlist, applications, one permanent
   referral, server-only Stage 5 verifier, settled paid summon output counting, exactly-once 50k CP,
@@ -120,8 +120,9 @@ that they are unavailable.
   New additive schema and creators-server/creators-portal suites; see creators-portal/README.md.
   Verified Node 22.23.4: build:local, lint/typecheck, rewards guard, 42 suites and 20 website checks;
   desktop/mobile/admin screenshots inspected. No production DB migration or live rewards issued.
-  Do not push main: Render auto-deploys and this feature request explicitly requires separate
-  deployment authorization. Review branch/local build only until authorized.
+  Owner explicitly authorized deployment on Nov 7 after reviewing the implementation. Publish
+  through the existing main-branch Render auto-deploy. This is the Devnet beta; no Mainnet token
+  launch, funds movement or NFT mint is part of this deployment.
 
 - 2026-11-07 Display & Accessibility + Tsukiyomi animation (owner request): display-settings/README.md
   (Comfort default; localStorage sb-display-v1 + profile.display newer-wins; hooks in arena shake/impacts/
