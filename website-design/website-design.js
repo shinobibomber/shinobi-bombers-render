@@ -179,7 +179,7 @@
     'logo': () => {}, 'prof': editNickname, 'mng': () => go(1), 't1': () => go(1), 't2': () => go(1), 't3': () => go(1), 't4': () => go(1), 't5': () => go(1),
     'ev': () => openBox(),
     'go1': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go2': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go3': () => notice('Daily missions', 'Daily missions are not available yet.'),
-    'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => go(3), 'news': () => { location.href = '/whitepaper'; },
+    'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => window.CreatorsPortal?.open(), 'news': () => { location.href = '/whitepaper'; },
     'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
   };
   function act(k, h, el) {
@@ -250,6 +250,9 @@
   /* ---------- per-screen live content ---------- */
   const INIT = {}, MODS = {}, PAINT = {}, MIRROR = {};
   INIT.home = b => {
+    // Replace the whole Tutorial slice, including the baked-in label and question icon.
+    const creator = b.st.querySelector('[data-sbwid="tut"]');
+    if (creator) { creator.classList.add('sbw-creator-button'); creator.setAttribute('aria-label', 'Creator'); creator.setAttribute('aria-haspopup', 'dialog'); creator.setAttribute('aria-controls', 'creatorsPanel'); creator.innerHTML = '<span aria-hidden="true">✦</span><span>Creator</span>'; }
     const cover = (x, y, w, h, bg, fs, color, cls = '') => { const e = place(mk('span', 'sbw-cover sbw-left ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; };
     b.name = cover(1380, 138, 80, 28, '#01060e', 25, '#ffffff', 'sbw-click'); b.name.title = 'Set your nickname';
     b.name.addEventListener('click', editNickname);
@@ -1231,17 +1234,6 @@
       e.addEventListener('click', () => act('hdr', h, e)); e.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); act('hdr', h, e); } });
       if (h.id.startsWith('nav-')) nav[h.id] = e;
     });
-    // Reflow the same navigation artwork icons into eleven equal slots. One opaque backing replaces
-    // the printed navigation row, so adding Creators Portal never leaves old labels showing through.
-    const mainNav = mk('nav', 'sbw-main-nav', st); mainNav.setAttribute('aria-label', 'Game screens');
-    const navItems = [['home','Home'],['heroes','Heroes'],['adventure','Adventure'],['summon','Summon'],['fusion','Fusion'],['dojo','Dojo'],['market','Market'],['boss-hunt','Boss Hunt'],['codex','Codex'],['guild','Guild'],['creators','CREATORS PORTAL']];
-    for (const [key, label] of navItems) {
-      const navId = key === 'boss-hunt' ? 'nav-bosshunt' : 'nav-' + key;
-      nav[navId]?.remove();
-      const button = mk('button', 'hs', mainNav); button.type = 'button'; button.dataset.sbwid = navId; button.setAttribute('aria-label', label);
-      const icon = mk('i', key === 'creators' ? 'cp-nav-star' : '', button); if (key === 'creators') icon.textContent = '✦'; else navIcon(icon, navId);
-      mk('span', '', button).textContent = label; button.addEventListener('click', () => goScreen(key)); nav[navId] = button;
-    }
     const c = H.chest, cb = mk('div', 'hs chestbtn', st); place(cb, c.r[0], c.r[1], c.r[2] - c.r[0], c.r[3] - c.r[1]); cb.tabIndex = 0; cb.setAttribute('role', 'button'); cb.setAttribute('aria-label', 'Open your Chest');
     sl(mk('i', 'sl', cb), c.r); const label = place(mk('span', 'cbt sbw-chest', cb), c.tx, c.ty, c.tw, c.th); label.style.fontSize = c.fs + 'px'; label.dataset.fs = c.fs;
     const dot = place(mk('i', 'cdot', cb), c.dx, c.dy, c.ds, c.ds); dot.hidden = true; cb.addEventListener('click', openChest);
@@ -1258,7 +1250,7 @@
     HDR = { el, st, nav, navhl, label, dot, chestEl: cb, live, covers, online: count, gear, walletSpot };
   }
   function markNav() {
-    if (!HDR) return; const id = window.CreatorsPortal?.isOpen ? 'nav-creators' : NAVOF[cur]; for (const k in HDR.nav) { const on = k === id; HDR.nav[k].classList.toggle('sbw-on', on); if (on) HDR.nav[k].setAttribute('aria-current', 'page'); else HDR.nav[k].removeAttribute('aria-current'); }
+    if (!HDR) return; const id = NAVOF[cur]; for (const k in HDR.nav) { const on = k === id; HDR.nav[k].classList.toggle('sbw-on', on); if (on) HDR.nav[k].setAttribute('aria-current', 'page'); else HDR.nav[k].removeAttribute('aria-current'); }
     const e = id && HDR.nav[id]; HDR.navhl.hidden = !e; if (e) { HDR.navhl.style.left = e.style.left; HDR.navhl.style.width = e.style.width; }
     markPhoneNav();
   }
@@ -1350,7 +1342,7 @@
     const items = {}; for (const [k, id, label] of PHONE_NAV) items[k] = item(k, id, label, nav);
     const moreBtn = mk('button', 'sbw-ph-item sbw-ph-morebtn', nav); moreBtn.type = 'button'; moreBtn.setAttribute('aria-expanded', 'false'); moreBtn.innerHTML = '<i class="dots">•••</i><span>More</span>';
     const sheet = mk('div', 'sbw-ph-sheet', more); const head = mk('p', 'sbw-ph-sheethead', sheet); head.innerHTML = 'More <small>Players online: <b>—</b></small>';
-    const grid = mk('div', 'sbw-ph-grid', sheet); for (const [k, id, label] of [...PHONE_MORE, ['creators', 'nav-creators', 'Creators Portal']]) items[k] = item(k, id, label, grid);
+    const grid = mk('div', 'sbw-ph-grid', sheet); for (const [k, id, label] of PHONE_MORE) items[k] = item(k, id, label, grid);
     const chat = mk('button', 'sbw-ph-item', grid); chat.type = 'button'; chat.innerHTML = '<i class="dots">💬</i><span>Chat</span>'; chat.addEventListener('click', () => { more.hidden = true; goScreen('home'); setTimeout(() => toggleChat(true), 50); });
     const setMore = open => { more.hidden = !open; moreBtn.setAttribute('aria-expanded', String(open)); };
     moreBtn.addEventListener('click', () => setMore(more.hidden)); more.addEventListener('click', e => { if (e.target === more) setMore(false); });
@@ -1360,9 +1352,9 @@
       gear: top.querySelector('.sbw-ph-gear'), wallet: top.querySelector('.sbw-ph-wallet'), online: head.querySelector('b') };
   }
   function markPhoneNav() {
-    if (!PH) return; const k = window.CreatorsPortal?.isOpen ? 'creators' : cur && cur.startsWith('dojo') ? 'dojo' : cur;
+    if (!PH) return; const k = cur && cur.startsWith('dojo') ? 'dojo' : cur;
     for (const [key, e] of Object.entries(PH.items)) { const on = key === k; e.classList.toggle('on', on); if (on) e.setAttribute('aria-current', 'page'); else e.removeAttribute('aria-current'); }
-    PH.moreBtn.classList.toggle('on', k === 'creators' || PHONE_MORE.some(([key]) => key === k));
+    PH.moreBtn.classList.toggle('on', PHONE_MORE.some(([key]) => key === k));
   }
   function regionOf(e, panes) {
     const x = parseFloat(e.style.left), y = parseFloat(e.style.top); if (!Number.isFinite(x) || !Number.isFinite(y)) return null;

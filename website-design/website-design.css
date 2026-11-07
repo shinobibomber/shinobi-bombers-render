@@ -12,6 +12,11 @@
   font:700 1em Rajdhani,'Arial Narrow',system-ui,sans-serif;color:#f1ecff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 #sbwLayer .sbw-cover.sbw-left{justify-content:flex-start;padding-left:2px}
 #sbwLayer .sbw-cover.sbw-click{pointer-events:auto;cursor:pointer}
+/* creator-popup-v2: an opaque replacement for the Tutorial artwork, in the same Home action slot. */
+#sbwLayer .hs.sbw-creator-button{display:flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(#0a1729,#040a14);border:2px solid #2c5379;border-radius:9px;box-shadow:inset 0 0 0 2px #050a12,0 0 8px #071d34;color:#a7d9ff;font:700 19px Rajdhani,system-ui;box-sizing:border-box;text-shadow:0 1px 2px #000}
+#sbwLayer .hs.sbw-creator-button>span:first-child{color:#8ec9ff;font-size:26px;line-height:1}
+#sbwLayer .hs.sbw-creator-button:hover{border-color:#73beff;background:linear-gradient(#132d4b,#091326);color:#e7f5ff}
+#sbwLayer .hs.sbw-creator-button:focus-visible{outline:3px solid #33c8ff;outline-offset:3px}
 #sbwLayer .sbw-cover.sbw-click:hover{text-decoration:underline}
 #sbwLayer .sbw-avatar{position:absolute;z-index:7;border-radius:8px;background:radial-gradient(circle at 50% 40%,#3a1a7a,#12082e);pointer-events:none}
 #sbwLayer .sbw-tile{position:absolute;z-index:8;border:2px solid var(--rc);border-radius:8px;background:linear-gradient(#1b1546,#0a0720);box-shadow:0 0 12px var(--rc);cursor:pointer;overflow:hidden;transition:transform .2s}

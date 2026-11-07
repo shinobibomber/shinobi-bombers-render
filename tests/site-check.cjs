@@ -95,7 +95,14 @@ async function startServer() {
       await check('live: #play page links to the game and the optional same-origin preview loads it', async () => {
         await p.goto(url + '/index.html#dojo'); await hs(p, 'wallet').click(); await p.waitForSelector('.sbg-play:not([hidden])');
         assert.match(await p.locator('.sbg-status').textContent(), /Game connected/); assert.equal(await p.locator('.sbg-actions a').first().getAttribute('href'), url + '/play/');
-        await p.locator('.sbg-play summary').click(); const f = p.frameLocator('.sbg-frame'); await f.locator('canvas').first().waitFor({ timeout: 8000 });
+        await p.locator('.sbg-play summary').click(); const f = p.frameLocator('.sbg-frame');
+        // The first canvas is the signed-in header avatar; it is intentionally hidden on login.
+        // Verify the real game and its usable signed-out entry rather than racing that avatar.
+        await f.locator('#cv').waitFor({ state: 'attached', timeout: 8000 });
+        await f.locator('#loginScreen:not([hidden]) .login-reference-art').waitFor({ timeout: 8000 });
+        assert(await f.locator('#loginPhantom').isVisible(), 'the embedded game offers its actual wallet login');
+        assert(await f.locator('.login-reference-art').evaluate(image => image.complete && image.naturalWidth === 1536), 'the login artwork is loaded');
+        assert.equal(await f.locator('#creatorsPanel').isVisible(), false, 'Creator popup starts closed');
         await p.locator('.sbg-x').click(); await p.waitForSelector('.sbg-play', { state: 'hidden' }); assert.equal(await p.evaluate(() => location.hash), '#dojo'); });
       await check('live: #play page fits a 390×844 phone without horizontal scrolling', async () => {
         const m = await page({ width: 390, height: 844 }); await m.goto(url + '/index.html#play'); await m.waitForSelector('.sbg-play:not([hidden])');

@@ -1,14 +1,21 @@
 # CREATORS PORTAL
 
-An integrated game screen, not a separate website. Sources are assembled by
+Open the native modal using **Creator** in Home's bottom action row (the former Tutorial
+button). The main header keeps its ten original game tabs and the sign-in artwork is preserved.
+The portal uses the website's purple/gold/cyan theme, a desktop sidebar and mobile tabs;
+Escape, backdrop click and the pinned close button return to the game. Focus stays in the
+modal and returns to its trigger. Shop/admin confirmations open above the portal.
+
+An integrated game popup, not a separate website. Sources are assembled by
 `apply-creators-portal.cjs` after transaction safety and before performance optimization.
 No CP is on-chain, and none of these operations mints Ryo or changes player Ryo rewards.
 
 ## Integration and dependencies
 
-- Frontend: the existing JavaScript Canvas game and website-design header, wallet header, game
-  fonts, mobile More navigation, and Display & Accessibility settings. `portal.js` adds the
-  responsive portal; `portal.css` provides opaque moonlit shrine panels, CSS sakura and a torii.
+- Frontend: the existing JavaScript Canvas game, Home action row, wallet header, game
+  fonts and Display & Accessibility settings. `portal.js` adds the responsive modal;
+  `portal.css` provides opaque purple panels, gold frames, cyan accents and a torii.
+  Three small existing website hero portraits are copied into the portal asset folder.
 - Backend: the existing Node Ryo handler, signed-wallet challenges, single-use nonce, one-hour
   sessions, scope isolation, PostgreSQL transactions and `RYO_ADMIN_*` roles.
 - Purchases: `Store.settlePurchase` emits CP evidence only on its pending → confirmed transition.

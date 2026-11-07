@@ -108,6 +108,20 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Creator popup redesign: Home's `tut` hotspot is now an opaque Creator
+  button; original ten header hotspots restored, extra Creator navigation removed.
+  `creators-portal/portal.js` uses a native modal dialog (focus trap, Escape/backdrop,
+  focus return and nested confirmations), purple/gold/cyan themed CSS, desktop sidebar
+  and mobile scrolling tabs. Artwork reuses three existing website hero portraits copied
+  by apply-creators-portal.cjs. No economic/server formula changes. Unique asset marker:
+  `creator-popup-v2`. Regression coverage in tests/creators-portal.cjs includes header,
+  button artwork replacement, keyboard access, modal focus and phone viewport bounds.
+  Website preview readiness verifies the actual signed-out login and loaded game canvas;
+  its old first-canvas visibility assertion raced the deliberately hidden header avatar.
+  Verified fresh build/typecheck, lint, rewards guard, all 42 game suites and 20 website
+  checks on Node 22.23.4; desktop, mobile and admin screenshots inspected.
+  Prior portal release b05a7be went live with the additive migration successfully applied.
+
 - 2026-11-07 Creators Portal (beta deployment authorized by owner): sources in
   creators-portal/, assembled by apply-creators-portal.cjs after gas safety and before performance.
   Existing authenticated Ryo API and RYO_ADMIN_* roles; DB allowlist, applications, one permanent

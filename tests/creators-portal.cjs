@@ -30,12 +30,31 @@ async function fixture(p, f, account, snapshot) {
  await withGame(async ({ p, f, errors, account, snapshot, assert }) => {
    const { store, db } = await fixture(p, f, account, snapshot);
    try {
+     assert.equal(await p.locator('.cp-login-link').count(), 0, 'the sign-in artwork has no extra Creator shortcut');
      await p.evaluate(() => CreatorsPortal.open());
      await p.waitForFunction(() => CreatorsPortal.snapshot?.rules);
      assert.match(await p.locator('#creatorsPanel').innerText(), /50,000 CP/);
      assert.equal(await p.locator('#creatorsPanel [data-tab="shop"]').count(), 0, 'unsigned visitors cannot see creator-only sections');
      await p.locator('#creatorsPanel [data-cp="close"]').click(); await login(p);
-     await p.locator('[data-sbwid="nav-creators"]').click();
+     assert.equal(await p.locator('[data-sbwid="nav-creators"]').count(), 0, 'Creators Portal is removed from the shared header');
+     assert.equal(await p.locator('.sbw-hdr [data-sbwid^="nav-"]').count(), 10, 'the original ten header tabs remain');
+     const trigger = p.locator('[data-sbwid="tut"]');
+     assert.equal(await trigger.getAttribute('aria-label'), 'Creator');
+     assert.equal(await trigger.locator('.sl').count(), 0, 'printed Tutorial label and icon cannot show through');
+     assert.equal(await trigger.innerText(), '✦\nCreator');
+     await p.screenshot({ path: path.join(root, 'tests/out/creator-button-desktop.png') });
+     await trigger.focus(); await p.keyboard.press('Enter');
+     await p.waitForFunction(() => document.querySelector('#creatorsPanel').matches(':modal'));
+     await p.waitForFunction(() => !document.querySelector('#creatorsPanel').hasAttribute('aria-busy'));
+     assert.equal(await p.locator('#creatorsPanel').getAttribute('data-design'), 'creator-popup-v2');
+     assert.equal(await p.locator('.cp-hero-art img').evaluateAll(imgs => imgs.every(i => i.complete && i.naturalWidth > 0)), true, 'existing Shinobi artwork is packaged');
+     await p.keyboard.press('Escape');
+     assert.equal(await p.locator('#creatorsPanel').isVisible(), false);
+     assert.equal(await trigger.evaluate(el => el === document.activeElement), true, 'closing returns keyboard focus to Creator');
+     await trigger.click();
+     await p.waitForFunction(() => !document.querySelector('#creatorsPanel').hasAttribute('aria-busy'));
+     await p.locator('#cp-tab-overview').focus(); await p.keyboard.press('ArrowDown');
+     await p.waitForFunction(() => document.activeElement?.id === 'cp-tab-apply');
      await p.locator('.cp-sections [data-tab="apply"]').click();
      await p.locator('[data-form="apply"] [name="displayName"]').fill('Moonlit Shinobi');
      await p.locator('[data-form="apply"] [name="channelUrl"]').fill('https://youtube.com/@moonlit-fixture');
@@ -97,12 +116,19 @@ async function fixture(p, f, account, snapshot) {
      await creators.handle({ store, origin: 'http://fixture' }, account, 'creator-terms', { terms: true });
      const c = (await creators.summary(store, account, 'http://fixture')).creator;
      await creators.adminAction(store, account, { operation: 'adjust', creatorId: c.id, deltaMilli: 50000000, reasonCode: 'fixture', reason: 'Isolated fixture points', requestId: crypto.randomUUID() });
-     await login(p); await p.locator('.sbw-ph-morebtn').click();
-     await p.locator('.sbw-ph-more [data-k="creators"]').click(); await p.waitForFunction(() => CreatorsPortal.snapshot?.creator?.status === 'APPROVED');
-     await p.waitForFunction(() => document.querySelector('.sbw-ph-morebtn').classList.contains('on'));
+     await login(p);
+     assert.equal(await p.locator('.sbw-ph-more [data-k="creators"]').count(), 0);
+     const trigger = p.locator('[data-sbwid="tut"]'); await trigger.scrollIntoViewIfNeeded();
+     await p.screenshot({ path: path.join(root, 'tests/out/creator-button-mobile.png') });
+     await trigger.click(); await p.waitForFunction(() => CreatorsPortal.snapshot?.creator?.status === 'APPROVED');
+     assert.equal(await p.locator('#creatorsPanel').evaluate(el => el.matches(':modal')), true, 'mobile Creator opens the modal');
      await p.locator('#creatorsPanel [data-tab="dashboard"]').click();
      await p.screenshot({ path: path.join(root, 'tests/out/creators-dashboard-mobile.png') });
      const bounds = await p.locator('#creatorsPanel').evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth })); assert(bounds.scroll <= bounds.width + 1, 'mobile portal has no page-width overflow');
+     const shell = await p.locator('.cp-shell').evaluate(el => { const r = el.getBoundingClientRect(); return { left:r.left, right:r.right, top:r.top, bottom:r.bottom, width:el.clientWidth, scroll:el.scrollWidth }; });
+     assert(shell.left >= 0 && shell.right <= 390 && shell.top >= 0 && shell.bottom <= 844, 'mobile popup stays inside the viewport');
+     assert(shell.scroll <= shell.width + 1, 'the popup content cannot overflow horizontally');
+     assert.equal(await p.locator('.cp-sections').getAttribute('aria-orientation'), 'horizontal');
      await p.locator('#creatorsPanel [data-tab="shop"]').click(); await p.screenshot({ path: path.join(root, 'tests/out/creators-shop-mobile.png') });
      await p.locator('[data-redeem="hero-pass"]').click(); await p.waitForSelector('dialog.cp-modal[open]');
      await p.evaluate(() => RyoPayments.reset()); await p.waitForFunction(() => !document.querySelector('#creatorsPanel').textContent.includes('Sakura Streams'));
@@ -111,5 +137,5 @@ async function fixture(p, f, account, snapshot) {
      assert.deepEqual(errors, []);
    } finally { await db.close(); }
  }, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
- console.log('PASS: integrated Creators Portal — public overview, wallet application, in-game admin approval, real CP shop/profile fulfillment, private referrals, desktop/mobile layouts, sign-out clearing and Guild/Heroes/Adventure preservation.');
+ console.log('PASS: integrated Creators Portal — Home Creator replaces Tutorial without stale artwork, original header, themed desktop/mobile modal, keyboard focus/Escape/tabs, public overview, wallet application, admin approval, atomic CP shop/profile, privacy and existing navigation preservation.');
 })().catch(e => { console.error(e); process.exitCode = 1; });

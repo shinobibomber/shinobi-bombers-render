@@ -12,12 +12,11 @@
     return null;
   }
   try { const code = new URL(location.href).searchParams.get('creator')?.toUpperCase(); if (code && /^[A-Z0-9]{4,32}$/.test(code) && !referralCode()) localStorage.setItem(KEY, JSON.stringify({ code, created: Date.now() })); } catch {}
-  const root = document.createElement('section'); root.id = 'creatorsPanel'; root.hidden = true; root.setAttribute('aria-label', 'Creators Portal');
-  root.innerHTML = '<div class="cp-shell"><div class="cp-topline"><button type="button" data-cp="close">← Back to game</button><span class="cp-wallet"></span></div><header class="cp-hero"><div class="cp-hero-copy"><p class="cp-eyebrow">SHINOBI BOMBERS · CREATOR PROGRAM</p><h1>CREATORS PORTAL</h1><p class="cp-tagline">CREATE • INVITE • EARN</p><p>Build your community. Invite new shinobi. Unlock rewards for your creativity.</p></div><div class="cp-torii" aria-hidden="true"></div><i class="cp-petal"></i><i class="cp-petal"></i><i class="cp-petal"></i></header><nav class="cp-sections" role="tablist" aria-label="Creators Portal sections"></nav><p class="cp-notice" role="status" aria-live="polite"></p><div class="cp-section" role="tabpanel"></div></div>';
+  const root = document.createElement('dialog'); root.id = 'creatorsPanel'; root.hidden = true; root.setAttribute('aria-labelledby', 'cp-title'); root.dataset.design = 'creator-popup-v2';
+  root.innerHTML = '<div class="cp-shell"><div class="cp-topline"><strong><span aria-hidden="true">✦</span> CREATOR HQ</strong><span class="cp-wallet"></span><button type="button" data-cp="close" aria-label="Close Creators Portal" title="Back to game">✕</button></div><header class="cp-hero"><div class="cp-hero-copy"><p class="cp-eyebrow">SHINOBI BOMBERS · CREATOR PROGRAM</p><h1 id="cp-title">CREATORS <span>PORTAL</span></h1><p class="cp-tagline">CREATE • INVITE • EARN</p><p>Your community. Your ninja way.<br>Turn your creativity into in-game rewards.</p></div><div class="cp-hero-art" aria-hidden="true"><i class="cp-torii"></i><img loading="lazy" src="assets/creators-portal/hero3.webp" alt="" width="135" height="131"><img loading="lazy" src="assets/creators-portal/hero0.webp" alt="" width="135" height="131"><img loading="lazy" src="assets/creators-portal/hero4.webp" alt="" width="135" height="131"><span>FORGE YOUR COMMUNITY</span></div></header><div class="cp-workspace"><nav class="cp-sections" role="tablist" aria-label="Creators Portal sections" aria-orientation="vertical"></nav><div class="cp-content"><p class="cp-notice" role="status" aria-live="polite"></p><div id="cp-page" class="cp-section" role="tabpanel" tabindex="-1"></div></div></div></div>';
   document.body.append(root);
   const $ = sel => root.querySelector(sel), content = $('.cp-section');
-  const loginLink = document.createElement('button'); loginLink.type = 'button'; loginLink.className = 'cp-login-link'; loginLink.textContent = '✦ CREATORS PORTAL'; loginLink.hidden = true; loginLink.onclick = () => open(); document.body.append(loginLink);
-  function top() { const hdr = wallet() && document.querySelector('#sbwLayer:not([hidden]) .sbw-hdr'), mobile = wallet() && document.querySelector('#sbwLayer.sbw-phone .sbw-ph-top'); const r = (mobile || hdr)?.getBoundingClientRect(); root.style.setProperty('--cp-top', Math.max(0, r?.height > 0 ? r.bottom : 0) + 'px'); root.style.zIndex = wallet() ? '118' : '100010'; root.style.bottom = wallet() ? '' : '0px'; }
+  function top() { $('.cp-sections').setAttribute('aria-orientation', matchMedia('(max-width: 760px)').matches ? 'horizontal' : 'vertical'); }
   function notice(message, error = false) { $('.cp-notice').textContent = message || ''; $('.cp-notice').classList.toggle('error', error); }
   async function run(fn) { if (busy) return; busy = true; root.setAttribute('aria-busy', 'true'); root.querySelectorAll('button:not([data-cp="close"])').forEach(b => b.disabled = true); try { await fn(); } catch (e) { notice(e.message, true); } finally { busy = false; root.removeAttribute('aria-busy'); root.querySelectorAll('button').forEach(b => b.disabled = b.dataset.unavailable === 'true'); } }
   async function refresh() {
@@ -28,20 +27,16 @@
     if (section === 'admin' && data.adminRole) admin = await api('creator-admin', { page });
     render();
   }
-  function markGameNav(opened) {
-    const current = window.WebsiteDesign?.current(), key = opened ? 'nav-creators' : current === 'boss-hunt' ? 'nav-bosshunt' : 'nav-' + (current?.startsWith('dojo') ? 'dojo' : current);
-    document.querySelectorAll('.sbw-main-nav [data-sbwid]').forEach(b => { const on = b.dataset.sbwid === key; b.classList.toggle('sbw-on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-    const screen = opened ? 'creators' : current?.startsWith('dojo') ? 'dojo' : current;
-    document.querySelectorAll('.sbw-ph-item[data-k]').forEach(b => b.classList.toggle('on', b.dataset.k === screen));
-    document.querySelector('.sbw-ph-morebtn')?.classList.toggle('on', !!screen && !['home', 'adventure', 'heroes', 'summon'].includes(screen));
-  }
-  async function open() { root.hidden = false; top(); markGameNav(true); if (busy) return; notice('Loading creator program…'); await run(async () => { await refresh(); notice(''); }); $('.cp-section').focus({ preventScroll: true }); }
-  function close() { root.hidden = true; markGameNav(false); }
+  async function open() { root.hidden = false; top(); if (!root.open) root.showModal(); if (busy) return; notice('Loading creator program…'); await run(async () => { await refresh(); notice(''); }); if (root.open) $('.cp-section').focus({ preventScroll: true }); }
+  function close() { root.close(); root.hidden = true; }
+  root.addEventListener('close', () => { if (!root.open) root.hidden = true; });
+  root.addEventListener('cancel', e => { e.preventDefault(); close(); });
+  root.addEventListener('click', e => { if (e.target === root) close(); });
   function attributionResult(session) {
     if (!session.referralAccepted && !session.referralMessage) return;
     try { localStorage.removeItem(KEY); sessionStorage.setItem('sb-creator-attribution:' + session.wallet, session.referralAccepted ? 'Your creator referral was accepted.' : session.referralMessage); } catch {}
   }
-  window.CreatorsPortal = { open, close, referralCode, attributionResult, get snapshot() { return snapshot; }, get isOpen() { return !root.hidden; } };
+  window.CreatorsPortal = { open, close, referralCode, attributionResult, get snapshot() { return snapshot; }, get isOpen() { return root.open; } };
   const approved = () => snapshot?.creator?.status === 'APPROVED';
   const tabs = () => [['overview', 'Overview'], ['apply', 'Apply'], ...(approved() ? [['dashboard', 'Dashboard'], ['referrals', 'My Referrals'], ['points', 'Creator Points'], ['shop', 'Creator Shop'], ['history', 'Reward History']] : []), ...(snapshot?.adminRole ? [['admin', 'Creator Management']] : [])];
   const card = (label, value, detail) => `<article class="cp-card"><h3>${esc(label)}</h3><strong class="cp-number">${esc(value)}</strong><small>${esc(detail)}</small></article>`;
@@ -50,9 +45,10 @@
     if (!snapshot) return;
     const available = tabs(); if (!available.some(([key]) => key === section)) section = 'overview';
     $('.cp-wallet').textContent = wallet() ? 'Authenticated · ' + short(wallet()) : 'Connect your game wallet to apply';
-    $('.cp-sections').innerHTML = available.map(([key, label]) => `<button type="button" role="tab" aria-selected="${section === key}" data-tab="${key}">${label}</button>`).join('');
+    const tabIcons = { overview: '◈', apply: '✎', dashboard: '▦', referrals: '♧', points: '✦', shop: '◆', history: '◷', admin: '⚙' };
+    $('.cp-sections').innerHTML = '<p class="cp-nav-label">CREATOR PROGRAM</p>' + available.map(([key, label]) => `<button type="button" id="cp-tab-${key}" role="tab" aria-controls="cp-page" tabindex="${section === key ? 0 : -1}" aria-selected="${section === key}" data-tab="${key}"><span aria-hidden="true">${tabIcons[key]}</span>${label}<i aria-hidden="true">›</i></button>`).join('');
+    content.setAttribute('aria-labelledby', 'cp-tab-' + section);
     content.innerHTML = ({ overview, apply, dashboard, referrals, points, shop, history, admin: adminView }[section] || overview)();
-    document.querySelector('[data-sbwid="nav-creators"]')?.setAttribute('aria-current', 'page');
   }
   function overview() {
     const r = snapshot.rules || {};
@@ -97,7 +93,13 @@
       ${isApprover ? `<details class="cp-note"><summary>Program rules & enrollment controls</summary><p>Changes apply to future qualifications. Existing CP and saved commission expiry remain intact.</p><form class="cp-form" data-form="config"><label>Commission duration (days)<input name="commissionDays" type="number" value="${cfg.commissionDays}" min="1" max="365" required></label><label>Public enrollment limit<input name="enrollmentLimit" type="number" value="${cfg.enrollmentLimit}" min="0" max="1000000" required></label><label>Season ID<input name="season" value="${esc(cfg.season)}" maxlength="40" required></label><label>Global promotional heroes this season<input name="promotionalSupply" type="number" value="${cfg.promotionalSupply}" min="0" max="1000000" required></label><label class="cp-check"><input name="applicationsPaused" type="checkbox" ${cfg.applicationsPaused ? 'checked' : ''}>Pause new applications</label><label class="cp-check"><input name="enrollmentPaused" type="checkbox" ${cfg.enrollmentPaused ? 'checked' : ''}>Pause new referral enrollment</label><fieldset><legend>Eligible Ryo game services</legend>${['summon', 'fusion', 'dojo', 'sensei', 'sensei-rental', 'training'].map(k => `<label class="cp-check"><input type="checkbox" name="product" value="${k}" ${cfg.eligibleProducts.includes(k) ? 'checked' : ''}>${k}</label>`).join('')}</fieldset><label>Reason<textarea name="reason" required maxlength="500"></textarea></label><button>Save versioned rules</button></form></details><details class="cp-note"><summary>Shop prices & inventory</summary><div class="cp-admin-list">${admin.shop.map(i => `<form class="cp-form cp-card" data-form="shop-item" data-item="${esc(i.id)}"><h3>${esc(i.name)} · v${i.version}</h3><label>Price (whole CP)<input name="priceCp" type="number" min="1" value="${Number(i.price) / 1000}" required></label><label>Total supply (${i.used} already delivered)<input name="supply" type="number" min="${i.used}" value="${i.supply}" required></label><label>Monthly limit<input name="monthlyLimit" type="number" min="1" max="100" value="${i.monthly_limit}" required></label><label class="cp-check"><input name="enabled" type="checkbox" ${i.enabled ? 'checked' : ''}>Available in shop</label><label>Reason<input name="reason" maxlength="500" required></label><button>Save item</button></form>`).join('')}</div></details><details class="cp-note"><summary>Audited CP correction</summary><form class="cp-form" data-form="adjust"><label>Creator ID<input name="creatorId" required maxlength="80"></label><label>Adjustment in CP (negative to reverse)<input name="points" type="number" step="0.001" required></label><label>Reason code<select name="reasonCode"><option>correction</option><option>reversal</option><option>appeal-resolution</option></select></label><label>Evidence / reason<textarea name="reason" required maxlength="500"></textarea></label><button>Record correction</button></form></details>` : ''}
       ${admin.ledger.length ? `<h2>Selected creator CP history</h2><pre>${esc(JSON.stringify(admin.ledger, null, 2))}</pre>` : ''}<details class="cp-note"><summary>Administrator audit records</summary><pre>${esc(JSON.stringify(admin.audits, null, 2))}</pre></details>${pages()}`;
   }
-  async function choose(tab) { section = tab; page = 0; notice(''); if (tab === 'admin') await run(async () => { admin = await api('creator-admin', { page }); render(); }); else render(); }
+  async function choose(tab) { const fromNav = document.activeElement?.closest('.cp-sections'); section = tab; page = 0; notice(''); if (tab === 'admin') await run(async () => { admin = await api('creator-admin', { page }); render(); }); else render(); if (fromNav) $('#cp-tab-' + section)?.focus({ preventScroll: true }); }
+  $('.cp-sections').addEventListener('keydown', e => {
+    const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']; if (!keys.includes(e.key) || busy) return;
+    const tabs = [...$('.cp-sections').querySelectorAll('[role="tab"]')], at = tabs.indexOf(e.target); if (at < 0) return;
+    e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (at + (['ArrowLeft', 'ArrowUp'].includes(e.key) ? -1 : 1) + tabs.length) % tabs.length;
+    const key = tabs[next].dataset.tab; choose(key).then(() => $('.cp-sections [data-tab="' + key + '"]')?.focus());
+  });
   function confirm(title, detail, reasonRequired = false) {
     const d = document.createElement('dialog'); d.className = 'cp-modal'; d.innerHTML = `<form method="dialog"><h2>${esc(title)}</h2><p>${esc(detail)}</p>${reasonRequired ? '<label>Reason / evidence<textarea name="reason" required maxlength="500"></textarea></label><label>Optional public guidance<input name="publicNote" maxlength="240"></label>' : ''}<div class="cp-inline"><button value="cancel" formnovalidate>Cancel</button><button value="confirm">Confirm</button></div></form>`; document.body.append(d); d.showModal(); return new Promise(resolve => d.addEventListener('close', () => { const data = new FormData(d.querySelector('form')); resolve(d.returnValue === 'confirm' ? { reason: data.get('reason'), publicNote: data.get('publicNote') } : null); d.remove(); }, { once: true }));
   }
@@ -139,9 +141,9 @@
   // Acceptance is available even before the destination wallet has its own creator record.
   const migrateLink = document.createElement('button'); migrateLink.type = 'button'; migrateLink.textContent = 'Accept wallet migration'; migrateLink.onclick = () => run(async () => {
     const d = document.createElement('dialog'); d.className = 'cp-modal'; d.innerHTML = '<form method="dialog"><h2>Accept creator wallet migration</h2><p>The authenticated receiving wallet must match the source request. Your game assets do not move.</p><label>Migration ID<input name="id" required maxlength="80"></label><div class="cp-inline"><button value="cancel" formnovalidate>Cancel</button><button value="confirm">Accept migration</button></div></form>'; document.body.append(d); d.showModal(); const result = await new Promise(resolve => d.addEventListener('close', () => resolve(d.returnValue === 'confirm' ? new FormData(d.querySelector('form')).get('id') : null), { once: true })); d.remove(); if (result) { await api('creator-migrate', { accept: true, id: result }); await refresh(); notice('Creator identity moved to this authenticated wallet.'); }
-  }); const migrationFooter = document.createElement('div'); migrationFooter.className = 'cp-migration-entry'; migrationFooter.append(migrateLink); $('.cp-shell').append(migrationFooter);
+  }); const migrationFooter = document.createElement('div'); migrationFooter.className = 'cp-migration-entry'; migrationFooter.append(migrateLink); $('.cp-content').append(migrationFooter);
   function accountChanged() {
-    const account = wallet(); loginLink.hidden = !!account || !!window.GameLoading?.active;
+    const account = wallet();
     if (account !== lastWallet) { responseEpoch++; snapshot = null; admin = null; lastWallet = account; section = 'overview'; page = 0; document.querySelectorAll('dialog.cp-modal[open]').forEach(d => d.close('cancel')); content.replaceChildren(); $('.cp-sections').replaceChildren(); if (!account) close(); else if (!root.hidden && !busy) run(refresh); }
     const cosmetics = window.RyoPayments?.state.profile?.creatorCosmetics || {};
     document.body.classList.toggle('cp-has-frame', !!account && !!cosmetics.frame); document.body.classList.toggle('cp-has-badge', !!account && !!cosmetics.badge);
@@ -150,7 +152,6 @@
     if (!root.hidden && !busy && account && Date.now() - refreshAt > 15000) { refreshAt = Date.now(); run(refresh); }
   }
   addEventListener('shinobi-ryo-ledger', accountChanged); addEventListener('shinobi-beta-wallet', accountChanged); addEventListener('sb-display-change', accountChanged); addEventListener('resize', top);
-  addEventListener('keydown', e => { if (e.key === 'Escape' && !root.hidden && !document.querySelector('dialog[open]')) close(); });
   // Cosmetic delivery uses existing animation hooks; it never changes damage, stats or rewards.
   function installCosmetics() {
     const animations = window.CharacterAnimations; if (!animations || animations.creatorCosmeticsInstalled) return;

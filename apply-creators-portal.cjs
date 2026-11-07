@@ -35,6 +35,7 @@ function applyCreatorsPortal(appDir = path.join(__dirname, 'app')) {
   const src = path.join(__dirname, 'creators-portal'), server = path.join(appDir, 'server'), publicDir = path.join(appDir, 'public'), dest = path.join(publicDir, 'assets/creators-portal');
   fs.mkdirSync(dest, { recursive: true });
   for (const file of ['portal.js', 'portal.css']) fs.copyFileSync(path.join(src, file), path.join(dest, file));
+  for (const rank of [0, 3, 4]) fs.copyFileSync(path.join(__dirname, 'website/assets', 'hero' + rank + '.webp'), path.join(dest, 'hero' + rank + '.webp'));
   fs.copyFileSync(path.join(src, 'server.cjs'), path.join(server, 'creators-portal.cjs'));
   const schema = path.join(server, 'schema.sql'); if (!fs.readFileSync(schema, 'utf8').includes('-- Creators Portal v1:')) fs.appendFileSync(schema, '\n' + fs.readFileSync(path.join(src, 'schema.sql'), 'utf8').replace(/\r\n?/g, '\n') + '\n');
   for (const [file, hooks] of [['service.cjs', serviceHooks], ['store.cjs', storeHooks], ['adventure.cjs', adventureHooks]]) {

@@ -20,6 +20,19 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Creator popup & design)**
+
+**🔄 Changes**
+• **Creator button**: Home’s Tutorial button is now Creator. Press it to open the Creators Portal in a popup. The header returns to its original ten game tabs.
+• **Matching game theme**: purple panels, gold borders, cyan accents and familiar Shinobi artwork bring the portal in line with the website.
+• **Clearer navigation**: a desktop sidebar and scrolling mobile tabs organize applications, referrals, Creator Points, rewards and administrator tools.
+
+**🛠️ Fixes**
+• The popup stays within the screen, keeps its close button available and supports keyboard navigation, Escape and focus return.
+• The old Tutorial label and icon are completely replaced. Creator rewards, qualification rules and Ryo payments are unchanged.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Creators Portal)**
 
 **✨ New**
