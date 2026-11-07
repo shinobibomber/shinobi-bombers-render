@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title data-i18n="meta.title">Shinobi Bombers — Pre-Launch Registration</title>
 <meta name="description" data-i18n-attr="content:meta.description" content="Register early for Shinobi Bombers, get your referral link and earn heroes when your friends join.">
-<meta name="theme-color" content="#05020f">
+<meta name="theme-color" content="#07031a">
 <meta property="og:title" content="Shinobi Bombers — The Shinobi Era Begins Soon">
 <meta property="og:description" content="Register early, get your referral link and recruit your squad before the official launch.">
 <meta property="og:image" content="/pl/assets/logo.webp">
-<link rel="icon" href="/pl/assets/hero0.webp">
+<link rel="icon" href="/pl/assets/hero-1.webp">
+<link rel="preload" as="image" href="/pl/assets/bg-village.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap">
 <link rel="stylesheet" href="/pl/prelaunch.css">
@@ -20,13 +21,12 @@
 <a class="skip" href="#main" data-i18n="a11y.skip">Skip to content</a>
 
 <header class="nav" id="top">
-  <a class="brand" href="#home"><img src="/pl/assets/logo.webp" width="174" height="75" alt="Shinobi Bombers"></a>
+  <a class="brand" href="#home"><img src="/pl/assets/logo.webp" width="580" height="212" alt="Shinobi Bombers"></a>
   <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="navLinks"><span aria-hidden="true">☰</span><span class="sr" data-i18n="a11y.menu">Menu</span></button>
   <nav id="navLinks" class="nav-links" aria-label="Main">
-    <a href="#home" data-i18n="nav.home">Home</a>
     <a href="#intro" data-i18n="nav.intro">Game</a>
+    <a href="#heroes" data-i18n="nav.heroes">Heroes</a>
     <a href="#referral" data-i18n="nav.referral">Referral Program</a>
-    <a href="#rewards" data-i18n="nav.rewards">Rewards</a>
     <a href="#demo" class="demo-nav" data-i18n="nav.demo" hidden>Demo</a>
     <a href="#faq" data-i18n="nav.faq">FAQ</a>
     <a href="#community" data-i18n="nav.community">Community</a>
@@ -40,25 +40,30 @@
 </header>
 
 <main id="main">
+  <!-- HERO -->
   <section id="home" class="hero" aria-labelledby="heroTitle">
-    <img class="hero-art left" src="/pl/assets/ninjas-left.webp" width="360" height="740" alt="" fetchpriority="high">
-    <img class="hero-art right" src="/pl/assets/ninjas-right.webp" width="360" height="742" alt="">
     <div class="hero-body">
       <p class="badge"><span class="dot" aria-hidden="true"></span><span data-i18n="hero.badge">PRE-LAUNCH — GAME SERVER NOT YET OPEN</span></p>
+      <img class="hero-logo" src="/pl/assets/logo.webp" width="580" height="212" alt="Shinobi Bombers" fetchpriority="high">
       <h1 id="heroTitle" data-i18n="hero.title">THE SHINOBI ERA BEGINS SOON</h1>
       <p class="hero-text" data-i18n="hero.text">Prepare for battle. Connect your wallet. Invite your squad. Become part of the Shinobi Bombers community before the official launch!</p>
-      <p class="hero-support" data-i18n="hero.support">Your journey to becoming a legendary Shinobi starts here.</p>
-      <div class="hero-cta">
+      <div class="cta">
         <button id="heroConnect" class="btn btn-gold" type="button" data-i18n="hero.connect">CONNECT SOLANA WALLET</button>
-        <a class="btn btn-ghost" href="#referral" data-i18n="hero.explore">EXPLORE REFERRAL REWARDS</a>
         <a id="heroDemo" class="btn btn-violet" href="#demo" data-i18n="hero.demo" hidden>PLAY THE DEMO</a>
+        <a class="btn btn-ghost" href="#referral" data-i18n="hero.explore">EXPLORE REFERRAL REWARDS</a>
       </div>
-      <p id="launchStatus" class="launch" data-i18n="hero.launchTbd">OFFICIAL LAUNCH: TO BE ANNOUNCED</p>
-      <p id="countdown" class="countdown" hidden></p>
+      <p class="launch"><span id="launchStatus" data-i18n="hero.launchTbd">OFFICIAL LAUNCH: TO BE ANNOUNCED</span><span id="countdown" class="countdown" hidden></span></p>
       <p class="free" data-i18n="hero.free">Free to join · No transaction · No deposit</p>
+    </div>
+    <div class="lineup" aria-hidden="true">
+      <img src="/pl/assets/hero-1.webp" alt="" width="220" height="200"><img src="/pl/assets/hero-2.webp" alt="" width="220" height="200">
+      <img src="/pl/assets/hero-3.webp" alt="" width="220" height="200"><img src="/pl/assets/hero-4.webp" alt="" width="220" height="200">
+      <img src="/pl/assets/hero-5.webp" alt="" width="220" height="200"><img src="/pl/assets/hero-6.webp" alt="" width="220" height="200">
+      <img src="/pl/assets/hero-7.webp" alt="" width="220" height="200"><img src="/pl/assets/hero-8.webp" alt="" width="220" height="200">
     </div>
   </section>
 
+  <!-- DASHBOARD (signed in) -->
   <section id="dashboard" class="section dash" aria-labelledby="dashTitle" hidden>
     <div class="wrap">
       <div class="dash-head">
@@ -104,37 +109,79 @@
     </div>
   </section>
 
+  <!-- THE GAME -->
   <section id="intro" class="section" aria-labelledby="introTitle">
     <div class="wrap">
+      <p class="eyebrow" data-i18n="intro.eyebrow">THE GAME</p>
       <h2 id="introTitle" data-i18n="intro.title">WHAT IS SHINOBI BOMBERS?</h2>
       <p class="lead" data-i18n="intro.lead">A strategy-focused ninja game.</p>
       <div class="features">
-        <article class="feature"><img src="/pl/assets/tsukiyomi.webp" width="320" height="320" alt="" loading="lazy"><h3 data-i18n="intro.f1.t">Shinobi Hero Collection</h3><p data-i18n="intro.f1.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
-        <article class="feature"><img src="/pl/assets/shrine-card.webp" width="420" height="411" alt="" loading="lazy"><h3 data-i18n="intro.f2.t">Summoning Shrine</h3><p data-i18n="intro.f2.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
-        <article class="feature"><div class="ranks" aria-hidden="true"><img src="/pl/assets/hero0.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero1.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero2.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero3.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero4.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero5.webp" alt="" width="68" height="66" loading="lazy"></div><h3 data-i18n="intro.f3.t">Training &amp; Fusion</h3><p data-i18n="intro.f3.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
-        <article class="feature"><img src="/pl/assets/map.webp" width="560" height="315" alt="" loading="lazy"><h3 data-i18n="intro.f4.t">Stage-Based Adventure</h3><p data-i18n="intro.f4.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
-        <article class="feature"><img src="/pl/assets/boss-hunt.webp" width="560" height="303" alt="" loading="lazy"><h3 data-i18n="intro.f5.t">Boss Hunt</h3><p data-i18n="intro.f5.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
-        <article class="feature"><img src="/pl/assets/dojo.webp" width="560" height="206" alt="" loading="lazy"><h3 data-i18n="intro.f6.t">Market, Dojo &amp; Sensei</h3><p data-i18n="intro.f6.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
+        <article class="feature"><div class="art art-sprites"><img src="/pl/assets/hero-2.webp" alt="" loading="lazy"><img src="/pl/assets/hero-1.webp" alt="" loading="lazy"><img src="/pl/assets/hero-7.webp" alt="" loading="lazy"></div>
+          <div class="body"><h3 data-i18n="intro.f1.t">Shinobi Hero Collection</h3><p data-i18n="intro.f1.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></div></article>
+        <article class="feature"><div class="art"><img src="/pl/assets/shrine-card.webp" alt="" loading="lazy"></div>
+          <div class="body"><h3 data-i18n="intro.f2.t">Summoning Shrine</h3><p data-i18n="intro.f2.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></div></article>
+        <article class="feature"><div class="art art-contain"><img src="/pl/assets/ranks.webp" alt="" loading="lazy"></div>
+          <div class="body"><h3 data-i18n="intro.f3.t">Training &amp; Fusion</h3><p data-i18n="intro.f3.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></div></article>
+        <article class="feature"><div class="art"><img src="/pl/assets/arena.webp" alt="" loading="lazy"></div>
+          <div class="body"><h3 data-i18n="intro.f4.t">Stage-Based Adventure</h3><p data-i18n="intro.f4.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></div></article>
+        <article class="feature"><div class="art art-sprites art-boss"><img src="/pl/assets/boss-raijin.webp" alt="" loading="lazy"><img src="/pl/assets/boss-akuma.webp" alt="" loading="lazy"></div>
+          <div class="body"><h3 data-i18n="intro.f5.t">Boss Hunt</h3><p data-i18n="intro.f5.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></div></article>
+        <article class="feature"><div class="art"><img src="/pl/assets/academy.webp" alt="" loading="lazy"></div>
+          <div class="body"><h3 data-i18n="intro.f6.t">Market, Dojo &amp; Sensei</h3><p data-i18n="intro.f6.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></div></article>
       </div>
       <p class="note center" data-i18n="intro.note">Every game feature opens at the official launch.</p>
     </div>
   </section>
 
-  <section id="demo" class="section demo" aria-labelledby="demoTitle" hidden>
-    <div class="wrap demo-card">
+  <!-- MYTHIC SPOTLIGHT -->
+  <section id="heroes" class="section mythic" aria-labelledby="mythicTitle">
+    <div class="wrap split">
+      <figure class="mythic-art"><img src="/pl/assets/tsukiyomi-mythic.webp" width="560" height="800" alt="Tsukiyomi, Mythic Shinobi" loading="lazy"></figure>
       <div>
-        <p class="badge demo-badge"><span data-i18n="demo.badge">TEST SERVER · DEMO</span></p>
-        <h2 id="demoTitle" data-i18n="demo.title">TRY THE GAME BEFORE LAUNCH</h2>
-        <p class="lead" data-i18n="demo.text">Investors and players can try Shinobi Bombers right now on our test server.</p>
-        <ul class="demo-list" data-i18n-list="demo.items"></ul>
-        <div class="hero-cta left"><a id="demoLink" class="btn btn-violet" href="#" target="_blank" rel="noopener noreferrer" data-i18n="demo.cta">OPEN THE DEMO ↗</a></div>
+        <p class="eyebrow violet" data-i18n="heroes.eyebrow">NEW · 7★ MYTHIC</p>
+        <h2 id="mythicTitle" data-i18n="heroes.title">TSUKIYOMI, THE MYTHIC SHINOBI</h2>
+        <p class="lead" data-i18n="heroes.text"></p>
+        <ul class="ticks" data-i18n-list="heroes.points"></ul>
+        <img class="ranks" src="/pl/assets/ranks.webp" width="1000" height="348" alt="" loading="lazy">
+        <p class="note" data-i18n="heroes.ranks">Every rank has its own aura, from Genin to Legend.</p>
       </div>
-      <img src="/pl/assets/boss-hunt.webp" width="560" height="303" alt="" loading="lazy">
     </div>
   </section>
 
-  <section id="join" class="section alt" aria-labelledby="joinTitle">
+  <!-- BOSSES -->
+  <section id="bosses" class="section" aria-labelledby="bossTitle">
     <div class="wrap">
+      <p class="eyebrow" data-i18n="bosses.eyebrow">BOSS HUNT</p>
+      <h2 id="bossTitle" data-i18n="bosses.title">FACE THE BOSSES</h2>
+      <p class="lead" data-i18n="bosses.text"></p>
+      <ul class="bosses">
+        <li><img src="/pl/assets/boss-akuma.webp" alt="" loading="lazy"><b>Akuma</b><span data-i18n="boss.akuma">Fallen Shinobi</span></li>
+        <li><img src="/pl/assets/boss-yuki.webp" alt="" loading="lazy"><b>Yuki Onna</b><span data-i18n="boss.yuki">Frozen Moon</span></li>
+        <li><img src="/pl/assets/boss-raijin.webp" alt="" loading="lazy"><b>Raijin</b><span data-i18n="boss.raijin">Thunder Lord</span></li>
+        <li><img src="/pl/assets/boss-daichi.webp" alt="" loading="lazy"><b>Daichi</b><span data-i18n="boss.daichi">Ancient Golem</span></li>
+        <li><img src="/pl/assets/boss-orochi.webp" alt="" loading="lazy"><b>Orochi</b><span data-i18n="boss.orochi">Serpent King</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- DEMO (test server, shown when DEMO_URL is set) -->
+  <section id="demo" class="section demo" aria-labelledby="demoTitle" hidden>
+    <div class="wrap split">
+      <div>
+        <p class="eyebrow violet" data-i18n="demo.badge">TEST SERVER · DEMO</p>
+        <h2 id="demoTitle" data-i18n="demo.title">TRY THE GAME BEFORE LAUNCH</h2>
+        <p class="lead" data-i18n="demo.text">Investors and players can try Shinobi Bombers right now on our test server.</p>
+        <ul class="ticks" data-i18n-list="demo.items"></ul>
+        <div class="cta left"><a id="demoLink" class="btn btn-violet" href="#" target="_blank" rel="noopener noreferrer" data-i18n="demo.cta">OPEN THE DEMO ↗</a></div>
+      </div>
+      <figure class="shot"><img src="/pl/assets/demo.webp" width="1100" height="619" alt="" loading="lazy"></figure>
+    </div>
+  </section>
+
+  <!-- HOW TO JOIN -->
+  <section id="join" class="section" aria-labelledby="joinTitle">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="join.eyebrow">GET STARTED</p>
       <h2 id="joinTitle" data-i18n="join.title">HOW TO JOIN</h2>
       <ol class="steps">
         <li class="step"><span class="num" aria-hidden="true">1</span><h3 data-i18n="join.s1.t">STEP 1 — CONNECT</h3><p data-i18n="join.s1.d">Connect and verify your Solana wallet.</p></li>
@@ -144,9 +191,11 @@
     </div>
   </section>
 
+  <!-- REFERRAL + REWARDS + LEADERBOARD -->
   <section id="referral" class="section referral" aria-labelledby="refTitle">
-    <div class="wrap ref-grid">
+    <div class="wrap split">
       <div>
+        <p class="eyebrow" data-i18n="ref.eyebrow">REFERRAL PROGRAM</p>
         <h2 id="refTitle" data-i18n="ref.title">RECRUIT SHINOBI. EARN HEROES.</h2>
         <p class="lead" data-i18n="ref.text">Invite your friends to Shinobi Bombers.</p>
         <p class="req-label" data-i18n="ref.req">Both requirements are mandatory:</p>
@@ -155,11 +204,11 @@
           <li><b data-i18n="ref.req2">Successfully Clear Stage 5</b><span data-i18n="ref.req2d"></span></li>
         </ul>
         <p class="note" data-i18n="ref.reqNote">Milestones are completed after the official launch.</p>
-        <div class="hero-cta"><button id="refCta" class="btn btn-gold" type="button" data-i18n="ref.cta">GET MY REFERRAL LINK</button>
+        <div class="cta left"><button id="refCta" class="btn btn-gold" type="button" data-i18n="ref.cta">GET MY REFERRAL LINK</button>
           <a class="btn btn-ghost" href="/rules" data-i18n="ref.rules">Read the Referral Program Rules</a></div>
       </div>
       <div id="rewards" class="reward-card" aria-labelledby="rewardTitle">
-        <img src="/pl/assets/shrine-card.webp" width="420" height="411" alt="" loading="lazy">
+        <div class="reward-art"><img src="/pl/assets/shrine-card.webp" width="420" height="411" alt="" loading="lazy"></div>
         <p id="rewardTitle" class="reward-big" data-i18n="ref.reward">2 FREE RANDOM HEROES</p>
         <p class="reward-sub" data-i18n="ref.rewardSub">for every qualified referral</p>
         <div class="bound"><b data-i18n="ref.bound">🔒 Referral reward heroes are permanently non-marketable.</b><span data-i18n="ref.boundText"></span></div>
@@ -167,21 +216,22 @@
     </div>
     <div class="wrap">
       <div class="card board" aria-labelledby="lbTitle">
-        <h3 id="lbTitle" data-i18n="lb.title">TOP RECRUITERS</h3>
-        <p class="note" data-i18n="lb.basis">Ranked by registered referrals.</p>
+        <div class="board-head"><h3 id="lbTitle" data-i18n="lb.title">TOP RECRUITERS</h3><p class="note" data-i18n="lb.basis">Ranked by registered referrals.</p></div>
         <div id="board"></div>
         <div class="pager"><button id="lbPrev" class="btn btn-ghost btn-sm" type="button" data-i18n="lb.prev" disabled>Previous</button><button id="lbNext" class="btn btn-ghost btn-sm" type="button" data-i18n="lb.next" disabled>Next</button></div>
       </div>
     </div>
   </section>
 
-  <section id="community" class="section alt" aria-labelledby="comTitle">
-    <div class="wrap com-grid">
+  <!-- COMMUNITY -->
+  <section id="community" class="section" aria-labelledby="comTitle">
+    <div class="wrap split top">
       <div>
+        <p class="eyebrow" data-i18n="com.eyebrow">COMMUNITY</p>
         <h2 id="comTitle" data-i18n="com.title">JOIN THE COMMUNITY</h2>
         <p class="lead" data-i18n="com.text">Follow official news.</p>
-        <div class="hero-cta" id="socialLinks">
-          <a id="discordLink" class="btn btn-violet" href="#" target="_blank" rel="noopener noreferrer" hidden data-i18n="com.discord">JOIN DISCORD</a>
+        <div class="cta left" id="socialLinks">
+          <a id="discordLink" class="btn btn-discord" href="#" target="_blank" rel="noopener noreferrer" hidden><svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.6 1.3a18.4 18.4 0 0 0-5.6 0L8.6 3a19.7 19.7 0 0 0-4.9 1.5C.6 9.1-.3 13.6.1 18.1a19.9 19.9 0 0 0 6 3l1.3-2.1c-.7-.3-1.4-.6-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.8 19.8 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.7ZM8 15.4c-1.2 0-2.2-1.1-2.2-2.4S6.8 10.6 8 10.6s2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z"/></svg><span data-i18n="com.discord">JOIN DISCORD</span></a>
           <span id="discordSoon" class="btn btn-ghost is-static" data-i18n="com.discordSoon">Official Discord link coming soon</span>
           <a id="xLink" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer" hidden data-i18n="com.x">Follow on X</a>
         </div>
@@ -193,6 +243,7 @@
     </div>
   </section>
 
+  <!-- FAQ -->
   <section id="faq" class="section" aria-labelledby="faqTitle">
     <div class="wrap narrow">
       <h2 id="faqTitle" data-i18n="faq.title">FAQ</h2>
@@ -209,7 +260,7 @@
 
 <footer class="foot">
   <div class="wrap foot-grid">
-    <img src="/pl/assets/logo.webp" width="174" height="75" alt="Shinobi Bombers" loading="lazy">
+    <img src="/pl/assets/logo.webp" width="580" height="212" alt="Shinobi Bombers" loading="lazy">
     <nav aria-label="Footer">
       <a href="/terms" data-i18n="foot.terms">Terms of Service</a>
       <a href="/privacy" data-i18n="foot.privacy">Privacy Policy</a>

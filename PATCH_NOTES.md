@@ -20,6 +20,20 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · New pre-launch website)**
+
+**✨ New**
+• **A fresh look for the pre-launch site**: a night-village hero with all eight elemental Shinobi lined up, crisp art for every feature, and a cleaner, simpler layout on desktop and phone.
+• **Tsukiyomi spotlight**: meet the 7★ Mythic Shinobi, the rarest rank, with its own Mythic Aura. Arrives with the official launch.
+• **Face the bosses**: Akuma, Yuki Onna, Raijin, Daichi and Orochi now have their own showcase.
+
+**🛠️ Fixes**
+• Blurry and pixelated images were replaced with sharp art taken from the game's own high-resolution assets.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Play the demo)**
 
 **✨ New**
