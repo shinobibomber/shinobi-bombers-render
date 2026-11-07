@@ -104,6 +104,13 @@ async function sweep(store, wallet) {
 async function post(store, wallet, body) {
   if (typeof body.heroId !== 'string') fail('Choose a hero to list.');
   const price = Number(body.price);
+  return postLocked(store, wallet, body, price).catch(async e => {
+    // The listing rolled back; record the refused attempt for the admin audit trail.
+    if (e.referralBound) await store.pool.query('INSERT INTO ryo_creator_audit(scope,actor,action,target,reason,detail,created) VALUES($1,$2,$3,$4,$5,$6,$7)', [store.scope, wallet, 'market.referral-bound-rejected', e.referralBound, 'Referral-bound hero listing refused', '{}', store.now()]).catch(() => {});
+    throw e;
+  });
+}
+function postLocked(store, wallet, body, price) {
   return store.transaction(async c => {
     await store.locked(c, wallet); await sweepLocked(store, c, wallet);
     if ((await c.query("SELECT request_id FROM ryo_purchases WHERE scope=$1 AND wallet=$2 AND status='pending' LIMIT 1", [store.scope, wallet])).rows.length) fail('Wait for your pending purchase to settle before listing a hero.', 409);
@@ -111,6 +118,8 @@ async function post(store, wallet, body) {
     if (!hero) fail('Only heroes from your signed-in token collection can be listed.');
     // Mythic heroes belong to their box NFT: they change hands by moving the NFT, never here.
     if (!(hero.rank >= 0 && hero.rank < MIN_PRICE.length) || hero.nft) fail('Mythic NFT heroes are traded by moving their NFT, not on the Market.');
+    // Referral reward heroes (and heroes fused from them) are permanently bound to the account.
+    if (hero.referralReward === true) throw Object.assign(Error('Referral-bound heroes cannot be listed, sold or transferred.'), { status: 409, code: 'REFERRAL_BOUND', referralBound: hero.tokenId });
     if (!Number.isSafeInteger(price) || price < MIN_PRICE[hero.rank] || price > MAX_PRICE) fail(`Set a price from ${MIN_PRICE[hero.rank].toLocaleString('en-US')} to ${MAX_PRICE.toLocaleString('en-US')} Ryo for this rank.`);
     if (profile.heroes.length <= 2) fail('Keep at least two heroes in your collection.');
     const active = Number((await c.query("SELECT COUNT(*) AS n FROM ryo_market_listings WHERE scope=$1 AND seller=$2 AND status IN ('active','pending')", [store.scope, wallet])).rows[0].n);

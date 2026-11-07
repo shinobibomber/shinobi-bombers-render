@@ -110,4 +110,4 @@ async function claim(store, wallet, body) {
     return { claim: { id: claimId, quantity, result, created: now } };
   });
 }
-module.exports = { MARKER, referral, count, attribute, settledPurchase, beginAdventure, qualify, summary, claim };
+module.exports = { MARKER, referral, count, identity, attribute, settledPurchase, beginAdventure, qualify, summary, claim };

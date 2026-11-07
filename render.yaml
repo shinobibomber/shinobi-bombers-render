@@ -1,15 +1,24 @@
+# Two separate services from the same code (see README "Test server and live server"):
+#   shinobi-bombers-beta  – TEST server, Solana Devnet, Starter Pack on, deploys from `main`.
+#   shinobi-bombers-live  – LIVE server, Solana Mainnet, real funds, deploys only from the `live` branch.
+# Each has its own database and secrets. Never copy Devnet keys or the Devnet DATABASE_URL to live.
 services:
   - type: web
     name: shinobi-bombers-beta
     runtime: node
     plan: free
     region: singapore
+    branch: main
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:
       - key: NODE_VERSION
         value: "22"
+      - key: SOLANA_NETWORK
+        value: devnet
+      - key: STARTER_PACK
+        value: "on"
       - key: DATABASE_URL
         sync: false
       - key: RYO_TREASURY_SECRET
@@ -20,3 +29,46 @@ services:
         sync: false
       - key: RYO_REVENUE_WALLET
         sync: false
+
+  # LIVE server. Phase 1 = PRE-LAUNCH portal only (landing page, wallet sign-in, registration, referrals).
+  # The game API is not mounted and no money setting may exist; the server refuses to start otherwise.
+  # The test server was created by hand (not from this Blueprint), so create this service by hand too and
+  # use this block as the reference for its settings (README "Pre-launch portal").
+  - type: web
+    name: shinobi-bombers-live
+    runtime: node
+    plan: starter          # paid: free instances sleep
+    region: singapore
+    branch: live           # production deploys only when `main` is merged into `live`
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: SOLANA_NETWORK
+        value: mainnet
+      - key: PRELAUNCH_MODE         # remove (or set off) on launch day to open the game
+        value: "on"
+      - key: RYO_SCOPE              # NEVER change once players register: their accounts live under it
+        value: solana-mainnet:live
+      - key: RYO_SITE_ORIGIN        # the live https:// origin (custom domain later); also used at build time
+        sync: false
+      - key: DATABASE_URL           # a separate, paid Render Postgres (Internal Database URL)
+        sync: false
+      - key: DISCORD_URL            # optional https:// invite; hidden until set
+        sync: false
+      - key: X_URL                  # optional https:// profile
+        sync: false
+      - key: SUPPORT_URL            # optional https:// page or mailto: address
+        sync: false
+      - key: LAUNCH_AT              # optional ISO date-time; shows the date + countdown. Unset = "To be announced"
+        sync: false
+      - key: REFERRAL_ENROLLMENT_LIMIT   # shared referral cap (default 1000)
+        value: "100000"
+      # STARTER_PACK must never be set on this service.
+      # Phase 2 = OFFICIAL LAUNCH. Remove PRELAUNCH_MODE, keep RYO_SCOPE, then add:
+      #   SOLANA_RPC_URL, SOLANA_PUBLIC_RPC_URL, RYO_TREASURY_SECRET (NEW Mainnet keypair), RYO_TOKEN_MINT,
+      #   RYO_STUDIO_WALLET, RYO_REVENUE_WALLET, optional RYO_TOKEN_SYMBOL, and open features one at a time:
+      #   SUMMONING_ENABLED, MARKETPLACE_ENABLED, REWARD_CLAIMS_ENABLED, SOL_DEPOSITS_ENABLED, SOL_WITHDRAWALS_ENABLED
+      #   (all default OFF on Mainnet).

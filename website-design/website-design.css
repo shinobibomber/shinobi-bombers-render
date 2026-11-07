@@ -841,6 +841,9 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-at-card.aura-mythic .sbw-at-info strong{color:#f1dcff}
 #sbwLayer .sbw-hc-portrait{position:relative}
 #sbwLayer .sbw-nft{position:absolute;top:4px;right:4px;padding:1px 6px;border:1px solid #ffd257;border-radius:5px;background:#2a1640;font:800 10.5px Rajdhani,sans-serif;color:#ffe9a8;letter-spacing:.6px}
+#sbwLayer .sbw-bound{position:absolute;top:4px;left:4px;padding:0 5px;border:1px solid #9b8cc4;border-radius:5px;background:#1b1233;font-size:11px;line-height:18px}
+#sbwLayer .sbw-bound-note{display:flex;flex-direction:column;gap:2px;margin:6px 0 2px;padding:6px 10px;border:1px solid #6a5a9a;border-radius:8px;background:rgba(27,18,51,.85);font:600 12.5px Rajdhani,sans-serif;color:#d9d0f2}
+#sbwLayer .sbw-bound-note b{color:#ffe9a8;letter-spacing:.5px}
 #sbwLayer .sbw-myth{gap:5px;padding:7px 9px}
 #sbwLayer .sbw-myth-skills li{padding:3px 7px}
 #sbwLayer .sbw-myth-skills b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

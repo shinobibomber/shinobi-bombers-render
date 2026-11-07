@@ -1,0 +1,12 @@
+[
+  {
+    "id": "prelaunch-open",
+    "date": "2026-11-07",
+    "kind": "referral",
+    "title": { "en": "Pre-launch registration is open", "pt-BR": "O cadastro de pré-lançamento está aberto" },
+    "body": {
+      "en": "Connect your Solana wallet, register your username and get your personal referral link. The official launch date will be announced here.",
+      "pt-BR": "Conecte sua carteira Solana, cadastre seu nome de usuário e receba seu link de indicação pessoal. A data oficial de lançamento será anunciada aqui."
+    }
+  }
+]

@@ -12,6 +12,9 @@
  * Private settings (DATABASE_URL, RYO_TREASURY_SECRET, …) are read from the server environment only.
  * Set RYO_SITE_ORIGIN to this host's public origin (e.g. https://www.example.com) – the game binds wallet
  * sign-in to it.
+ *
+ * SOLANA_NETWORK (devnet | mainnet, see network/network.cjs) must match the network app/ was built for;
+ * an unsafe or mismatched Mainnet environment stops the server before it listens.
  */
 'use strict';
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
@@ -22,12 +25,34 @@ const ADMIN_DIR = path.join(ROOT, 'economic-dashboard');
 const GAME_DIR = path.resolve(process.env.GAME_RUNTIME_DIR || path.join(ROOT, 'app'));   // assembled by `npm run build`
 const MOUNT = '/play';
 const GAME_ROOT_PATHS = new Set(['/.netlify/functions/ryo', '/api/ryo', '/beta-config.json', '/healthz']);
+const network = require(path.join(ROOT, 'network', 'network.cjs'));
+const NET = network.resolve();
+// Files served from this repo (not app/) that name the network: reworded on the live server.
+const NETWORK_TEXT = new Set([path.join(ADMIN_DIR, 'index.html'), path.join(ADMIN_DIR, 'dashboard.js'), path.join(SITE_DIR, 'game-link', 'game-link.js')]);
+const MAINNET_RULES = NET.key === 'mainnet' ? network.mainnetRules() : null;
+const networkText = file => network.rewriteText(fs.readFileSync(file, 'utf8'), file, MAINNET_RULES);
+
+// PRELAUNCH_MODE=on (live server before launch): only the pre-launch portal and its API are served;
+// the game page, the game API and the admin dashboard are not mounted at all (see prelaunch/server.cjs).
+const PRELAUNCH = network.prelaunch();
+const PRELAUNCH_DIR = path.join(ROOT, 'prelaunch');
+const PRELAUNCH_PAGES = { '/': 'index.html', '/rules': 'rules.html', '/privacy': 'privacy.html', '/terms': 'terms.html' };
+const IMAGE_TYPES = new Set(['.webp', '.png', '.jpg', '.svg']);
+
+function loadPrelaunch() {
+  if (!fs.existsSync(path.join(GAME_DIR, 'server', 'store.cjs'))) throw Error('Refusing to start: PRELAUNCH_MODE=on but the app is not built (run `npm run build`).');
+  network.assertStartup(process.env, path.join(GAME_DIR, 'server'));
+  return require(path.join(PRELAUNCH_DIR, 'server.cjs')).createPrelaunch({ gameDir: GAME_DIR });
+}
 
 function loadGame() {
+  if (PRELAUNCH) return null;
   if (!fs.existsSync(path.join(GAME_DIR, 'server', 'render-server.cjs'))) {
+    if (NET.key === 'mainnet') throw Error('Refusing to start: SOLANA_NETWORK=mainnet but the game is not built (run `npm run build`).');
     console.warn('[site] app/ not found – run `npm run build` to assemble the game. Website only.');
     return null;
   }
+  network.assertStartup(process.env, path.join(GAME_DIR, 'server'));
   let handler, ready = true;
   try {
     handler = require(path.join(GAME_DIR, 'server', 'netlify-handler.cjs')).handler;
@@ -60,6 +85,37 @@ function sendSite(req, res, status, body, type) {
   res.end(req.method === 'HEAD' ? undefined : body);
 }
 
+/** Static file from a base folder: GET/HEAD only, no dot-files or traversal, typed extensions only. */
+async function serveFrom(base, req, res, name, allowed = null) {
+  if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
+  if (name.split('/').some(p => p.startsWith('.')) || name.includes('\\') || name.includes('\0')) return sendSite(req, res, 404, 'Not found.');
+  const root = fs.realpathSync(base), candidate = path.resolve(root, '.' + name);
+  if (!candidate.startsWith(root + path.sep)) return sendSite(req, res, 404, 'Not found.');
+  let target; try { target = await fs.promises.realpath(candidate); } catch { return sendSite(req, res, 404, 'Not found.'); }
+  if (!target.startsWith(root + path.sep) || (await fs.promises.stat(target)).isDirectory()) return sendSite(req, res, 404, 'Not found.');
+  const ext = path.extname(target).toLowerCase(), type = TYPES[ext];
+  if (!type || (allowed && !allowed.has(ext))) return sendSite(req, res, 404, 'Not found.');
+  res.writeHead(200, { 'Content-Type': type, 'Cache-Control': IMAGE_TYPES.has(ext) ? 'public, max-age=86400' : 'no-cache', ...SITE_HEADERS });
+  if (req.method === 'HEAD') return res.end();
+  fs.createReadStream(target).on('error', () => res.destroy()).pipe(res);
+}
+
+function prelaunchRoute(req, res, url, name) {
+  const fail = () => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); };
+  if (name === '/healthz') { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(req.method === 'HEAD' ? undefined : JSON.stringify({ status: 'ok', mode: 'prelaunch' })); }
+  if (name === '/api/prelaunch') return prelaunch.handle(req, res);
+  if (name === '/api/ryo' || name === '/.netlify/functions/ryo') { res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify({ error: 'The game opens at the official launch.', code: 'PRELAUNCH' })); }
+  if (name === '/beta-config.json' || name === '/admin' || name.startsWith('/admin/')) return sendSite(req, res, 404, 'Not found.');
+  // Game artwork stays readable (the portal and the whitepaper use it); nothing else of the game is served.
+  if (name.startsWith(MOUNT + '/assets/')) return serveFrom(path.join(GAME_DIR, 'public', 'assets'), req, res, name.slice((MOUNT + '/assets').length), IMAGE_TYPES).catch(fail);
+  if (name === MOUNT || name.startsWith(MOUNT + '/')) { res.writeHead(302, { Location: '/' + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
+  const clean = name.replace(/\.html$/, '').replace(/(.)\/$/, '$1'), page = PRELAUNCH_PAGES[clean];
+  if (page && clean !== name) { res.writeHead(308, { Location: clean + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
+  if (page) return serveFrom(PRELAUNCH_DIR, req, res, '/' + page).catch(fail);
+  if (name.startsWith('/pl/')) return serveFrom(PRELAUNCH_DIR, req, res, name.slice(3), new Set(['.css', '.js', '.json', '.webp', '.png', '.svg', '.ico'])).catch(fail);
+  return null;
+}
+
 async function serveSite(req, res, name) {
   if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
   if (name === '/site-config.js') return sendSite(req, res, 200, siteConfig(), TYPES['.js']);
@@ -71,14 +127,17 @@ async function serveSite(req, res, name) {
   const type = TYPES[path.extname(target).toLowerCase()]; if (!type) return sendSite(req, res, 404, 'Not found.');
   res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache', ...SITE_HEADERS });
   if (req.method === 'HEAD') return res.end();
+  if (MAINNET_RULES && NETWORK_TEXT.has(target)) return res.end(networkText(target));
   fs.createReadStream(target).on('error', () => res.destroy()).pipe(res);
 }
 
+const prelaunch = PRELAUNCH ? loadPrelaunch() : null;
 const game = loadGame();
 
 const server = http.createServer((req, res) => {
   let url; try { url = new URL(req.url, 'http://localhost'); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
+  if (PRELAUNCH && prelaunchRoute(req, res, url, name) !== null) return;
   // Public login shell only. Every data read and mutation uses the wallet-authenticated Ryo API.
   if (name === '/admin') { res.writeHead(308, { Location: '/admin/', 'Cache-Control': 'no-store' }); return res.end(); }
   if (name.startsWith('/admin/')) {
@@ -88,6 +147,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)], 'Cache-Control': 'no-store', ...SITE_HEADERS,
       'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'" });
     if (req.method === 'HEAD') return res.end();
+    if (MAINNET_RULES) return res.end(networkText(path.join(ADMIN_DIR, file)));
     fs.createReadStream(path.join(ADMIN_DIR, file)).on('error', () => res.destroy()).pipe(res); return;
   }
   // The whitepaper (website/whitepaper.html) at a clean URL, with or without the game installed.
@@ -108,9 +168,9 @@ server.requestTimeout = 30000; server.headersTimeout = 15000;
 if (require.main === module) {
   const port = Number(process.env.PORT) || 10000;
   server.listen(port, process.env.HOST || '0.0.0.0', () => {
-    console.log(`[site] Website on http://localhost:${port}/  ·  game ${game ? 'at ' + MOUNT + '/' + (game.ready ? '' : ' (API dependencies missing)') : 'not installed'}`);
+    console.log(`[site] Website on http://localhost:${port}/  ·  Solana ${NET.label}${PRELAUNCH ? '  ·  PRE-LAUNCH portal (game closed until launch)' : '  ·  game ' + (game ? 'at ' + MOUNT + '/' + (game.ready ? '' : ' (API dependencies missing)') : 'not installed')}`);
     if (game && !process.env.RYO_SITE_ORIGIN) console.warn('[site] RYO_SITE_ORIGIN is not set – wallet sign-in will be rejected until it matches this host\'s public origin.');
   });
   process.on('SIGTERM', () => { server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 10000).unref(); });
 }
-module.exports = { server, siteConfig };
+module.exports = { server, siteConfig, prelaunch };

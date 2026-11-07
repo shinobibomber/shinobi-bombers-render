@@ -2,7 +2,9 @@
 const crypto = require('node:crypto');
 const { fail } = require('./store.cjs');
 const UNIT = 1000n, DAY = 86400000, MARKER = 'shinobi-creators-portal-v1';
-const DEFAULTS = { applicationsPaused: false, enrollmentPaused: false, enrollmentLimit: 1000, commissionDays: 90,
+// REFERRAL_ENROLLMENT_LIMIT raises the shared creator + player referral cap (default 1000) for a large launch.
+const enrollmentLimit = (() => { const n = Number(process.env.REFERRAL_ENROLLMENT_LIMIT); return Number.isSafeInteger(n) && n >= 1 && n <= 10000000 ? n : 1000; })();
+const DEFAULTS = { applicationsPaused: false, enrollmentPaused: false, enrollmentLimit, commissionDays: 90,
   eligibleProducts: ['summon', 'fusion', 'dojo', 'sensei', 'sensei-rental', 'training'], season: 'launch', promotionalSupply: 100 };
 const PRODUCTS = DEFAULTS.eligibleProducts;
 const ITEMS = [

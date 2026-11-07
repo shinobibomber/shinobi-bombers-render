@@ -108,6 +108,47 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 Pre-launch portal + referral-bound heroes + launch gates (owner request):
+  - **PRELAUNCH_MODE=on** (live only): server/site-server.cjs serves prelaunch/ (landing page, /rules, /privacy,
+    /terms, /pl/* assets, POST /api/prelaunch). It does not mount the game: /api/ryo is 403, /play/* redirects to
+    /, /admin and /beta-config.json are 404, and only images are served under /play/assets.
+  - prelaunch/server.cjs reuses app/server Store.challenge/login/authenticate, service.verifySignature,
+    creators-portal.attribute and player-referrals.identity (now exported) under a fixed RYO_SCOPE.
+  - Session: HttpOnly SameSite=Strict cookie sb_pl. CSRF: exact Origin + X-SB-Prelaunch header. Per-IP rate limits
+    (rightmost X-Forwarded-For).
+  - New ryo_players table: player_id, unique username_key, language, region, leaderboard_visible. Appended by
+    apply-prelaunch.cjs.
+  - network.cjs: pre-launch needs only DATABASE_URL, RYO_SITE_ORIGIN and RYO_SCOPE, and refuses money settings.
+    Mainnet now requires RYO_SCOPE, and apply-network pins netlify-handler's scope to it, so pre-launch accounts and
+    referrals carry into the game.
+  - REFERRAL_ENROLLMENT_LIMIT env overrides the shared default of 1000.
+  - **Referral-bound heroes:** market/server.cjs refuses hero.referralReward (409 REFERRAL_BOUND, audited).
+    apply-referral-bound.cjs adds the fusion inheritance hook in economy.cjs and the client flag. website-design
+    shows a 🔒 badge, a note and a disabled Sell button.
+  - **Launch gates** (launch-gates/, apply-launch-gates.cjs): SUMMONING / MARKETPLACE / REWARD_CLAIMS /
+    SOL_DEPOSITS / SOL_WITHDRAWALS _ENABLED. On for devnet builds and off for mainnet builds. Checked before the
+    pause guard and published in config; the client refuses a closed deposit before signing.
+  - baseline-hashes updated for economy.cjs, service.cjs and schema.sql only. Preservation reverses the 2 new client
+    hooks.
+  - New suites: prelaunch-server, prelaunch-page (Playwright, in-process host with PGlite), referral-bound.
+    network-guard was extended.
+  - Not done: Render live service and paid DB (owner), real-wallet signature on a phone, final legal text (Terms is
+    marked draft).
+
+- 2026-11-07 Test vs live server (owner request): render.yaml now has shinobi-bombers-beta (Devnet,
+  STARTER_PACK=on, branch main) and shinobi-bombers-live (Mainnet, paid starter plan, branch live, own DB and
+  secrets). One switch, SOLANA_NETWORK (devnet default | mainnet), in network/network.cjs. apply-network.cjs runs
+  after apply-creators-portal and always copies network.cjs plus a network-build.json stamp. A Devnet build is
+  otherwise byte-identical (verified by hashing app/ before and after). A Mainnet build:
+  - genesis 5eykt4…, scope solana-mainnet:…, server RPC SOLANA_RPC_URL, browser RPC SOLANA_PUBLIC_RPC_URL;
+  - UI reworded, tBRYO → RYO_TOKEN_SYMBOL;
+  - deploy/distribute disabled, the setup pages and SOLANA-TOKEN.json removed, starter-pack enabled() hard false;
+  - the build fails on any Devnet leftover (the inlined Solana SDK cluster table is exempt).
+  site-server and render-server refuse to start on a build/env mismatch or an unsafe Mainnet env (starter pack,
+  non-https RPCs, no RYO_SITE_ORIGIN). /admin and website/game-link wording is rewritten at serve time on Mainnet.
+  New suite tests/network-guard.cjs. Not done: the live service, Mainnet mint, RPC keys, paid DB and the live
+  branch need the owner (README "Live launch checklist"). No Mainnet deployment or funds movement happened.
+
 - 2026-11-07 Player referrals + hero-only Creator Shop: Home News hotspot now Referral
   beside Creator; shared themed popup has independent player dashboard/progress/claim history.
   No application or approval; two standard in-game hero passes unlock per referred wallet on

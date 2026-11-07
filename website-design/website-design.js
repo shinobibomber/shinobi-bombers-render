@@ -718,7 +718,7 @@
     const btn = (k, label, cls = '', dis) => `<button type="button" class="sbw-hb ${cls}" data-k="${k}" data-i="${i}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
     return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
       <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
-      <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}</div>
+      <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}${h.referralBound ? '<b class="sbw-bound" title="Referral-bound hero: cannot be listed, sold or transferred">🔒</b>' : ''}</div>
       <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Slash' : c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
       <div class="sbw-hc-ch"><span>CHAKRA</span><span>${esc(c.ch.replace(/\s/g, ' '))}</span></div><div class="sbw-bar"><i style="width:${pct}%"></i></div>
@@ -757,7 +757,7 @@
         const stat = (k, v) => `<div class="sbw-st"><span>${k}</span><b>${esc(v || '—')}</b></div>`;
         b.det.innerHTML = `<div class="sbw-h2" style="--rc:${RCOL[r]}">
           <div class="sbw-h2-top"><div><h3 data-fs="23">${esc(c.name)}</h3><p>Lv. ${esc(lv)} / ${esc(lvMax || '5')}<em>${esc(c.status)}</em></p></div><i class="sbw-h2-rank">${esc(RNAME[r].toUpperCase())}</i></div>
-          ${r === 5 ? mythicBlock(h) : `<div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>`}
+          ${r === 5 ? mythicBlock(h) : `<div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>`}${h.referralBound ? BOUND_NOTE : ''}
           <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + (r + 1))}</div>
             <div class="sbw-h2-port"><canvas width="292" height="344"></canvas></div></div>
           <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
@@ -765,7 +765,7 @@
           <ul class="sbw-perks2">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
           <div class="sbw-h2-btns">
             <button type="button" class="sbw-xbtn train${maxed ? ' max' : ''}" data-k="train" ${c.up && !c.up.disabled ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MAX LEVEL' : 'TRAIN'}</b><small>${maxed ? 'Fully trained' : price ? '<i class="coin"></i>' + esc(price) : 'Level ' + esc(lv) + ' → ' + (Number(lv) + 1)}</small></span></button>
-            ${r === 5 ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>◈</i><span><b>NFT ONLY</b><small>Trade the box NFT</small></span></button>' : `<button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>`}
+            ${r === 5 ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>◈</i><span><b>NFT ONLY</b><small>Trade the box NFT</small></span></button>' : h.referralBound ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>🔒</i><span><b>BOUND</b><small>Cannot be sold</small></span></button>' : `<button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>`}
           </div></div>`;
         const n = $('h3', b.det); if (n) fitText(n);
         const fresh = $('.sbw-h2-port canvas', b.det);
@@ -785,7 +785,7 @@
     fav: () => toast('Favourites are not available yet.'),
     dtab: a => { built.heroes.dt = +a; built.heroes.dsig = ''; for (let i = 0; i < 4; i++) { const e = $(`.hs[data-sbwid="dt${i}"]`, built.heroes.st); if (e) e.classList.toggle('on2', i === +a); } },
     train: () => { const c = heroCards()[built.heroes.sel]; if (c && c.up && !c.up.disabled) c.up.click(); else toast('Training is not available for this hero right now.'); },
-    sell: () => { const c = heroCards()[built.heroes.sel]; if (c && c.list && !c.list.disabled) c.list.click(); else toast('This hero cannot be listed right now.'); },
+    sell: () => { const c = heroCards()[built.heroes.sel]; if (c?.h?.referralBound) return toast('Referral-bound heroes cannot be listed, sold or transferred.'); if (c && c.list && !c.list.disabled) c.list.click(); else toast('This hero cannot be listed right now.'); },
     maura: () => { const MH = window.MythicHero; if (!MH) return; MH.setAura(!MH.auraEnabled); toast('Mythic aura ' + (MH.auraEnabled ? 'on' : 'off')); built.heroes.dsig = ''; },
     mcheck: async () => { if (!window.RyoPayments?.mythic) return toast('Sign in to check your NFT.'); try { const r = await RyoPayments.mythic(); const n = r?.mythic?.mints?.length || 0; toast(r?.mythic?.enabled === false ? 'The Mythic NFT check opens at launch.' : n ? 'NFT verified · ' + n + ' Mythic hero' + (n === 1 ? '' : 'es') : 'No Mythic box NFT found in this wallet.'); } catch (e) { toast(e.message || 'NFT check failed. Try again shortly.'); } built.heroes.sig = built.heroes.dsig = ''; },
     deploy: () => { const c = heroCards()[built.heroes.sel]; if (c && c.tog && !c.tog.disabled) c.tog.click(); else toast('This hero cannot be deployed right now.'); built.heroes.sig = ''; }
@@ -1042,10 +1042,13 @@
       MK.sel = -1; MK.mine = null; MK.data = null; marketLoad();
     });
   }
+  const BOUND_NOTE = '<p class="sbw-bound-note"><b>🔒 REFERRAL-BOUND HERO</b><span>Usable in battles, teams and training. Cannot be listed, sold or transferred.</span></p>';
+  const BOUND_TEXT = 'This hero was obtained through the Shinobi Bombers Referral Program. It can be used for gameplay and progression but cannot be listed, sold, or transferred through the marketplace.';
   // "Sell · List on Market" (Heroes) opens this dialog for a token hero.
   function sellDialog(h) {
     const a = account(); if (!h) return;
     if (!a || !h.tokenId || h.tokenOwner !== a) return notice('Market', 'Only heroes from your signed-in token collection can be listed. Practice heroes cannot be sold.');
+    if (h.referralBound) return notice('🔒 Referral-bound hero', BOUND_TEXT);
     const min = (MK.data?.rules?.minPrice || MARKET_MIN)[h.r] || MARKET_MIN[0];
     const d = confirmDialog('List ' + h.name, `<p class="sbw-mdl-hero" style="--rc:${RCOL[h.r]}"><b>${RNAME[h.r]}</b> · Lv. ${h.lv} · ${(h.pk || []).map(k => esc(perkName(k))).join(', ')}</p>
       <label class="sbw-sell-price">Price (Ryo)<input type="number" inputmode="numeric" min="${min}" max="100000000" step="1000" value="${min}"></label>

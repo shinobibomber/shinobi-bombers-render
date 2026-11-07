@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title data-i18n="meta.title">Shinobi Bombers — Pre-Launch Registration</title>
+<meta name="description" data-i18n-attr="content:meta.description" content="Register early for Shinobi Bombers, get your referral link and earn heroes when your friends join.">
+<meta name="theme-color" content="#05020f">
+<meta property="og:title" content="Shinobi Bombers — The Shinobi Era Begins Soon">
+<meta property="og:description" content="Register early, get your referral link and recruit your squad before the official launch.">
+<meta property="og:image" content="/pl/assets/logo.webp">
+<link rel="icon" href="/pl/assets/hero0.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="/pl/prelaunch.css">
+<script defer src="/pl/wallet.js"></script>
+<script defer src="/pl/prelaunch.js"></script>
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="a11y.skip">Skip to content</a>
+
+<header class="nav" id="top">
+  <a class="brand" href="#home"><img src="/pl/assets/logo.webp" width="174" height="75" alt="Shinobi Bombers"></a>
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="navLinks"><span aria-hidden="true">☰</span><span class="sr" data-i18n="a11y.menu">Menu</span></button>
+  <nav id="navLinks" class="nav-links" aria-label="Main">
+    <a href="#home" data-i18n="nav.home">Home</a>
+    <a href="#intro" data-i18n="nav.intro">Game</a>
+    <a href="#referral" data-i18n="nav.referral">Referral Program</a>
+    <a href="#rewards" data-i18n="nav.rewards">Rewards</a>
+    <a href="#faq" data-i18n="nav.faq">FAQ</a>
+    <a href="#community" data-i18n="nav.community">Community</a>
+  </nav>
+  <div class="nav-tools">
+    <label class="lang"><span class="sr" data-i18n="a11y.language">Language</span>
+      <select id="langSelect" aria-label="Language"><option value="en">EN</option><option value="pt-BR">PT-BR</option></select></label>
+    <button id="comfortBtn" class="icon-btn" type="button" aria-pressed="false" data-i18n-attr="title:a11y.comfortHint;aria-label:a11y.comfort">☾</button>
+    <button id="connectBtn" class="btn btn-gold btn-sm" type="button" data-i18n="nav.connect">Connect Wallet</button>
+  </div>
+</header>
+
+<main id="main">
+  <section id="home" class="hero" aria-labelledby="heroTitle">
+    <img class="hero-art left" src="/pl/assets/ninjas-left.webp" width="360" height="740" alt="" fetchpriority="high">
+    <img class="hero-art right" src="/pl/assets/ninjas-right.webp" width="360" height="742" alt="">
+    <div class="hero-body">
+      <p class="badge"><span class="dot" aria-hidden="true"></span><span data-i18n="hero.badge">PRE-LAUNCH — GAME SERVER NOT YET OPEN</span></p>
+      <h1 id="heroTitle" data-i18n="hero.title">THE SHINOBI ERA BEGINS SOON</h1>
+      <p class="hero-text" data-i18n="hero.text">Prepare for battle. Connect your wallet. Invite your squad. Become part of the Shinobi Bombers community before the official launch!</p>
+      <p class="hero-support" data-i18n="hero.support">Your journey to becoming a legendary Shinobi starts here.</p>
+      <div class="hero-cta">
+        <button id="heroConnect" class="btn btn-gold" type="button" data-i18n="hero.connect">CONNECT SOLANA WALLET</button>
+        <a class="btn btn-ghost" href="#referral" data-i18n="hero.explore">EXPLORE REFERRAL REWARDS</a>
+      </div>
+      <p id="launchStatus" class="launch" data-i18n="hero.launchTbd">OFFICIAL LAUNCH: TO BE ANNOUNCED</p>
+      <p id="countdown" class="countdown" hidden></p>
+      <p class="free" data-i18n="hero.free">Free to join · No transaction · No deposit</p>
+    </div>
+  </section>
+
+  <section id="dashboard" class="section dash" aria-labelledby="dashTitle" hidden>
+    <div class="wrap">
+      <div class="dash-head">
+        <div><h2 id="dashTitle" data-i18n="dash.title">PRE-LAUNCH DASHBOARD</h2><p id="dashWelcome" class="lead"></p></div>
+        <button id="logoutBtn" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.logout">Sign out</button>
+      </div>
+      <dl class="info">
+        <div><dt data-i18n="dash.wallet">Wallet</dt><dd id="dWallet" class="mono"></dd></div>
+        <div><dt data-i18n="dash.status">Status</dt><dd><span class="pill ok" data-i18n="dash.registered">Registered</span></dd></div>
+        <div class="wide"><dt data-i18n="dash.code">Referral code</dt><dd id="dCode" class="mono"></dd></div>
+        <div><dt data-i18n="dash.language">Language</dt><dd id="dLang"></dd></div>
+        <div><dt data-i18n="dash.region">Region</dt><dd id="dRegion"></dd></div>
+        <div><dt data-i18n="dash.launch">Game status</dt><dd><span class="pill wait" data-i18n="dash.awaitingLaunch">Awaiting Official Launch</span></dd></div>
+      </dl>
+      <p id="dReferredBy" class="note" hidden></p>
+      <div class="stats" role="list">
+        <div class="stat" role="listitem"><b id="sInvited">0</b><span data-i18n="st.invited">TOTAL INVITED</span></div>
+        <div class="stat" role="listitem"><b id="sProgress">0</b><span data-i18n="st.progress">IN PROGRESS</span></div>
+        <div class="stat" role="listitem"><b id="sQualified">0</b><span data-i18n="st.qualified">QUALIFIED</span></div>
+        <div class="stat" role="listitem"><b id="sAvailable">0</b><span data-i18n="st.available">REWARDS AVAILABLE</span></div>
+        <div class="stat" role="listitem"><b id="sEarned">0</b><span data-i18n="st.earned">HEROES EARNED</span></div>
+      </div>
+      <div class="card link-card">
+        <h3 data-i18n="dash.link">YOUR REFERRAL LINK</h3>
+        <div class="link-row"><input id="refLink" type="text" readonly aria-labelledby="refLinkLabel"><span id="refLinkLabel" class="sr" data-i18n="dash.link">YOUR REFERRAL LINK</span>
+          <button id="copyBtn" class="btn btn-gold btn-sm" type="button" data-i18n="dash.copy">Copy Link</button>
+          <button id="shareBtn" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.share" hidden>Share</button></div>
+        <p class="note" data-i18n="dash.linkHelp">Share this link.</p>
+      </div>
+      <div class="card">
+        <h3 data-i18n="dash.list">YOUR REFERRALS</h3>
+        <div id="refList" class="ref-list"></div>
+        <div class="pager"><button id="refPrev" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.prev" disabled>Previous</button><button id="refNext" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.next" disabled>Next</button></div>
+        <p class="note" data-i18n="dash.claimSoon">Reward claiming opens at the official launch.</p>
+      </div>
+      <form id="prefsForm" class="card prefs">
+        <h3 data-i18n="dash.prefs">PREFERENCES</h3>
+        <label><span data-i18n="reg.language">Language</span><select name="language"><option value="en">English</option><option value="pt-BR">Português (Brasil)</option></select></label>
+        <label><span data-i18n="reg.region">Preferred server region</span><select name="region"><option value="asia" data-i18n="region.asia">Asia (Singapore)</option><option value="south-america" data-i18n="region.south-america">South America (São Paulo)</option></select></label>
+        <label class="check"><input type="checkbox" name="leaderboardVisible"><span data-i18n="dash.leaderboardToggle">Show my username on the referral leaderboard</span></label>
+        <button class="btn btn-gold btn-sm" type="submit" data-i18n="dash.save">Save</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="intro" class="section" aria-labelledby="introTitle">
+    <div class="wrap">
+      <h2 id="introTitle" data-i18n="intro.title">WHAT IS SHINOBI BOMBERS?</h2>
+      <p class="lead" data-i18n="intro.lead">A strategy-focused ninja game.</p>
+      <div class="features">
+        <article class="feature"><img src="/pl/assets/tsukiyomi.webp" width="320" height="320" alt="" loading="lazy"><h3 data-i18n="intro.f1.t">Shinobi Hero Collection</h3><p data-i18n="intro.f1.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
+        <article class="feature"><img src="/pl/assets/shrine-card.webp" width="420" height="411" alt="" loading="lazy"><h3 data-i18n="intro.f2.t">Summoning Shrine</h3><p data-i18n="intro.f2.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
+        <article class="feature"><div class="ranks" aria-hidden="true"><img src="/pl/assets/hero0.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero1.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero2.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero3.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero4.webp" alt="" width="68" height="66" loading="lazy"><img src="/pl/assets/hero5.webp" alt="" width="68" height="66" loading="lazy"></div><h3 data-i18n="intro.f3.t">Training &amp; Fusion</h3><p data-i18n="intro.f3.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
+        <article class="feature"><img src="/pl/assets/map.webp" width="560" height="315" alt="" loading="lazy"><h3 data-i18n="intro.f4.t">Stage-Based Adventure</h3><p data-i18n="intro.f4.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
+        <article class="feature"><img src="/pl/assets/boss-hunt.webp" width="560" height="303" alt="" loading="lazy"><h3 data-i18n="intro.f5.t">Boss Hunt</h3><p data-i18n="intro.f5.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
+        <article class="feature"><img src="/pl/assets/dojo.webp" width="560" height="206" alt="" loading="lazy"><h3 data-i18n="intro.f6.t">Market, Dojo &amp; Sensei</h3><p data-i18n="intro.f6.d"></p><span class="soon" data-i18n="intro.soon">Opens at launch</span></article>
+      </div>
+      <p class="note center" data-i18n="intro.note">Every game feature opens at the official launch.</p>
+    </div>
+  </section>
+
+  <section id="join" class="section alt" aria-labelledby="joinTitle">
+    <div class="wrap">
+      <h2 id="joinTitle" data-i18n="join.title">HOW TO JOIN</h2>
+      <ol class="steps">
+        <li class="step"><span class="num" aria-hidden="true">1</span><h3 data-i18n="join.s1.t">STEP 1 — CONNECT</h3><p data-i18n="join.s1.d">Connect and verify your Solana wallet.</p></li>
+        <li class="step"><span class="num" aria-hidden="true">2</span><h3 data-i18n="join.s2.t">STEP 2 — REGISTER</h3><p data-i18n="join.s2.d">Create your permanent Shinobi Bombers account.</p></li>
+        <li class="step"><span class="num" aria-hidden="true">3</span><h3 data-i18n="join.s3.t">STEP 3 — INVITE</h3><p data-i18n="join.s3.d">Receive your unique referral link and recruit your friends.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="referral" class="section referral" aria-labelledby="refTitle">
+    <div class="wrap ref-grid">
+      <div>
+        <h2 id="refTitle" data-i18n="ref.title">RECRUIT SHINOBI. EARN HEROES.</h2>
+        <p class="lead" data-i18n="ref.text">Invite your friends to Shinobi Bombers.</p>
+        <p class="req-label" data-i18n="ref.req">Both requirements are mandatory:</p>
+        <ul class="reqs">
+          <li><b data-i18n="ref.req1">Summon 15 Heroes</b><span data-i18n="ref.req1d"></span></li>
+          <li><b data-i18n="ref.req2">Successfully Clear Stage 5</b><span data-i18n="ref.req2d"></span></li>
+        </ul>
+        <p class="note" data-i18n="ref.reqNote">Milestones are completed after the official launch.</p>
+        <div class="hero-cta"><button id="refCta" class="btn btn-gold" type="button" data-i18n="ref.cta">GET MY REFERRAL LINK</button>
+          <a class="btn btn-ghost" href="/rules" data-i18n="ref.rules">Read the Referral Program Rules</a></div>
+      </div>
+      <div id="rewards" class="reward-card" aria-labelledby="rewardTitle">
+        <img src="/pl/assets/shrine-card.webp" width="420" height="411" alt="" loading="lazy">
+        <p id="rewardTitle" class="reward-big" data-i18n="ref.reward">2 FREE RANDOM HEROES</p>
+        <p class="reward-sub" data-i18n="ref.rewardSub">for every qualified referral</p>
+        <div class="bound"><b data-i18n="ref.bound">🔒 Referral reward heroes are permanently non-marketable.</b><span data-i18n="ref.boundText"></span></div>
+      </div>
+    </div>
+    <div class="wrap">
+      <div class="card board" aria-labelledby="lbTitle">
+        <h3 id="lbTitle" data-i18n="lb.title">TOP RECRUITERS</h3>
+        <p class="note" data-i18n="lb.basis">Ranked by registered referrals.</p>
+        <div id="board"></div>
+        <div class="pager"><button id="lbPrev" class="btn btn-ghost btn-sm" type="button" data-i18n="lb.prev" disabled>Previous</button><button id="lbNext" class="btn btn-ghost btn-sm" type="button" data-i18n="lb.next" disabled>Next</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="community" class="section alt" aria-labelledby="comTitle">
+    <div class="wrap com-grid">
+      <div>
+        <h2 id="comTitle" data-i18n="com.title">JOIN THE COMMUNITY</h2>
+        <p class="lead" data-i18n="com.text">Follow official news.</p>
+        <div class="hero-cta" id="socialLinks">
+          <a id="discordLink" class="btn btn-violet" href="#" target="_blank" rel="noopener noreferrer" hidden data-i18n="com.discord">JOIN DISCORD</a>
+          <span id="discordSoon" class="btn btn-ghost is-static" data-i18n="com.discordSoon">Official Discord link coming soon</span>
+          <a id="xLink" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer" hidden data-i18n="com.x">Follow on X</a>
+        </div>
+      </div>
+      <div class="card news">
+        <h3 data-i18n="com.news">OFFICIAL ANNOUNCEMENTS</h3>
+        <div id="newsList"><p class="note" data-i18n="com.noNews">No announcements yet.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="section" aria-labelledby="faqTitle">
+    <div class="wrap narrow">
+      <h2 id="faqTitle" data-i18n="faq.title">FAQ</h2>
+      <details><summary data-i18n="faq.q1"></summary><p data-i18n="faq.a1"></p></details>
+      <details><summary data-i18n="faq.q2"></summary><p data-i18n="faq.a2"></p></details>
+      <details><summary data-i18n="faq.q3"></summary><p data-i18n="faq.a3"></p></details>
+      <details><summary data-i18n="faq.q4"></summary><p data-i18n="faq.a4"></p></details>
+      <details><summary data-i18n="faq.q5"></summary><p data-i18n="faq.a5"></p></details>
+      <details><summary data-i18n="faq.q6"></summary><p data-i18n="faq.a6"></p></details>
+      <details><summary data-i18n="faq.q7"></summary><p data-i18n="faq.a7"></p></details>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <img src="/pl/assets/logo.webp" width="174" height="75" alt="Shinobi Bombers" loading="lazy">
+    <nav aria-label="Footer">
+      <a href="/terms" data-i18n="foot.terms">Terms of Service</a>
+      <a href="/privacy" data-i18n="foot.privacy">Privacy Policy</a>
+      <a href="/rules" data-i18n="foot.rules">Referral Program Rules</a>
+      <a href="/whitepaper" data-i18n="foot.whitepaper">Whitepaper</a>
+      <a id="supportLink" href="#" hidden data-i18n="foot.support">Contact &amp; Support</a>
+    </nav>
+    <p class="safety" data-i18n="foot.safety">We will never ask for your seed phrase or private key.</p>
+    <p class="copy" data-i18n="foot.copy" data-year></p>
+  </div>
+</footer>
+
+<dialog id="walletDialog" aria-labelledby="walletTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="walletTitle" data-i18n="wallet.title">Connect a Solana wallet</h2>
+    <p class="note" data-i18n="wallet.note">You'll sign a message to prove you own this wallet.</p>
+    <div id="walletList" class="wallet-list"></div>
+    <p id="walletStatus" class="status" role="status" aria-live="polite"></p>
+    <button class="btn btn-ghost btn-sm" value="cancel" data-i18n="wallet.cancel">Cancel</button>
+  </form>
+</dialog>
+
+<dialog id="registerDialog" aria-labelledby="regTitle">
+  <form id="registerForm" class="dlg" novalidate>
+    <h2 id="regTitle" data-i18n="reg.title">CREATE YOUR SHINOBI ACCOUNT</h2>
+    <p class="note" data-i18n="reg.lead">One step left.</p>
+    <p class="mono small"><span data-i18n="reg.wallet">Wallet</span>: <span id="regWallet"></span></p>
+    <label><span data-i18n="reg.username">Username</span>
+      <input name="username" required minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" autocomplete="nickname" aria-describedby="userHint"></label>
+    <small id="userHint" class="note" data-i18n="reg.usernameHint">3–16 letters, numbers or _</small>
+    <label><span data-i18n="reg.language">Language</span><select name="language"><option value="en">English</option><option value="pt-BR">Português (Brasil)</option></select></label>
+    <label><span data-i18n="reg.region">Preferred server region</span><select name="region"><option value="asia" data-i18n="region.asia">Asia (Singapore)</option><option value="south-america" data-i18n="region.south-america">South America (São Paulo)</option></select></label>
+    <p id="regInvite" class="note" hidden></p>
+    <label class="check"><input type="checkbox" name="accept" required><span><span data-i18n="reg.accept">I accept the Terms of Service and the Referral Program Rules.</span> (<a href="/terms" target="_blank" data-i18n="foot.terms">Terms</a> · <a href="/rules" target="_blank" data-i18n="foot.rules">Rules</a>)</span></label>
+    <p id="regStatus" class="status" role="alert" aria-live="assertive"></p>
+    <div class="dlg-actions"><button type="button" class="btn btn-ghost btn-sm" id="regCancel" data-i18n="wallet.cancel">Cancel</button><button type="submit" class="btn btn-gold" data-i18n="reg.submit">REGISTER</button></div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

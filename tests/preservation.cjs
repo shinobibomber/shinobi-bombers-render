@@ -5,6 +5,11 @@ for(const file of baseline.files){assert.equal(sha(fs.readFileSync(path.join(roo
 let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 // The last build step points image URLs at their WebP versions; restore the original names first.
 html=require('../apply-performance.cjs').restoreReferences(html);
+// Launch gates and referral-bound heroes (applied after the Creators Portal): reverse them first.
+const {gateClientPatches}=require('../apply-launch-gates.cjs');
+for(const [before,after,count]of gateClientPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact launch gate client hook');html=html.split(after).join(before)}
+const {boundClientPatches}=require('../apply-referral-bound.cjs');
+for(const [before,after,count]of boundClientPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact referral-bound client hook');html=html.split(after).join(before)}
 const {creatorPatches}=require('../apply-creators-portal.cjs');
 for(const [before,after,count]of creatorPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact authenticated Creators Portal hook');html=html.split(after).join(before)}
 const {walletPatches,apiPatches}=require('../apply-transaction-safety.cjs');

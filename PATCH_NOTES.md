@@ -20,6 +20,37 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Pre-launch registration)**
+
+**✨ New**
+• **Pre-launch portal**: register early for the official launch. Connect your Solana wallet, sign a free message (no transaction, no deposit), pick a username, language (English or Português) and server region, and get your personal referral link.
+• **Recruit Shinobi, earn heroes**: friends who register with your link are linked to you for good. After launch, each friend who summons 15 heroes and clears Stage 5 earns you **2 random heroes** at the Shrine's official odds.
+• **Pre-launch dashboard**: track invited, in-progress and qualified friends, copy or share your link, and climb the Top Recruiters board (you can hide your name).
+
+**🔄 Changes**
+• **Referral reward heroes are now account-bound** 🔒. You can use them in battles, teams and training, but they can't be listed, sold or transferred on the Market. Fusing one gives a bound hero too.
+• Your pre-launch account carries over to the live game, so you won't need to register again.
+
+We will never ask for your seed phrase or private key. Launch date: to be announced.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Live server preparation)**
+
+**✨ New**
+• **A separate live server is on the way**: Shinobi Bombers will run on two servers. The **test server** stays on Solana Devnet with test tokens and the Starter Pack. The upcoming **live server** will run on Solana Mainnet with its own address, accounts and economy.
+
+**🔄 Changes**
+• Nothing changes on the test server today. Your heroes, Ryo and progress stay where they are.
+• Test-server accounts and test tokens do not carry over to the live server. The live server starts fresh, and its launch date will be announced separately.
+• The live server has no Starter Pack and no test-token tools, and every payment uses real SOL. Please double-check you're on the right site before connecting your wallet.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Player referrals)**
 
 **✨ New**
