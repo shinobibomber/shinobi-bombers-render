@@ -35,7 +35,7 @@ secrets:
 
 | | Test server | Live server |
 | --- | --- | --- |
-| Render service | `shinobi-bombers-beta` (free) | `shinobi-bombers-live` (starter, paid) |
+| Render service | `shinobi-bombers-beta` (free) | `ShinobiBombers` (starter, paid) |
 | Deploys from | `main` | `live` (merge `main` → `live` to release) |
 | `SOLANA_NETWORK` | `devnet` | `mainnet` |
 | Starter Pack | `STARTER_PACK=on` | always off |
@@ -148,7 +148,7 @@ Heroes from referral rewards (`referralReward`) are permanently account-bound, o
 3. Get a paid Mainnet RPC (Helius, QuickNode, Triton…) with two keys: one server key, and one browser key restricted to
    the live domain. The public `api.mainnet-beta.solana.com` rate-limits and blocks browser traffic.
 4. Create a **separate paid Render Postgres** for live. Free Render Postgres expires after 30 days.
-5. Create the `live` branch on GitHub. The test service was created by hand, so create `shinobi-bombers-live` by hand
+5. Create the `live` branch on GitHub. The test service was created by hand, so create `ShinobiBombers` by hand
    too (New → Web Service) with the settings in [render.yaml](render.yaml). Syncing the Blueprint could take over the
    test service.
 6. Optional: add a custom domain to the live service, set `RYO_SITE_ORIGIN` to it, then clear the build cache and

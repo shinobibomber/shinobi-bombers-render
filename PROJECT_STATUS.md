@@ -136,7 +136,7 @@ that they are unavailable.
     marked draft).
 
 - 2026-11-07 Test vs live server (owner request): render.yaml now has shinobi-bombers-beta (Devnet,
-  STARTER_PACK=on, branch main) and shinobi-bombers-live (Mainnet, paid starter plan, branch live, own DB and
+  STARTER_PACK=on, branch main) and ShinobiBombers (Mainnet, paid starter plan, branch live, own DB and
   secrets). One switch, SOLANA_NETWORK (devnet default | mainnet), in network/network.cjs. apply-network.cjs runs
   after apply-creators-portal and always copies network.cjs plus a network-build.json stamp. A Devnet build is
   otherwise byte-identical (verified by hashing app/ before and after). A Mainnet build:

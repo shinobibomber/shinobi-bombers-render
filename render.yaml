@@ -1,6 +1,6 @@
 # Two separate services from the same code (see README "Test server and live server"):
 #   shinobi-bombers-beta  – TEST server, Solana Devnet, Starter Pack on, deploys from `main`.
-#   shinobi-bombers-live  – LIVE server, Solana Mainnet, real funds, deploys only from the `live` branch.
+#   ShinobiBombers  – LIVE server, Solana Mainnet, real funds, deploys only from the `live` branch.
 # Each has its own database and secrets. Never copy Devnet keys or the Devnet DATABASE_URL to live.
 services:
   - type: web
@@ -35,7 +35,7 @@ services:
   # The test server was created by hand (not from this Blueprint), so create this service by hand too and
   # use this block as the reference for its settings (README "Pre-launch portal").
   - type: web
-    name: shinobi-bombers-live
+    name: ShinobiBombers
     runtime: node
     plan: starter          # paid: free instances sleep
     region: singapore
@@ -52,7 +52,7 @@ services:
         value: "on"
       - key: RYO_SCOPE              # NEVER change once players register: their accounts live under it
         value: solana-mainnet:live
-      - key: RYO_SITE_ORIGIN        # the live https:// origin (custom domain later); also used at build time
+      - key: RYO_SITE_ORIGIN        # https://shinobibombers.onrender.com (custom domain later); also used at build time
         sync: false
       - key: DATABASE_URL           # a separate, paid Render Postgres (Internal Database URL)
         sync: false
