@@ -7,6 +7,7 @@
   const LANGS = ['en', 'pt-BR'], SESSION_KEY = 'sb-pl-session', LANG_KEY = 'sb-pl-lang', COMFORT_KEY = 'sb-pl-comfort', REF_KEY = 'sb-creator-referral-v1';
   const dict = { en: null, cur: null };
   let lang = 'en', status = null, me = null, refPage = 0, lbPage = 0, countdownTimer = null;
+  let intent = null, cr = null, crPage = 0, admPage = 0, admSearch = '';   // creator program state
 
   /* ---------- i18n ---------- */
   function t(key, vars = {}) {
@@ -155,7 +156,7 @@
     if (!me) return;
     if (!me.registered) return openRegister();
     if (me.player?.language && me.player.language !== lang) setLang(me.player.language);
-    showDashboard(true);
+    showDashboard(true).then(runIntent);
   }
 
   /* ---------- registration ---------- */
@@ -182,7 +183,7 @@
       else toast(res.referral?.accepted ? t('msg.refAccepted') : t('msg.registered'));
       if (res.referral) try { localStorage.removeItem(REF_KEY); } catch {}
       if (f.language.value !== lang) await setLang(f.language.value);
-      showDashboard(true);
+      await showDashboard(true); runIntent();
     } catch (e) {
       if (e.code === 'SIGN_IN') { f.closest('dialog').close(); me = null; toast(t('err.SIGN_IN')); return; }
       st.textContent = errText(e);
@@ -204,7 +205,111 @@
     $('#shareBtn').hidden = !navigator.share;
     const f = $('#prefsForm'); f.language.value = p.language; f.region.value = p.region; f.leaderboardVisible.checked = p.leaderboardVisible;
     await loadReferrals();
+    await loadCreator();
     if (scroll) sec.scrollIntoView({ block: 'start' });
+  }
+
+  /* ---------- creator program ---------- */
+  function runIntent() {
+    if (intent !== 'creator' || !me?.player) return;
+    intent = null;
+    if (!cr?.creator && cr?.applicationsOpen) openCreatorDialog(); else $('#creatorCard')?.scrollIntoView({ block: 'center' });
+  }
+  async function loadCreator() {
+    try { cr = await api('creator', { page: crPage }); } catch (e) { if (e.code === 'SIGN_IN') return signedOut(true); cr = null; }
+    renderCreator();
+    const panel = $('#adminPanel'); panel.hidden = !cr?.adminRole;
+    if (cr?.adminRole) loadAdmin();
+  }
+  const dateOf = ms => ms ? fmtDate(ms) : '—';
+  const pill = st => el('span', { class: 'pill s-' + st, text: t('cs.' + st) });
+  function renderCreator() {
+    const box0 = $('#creatorBody'); if (!box0) return;
+    const box = { replaceChildren: (...kids) => box0.replaceChildren(...kids.filter(k => k != null)) };   // skip empty parts (no team note, no share button)
+    const c = cr?.creator;
+    if (!cr) { box.replaceChildren(el('p', { class: 'note', text: t('err.default') })); return; }
+    if (!c) {
+      const btn = el('button', { class: 'btn btn-violet btn-sm', type: 'button', text: t('crd.apply') }); btn.addEventListener('click', openCreatorDialog);
+      box.replaceChildren(el('p', { class: 'note', text: t('crd.none') }), cr.applicationsOpen ? btn : el('p', { class: 'note', text: t('crd.closed') }), el('p', { class: 'note', text: t('crd.referredNote') }));
+      return;
+    }
+    const note = c.publicNote ? el('p', { class: 'note', text: t('crd.teamNote', { note: c.publicNote }) }) : null;
+    if (c.status === 'PENDING') { box.replaceChildren(el('div', { class: 'row' }, pill('PENDING'), el('b', { text: t('crd.pending') })), el('p', { class: 'note', text: t('crd.pendingText', { date: dateOf(c.submitted) }) })); return; }
+    if (c.status !== 'APPROVED') { box.replaceChildren(el('div', { class: 'row' }, pill(c.status), el('b', { text: t(c.status === 'REJECTED' ? 'crd.rejected' : 'crd.suspended') })), note); return; }
+    const input = el('input', { id: 'creatorLink', type: 'text', readonly: '', value: cr.link, 'aria-label': t('crd.link') });
+    const copy = el('button', { class: 'btn btn-gold btn-sm', type: 'button', text: t('dash.copy') });
+    copy.addEventListener('click', async () => { try { await navigator.clipboard.writeText(cr.link); } catch { input.select(); document.execCommand?.('copy'); } toast(t('dash.copied')); });
+    const share = navigator.share ? el('button', { class: 'btn btn-ghost btn-sm', type: 'button', text: t('dash.share') }) : null;
+    share?.addEventListener('click', () => navigator.share({ title: 'Shinobi Bombers', text: t('dash.shareText'), url: cr.link }).catch(() => {}));
+    const stat = (v, k) => el('div', { class: 'stat' }, el('b', { text: v }), el('span', { text: t(k) }));
+    const cp = Math.floor(Number(cr.balanceMilli || 0) / 1000);
+    const list = cr.referrals?.length ? el('table', {}, el('thead', {}, el('tr', {}, el('th', { scope: 'col', text: t('col.player') }), el('th', { scope: 'col', text: t('col.joined') }), el('th', { scope: 'col', text: t('col.status') }))),
+      el('tbody', {}, ...cr.referrals.map(r => el('tr', {}, el('td', { text: r.player }), el('td', { text: fmtDate(r.joined) }), el('td', {}, el('span', { class: 'pill ' + (r.status === 'QUALIFIED' ? 'q' : 'p'), text: t('status.' + r.status) }))))))
+      : el('p', { class: 'note', text: t('crd.noRefs') });
+    box.replaceChildren(el('div', { class: 'row' }, pill('APPROVED'), el('b', { text: t('crd.approved') }), el('span', { class: 'note', text: t('crd.code') + ': ' }), el('b', { class: 'mono', id: 'creatorCode', text: c.code })),
+      note, el('h4', { text: t('crd.link') }), el('div', { class: 'link-row' }, input, copy, share),
+      el('div', { class: 'cstats' }, stat(fmtNum(cr.stats.total), 'crd.total'), stat(fmtNum(cr.stats.pending), 'crd.progress'), stat(fmtNum(cr.stats.qualified), 'crd.qualified'), stat(fmtNum(cp), 'crd.cp')),
+      list, el('p', { class: 'note', text: t('crd.launchNote') }));
+  }
+  function openCreatorDialog() {
+    const dlg = $('#creatorDialog'), f = $('#creatorForm');
+    f.reset(); $('#apStatus').textContent = '';
+    if (!f.displayName.value) f.displayName.value = me?.player?.username || '';
+    if (!dlg.open) dlg.showModal();
+    f.displayName.focus();
+  }
+  async function submitCreator(ev) {
+    ev.preventDefault();
+    const f = ev.target, st = $('#apStatus'), btn = $('button[type=submit]', f), https = v => /^https:\/\/\S+$/i.test(v.trim());
+    st.textContent = '';
+    if (!f.displayName.value.trim() || !f.reason.value.trim()) { st.textContent = t('err.TEXT_INVALID'); return; }
+    if (!https(f.channelUrl.value) || [f.link1.value, f.link2.value].some(v => v.trim() && !https(v))) { st.textContent = t('err.CREATOR_URL'); f.channelUrl.focus(); return; }
+    if (f.audience.value && !/^\d+$/.test(f.audience.value)) { st.textContent = t('err.NUMBER_INVALID'); f.audience.focus(); return; }
+    if (!f.terms.checked) { st.textContent = t('err.ACCEPT_CREATOR'); f.terms.focus(); return; }
+    btn.disabled = true; btn.textContent = t('ap.busy');
+    try {
+      cr = await api('creator-apply', { displayName: f.displayName.value.trim(), platform: f.platform.value, channelUrl: f.channelUrl.value.trim(),
+        links: [f.link1.value.trim(), f.link2.value.trim()].filter(Boolean), audience: f.audience.value === '' ? '' : Number(f.audience.value), reason: f.reason.value.trim(), terms: true });
+      f.closest('dialog').close(); toast(t('ap.sent')); renderCreator();
+      $('#creatorCard').scrollIntoView({ block: 'center' });
+      if (cr.adminRole) loadAdmin();
+    } catch (e) {
+      if (e.code === 'SIGN_IN') { f.closest('dialog').close(); signedOut(true); return; }
+      st.textContent = errText(e);
+    } finally { btn.disabled = false; btn.textContent = t('ap.submit'); }
+  }
+  async function loadAdmin() {
+    const box = $('#adminList');
+    try {
+      const d = await api('creator-admin', { page: admPage, search: admSearch });
+      if (!d.creators.length) box.replaceChildren(el('p', { class: 'note', text: t('adm.empty') }));
+      else box.replaceChildren(...d.creators.map(adminItem));
+      $('#admPrev').disabled = admPage === 0; $('#admNext').disabled = d.creators.length < d.pageSize;
+    } catch (e) { box.replaceChildren(el('p', { class: 'note', text: errText(e) })); }
+  }
+  function adminItem(c) {
+    const a = c.application || {};
+    const channel = a.channelUrl ? el('a', { href: a.channelUrl, target: '_blank', rel: 'noopener noreferrer nofollow', text: a.channelUrl }) : null;
+    const reason = el('input', { type: 'text', maxlength: '500', placeholder: t('adm.reason'), 'aria-label': t('adm.reason') });
+    const note = el('input', { type: 'text', maxlength: '240', placeholder: t('adm.note'), 'aria-label': t('adm.note') });
+    const act = (status, key, cls) => {
+      const b = el('button', { class: 'btn btn-sm ' + cls, type: 'button', text: t(key), 'data-status': status, 'data-creator': c.id });
+      b.addEventListener('click', async () => {
+        if (!reason.value.trim()) { toast(t('adm.needReason')); reason.focus(); return; }
+        b.disabled = true;
+        try { await api('creator-admin-action', { operation: 'status', creatorId: c.id, status, reason: reason.value.trim(), publicNote: note.value.trim(), page: admPage, search: admSearch }); toast(t('adm.saved')); await loadAdmin(); if (c.wallet === me?.wallet) loadCreator(); }
+        catch (e) { toast(errText(e)); b.disabled = false; }
+      });
+      return b;
+    };
+    const acts = c.status === 'PENDING' ? [act('APPROVED', 'adm.approve', 'btn-gold'), act('REJECTED', 'adm.reject', 'btn-ghost')]
+      : c.status === 'APPROVED' ? [act('SUSPENDED', 'adm.suspend', 'btn-ghost')] : [act('APPROVED', 'adm.reapprove', 'btn-gold')];
+    return el('div', { class: 'admin-item', 'data-id': c.id },
+      el('div', { class: 'row' }, pill(c.status), el('b', { text: c.displayName }), el('span', { class: 'meta', text: (a.platform || '') + ' · ' + t('adm.audience') + ': ' + (a.audience == null ? '—' : fmtNum(a.audience)) })),
+      channel, ...(a.links || []).map(l => el('a', { href: l, target: '_blank', rel: 'noopener noreferrer nofollow', text: l })),
+      el('p', { class: 'reason-text', text: a.reason || '' }),
+      el('p', { class: 'meta', text: t('adm.submitted') + ' ' + dateOf(c.submitted) + ' · ' + shortWallet(c.wallet) + ' · ' + c.code }),
+      el('div', { class: 'acts' }, reason, note, ...acts));
   }
   async function loadReferrals() {
     const box = $('#refList');
@@ -231,6 +336,7 @@
     }
   }
   function signedOut(expired = false) {
+    cr = null; intent = null; const ap = $('#adminPanel'); if (ap) ap.hidden = true;
     me = null; try { localStorage.removeItem(SESSION_KEY); } catch {} $('#dashboard').hidden = true;
     $('#connectBtn').textContent = t('nav.connect'); $('#heroConnect').textContent = t('hero.connect');
     if (expired) toast(t('err.SIGN_IN'));
@@ -255,6 +361,14 @@
 
     captureReferral();
     for (const id of ['#connectBtn', '#heroConnect', '#refCta']) $(id)?.addEventListener('click', connectOrDashboard);
+    // "Apply as a creator": sign in and register first if needed, then the application opens by itself.
+    $('#creatorCta')?.addEventListener('click', () => { intent = 'creator'; if (me?.player) runIntent(); else if (me && !me.registered) openRegister(); else openWallets(); });
+    $('#creatorForm')?.addEventListener('submit', submitCreator);
+    $('#apCancel')?.addEventListener('click', () => $('#creatorDialog').close());
+    $('#adminSearch')?.addEventListener('submit', e => { e.preventDefault(); admSearch = e.target.search.value.trim(); admPage = 0; loadAdmin(); });
+    $('#admPrev')?.addEventListener('click', () => { admPage = Math.max(0, admPage - 1); loadAdmin(); });
+    $('#admNext')?.addEventListener('click', () => { admPage++; loadAdmin(); });
+    const sl = $('.stream-link'); if (sl) sl.replaceChildren(document.createTextNode(location.host + '/?creator='), el('b', { text: 'SB…' }));
     $('#registerForm').addEventListener('submit', submitRegister);
     $('#regCancel').addEventListener('click', () => $('#registerDialog').close());
     $('#logoutBtn').addEventListener('click', async () => { try { await api('logout'); } catch {} try { await SBWallet.disconnect(); } catch {} signedOut(); });

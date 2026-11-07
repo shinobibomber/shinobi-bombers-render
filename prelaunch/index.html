@@ -27,6 +27,7 @@
     <a href="#intro" data-i18n="nav.intro">Game</a>
     <a href="#heroes" data-i18n="nav.heroes">Heroes</a>
     <a href="#referral" data-i18n="nav.referral">Referral Program</a>
+    <a href="#creators" data-i18n="nav.creators">Creators</a>
     <a href="#demo" class="demo-nav" data-i18n="nav.demo" hidden>Demo</a>
     <a href="#faq" data-i18n="nav.faq">FAQ</a>
     <a href="#community" data-i18n="nav.community">Community</a>
@@ -98,6 +99,16 @@
         <div id="refList" class="ref-list"></div>
         <div class="pager"><button id="refPrev" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.prev" disabled>Previous</button><button id="refNext" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.next" disabled>Next</button></div>
         <p class="note" data-i18n="dash.claimSoon">Reward claiming opens at the official launch.</p>
+      </div>
+      <div id="creatorCard" class="card creator-card">
+        <h3 data-i18n="crd.title">CREATOR PROGRAM</h3>
+        <div id="creatorBody"></div>
+      </div>
+      <div id="adminPanel" class="card admin-panel" hidden>
+        <h3 data-i18n="adm.title">CREATOR APPLICATIONS · ADMIN</h3>
+        <form id="adminSearch" class="admin-search"><input name="search" type="search" data-i18n-attr="placeholder:adm.search;aria-label:adm.search"><button class="btn btn-ghost btn-sm" type="submit" data-i18n="adm.searchBtn">Search</button></form>
+        <div id="adminList"></div>
+        <div class="pager"><button id="admPrev" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.prev" disabled>Previous</button><button id="admNext" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.next" disabled>Next</button></div>
       </div>
       <form id="prefsForm" class="card prefs">
         <h3 data-i18n="dash.prefs">PREFERENCES</h3>
@@ -223,6 +234,28 @@
     </div>
   </section>
 
+  <!-- CREATORS -->
+  <section id="creators" class="section creators" aria-labelledby="crTitle">
+    <div class="wrap split">
+      <div>
+        <p class="eyebrow violet" data-i18n="cr.eyebrow">FOR CREATORS &amp; STREAMERS</p>
+        <h2 id="crTitle" data-i18n="cr.title">CREATOR PROGRAM</h2>
+        <p class="lead" data-i18n="cr.text"></p>
+        <ul class="ticks" data-i18n-list="cr.points"></ul>
+        <p class="platforms-label" data-i18n="cr.platforms">Supported platforms</p>
+        <ul class="platforms"><li>YouTube</li><li>Twitch</li><li>TikTok</li><li>Facebook</li><li>X</li></ul>
+        <div class="cta left"><button id="creatorCta" class="btn btn-violet" type="button" data-i18n="cr.cta">APPLY AS A CREATOR</button>
+          <a class="btn btn-ghost" href="/rules#creator-program" data-i18n="ref.rules">Read the Referral Program Rules</a></div>
+        <p class="note" data-i18n="cr.note"></p>
+      </div>
+      <figure class="stream" aria-hidden="true">
+        <span class="live"><i></i><span data-i18n="cr.live">LIVE</span></span>
+        <div class="stream-stage"><img src="/pl/assets/hero-3.webp" alt="" loading="lazy"><img src="/pl/assets/hero-8.webp" alt="" loading="lazy"><img src="/pl/assets/hero-5.webp" alt="" loading="lazy"></div>
+        <figcaption class="stream-link">shinobibombers.onrender.com/?creator=<b>SB…</b></figcaption>
+      </figure>
+    </div>
+  </section>
+
   <!-- COMMUNITY -->
   <section id="community" class="section" aria-labelledby="comTitle">
     <div class="wrap split top">
@@ -297,6 +330,23 @@
     <label class="check"><input type="checkbox" name="accept" required><span><span data-i18n="reg.accept">I accept the Terms of Service and the Referral Program Rules.</span> (<a href="/terms" target="_blank" data-i18n="foot.terms">Terms</a> · <a href="/rules" target="_blank" data-i18n="foot.rules">Rules</a>)</span></label>
     <p id="regStatus" class="status" role="alert" aria-live="assertive"></p>
     <div class="dlg-actions"><button type="button" class="btn btn-ghost btn-sm" id="regCancel" data-i18n="wallet.cancel">Cancel</button><button type="submit" class="btn btn-gold" data-i18n="reg.submit">REGISTER</button></div>
+  </form>
+</dialog>
+
+<dialog id="creatorDialog" aria-labelledby="apTitle">
+  <form id="creatorForm" class="dlg" novalidate>
+    <h2 id="apTitle" data-i18n="ap.title">APPLY TO THE CREATOR PROGRAM</h2>
+    <p class="note" data-i18n="ap.lead">Tell us about your channel.</p>
+    <label><span data-i18n="ap.name">Creator name</span><input name="displayName" required maxlength="60" autocomplete="nickname"></label>
+    <label><span data-i18n="ap.platform">Main platform</span><select name="platform"><option>YouTube</option><option>Twitch</option><option>TikTok</option><option>Facebook</option><option>X</option></select></label>
+    <label><span data-i18n="ap.channel">Channel or profile link (https://)</span><input name="channelUrl" type="url" required maxlength="500" placeholder="https://"></label>
+    <label><span data-i18n="ap.links">Other links (optional)</span><input name="link1" type="url" maxlength="500" placeholder="https://"><input name="link2" type="url" maxlength="500" placeholder="https://"></label>
+    <label><span data-i18n="ap.audience">Audience size</span><input name="audience" type="number" inputmode="numeric" min="0" max="1000000000" step="1"></label>
+    <label><span data-i18n="ap.reason">Why do you want to join?</span><textarea name="reason" required maxlength="1500" rows="3"></textarea></label>
+    <details class="terms"><summary data-i18n="ap.terms">Creator Program Terms</summary><ul data-i18n-list="ap.termsItems"></ul></details>
+    <label class="check"><input type="checkbox" name="terms" required><span data-i18n="ap.accept">I accept the Creator Program Terms.</span></label>
+    <p id="apStatus" class="status" role="alert" aria-live="assertive"></p>
+    <div class="dlg-actions"><button type="button" class="btn btn-ghost btn-sm" id="apCancel" data-i18n="wallet.cancel">Cancel</button><button type="submit" class="btn btn-violet" data-i18n="ap.submit">SUBMIT APPLICATION</button></div>
   </form>
 </dialog>
 

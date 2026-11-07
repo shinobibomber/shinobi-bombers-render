@@ -20,6 +20,21 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Creator Program opens)**
+
+**✨ New**
+• **Creator Program on the pre-launch site**: influencers and streamers can apply now in the new **Creators** section. Register, tell us about your channel (YouTube, Twitch, TikTok, Facebook or X), and accept the Creator Program Terms.
+• **Your creator link works before launch**: once the team approves you, you get a personal `/?creator=` link. Every player who registers through it is linked to you for good.
+• **Creator rewards after launch**: 50,000 Creator Points for each referred player who summons 15 heroes and clears Stage 5, plus 5% CP commission on their Adventure claims and eligible purchases for 90 days. Spend CP in the Creator Shop on Standard Hero Summon Passes.
+
+**🔄 Changes**
+• Creator Points are in-game rewards only. They have no cash or crypto value and can't be withdrawn.
+• Wallets that joined through someone else's referral link can't become creators.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · New pre-launch website)**
 
 **✨ New**

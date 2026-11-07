@@ -140,8 +140,8 @@ function keyPair() {
 
     // Rate limits per client address (the proxy-appended rightmost X-Forwarded-For entry).
     const R = keyPair(); let limited = 0;
-    for (let i = 0; i < 12; i++) { clock += 3001; if ((await call('challenge', { wallet: R.wallet }, { ip: '198.51.100.7' })).status === 429) limited++; }
-    assert.equal(limited, 2, 'the 11th and 12th challenge in a minute are refused');
+    for (let i = 0; i < 22; i++) { clock += 1000; if ((await call('challenge', { wallet: keyPair().wallet }, { ip: '198.51.100.7' })).status === 429) limited++; }   // a new wallet each time: only the per-address limit applies
+    assert.equal(limited, 2, 'the 21st and 22nd challenge in a minute are refused');
     clock += 60001; assert.equal((await call('challenge', { wallet: R.wallet }, { ip: '198.51.100.7' })).status, 200, 'the window resets');
 
     // Concurrency: the same wallet registering twice at once creates one account; one username, one owner.

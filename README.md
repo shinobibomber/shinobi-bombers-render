@@ -111,6 +111,16 @@ With `PRELAUNCH_MODE=on` the live server runs **only** the pre-launch portal fro
   - rate limits apply per IP;
   - usernames are unique regardless of case;
   - referral rules (self, second referrer, loops, non-new players) are the game's own.
+- **Creator Program:** influencers and streamers apply in the **Creators** section of the portal. They need a
+  registered account and must not have joined through someone else's referral link.
+  - Applications stay *Pending* until an admin reviews them. Admins are the wallets in `RYO_ADMIN_APPROVERS` or
+    `RYO_ADMIN_OPERATORS`; viewers in `RYO_ADMIN_VIEWERS` can only look.
+  - Admins sign in on the landing page and use **Creator applications · Admin** in their dashboard to approve, reject
+    or suspend. A reason is required, and each decision is audited.
+  - An approved creator's `/?creator=SB…` link links new players permanently, and the game keeps that link at launch.
+  - CP rewards, commissions and the Creator Shop start at launch. Program, CP and shop settings stay in the game's
+    Creators Portal.
+  - `CREATOR_APPLICATIONS_ENABLED=off` closes new applications.
 - **Announcements:** edit [prelaunch/announcements.json](prelaunch/announcements.json) (EN + PT-BR), commit and deploy.
 - **Legal pages:** Referral Rules and the Privacy notice describe what the code actually does. **Terms is a draft**,
   marked as such, to be replaced with reviewed text before launch.

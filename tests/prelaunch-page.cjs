@@ -22,7 +22,7 @@ const js = fs.readFileSync(path.join(ROOT, 'prelaunch/prelaunch.js'), 'utf8');
 for (const m of js.matchAll(/\bt\('([a-zA-Z0-9_.-]+)'/g)) if (!m[1].endsWith('.')) used.add(m[1]);   // 'err.' + code etc. are dynamic
 for (const k of ['region.asia', 'region.south-america', 'status.IN_PROGRESS', 'status.QUALIFIED', 'kind.beta', 'kind.launch', 'kind.maintenance', 'kind.referral', 'kind.community', 'err.default']) used.add(k);
 // Every error code the API or wallet adapter can return has a message in both languages.
-const codes = new Set([...fs.readFileSync(path.join(ROOT, 'prelaunch/server.cjs'), 'utf8').matchAll(/'([A-Z][A-Z_]{3,})'/g)].map(m => m[1]).filter(c => !/^(POST|JSON|QUALIFIED|IN_PROGRESS)$/.test(c)));
+const codes = new Set([...fs.readFileSync(path.join(ROOT, 'prelaunch/server.cjs'), 'utf8').matchAll(/'([A-Z][A-Z_]{3,})'/g)].map(m => m[1]).filter(c => !/^(POST|JSON|QUALIFIED|IN_PROGRESS|PENDING|APPROVED|REJECTED|SUSPENDED)$/.test(c)));
 for (const c of ['WALLET_REJECTED', 'WALLET_NO_SIGN', 'NETWORK', 'ACCEPT']) codes.add(c);
 for (const c of codes) used.add('err.' + c);
 for (const k of used) { assert.ok(k in en, 'missing EN key ' + k); assert.ok(k in pt, 'missing PT-BR key ' + k); }
@@ -74,7 +74,8 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await p.waitForFunction(() => Math.abs(document.querySelector('#dashboard').getBoundingClientRect().top) < 120, null, { timeout: 5000 });
   }
 
-  const referrer = keyPair(), friend = keyPair();
+  const referrer = keyPair(), friend = keyPair(), creatorKey = keyPair(), adminKey = keyPair();
+  process.env.RYO_ADMIN_APPROVERS = adminKey.wallet;   // the admin panel appears for this wallet only
   let code;
   await check('desktop: landing page renders every section, honest launch status, Discord link, no page errors', async () => {
     const p = await open({ width: 1440, height: 900 });
@@ -127,6 +128,52 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     assert.equal(await p.isVisible('#dashboard'), false);
     await p.close();
   });
+  await check('creator program: apply after sign-in → pending → admin approves on the page → creator link', async () => {
+    const p = await open({ width: 1440, height: 900 }, creatorKey);
+    await p.goto(url + '/');
+    assert.ok(await p.isVisible('#creators')); assert.ok(await p.isVisible('#navLinks a[href="#creators"]'));
+    assert.match(await p.textContent('#creators'), /50,000 Creator Points[\s\S]*5% CP commission[\s\S]*no cash or crypto value/);
+    // One click: sign in, register, and the application opens by itself.
+    await p.click('#creatorCta'); await p.getByRole('button', { name: /Test Wallet/ }).click();
+    await p.waitForSelector('#registerDialog[open]'); await p.fill('#registerForm input[name=username]', 'StreamKing'); await p.check('#registerForm input[name=accept]');
+    await p.click('#registerForm button[type=submit]');
+    await p.waitForSelector('#creatorDialog[open]');
+    assert.equal(await p.inputValue('#creatorForm input[name=displayName]'), 'StreamKing');
+    await p.fill('#creatorForm input[name=displayName]', 'Stream King');
+    await p.selectOption('#creatorForm select[name=platform]', 'Twitch');
+    await p.fill('#creatorForm input[name=channelUrl]', 'http://twitch.tv/streamking');
+    await p.fill('#creatorForm textarea[name=reason]', 'Weekly ninja game streams.');
+    await p.check('#creatorForm input[name=terms]'); await p.click('#creatorForm button[type=submit]');
+    assert.match(await p.textContent('#apStatus'), /https:\/\//, 'http links are refused before sending');
+    await p.fill('#creatorForm input[name=channelUrl]', 'https://twitch.tv/streamking'); await p.fill('#creatorForm input[name=audience]', '5400');
+    await p.click('#creatorForm button[type=submit]');
+    await p.waitForFunction(() => /APPLICATION UNDER REVIEW/.test(document.querySelector('#creatorBody').textContent));
+    assert.equal(await p.isVisible('#adminPanel'), false, 'creators do not see the admin panel');
+    await p.close();
+
+    const a = await open({ width: 1440, height: 900 }, adminKey);
+    await a.goto(url + '/'); await register(a, 'TeamAdmin');
+    await a.waitForSelector('#adminPanel:not([hidden]) .admin-item');
+    const item = a.locator('.admin-item', { hasText: 'Stream King' });
+    assert.match(await item.textContent(), /Twitch[\s\S]*5,400[\s\S]*Weekly ninja game streams/);
+    await item.getByRole('button', { name: 'Approve' }).click();
+    assert.match(await a.textContent('#toast'), /Enter a reason first/);
+    await item.locator('input').first().fill('Verified Twitch channel');
+    await item.getByRole('button', { name: 'Approve' }).click();
+    await a.waitForFunction(() => /APPROVED/.test([...document.querySelectorAll('.admin-item')].find(n => /Stream King/.test(n.textContent))?.textContent || ''));
+    await a.screenshot({ path: path.join(OUT, 'prelaunch-admin.png'), fullPage: false });
+    await a.close();
+
+    const c = await open({ width: 1440, height: 900 }, creatorKey);
+    await c.goto(url + '/'); await c.click('#heroConnect'); await c.getByRole('button', { name: /Test Wallet/ }).click();
+    await c.waitForSelector('#creatorCode');
+    assert.match(await c.textContent('#creatorCode'), /^SB[0-9A-F]{14}$/);
+    assert.doesNotMatch(await c.textContent('#creatorBody'), /null|undefined/, 'no empty placeholders');
+    assert.equal(await c.inputValue('#creatorLink'), url + '/?creator=' + (await c.textContent('#creatorCode')));
+    await c.locator('#creatorCard').scrollIntoViewIfNeeded();
+    await c.screenshot({ path: path.join(OUT, 'prelaunch-creator.png'), fullPage: false });
+    await c.close();
+  });
   await check('PT-BR: language switch translates the page and is remembered', async () => {
     const p = await open({ width: 1280, height: 860 });
     await p.goto(url + '/'); await p.selectOption('#langSelect', 'pt-BR');
@@ -163,7 +210,7 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
   });
   await check('legal pages: referral rules, privacy and draft terms render in both languages', async () => {
     const p = await open({ width: 1024, height: 800 });
-    await p.goto(url + '/rules'); await p.waitForFunction(() => document.querySelectorAll('main li').length === 11);
+    await p.goto(url + '/rules'); await p.waitForFunction(() => document.querySelectorAll('main ol')[0]?.children.length === 11 && document.querySelectorAll('#creator-program + ol li').length === 7);
     assert.match(await p.textContent('main'), /15 paid hero summons[\s\S]*Stage 5/);
     await p.goto(url + '/terms'); await p.waitForSelector('.draft'); assert.match(await p.textContent('.draft'), /DRAFT/);
     await p.goto(url + '/privacy'); await p.selectOption('#langSelect', 'pt-BR'); await p.waitForFunction(() => document.querySelector('h1').textContent === 'Aviso de Privacidade');

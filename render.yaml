@@ -66,6 +66,12 @@ services:
         value: https://shinobi-bombers-beta.onrender.com/
       - key: LAUNCH_AT              # optional ISO date-time; shows the date + countdown. Unset = "To be announced"
         sync: false
+      - key: RYO_ADMIN_APPROVERS    # comma-separated admin wallets: review creator applications on the landing page
+        sync: false
+      - key: RYO_ADMIN_OPERATORS    # optional: wallets that may approve/reject/suspend creators too
+        sync: false
+      - key: CREATOR_APPLICATIONS_ENABLED   # optional; default on
+        sync: false
       - key: REFERRAL_ENROLLMENT_LIMIT   # shared referral cap (default 1000)
         value: "100000"
       # STARTER_PACK must never be set on this service.

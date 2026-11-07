@@ -16,7 +16,8 @@ const crypto = require('node:crypto'), fs = require('node:fs'), path = require('
 
 const COOKIE = 'sb_pl';
 const RESERVED = new Set(['admin', 'administrator', 'moderator', 'mod', 'support', 'shinobi', 'shinobibombers', 'official', 'staff', 'system', 'team', 'dev', 'developer', 'null', 'undefined', 'root']);
-const LIMITS = { all: 60, challenge: 10, register: 10 }, WINDOW = 60000;
+// Per client address per minute. Generous enough for many players behind one shared address (mobile carriers, cafés).
+const LIMITS = { all: 240, challenge: 20, register: 20 }, WINDOW = 60000;
 const on = (v, fallback) => v === undefined || v === '' ? fallback : /^(1|on|true|yes)$/i.test(String(v).trim());
 const safeUrl = (v, mail = false) => { try { const u = new URL(String(v || '')); return u.protocol === 'https:' || (mail && u.protocol === 'mailto:') ? u.href : null; } catch { return null; } };
 const hash = token => crypto.createHash('sha256').update(token).digest('hex');
@@ -24,6 +25,11 @@ const fail = (message, status = 400, code = 'BAD_REQUEST') => { throw Object.ass
 
 // Maps the reused modules' English messages to stable codes the page translates.
 const CODES = [
+  [/already has a creator application/i, 'CREATOR_EXISTS'], [/supported primary platform/i, 'CREATOR_PLATFORM'], [/HTTPS channel/i, 'CREATOR_URL'],
+  [/applications are temporarily paused/i, 'CREATOR_PAUSED'], [/authorized creator administrator|approver role is required/i, 'ADMIN_ONLY'],
+  [/Invalid creator status transition/i, 'CREATOR_TRANSITION'], [/referred player cannot become a creator/i, 'CREATOR_REFERRED'],
+  [/creator link is unavailable|must accept the program terms/i, 'CREATOR_UNKNOWN'], [/Creator not found/i, 'CREATOR_NOT_FOUND'],
+  [/Creators Portal is not enabled/i, 'CREATOR_DISABLED'], [/Enter text between/i, 'TEXT_INVALID'], [/Enter a whole number/i, 'NUMBER_INVALID'],
   [/yourself/i, 'REFERRAL_SELF'], [/Circular/i, 'REFERRAL_CYCLE'], [/permanent|cannot become referred/i, 'REFERRAL_PERMANENT'],
   [/unavailable/i, 'REFERRAL_UNKNOWN'], [/paused|limit has been reached/i, 'REFERRAL_CLOSED'], [/new players/i, 'REFERRAL_NOT_NEW'],
   [/Wait a moment/i, 'RATE_LIMITED'], [/Invalid, expired or already used/i, 'SIGNATURE_INVALID'], [/session expired|Sign in with your wallet/i, 'SIGN_IN'],
@@ -48,7 +54,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
   const origin = new URL(env.RYO_SITE_ORIGIN).origin, secureCookie = origin.startsWith('https://');
   pool = pool || new (fromApp('pg').Pool)({ connectionString: env.DATABASE_URL, max: 8, connectionTimeoutMillis: 8000, idleTimeoutMillis: 10000, statement_timeout: 15000 });
   const store = new Store(pool, env.RYO_SCOPE, now);
-  const flags = { registration: on(env.REGISTRATION_ENABLED, true), referrals: on(env.REFERRALS_ENABLED, true) };
+  const flags = { registration: on(env.REGISTRATION_ENABLED, true), referrals: on(env.REFERRALS_ENABLED, true), creatorApply: on(env.CREATOR_APPLICATIONS_ENABLED, true) };
   const launchAt = (() => { const t = Date.parse(env.LAUNCH_AT || ''); return Number.isFinite(t) ? new Date(t).toISOString() : null; })();
   const links = { discord: safeUrl(env.DISCORD_URL), x: safeUrl(env.X_URL), support: safeUrl(env.SUPPORT_URL, true), demo: safeUrl(env.DEMO_URL) };
   const buckets = new Map(); let board = null;
@@ -70,7 +76,8 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
   async function me(w) {
     const p = await playerRow(w); if (!p) return { wallet: w, registered: false };
     const by = (await rows(`SELECT p.username FROM ryo_player_referrals r LEFT JOIN ryo_players p ON p.scope=r.scope AND p.wallet=r.referrer WHERE r.scope=$1 AND r.wallet=$2`, [w]))[0];
-    return { wallet: w, registered: true, player: publicPlayer(p, await referralCode(w)), referredBy: by ? (by.username || 'a Shinobi') : null };
+    const byCreator = by ? null : (await rows(`SELECT c.display_name FROM ryo_creator_referrals r JOIN ryo_creators c ON c.scope=r.scope AND c.id=r.creator_id WHERE r.scope=$1 AND r.wallet=$2`, [w]))[0];
+    return { wallet: w, registered: true, player: publicPlayer(p, await referralCode(w)), referredBy: by ? (by.username || 'a Shinobi') : byCreator ? byCreator.display_name : null };
   }
   function username(v) {
     if (typeof v !== 'string' || !/^[A-Za-z0-9_]{3,16}$/.test(v)) fail('Usernames are 3–16 letters, numbers or _.', 400, 'USERNAME_INVALID');
@@ -133,6 +140,50 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
       WHERE r.scope=$1 GROUP BY p.username ORDER BY n DESC, first ASC, p.username LIMIT 100`)).map((x, i) => ({ rank: i + 1, player: x.username, registrations: Number(x.n) })) };
     return { page, pageSize: 20, basis: 'registered-referrals', updated: board.at, rows: board.rows.slice(page * 20, page * 20 + 20) };
   }
+  /* ---------- Creator Program (the game's creators-portal rules, unchanged) ---------- */
+  const ctx = { store, origin };
+  const pageOf = body => { const p = body.page ?? 0; if (!Number.isSafeInteger(p) || p < 0 || p > 10000) fail('Invalid page.'); return p; };
+  async function creatorState(w, body = {}) {
+    const page = pageOf(body), s = await cp.handle(ctx, w, 'creator-state', { page });
+    const r = s.rules || {};
+    const out = { creator: s.creator, adminRole: s.adminRole, termsAccepted: s.termsAccepted, applicationsOpen: flags.creatorApply && !r.applicationsPaused,
+      rules: { milestone: r.milestone, adventurePercent: r.adventurePercent, purchasePercent: r.purchasePercent, commissionDays: r.commissionDays, paidHeroes: r.paidHeroes, clearedStage: r.clearedStage, cpWithdrawable: false } };
+    if (s.creator?.status === 'APPROVED') {
+      const list = await rows(`SELECT r.wallet, r.attributed, r.qualified, p.username FROM ryo_creator_referrals r LEFT JOIN ryo_players p ON p.scope=r.scope AND p.wallet=r.wallet
+        WHERE r.scope=$1 AND r.creator_id=$2 ORDER BY r.attributed DESC, r.wallet LIMIT 20 OFFSET $3`, [s.creator.id, page * 20]);
+      Object.assign(out, { link: s.link, page, pageSize: 20, stats: { total: Number(s.stats.total), qualified: Number(s.stats.qualified), pending: Number(s.stats.pending) },
+        balanceMilli: s.points.balanceMilli,
+        referrals: list.map(x => ({ player: x.username || cp.privateId(x.wallet), joined: Number(x.attributed), status: x.qualified ? 'QUALIFIED' : 'IN_PROGRESS' })) });
+    }
+    return out;
+  }
+  async function creatorApply(w, body) {
+    if (!flags.creatorApply) fail('Creator applications are temporarily paused.', 403, 'CREATOR_PAUSED');
+    if (!await playerRow(w)) fail('Register first.', 409, 'NOT_REGISTERED');
+    // A wallet that joined through any referral link can never be approved, so say so before it applies.
+    if ((await rows('SELECT 1 FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2 UNION ALL SELECT 1 FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [w])).length)
+      fail('Wallets that joined through a referral link cannot become creators.', 409, 'CREATOR_REFERRED');
+    const links = (Array.isArray(body.links) ? body.links : []).filter(x => typeof x === 'string' && x.trim()).slice(0, 5);
+    const audience = body.audience === '' || body.audience == null ? null : Number(body.audience);
+    await cp.handle(ctx, w, 'creator-apply', { displayName: body.displayName, platform: body.platform, channelUrl: body.channelUrl, links, audience, reason: body.reason, terms: body.terms === true });
+    return creatorState(w);
+  }
+  async function creatorAdmin(w, body = {}) {
+    const search = typeof body.search === 'string' ? body.search.slice(0, 80) : '', page = pageOf(body);
+    const s = await cp.handle(ctx, w, 'creator-admin', { search, page });
+    const order = { PENDING: 0, APPROVED: 1, SUSPENDED: 2, REJECTED: 3 };
+    return { role: s.role, page, pageSize: 20, search,
+      creators: s.creators.map(c => ({ id: c.id, displayName: c.displayName, status: c.status, code: c.code, wallet: c.wallet, submitted: c.submitted, reviewed: c.reviewed, publicNote: c.publicNote,
+        application: { platform: c.application?.platform || null, channelUrl: c.application?.channelUrl || null, links: c.application?.links || [], audience: c.application?.audience ?? null, reason: c.application?.reason || '' } }))
+        .sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9)) };
+  }
+  async function creatorAdminAction(w, body) {
+    // Only application review is offered on the landing page; program, CP and shop changes stay in the game.
+    if (body.operation !== 'status' || !['APPROVED', 'REJECTED', 'SUSPENDED'].includes(body.status)) fail('Only approve, reject or suspend is available here.', 403, 'ADMIN_ONLY');
+    await cp.handle(ctx, w, 'creator-admin-action', { operation: 'status', creatorId: body.creatorId, status: body.status, reason: body.reason, publicNote: body.publicNote || '' });
+    return creatorAdmin(w, body);
+  }
+
   function status() {
     return { prelaunch: true, network: net.label, launchAt, registrationEnabled: flags.registration, referralsEnabled: flags.referrals,
       links, announcements: readAnnouncements(announcementsFile),
@@ -175,6 +226,10 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     if (action === 'register') return { data: await register(w, body) };
     if (action === 'preferences') return { data: await preferences(w, body) };
     if (action === 'referrals') return { data: await referrals(w, body) };
+    if (action === 'creator') return { data: await creatorState(w, body) };
+    if (action === 'creator-apply') { limit(ip, 'register'); return { data: await creatorApply(w, body) }; }
+    if (action === 'creator-admin') return { data: await creatorAdmin(w, body) };
+    if (action === 'creator-admin-action') return { data: await creatorAdminAction(w, body) };
     fail('Unknown action.', 404, 'UNKNOWN_ACTION');
   }
 
