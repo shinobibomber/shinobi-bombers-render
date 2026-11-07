@@ -1,7 +1,10 @@
 # Pre-launch wallet security review
 
 Date: November 7, 2026 (Asia/Singapore).
-Status: **local review changes only; not pushed or deployed**.
+Status: **owner approved live-only deployment after review** (November 7, 2026).
+The original review implementation is commit `ef20b54`; the later instruction
+"deploy to live server" authorizes publishing it to `live` only. The review findings below
+remain open. No warning is cleared or payment feature enabled by that authorization.
 Branch: `review/prelaunch-wallet-security-2026-11-07`.
 Base: `e34bb8291e3afd2174a1365b2fcad69ee11e8f21`.
 

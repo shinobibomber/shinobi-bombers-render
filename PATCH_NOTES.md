@@ -20,8 +20,6 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
-**DRAFT FOR REVIEW — NOT DEPLOYED**
-
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Pre-launch Wallet Selection)**
 
 • Phantom is now the recommended Solana wallet, with Solflare as the second supported option. Other compatible Solana Wallet Standard wallets remain available.

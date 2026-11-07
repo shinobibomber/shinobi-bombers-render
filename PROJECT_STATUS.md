@@ -108,6 +108,12 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 OWNER APPROVED LIVE WALLET RELEASE: the later request "deploy to live server"
+  supersedes the review-only restriction below for this reviewed change. Publish review
+  commit ef20b54 and these release notes to branch live only, not main/beta. Keep PRELAUNCH_MODE
+  on, RYO_SCOPE fixed, money settings/gates unchanged. Verify the live wallet security marker,
+  CSP/HSTS, health and closed payment routes. Warning/dependency concerns remain unresolved.
+
 - 2026-11-07 WALLET REVIEW ONLY — owner expressly said DO NOT AUTO-DEPLOY. Local branch
   review/prelaunch-wallet-security-2026-11-07. Do not push main/live or change Render settings.
   Phantom recommended; Solflare second; MetaMask names/isMetaMask providers temporarily hidden;
