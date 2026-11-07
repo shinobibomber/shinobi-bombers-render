@@ -887,3 +887,4 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 @media (max-width:560px){.sbw-boxdlg .bx-top{grid-template-columns:90px 1fr}.sbw-boxdlg .bx-tsu{display:none}.sbw-boxdlg .bx-box{width:90px;height:90px}.sbw-boxdlg h2{font-size:22px}.sbw-boxdlg .bx-perks{grid-template-columns:1fr}}
 .sbw-boxdlg .bx-perks .sbw-stars{color:#ffd257;font-size:17px}
 #sbwLayer .sbw-myth-top .sbw-mythic{font:900 17px Rajdhani,sans-serif;letter-spacing:2px;color:#ffd257;text-shadow:0 0 8px #c98bff}
+#sbwLayer .sbw-myth-stars{display:block;font:700 12px/1.3 system-ui,sans-serif;letter-spacing:1px;color:#ffd257;white-space:nowrap}

@@ -1,0 +1,588 @@
+{
+  "version": 2,
+  "hero": {
+    "id": 13,
+    "key": "tsukiyomi",
+    "name": "Tsukiyomi",
+    "title": "Mythic Shinobi",
+    "rarity": "Mythic",
+    "rank": 5,
+    "theme": "Lunar / Celestial / Void",
+    "stars": 7,
+    "classification": "Exclusive Mythic NFT"
+  },
+  "frame": {
+    "width": 128,
+    "height": 128,
+    "anchor": [
+      64,
+      124
+    ],
+    "format": "PNG RGBA",
+    "displaySizes": [
+      32,
+      48,
+      64
+    ]
+  },
+  "states": {
+    "IDLE": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1600,
+      "fps": 5,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {},
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "WALK_FRONT": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 800,
+      "fps": 10,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "events": {},
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "WALK_LEFT": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 800,
+      "fps": 10,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "left",
+      "events": {},
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "WALK_RIGHT": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 800,
+      "fps": 10,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "right",
+      "events": {},
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "WALK_BACK": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 800,
+      "fps": 10,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "back",
+      "events": {},
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "RUN": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 13.333333333333334,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {},
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "ATTACK": {
+      "frames": 6,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 550,
+      "fps": 10.909090909090908,
+      "loop": false,
+      "priority": 2,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "blade": 3,
+        "recover": 5
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "BOMB_PLACE": {
+      "frames": 6,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 10,
+      "loop": false,
+      "priority": 2,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "place": 2
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "HURT": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 400,
+      "fps": 10,
+      "loop": false,
+      "priority": 4,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "recoil": 0
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "DEFEAT": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1000,
+      "fps": 8,
+      "loop": false,
+      "priority": 5,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "down": 7
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "VICTORY": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1200,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "sparkle": 3
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "EMOTE_ALERT": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "expression": 1
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "EMOTE_QUESTION": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "expression": 1
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "EMOTE_LIKE": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "expression": 1
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "EMOTE_CELEBRATE": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "expression": 1
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "SKILL_DRAGON_SLASH": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 500,
+      "fps": 16,
+      "loop": false,
+      "priority": 3,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "visualPeak": 5
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "SKILL_VOID_SHURIKEN": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 500,
+      "fps": 16,
+      "loop": false,
+      "priority": 3,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "visualPeak": 5
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "SKILL_RAIJIN_FIELD": {
+      "frames": 10,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 714.2857142857143,
+      "fps": 13.999999999999998,
+      "loop": false,
+      "priority": 3,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "visualPeak": 6
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    },
+    "ULTIMATE_DRAGON_ASCENSION": {
+      "frames": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1000,
+      "fps": 12,
+      "loop": false,
+      "priority": 3,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "visualPeak": 7
+      },
+      "texture": null,
+      "assetStatus": "missing-authored-frames",
+      "fallback": "approved-direction-pose-rig"
+    }
+  },
+  "skills": {
+    "dragon_slash": {
+      "label": "Dragon Slash",
+      "path": "skills/dragon_slash.png",
+      "frameWidth": 72,
+      "frameHeight": 80,
+      "frameCount": 8,
+      "fps": 16,
+      "loop": false,
+      "anchor": [
+        36,
+        40
+      ],
+      "layer": "skill-front",
+      "direction": "right",
+      "events": {
+        "impact": 6
+      },
+      "requiredFrames": 8,
+      "durationMs": 500,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "eventsMs": {
+        "impact": 375
+      },
+      "assetStatus": "legacy-concept-extraction",
+      "damage": false
+    },
+    "void_shuriken": {
+      "label": "Void Shuriken",
+      "path": "skills/void_shuriken.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frameCount": 8,
+      "fps": 16,
+      "loop": false,
+      "anchor": [
+        32,
+        32
+      ],
+      "layer": "skill-front",
+      "events": {
+        "launch": 5,
+        "impact": 6
+      },
+      "requiredFrames": 8,
+      "durationMs": 500,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "eventsMs": {
+        "launch": 312.5,
+        "impact": 375
+      },
+      "assetStatus": "legacy-concept-extraction",
+      "damage": false
+    },
+    "raijin_field": {
+      "label": "Raijin Field",
+      "path": "skills/raijin_field.png",
+      "frameWidth": 64,
+      "frameHeight": 80,
+      "frameCount": 10,
+      "fps": 14,
+      "loop": false,
+      "anchor": [
+        32,
+        76
+      ],
+      "layer": "skill-front",
+      "events": {
+        "strike": 6,
+        "peak": 7
+      },
+      "requiredFrames": 10,
+      "durationMs": 714.2857142857143,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "eventsMs": {
+        "strike": 428.57142857142856,
+        "peak": 500
+      },
+      "assetStatus": "legacy-concept-extraction",
+      "damage": false
+    },
+    "mythic_dragon_ascension": {
+      "label": "Mythic Dragon Ascension",
+      "path": "skills/mythic_dragon_ascension.png",
+      "frameWidth": 72,
+      "frameHeight": 88,
+      "frameCount": 10,
+      "fps": 12,
+      "loop": false,
+      "anchor": [
+        36,
+        84
+      ],
+      "layer": "ultimate",
+      "sheetLabels": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12
+      ],
+      "timeline": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        8,
+        9
+      ],
+      "events": {
+        "burst": 10,
+        "end": 11
+      },
+      "requiredFrames": 12,
+      "durationMs": 1000,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        8,
+        9
+      ],
+      "eventsMs": {
+        "burst": 833.3333333333334,
+        "end": 916.6666666666666
+      },
+      "assetStatus": "legacy-concept-extraction",
+      "damage": false
+    }
+  },
+  "aura": {
+    "source": "metadata/tsukiyomi.json",
+    "unchanged": true,
+    "quality": "legacy-extracted-layers"
+  },
+  "limits": {
+    "actors": 128,
+    "effects": 48,
+    "lowEffects": 12,
+    "textureFrames": 160
+  },
+  "assetStatus": "runtime-ready-authored-art-incomplete"
+}

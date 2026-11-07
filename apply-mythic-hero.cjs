@@ -5,10 +5,11 @@
  * each hero and the "Check NFT" action. Exact-string hooks; tests/preservation.cjs reverses mythicPatches. */
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
-const marker = '<!-- mythic-hero -->', script = '<script defer src="assets/mythic-hero/mythic-hero.js"></script>';
+const marker = '<!-- mythic-hero -->', script = '<script defer src="assets/mythic-hero/animation-controller.js"></script>\n<script defer src="assets/mythic-hero/mythic-hero.js"></script>\n<script defer src="assets/mythic-hero/animation-runtime.js"></script>';
 const V = "'#c98bff'"; // Mythic violet
 // Game client. [before, after, count]
 const mythicPatches = [
+  ['g.drawImage(floor.canvas,0,0);', 'g.drawImage(floor.canvas,0,0);window.MythicHero?.drawGround?.(g,now,{proj,Sg});', 1],
   ['["Legend","#f59e0b",1]];', '["Legend","#f59e0b",1],["Mythic","#b36bff",0]];', 1],
   ['[lo,hi]=[[1,3],[3,6],[6,9],[9,12],[12,15]][r]', '[lo,hi]=[[1,3],[3,6],[6,9],[9,12],[12,15],[15,18]][r]', 1],
   // The Genin–Legend bands stay byte-for-byte (the real-time rewards guard pins them); Mythic is appended.
@@ -64,6 +65,7 @@ function applyMythicHero(appDir = path.join(__dirname, 'app')) {
   fs.rmSync(dest, { recursive: true, force: true });
   copyDir(path.join(src, 'assets'), dest);
   fs.copyFileSync(path.join(src, 'mythic-hero.js'), path.join(dest, 'mythic-hero.js'));
+  for (const file of ['animation-controller.js','animation-runtime.js']) fs.copyFileSync(path.join(src,file),path.join(dest,file));
   const server = path.join(appDir, 'server');
   fs.copyFileSync(path.join(src, 'server.cjs'), path.join(server, 'mythic-hero.cjs'));
   const schema = path.join(server, 'schema.sql');

@@ -11,7 +11,7 @@
   let meta = null, shotSerial = 0, baseBlit = null, previousHeroFrame = null;
   const AURA_KEY = 'sb-mythic-aura';
   const api = window.MythicHero = {
-    loaded: false, ready: null, source: null, RANK: MYTHIC,
+    loaded: false, ready: null, source: null, RANK: MYTHIC, getTexture: file => images.get(file),
     isMythic, heroFrame, drawPortrait, portraitFrame, effectFrame, frameInfo, emote,
     get auraEnabled() { try { return localStorage.getItem(AURA_KEY) !== 'off'; } catch { return true; } },
     setAura(on) { try { localStorage.setItem(AURA_KEY, on ? 'on' : 'off'); } catch {} auraCache.clear(); dispatchEvent(new CustomEvent('mythic-aura-changed', { detail: { on: !!on } })); },
@@ -36,7 +36,7 @@
   let assets = null;
   api.assetsReady = false;
   api.preload = () => assets || (assets = !meta ? Promise.reject(new Error('Tsukiyomi metadata is not ready.')) : Promise.all([...new Set([
-    ...Object.values(meta.animations), ...Object.values(meta.skills), ...Object.values(meta.character), ...Object.values(meta.previews), ...Object.values(meta.aura.parts), meta.aura.frames
+    ...Object.values(meta.skills), ...Object.values(meta.character), ...Object.values(meta.previews), ...Object.values(meta.aura.parts), meta.aura.frames
   ].map(a => a.path))].map(load)).then(() => {
     api.assetsReady = true; frames.clear(); auraCache.clear(); effects.clear(); sprites.clearCache?.();
     dispatchEvent(new CustomEvent('shinobi-mythic-assets'));

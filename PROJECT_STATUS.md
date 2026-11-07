@@ -108,6 +108,25 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+- 2026-11-07 TSUKIYOMI — OWNER AUTHORIZED TEST SERVER ONLY. The latest instruction
+  "deploy it to test server only" authorizes publishing the reviewed animation change
+  from 0230af9 onto main for shinobi-bombers-beta (srv-dbib5q0m7kps73cddr90).
+  Do not push live or deploy ShinobiBombers (srv-dbnel5bl550s73f0moa0). No environment,
+  database, wallet or live NFT operations are part of this release. The live-only wallet
+  and creator-application changes are not brought into main by this cherry-pick.
+  Added 19 presentation states, four directions, native successful-shot/bomb/impact hooks,
+  split Raijin layers, bounded caches/pools and map/menu cleanup. Mythic displays seven
+  stars while existing rank-5 saves, NFT ownership, stats, ten-hero cap and rewards remain.
+  Approved directional poses are animated as a fallback; old borrowed Fire-body strips
+  are no longer downloaded. Existing aura art/rendering is preserved. Authored character
+  frames and clean skill atlases are still missing; the legacy dragon has ten source
+  drawings across twelve logical steps. Rejected generated candidate is not shipped.
+  See mythic-hero/ASSET_AUDIT.md for import requirements, test evidence and limitations.
+  Local fixture preview: node mythic-hero/tools/preview.cjs (Node 22 and Chrome).
+  Beta release validation: fresh unpack, lint, rewards guard, all 53 beta suites and website
+  checks passed in one run; desktop/mobile Tsukiyomi screenshots inspected. Runtime source
+  matches 0230af9 exactly. Logs: tests/out/tsukiyomi-beta-{build,lint,rewards,tests}.log.
+
 - 2026-11-07 OWNER CORRECTION: SR economy is LIVE ONLY, never beta. Build-stamped Mainnet
   selects 50/30/10/10; Devnet keeps 80% operations / 10% treasury / 8% burn / 2% studio and
   its old Market-fee Adventure funding. Live controls are hidden and server-rejected on beta.

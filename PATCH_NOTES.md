@@ -20,6 +20,18 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 7, 2026 · Tsukiyomi Animations)**
+
+Test server only; production unchanged.
+
+• Tsukiyomi now displays exactly seven Mythic stars in the Collection, hero details and Adventure team.
+• Added animation support for movement, attacks, bomb placement, reactions, victory and emotes, plus four skill-effect timelines connected to existing Adventure actions.
+• Kept Tsukiyomi's approved appearance and existing Mythic Aura, with bounded effects and cleanup between maps.
+• Production animation artwork is still pending. The preview uses animated poses and older skill art; it does not yet contain fully authored character motion or twelve distinct dragon frames.
+• NFT ownership, deployed hero limits, combat balance and Ryo rewards remain unchanged.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Live Economy Separation)**
 
 • The 50% Locked Treasury / 30% Adventure Rewards / 10% Community / 10% Reserve economy is now reserved for the live server.

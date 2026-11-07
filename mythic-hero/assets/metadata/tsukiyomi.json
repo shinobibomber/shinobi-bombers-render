@@ -7,7 +7,9 @@
     "title": "Mythic Shinobi",
     "rarity": "Mythic",
     "rank": 5,
-    "theme": "Lunar / Celestial / Void"
+    "theme": "Lunar / Celestial / Void",
+    "stars": 7,
+    "classification": "Exclusive Mythic NFT"
   },
   "sources": {
     "model": {
