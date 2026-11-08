@@ -108,6 +108,10 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+### Nov 8, 2026 - consistent Adventure hero body size (beta only)
+
+Adventure bodies now use the Mythic reference height (292 canvas pixels / 36.5 logical sprite pixels), normalized once per model/direction from the already-cleaned native idle cell. `CharacterAnimations.drawAdventureHero` draws the cached native cell directly at the original foot pivot; pose frames share the reference, with no per-frame canvas allocation/readback. Back/sleep cells carry the same metadata from PlayerModels. Tier aura layers and Mythic renderer remain independent; menus keep their original portraits. See `docs/ADVENTURE_HERO_SIZE_BETA.md` and `tests/adventure-hero-size.cjs`. Only the two intentionally changed sprite source hash entries were updated; the exact Adventure hook is reversed in preservation tests.
+
 ### Nov 8, 2026 — beta archive download recovery (validated for beta release)
 
 Beta manual redeploys failed with upstream HTTP 504 on the verified base ZIP. New `download-game-base.cjs` adds four bounded attempts, 45-second timeouts, cache-busting retries, SHA-verified cache reuse, and official GitHub asset API fallback after two failures. Both sources must match the existing immutable hash; `unpack.cjs` retains its independent checksum and safe extraction. A real fresh download reproduced two 504s and recovered all 53,810,393 bytes through the API with the correct hash. `build-integrity.json` records loader version/hash for post-deploy checks. Work stays on `review/archive-download-beta-2026-11-08` and beta `main`; production `live` is excluded. See `docs/ARCHIVE_BUILD_BETA.md`. Validation passed: clean rebuild, public integrity marker, lint, the 48-team rewards guard, all 63 game suites and all 20 website checks. The fresh remote download recovered through the official API and passed the original SHA-256 check. Post-deploy evidence is saved locally in `tests/out/archive-deploy-verification.json`.

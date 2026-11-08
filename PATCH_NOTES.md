@@ -1,4 +1,35 @@
-# Sh
+# Shinobi Bombers patch notes
+
+Player-facing notes, newest first. Each entry is ready to paste into Discord (under 2,000
+characters). Add a new entry at the top whenever an update is deployed.
+
+<!-- Template:
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Month D, YYYY)**
+
+**✨ New**
+• **Feature** — what players can now do.
+
+**🔄 Changes**
+• What works differently, and why it is better.
+
+**🛠️ Fixes**
+• What was broken and is now fixed.
+
+Thanks for playing — see you on the battlefield! 🥷
+-->
+
+---
+
+**SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Clearer Adventure Heroes)**
+
+- Adventure heroes now match Mythic's body size, with more consistent sizing when they turn.
+- Hero bodies draw directly from their original sprite cells for clearer movement and fewer resize artifacts.
+- Existing rarity auras, Mythic artwork, skill effects and menu portraits are preserved.
+
+Test server only. Combat, chakra, stats, ownership and Ryo rewards are unchanged.
+
+---
+
 **SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Training & Upgrade Shards)**
 
 • Resting heroes recover 1 chakra per minute by default. Fast Charge now adds 0.5 chakra per minute, and active Dojo bonuses add separately.
@@ -20,27 +51,6 @@ Test server only. Existing levels, permanent perks, ownership, damage and attack
 • Builds can reuse a verified archive copy when available. Every archive must still pass the original security and integrity checks.
 
 Test server only. Existing accounts, heroes, training, shards and reward rules are preserved.
-
----
-inobi Bombers patch notes
-
-Player-facing notes, newest first. Each entry is ready to paste into Discord (under 2,000
-characters). Add a new entry at the top whenever an update is deployed.
-
-<!-- Template:
-**⚔️ SHINOBI BOMBERS — PATCH NOTES (Month D, YYYY)**
-
-**✨ New**
-• **Feature** — what players can now do.
-
-**🔄 Changes**
-• What works differently, and why it is better.
-
-**🛠️ Fixes**
-• What was broken and is now fixed.
-
-Thanks for playing — see you on the battlefield! 🥷
--->
 
 ---
 

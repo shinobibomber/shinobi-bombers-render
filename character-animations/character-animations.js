@@ -8,7 +8,8 @@
   const durations = { idle: 1200, walk: 800, run: 650, melee: 650, ranged: 550, skill: 1000, hurt: 400, die: 1100, bomb: 750, victory: 1400 };
   const api = window.CharacterAnimations = {
     loaded: false, ready: null, source: null, poseFor, heroFrame, frameInfo,
-    play, effectFrame, drawProjectile, drawActorEffects, drawImpacts, drawHuntProjectile, drawHuntImpact
+    play, effectFrame, drawProjectile, drawActorEffects, drawImpacts, drawHuntProjectile, drawHuntImpact,
+    drawAdventureHero, adventureBodyPixels: 292, adventureSizingVersion: 1
   };
   const assets = Promise.all([1, 2, 3, 4].map(index => new Promise((resolve, reject) => {
     const image = new Image(), file = 'animationset' + index + '.png';
@@ -100,9 +101,27 @@
     context.drawImage(texture, 160 - pivot[0] * scale, 352 - pivot[1] * scale, texture.width * scale, texture.height * scale);
     canvas.playerModel = { model: info.model, direction: info.direction, phase: info.phase, key: info.key };
     canvas.characterAnimation = { model: info.model, state: info.state, phase: info.phase };
+    const reference = crop(info.data.file, idle, false);
+    canvas.adventureSprite = { texture, pivot, referenceHeight: reference.opaqueHeight };
     frames.set(info.key, canvas);
     if (frames.size > 128) frames.delete(frames.keys().next().value);
     return canvas;
+  }
+  function drawAdventureHero(context, canvas, x, y, scale, flip, now = performance.now()) {
+    const body = canvas.tierAuraBase || canvas, source = body.adventureSprite;
+    // Mythic retains its own body, directional rig and approved aura renderer.
+    if (!source) return sprites.blit(context, canvas, x, y, scale, flip);
+    const rank = canvas.tierAura?.rank, aura = canvas.tierAuraBase && window.TierAuras?.loaded;
+    if (aura) sprites.blit(context, TierAuras.animatedFrame(rank, now), x, y, scale, flip);
+    const ratio = api.adventureBodyPixels / source.referenceHeight * scale / 8;
+    context.save();
+    context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
+    context.translate(Math.round(x), Math.round(y));
+    if (flip) context.scale(-1, 1);
+    context.drawImage(source.texture, -source.pivot[0] * ratio, -source.pivot[1] * ratio,
+      source.texture.width * ratio, source.texture.height * ratio);
+    context.restore();
+    if (aura) sprites.blit(context, TierAuras.animatedFront(rank, now), x, y, scale, flip);
   }
   function effectFrame(hero, type, phase = 0) {
     // Optional per-hero art (e.g. the Mythic hero's own skills) is asked first; undefined = not handled.
@@ -136,6 +155,7 @@
         if (opaque > width * .75) for (let px = 0; px < width; px++) data.data[(row * width + px) * 4 + 3] = 0;
       }
     }
+    if (!effect) canvas.opaqueHeight = PlayerModels.opaqueHeight(data, width, height);
     context.putImageData(data, 0, 0); cuts.set(key, canvas);
     return canvas;
   }

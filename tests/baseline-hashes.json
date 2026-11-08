@@ -47,7 +47,7 @@
     },
     {
       "path": "character-animations/character-animations.js",
-      "sha256": "b8224f69ee15875e925d91810cd6fa8016d66d20baf0daf3cbac96ff2b5f4ecd"
+      "sha256": "3170a9009526fc49886b5f7d6e40d7542b20eebe5f33b9630940305908d2245c"
     },
     {
       "path": "character-animations/manifest.json",
@@ -187,7 +187,7 @@
     },
     {
       "path": "player-models/player-models.js",
-      "sha256": "1e92c20fb034ff9fe7a49bed47229ea4afe0e49d646fc4189a136a75062f5536"
+      "sha256": "046cfb9619de1545516e82a50449611c2826220a4ad6bfd531ba7f6f6fe006f5"
     },
     {
       "path": "player-models/playermodel.png",

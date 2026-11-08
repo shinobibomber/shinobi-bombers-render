@@ -5,7 +5,7 @@
   const sourceUrl = new URL('.', document.currentScript.src);
   const textures = new Map();
   const frames = new Map();
-  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, portraitFrame, portraitPose, drawPortrait, crispScale, frameInfo, clearExterior };
+  const api = window.PlayerModels = { loaded: false, ready: null, source: null, catalog: [], modelFor, heroFrame, portraitFrame, portraitPose, drawPortrait, crispScale, frameInfo, clearExterior, opaqueHeight };
 
   const image = new Image();
   const imageReady = new Promise((resolve, reject) => {
@@ -90,6 +90,10 @@
     context.drawImage(texture, 160 - pivotX * scale, 352 - pivotY * scale,
       texture.width * scale, texture.height * scale);
     canvas.playerModel = { key: info.key, model: info.index, direction: info.direction, phase: info.phase };
+    // Adventure draws the native cell directly. One reference per direction keeps
+    // the body size stable through its cycle; menus retain the original canvas.
+    const reference = textures.get([info.index, info.direction, 0].join('.'));
+    canvas.adventureSprite = { texture, pivot: info.cell.pivot, referenceHeight: reference.opaqueHeight };
     frames.set(info.key, canvas);
     return canvas;
   }
@@ -154,8 +158,20 @@
     context.drawImage(image, x, y, width, height, 0, 0, width, height);
     const pixels = context.getImageData(0, 0, width, height);
     clearExterior(pixels, width, height);
+    canvas.opaqueHeight = opaqueHeight(pixels, width, height);
     context.putImageData(pixels, 0, 0);
     return canvas;
+  }
+
+  // Reuse already-read crop pixels, never read back a canvas during map drawing.
+  function opaqueHeight(pixels, width, height) {
+    let top = height, bottom = -1;
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      if (pixels.data[(y * width + x) * 4 + 3] > 40) {
+        top = Math.min(top, y); bottom = Math.max(bottom, y);
+      }
+    }
+    return Math.max(1, bottom - top + 1);
   }
 
   // The source is an opaque presentation sheet. Remove only exterior background

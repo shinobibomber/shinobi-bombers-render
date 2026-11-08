@@ -5,6 +5,7 @@ for(const file of baseline.files){assert.equal(sha(fs.readFileSync(path.join(roo
 let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 // The last build step points image URLs at their WebP versions; restore the original names first.
 html=require('../apply-performance.cjs').restoreReferences(html);
+for(const [before,after,count]of require('../apply-character-animations.cjs').adventureSizingPatches){assert.equal(html.split(after).length-1,count,'exact Adventure-only native sprite drawing hook');html=html.split(after).join(before)}
 const {clientPatches:combatPatches}=require('../apply-combat-rules.cjs');
 const {clientPatches:upgradePatches}=require('../apply-hero-upgrades.cjs');
 for(const [before,after,count]of upgradePatches.slice().reverse().concat(combatPatches.slice().reverse())){assert.equal(html.split(after).length-1,count,'exact combat/perk hook: '+before.slice(0,50));html=html.split(after).join(before)}
