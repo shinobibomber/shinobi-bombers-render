@@ -1,0 +1,13 @@
+{
+ "source": "Solana Mainnet, finalized getAccountInfo, captured 2026-11-08. Public on-chain data only.",
+ "multisig": "38chAaSbcA4Stdg7EhCzzyVAbhz2BuKtHDfD6thsZSjX",
+ "owner": "SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf",
+ "lamports": 1823720,
+ "dataBase64": "4HR5ukShT+zymo6F/8e6prsf2DlQEzmlPutOIVjm14AIM0CWe4fnigAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAD+AwAAAF1oPalrzPpYqvTnc1OgHvgziCE+sRjs1eVDeFMWClxKB3vmTCmYS2Hkzow9f9XLd2LlWqt1NT84cE1ZoKINsLmpB6iZQW2bhS2Yh1hPA2pPqO70BQ9glCjOtaFYQ2Zeg5TcBwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+ "vault": {
+  "address": "5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn",
+  "owner": "11111111111111111111111111111111",
+  "lamports": 1000000,
+  "dataLength": 0
+ }
+}

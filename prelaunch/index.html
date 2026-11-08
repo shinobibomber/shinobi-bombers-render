@@ -110,6 +110,12 @@
         <div id="adminList"></div>
         <div class="pager"><button id="admPrev" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.prev" disabled>Previous</button><button id="admNext" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.next" disabled>Next</button></div>
       </div>
+      <div id="treasuryPanel" class="card admin-panel treasury-panel" hidden>
+        <h3 data-i18n="trs.title">TREASURY · CHAPTER 04 · READ-ONLY</h3>
+        <p class="note" data-i18n="trs.note">Public addresses and finalized Mainnet observations. No wallet action is possible here.</p>
+        <div id="treasuryBody"></div>
+        <div class="pager"><a class="btn btn-ghost btn-sm" href="/treasury" target="_blank" rel="noopener" data-i18n="trs.public">Open the public transparency page</a><button id="treasuryRefresh" class="btn btn-ghost btn-sm" type="button" data-i18n="trs.refresh">Refresh</button></div>
+      </div>
       <form id="prefsForm" class="card prefs">
         <h3 data-i18n="dash.prefs">PREFERENCES</h3>
         <label><span data-i18n="reg.language">Language</span><select name="language"><option value="en">English</option><option value="pt-BR">Português (Brasil)</option></select></label>
@@ -299,6 +305,7 @@
       <a href="/privacy" data-i18n="foot.privacy">Privacy Policy</a>
       <a href="/rules" data-i18n="foot.rules">Referral Program Rules</a>
       <a href="/whitepaper" data-i18n="foot.whitepaper">Whitepaper</a>
+      <a href="/treasury" data-i18n="foot.treasury">Treasury transparency</a>
       <a id="supportLink" href="#" hidden data-i18n="foot.support">Contact &amp; Support</a>
     </nav>
     <p class="safety" data-i18n="foot.safety">We will never ask for your seed phrase or private key.</p>

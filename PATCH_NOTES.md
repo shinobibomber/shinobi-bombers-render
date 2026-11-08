@@ -20,6 +20,21 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Treasury Transparency)**
+
+**✨ New**
+• **Treasury Transparency page** — see every $SR Chapter 04 wallet in one place: the 50% Locked Treasury, 30% Active Reward Pool, 10% Community Reward Vault and 10% Economic Stability Reserve, with live Solana verification and balances.
+• The Locked Treasury is protected by a 2-of-3 multisig, and the page shows its status in real time.
+• Funds held in the treasury wallets are shown separately from funds available for player chest rewards.
+
+**🔄 Coming at official launch**
+• Withdraw your claimed SR any time — 5% returns to the Locked Treasury, with no SOL platform fee.
+• Chest rewards can be claimed once every 24 hours; unclaimed earnings stay in your Chest.
+
+Pre-launch: payments, claims and withdrawals stay closed until launch. Find the page in the site footer under "Treasury transparency".
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Creator Applications)**
 
 • Players who joined through a referral link can now apply to become creators. Team review and approval are still required.

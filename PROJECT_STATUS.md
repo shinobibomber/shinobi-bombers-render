@@ -108,6 +108,24 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+### Nov 8, 2026 — LIVE treasury & wallet integration (Phase A–F), released to `live` only (pre-launch, all money paths OFF)
+
+Cherry-picked onto `live` only (owner request "commit to live server only"); the 4 beta-only main commits (combat perks, Tsukiyomi/Mythic animation) were NOT brought to live. Beta (`main`) does not have this change yet. No Render setting changed; no transaction. Known pre-existing on `live`: preservation pins for gameplay-options/server.cjs and app/server/gameplay-options.cjs do not match (live lacks main's eol=lf attributes); not part of the Render build.
+- Verified on Mainnet (read-only, finalized): Treasury `5wVBdFkQ…11aGn` = Squads v4 vault #0 of multisig
+  `38chAaSb…SZjX`, 2-of-3, no time lock, no config authority, 0 proposals. Phantom wallets 3Rzz/FZnW/B2aG: never used.
+- `treasury/`: committed public registry + validator, read-only verifier, live withdrawal/claim policy, schema,
+  `/treasury` page. `apply-treasury.cjs` runs after apply-sr-revenue. See treasury/README.md, docs/treasury/*.
+- SR router v2 (live only): destinations pinned to the registry; Squads v4 verification replaces the SPL-multisig
+  check; 4 legs (30% now leaves custody for the Active Reward Pool); claims funded only by approved top-ups
+  (source activeRewards added); 4 activation locks incl. new SR_REVENUE_ROUTING_ENABLED (refused in pre-launch).
+- Live only: withdrawals 5% → Squads Treasury in exact base units (own ledger), no 24 h withdrawal cooldown;
+  Chest claims once per 24 h within an approved `rewardBudget` (new admin kind). Beta unchanged (2% studio, 24 h).
+- Admin: typed CONFIRM required server-side for every control write; Treasury section in /admin/; read-only
+  Treasury card in the pre-launch portal (admin allowlist). Whitepaper custody wording updated.
+- Tests: new treasury-registry / treasury-live-rewards / treasury-prelaunch / treasury-page; updated sr-revenue,
+  financial-server, economic-dashboard, network-guard, creators-server; 4 preservation hashes (adventure, service,
+  store, schema) updated by design. Owner approvals still required: docs/treasury/ACTIVATION_CHECKLIST.md.
+
 - 2026-11-07 REFERRED CREATOR APPLICATIONS: owner explicitly chose to allow referred players
   to apply. Removed the pre-launch submission block and shared admin approval/reactivation
   block; approval still requires an authorized reviewer and audit reason. Audit records keep

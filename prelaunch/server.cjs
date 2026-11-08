@@ -46,7 +46,7 @@ function readAnnouncements(file) {
   } catch { return []; }
 }
 
-function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json') } = {}) {
+function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null } = {}) {
   const server = path.join(gameDir, 'server'), need = name => require(path.join(server, name));
   const fromApp = name => require(require.resolve(name, { paths: [server] }));
   const { Store } = need('store.cjs'), { verifySignature } = need('service.cjs'), cp = need('creators-portal.cjs'), players = need('player-referrals.cjs');
@@ -182,6 +182,32 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     return creatorAdmin(w, body);
   }
 
+  /* ---------- Treasury (Chapter 04) — read-only, admin allowlist only ---------- */
+  // The same admin allowlists (viewers, operators, approvers) as the Creator Program review on this page.
+  const adminRoleOf = w => { try { return cp.adminRole(w); } catch { return null; } };
+  let treasuryCache = null;
+  async function ledger(table, sql) {
+    if (!(await pool.query('SELECT to_regclass($1) AS t', [table])).rows[0].t) return null;
+    return (await pool.query(sql, [store.scope])).rows[0];
+  }
+  async function treasuryAdmin(w) {
+    const role = adminRoleOf(w); if (!role) fail('An authorized administrator is required.', 403, 'ADMIN_ONLY');
+    const registry = need('treasury-registry.cjs'), verify = need('treasury-verify.cjs'), gates = need('launch-gates.cjs');
+    // Pre-launch: no claim wallet exists and every money endpoint is closed, so nothing is claimable.
+    const base = { role, readOnly: true, paymentsEnabled: false, claimFunding: need('treasury-rewards.cjs').claimFundingNotConfigured(), registry: registry.publicView(), squads: registry.registry().squads,
+      flags: { prelaunch: true, srRouting: gates.srRoutingEnabled(env), activationApproved: registry.registry().activation.approved, mintRegistered: !!registry.registry().srMintAddress,
+        gates: Object.fromEntries(Object.keys(gates.GATES).map(g => [g, false])), note: 'Pre-launch: the game and every money endpoint are closed.' } };
+    if (net.key !== 'mainnet') return { ...base, applicable: false, note: 'The Chapter 04 registry describes the live Mainnet server. Not verified from the test server.' };
+    treasuryCache = treasuryCache || verify.cachedSnapshot(() => treasuryConnection || verify.mainnetConnection(env), { clock: now });
+    const [verification, revenue, topups, fees, proposals] = await Promise.all([treasuryCache(),
+      ledger('ryo_service_revenue', 'SELECT COUNT(*) AS n,COALESCE(SUM(total_raw),0) AS raw FROM ryo_service_revenue WHERE scope=$1'),
+      ledger('ryo_revenue_replenishments', 'SELECT COUNT(*) AS n,COALESCE(SUM(amount_raw),0) AS raw FROM ryo_revenue_replenishments WHERE scope=$1'),
+      ledger('ryo_withdrawal_treasury_fees', 'SELECT COUNT(*) AS n,COALESCE(SUM(fee_raw),0) AS raw FROM ryo_withdrawal_treasury_fees WHERE scope=$1'),
+      ledger('ryo_admin_proposals', "SELECT COUNT(*) FILTER(WHERE status='pending') AS n,COUNT(*) AS raw FROM ryo_admin_proposals WHERE scope=$1")]);
+    const count = r => r ? { count: Number(r.n), raw: String(r.raw) } : null;
+    return { ...base, applicable: true, verification, ledgers: { serviceRevenue: count(revenue), replenishments: count(topups), withdrawalDeductions: count(fees), proposals: proposals ? { pending: Number(proposals.n), total: Number(proposals.raw) } : null } };
+  }
+
   function status() {
     return { prelaunch: true, network: net.label, launchAt, registrationEnabled: flags.registration, referralsEnabled: flags.referrals,
       links, announcements: readAnnouncements(announcementsFile),
@@ -236,6 +262,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     if (action === 'creator-apply') { limit(ip, 'register'); return { data: await creatorApply(w, body) }; }
     if (action === 'creator-admin') return { data: await creatorAdmin(w, body) };
     if (action === 'creator-admin-action') return { data: await creatorAdminAction(w, body) };
+    if (action === 'treasury-admin') return { data: await treasuryAdmin(w) };
     fail('Unknown action.', 404, 'UNKNOWN_ACTION');
   }
 

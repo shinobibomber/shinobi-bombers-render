@@ -15,11 +15,11 @@ const addr = k => k.publicKey.toBase58(), newWallet = () => addr(web3.Keypair.ge
    fs.copyFileSync(path.join(root, 'app/public/index.html'), path.join(fixture, 'public/index.html'));
    const expected = originalRead(path.join(root, 'app/server/schema.sql'), 'utf8'), at = expected.indexOf('\n-- Creators Portal v1:'); assert(at > 0);
    fs.writeFileSync(path.join(fixture, 'server/schema.sql'), expected.slice(0, at));
-   const sources = [...['schema.sql','player-schema.sql'].map(file => path.join(root, 'creators-portal',file)), path.join(root, 'prelaunch/schema.sql'),path.join(root,'sr-revenue/schema.sql')];
+   const sources = [...['schema.sql','player-schema.sql'].map(file => path.join(root, 'creators-portal',file)), path.join(root, 'prelaunch/schema.sql'),path.join(root,'sr-revenue/schema.sql'),path.join(root,'treasury/schema.sql')];
    fs.readFileSync = function (name, options) { const value = originalRead.apply(this, arguments); return sources.includes(path.resolve(String(name))) && options === 'utf8' ? value.replace(/\r?\n/g, '\r\n') : value; };
    require('../apply-creators-portal.cjs').applyCreatorsPortal(fixture);
    require('../apply-prelaunch.cjs').applyPrelaunch(fixture);   // appended after the Creators Portal schema
-   require('../apply-sr-revenue.cjs').applySrRevenue(fixture);
+   require('../apply-sr-revenue.cjs').applySrRevenue(fixture);require('../apply-treasury.cjs').applyTreasury(fixture);
    assert.equal(originalRead(path.join(fixture, 'server/schema.sql'), 'utf8'), expected, 'CRLF checkout assembles identical migration bytes');
  } finally {
    fs.readFileSync = originalRead;

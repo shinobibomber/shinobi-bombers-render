@@ -178,11 +178,17 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await p.click('#creatorForm button[type=submit]');
     await p.waitForFunction(() => /APPLICATION UNDER REVIEW/.test(document.querySelector('#creatorBody').textContent));
     assert.equal(await p.isVisible('#adminPanel'), false, 'creators do not see the admin panel');
+    assert.equal(await p.isVisible('#treasuryPanel'), false, 'creators do not see the Treasury card');
     await p.close();
 
     const a = await open({ width: 1440, height: 900 }, adminKey);
     await a.goto(url + '/'); await register(a, 'TeamAdmin');
     await a.waitForSelector('#adminPanel:not([hidden]) .admin-item');
+    await a.waitForSelector('#treasuryPanel:not([hidden]) [data-funding]');
+    { const tp = await a.textContent('#treasuryPanel');
+      for (const v of ['TREASURY · CHAPTER 04 · READ-ONLY', '5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn', 'Locked Treasury (Squads Account 1) · 50%', 'Active Reward Pool · 30%', 'Available for player reward claims: Not configured (pre-launch)', 'SR mint', 'not launched yet', 'UNVERIFIED', 'Mainnet payments are disabled']) assert(tp.includes(v), 'Treasury card: ' + v);
+      assert.equal(await a.locator('#treasuryPanel input, #treasuryPanel form, #treasuryPanel button:not(#treasuryRefresh)').count(), 0, 'read-only card: no write controls');
+      await a.locator('#treasuryPanel').screenshot({ path: path.join(OUT, 'prelaunch-treasury-card.png') }); }
     const item = a.locator('.admin-item', { hasText: 'Stream King' });
     assert.match(await item.textContent(), /Twitch[\s\S]*5,400[\s\S]*Weekly ninja game streams/);
     await item.getByRole('button', { name: 'Approve' }).click();

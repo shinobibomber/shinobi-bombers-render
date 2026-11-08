@@ -1,0 +1,60 @@
+{
+  "schema": "shinobi-treasury-registry-v1",
+  "policy": "Chapter 04 — SR Revenue Distribution",
+  "network": "mainnet",
+  "publicKeysOnly": true,
+  "notice": "Public Solana addresses only. Never add seed phrases, private keys, keypairs or private RPC credentials to this file.",
+  "destinations": [
+    {
+      "role": "lockedTreasury",
+      "label": "Locked Treasury (Squads Account 1)",
+      "bps": 5000,
+      "address": "5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn",
+      "custody": "squads-v4-vault",
+      "purpose": "Approved replenishment of gameplay reward pools; also receives the 5% SR withdrawal deduction (separate ledger)."
+    },
+    {
+      "role": "activeRewards",
+      "label": "Active Reward Pool",
+      "bps": 3000,
+      "address": "3Rzz25x1BhGAawL8DkBKmJpmKw7CMcJ9TfgxCvenTi56",
+      "custody": "phantom-single-key",
+      "purpose": "Eligible Adventure chest rewards; funds the game claim float only through verified, approved top-ups."
+    },
+    {
+      "role": "communityRewards",
+      "label": "Community Reward Vault",
+      "bps": 1000,
+      "address": "FZnW5DvUHer724sJzVr2Z8REEjK4EJeEnK9uDCekvDyL",
+      "custody": "phantom-single-key",
+      "purpose": "Approved events, competitions, giveaways and incentives."
+    },
+    {
+      "role": "economicReserve",
+      "label": "Economic Stability Reserve",
+      "bps": 1000,
+      "address": "B2aGUT7xVA8ZRzoa2XaTKUinNbyoV4VvgAvWBn1dSN8M",
+      "custody": "phantom-single-key",
+      "purpose": "Approved economic and reward-system support."
+    }
+  ],
+  "squads": {
+    "programId": "SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf",
+    "multisig": "38chAaSbcA4Stdg7EhCzzyVAbhz2BuKtHDfD6thsZSjX",
+    "vaultIndex": 0,
+    "threshold": 2,
+    "timeLockSeconds": 0,
+    "members": [
+      "7Hd7D6GsN2hGfPPNwZu1DXEfnpCUodd9rcvETtD8nEWm",
+      "9LepjwaFjiMEBoApmh4KBZpz39QwQJwaxN9nRFsySPiY",
+      "CM92voUXXxB1RnnCcweHLgJndWMJg5xgHMSC7H7LMNHy"
+    ],
+    "observed": "2026-11-08: finalized Mainnet read — MultisigCreateV2, threshold 2 of 3, time lock 0, no config authority, vault index 0 derives the Treasury address."
+  },
+  "srMintAddress": null,
+  "withdrawalTreasuryFeeBps": 500,
+  "activation": {
+    "approved": false,
+    "reference": null
+  }
+}

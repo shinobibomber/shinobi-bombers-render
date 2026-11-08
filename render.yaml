@@ -80,3 +80,6 @@ services:
       #   RYO_STUDIO_WALLET, RYO_REVENUE_WALLET, optional RYO_TOKEN_SYMBOL, and open features one at a time:
       #   SUMMONING_ENABLED, MARKETPLACE_ENABLED, REWARD_CLAIMS_ENABLED, SOL_DEPOSITS_ENABLED, SOL_WITHDRAWALS_ENABLED
       #   (all default OFF on Mainnet).
+      # SR service routing has a fifth, separate switch: SR_REVENUE_ROUTING_ENABLED (default OFF, refused while
+      # PRELAUNCH_MODE is on). It also needs the committed treasury registry activation and a two-wallet admin approval.
+      # RYO_TOKEN_MINT must equal srMintAddress in treasury/treasury-registry.json. See docs/treasury/ACTIVATION_CHECKLIST.md.

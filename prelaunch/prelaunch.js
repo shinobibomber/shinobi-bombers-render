@@ -237,6 +237,7 @@
     renderCreator();
     const panel = $('#adminPanel'); panel.hidden = !cr?.adminRole;
     if (cr?.adminRole) loadAdmin();
+    const treasury = $('#treasuryPanel'); if (treasury) { treasury.hidden = !cr?.adminRole; if (cr?.adminRole) loadTreasury(); }
   }
   const dateOf = ms => ms ? fmtDate(ms) : '—';
   const pill = st => el('span', { class: 'pill s-' + st, text: t('cs.' + st) });
@@ -295,6 +296,35 @@
       st.textContent = errText(e);
     } finally { btn.disabled = false; btn.textContent = t('ap.submit'); }
   }
+  /* Treasury (Chapter 04): read-only admin view. Text nodes only; no wallet action. */
+  async function loadTreasury() {
+    const box = $('#treasuryBody'); if (!box) return;
+    try {
+      const d = await api('treasury-admin'), v = d.verification || {};
+      const pill = st => el('span', { class: 'pill s-' + (st === 'verified' ? 'APPROVED' : st === 'mismatch' ? 'REJECTED' : 'PENDING'), text: String(st || 'unverified').toUpperCase() });
+      const meta = text => el('p', { class: 'meta', text });
+      const sq = v.squads && v.squads.members ? { threshold: v.squads.threshold, members: v.squads.members.length, timeLock: v.squads.timeLockSeconds, proposals: v.squads.transactionIndex } : { threshold: d.squads.threshold, members: d.squads.members.length, timeLock: d.squads.timeLockSeconds, proposals: '—' };
+      const onOff = (on, offKey) => t(on ? 'trs.on' : offKey || 'trs.off');
+      const sr = live => !live || live.srRaw == null ? t('trs.pending') : fmtNum(Number(BigInt(live.srRaw) / 1000000n));
+      const sol = live => !live || live.solLamports == null ? '—' : fmtNum(live.solLamports / 1e9);
+      box.replaceChildren(
+        el('div', { class: 'row' }, el('span', { class: 'meta', text: t('trs.status') }), pill(d.applicable ? v.status : 'unverified')),
+        ...d.registry.destinations.map(x => { const live = v.destinations && v.destinations[x.role]; return el('div', { class: 'admin-item', 'data-role': x.role },
+          el('div', { class: 'row' }, pill(live && live.verification ? live.verification.status : 'unverified'), el('b', { text: x.label + ' · ' + x.percent + '%' })),
+          el('p', { class: 'mono small', text: x.address }), meta(t('trs.balanceSol') + ': ' + sol(live) + ' · ' + t('trs.balanceSr') + ': ' + sr(live))); }),
+        el('div', { class: 'admin-item' }, el('b', { text: t('trs.squads') }), meta(sq.threshold + ' / ' + sq.members + ' · ' + t('trs.timeLock') + ': ' + sq.timeLock + ' s · ' + t('trs.proposals') + ': ' + sq.proposals),
+          el('p', { class: 'mono small', text: d.squads.multisig }), ...d.squads.members.map(m => el('p', { class: 'mono small', text: m }))),
+        el('div', { class: 'admin-item' }, el('b', { text: t('trs.mint') }), meta(v.mint && v.mint.address ? v.mint.address + ' · ' + String(v.mint.status).toUpperCase() : t('trs.mintPending'))),
+        el('div', { class: 'admin-item', 'data-funding': '' }, el('b', { text: t('trs.funding') }),
+          meta(t('trs.held') + ': ' + (v.externalHeld && v.externalHeld.status === 'verified' ? fmtNum(Number(BigInt(v.externalHeld.srRaw) / 1000000n)) + ' SR' : v.externalHeld && v.externalHeld.status === 'unverified' ? '—' : t('trs.mintPending'))),
+          meta(t('trs.claimable') + ': ' + (d.claimFunding && d.claimFunding.availableRyo != null ? fmtNum(d.claimFunding.availableRyo) + ' SR' : t('trs.notConfigured'))), el('p', { class: 'note', text: t('trs.claimNote') })),
+        el('div', { class: 'admin-item' }, el('b', { text: t('trs.flags') }), meta(t('trs.routing') + ': ' + onOff(d.flags.srRouting) + ' · ' + t('trs.activation') + ': ' + onOff(d.flags.activationApproved) + ' · ' + t('trs.mint') + ': ' + onOff(d.flags.mintRegistered, 'trs.pending'))),
+        ...(d.ledgers ? [el('div', { class: 'admin-item' }, el('b', { text: t('trs.ledgers') }), meta(t('trs.revenue') + ': ' + (d.ledgers.serviceRevenue ? d.ledgers.serviceRevenue.count : '—') + ' · ' + t('trs.replenishments') + ': ' + (d.ledgers.replenishments ? d.ledgers.replenishments.count : '—') + ' · ' + t('trs.withdrawalFees') + ': ' + (d.ledgers.withdrawalDeductions ? d.ledgers.withdrawalDeductions.count : '—')))] : []),
+        ...(v.alerts || []).map(a => el('p', { class: 'note', text: '⚠ ' + a.signal + ': ' + a.detail })),
+        ...(d.applicable ? [] : [el('p', { class: 'note', text: d.note })]));
+    } catch (e) { box.replaceChildren(el('p', { class: 'note', text: errText(e) })); }
+  }
+  document.addEventListener('click', e => { if (e.target && e.target.id === 'treasuryRefresh') loadTreasury(); });
   async function loadAdmin() {
     const box = $('#adminList');
     try {

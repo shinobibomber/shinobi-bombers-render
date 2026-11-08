@@ -41,6 +41,24 @@ const MONEY_SETTINGS = ['RYO_TREASURY_SECRET', 'RYO_TOKEN_MINT', 'RYO_STUDIO_WAL
 const scopeOk = (env, net) => new RegExp('^' + net.id + ':[A-Za-z0-9_-]{1,64}$').test(String(env.RYO_SCOPE || ''));
 const localOrigin = value => /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(String(value || ''));
 
+/** The committed Chapter 04 public registry of a built app (null when this build has none). */
+function treasuryRegistry(dir) {
+  const file = path.join(dir, 'treasury-registry.cjs');
+  if (!fs.existsSync(file)) return null;
+  return require(file).registry();
+}
+/** Treasury activation locks for a live server (see treasury/ and sr-revenue/). */
+function treasuryProblems(env, dir) {
+  const problems = [], routing = on(env.SR_REVENUE_ROUTING_ENABLED);
+  let reg; try { reg = treasuryRegistry(dir); } catch (e) { return [e.message]; }
+  if (!reg) return routing ? ['SR_REVENUE_ROUTING_ENABLED is set but this build has no treasury registry.'] : [];
+  const mint = String(env.RYO_TOKEN_MINT || '').trim();
+  if (mint && !reg.srMintAddress) problems.push('RYO_TOKEN_MINT is set but the SR mint is still pending in the reviewed treasury registry (treasury/treasury-registry.json). Register the mint through a reviewed commit first.');
+  else if (mint && mint !== reg.srMintAddress) problems.push('RYO_TOKEN_MINT does not match the SR mint in the reviewed treasury registry.');
+  if (routing && !reg.activation.approved) problems.push('SR_REVENUE_ROUTING_ENABLED requires the committed registry activation approval (activation.approved).');
+  return problems;
+}
+
 /** Problems that must stop a server from starting. Empty array = safe to start. */
 function startupProblems(env = process.env, dir = __dirname) {
   const problems = [];
@@ -48,6 +66,8 @@ function startupProblems(env = process.env, dir = __dirname) {
   const build = built(dir);
   if (net.key !== build.key) problems.push('This server was built for Solana ' + build.label + ' but SOLANA_NETWORK is "' + net.key + '". Rebuild and deploy (Render: "Clear build cache & deploy").');
   if (prelaunch(env)) {
+    if (on(env.SR_REVENUE_ROUTING_ENABLED)) problems.push('SR_REVENUE_ROUTING_ENABLED must be off while PRELAUNCH_MODE is on.');
+    if (build.key === 'mainnet') { try { treasuryRegistry(dir); } catch (e) { problems.push(e.message); } }
     if (on(env.STARTER_PACK)) problems.push('STARTER_PACK must be off while PRELAUNCH_MODE is on.');
     const money = MONEY_SETTINGS.filter(k => String(env[k] || '').trim());
     if (money.length) problems.push('PRELAUNCH_MODE=on must not hold money settings (' + money.join(', ') + '). Add them only when the game launches.');
@@ -62,7 +82,8 @@ function startupProblems(env = process.env, dir = __dirname) {
     if (!httpsUrl(env.SOLANA_RPC_URL)) problems.push('SOLANA_RPC_URL (private, server-side Mainnet RPC) must be an https:// URL.');
     if (!httpsUrl(env.SOLANA_PUBLIC_RPC_URL)) problems.push('SOLANA_PUBLIC_RPC_URL (browser Mainnet RPC, domain-restricted key) must be an https:// URL.');
     if (!httpsUrl(env.RYO_SITE_ORIGIN)) problems.push('RYO_SITE_ORIGIN must be set to this server\'s public https:// origin on Mainnet.');
-  }
+    problems.push(...treasuryProblems(env, dir));
+  } else if (on(env.SR_REVENUE_ROUTING_ENABLED)) problems.push('SR_REVENUE_ROUTING_ENABLED applies only to the live Mainnet server.');
   return problems;
 }
 

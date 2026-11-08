@@ -135,6 +135,58 @@ async function serveSite(req, res, name) {
   fs.createReadStream(target).on('error', () => res.destroy()).pipe(res);
 }
 
+// Live server only: the public, read-only Chapter 04 treasury transparency page and its JSON (pre-launch and
+// launched). Public addresses + finalized chain observations from a process-wide 60 s cache (bounded RPC load).
+// No wallet, session, signature or transaction is involved. The beta/Devnet server answers 404.
+const TREASURY_DIR = path.join(ROOT, 'treasury', 'public');
+const TREASURY_FILES = { '/treasury': 'index.html', '/treasury/treasury.js': 'treasury.js', '/treasury/treasury.css': 'treasury.css' };
+const TREASURY_CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
+let treasurySnapshot = null;
+// Public JSON rate limit, per client address (Render appends the address it saw: rightmost entry).
+const TREASURY_LIMIT = 60, TREASURY_WINDOW = 60000, treasuryHits = new Map();
+function treasuryLimited(req) {
+  const fwd = String(req.headers['x-forwarded-for'] || '').split(',').map(x => x.trim()).filter(Boolean), ip = fwd.length ? fwd[fwd.length - 1] : (req.socket?.remoteAddress || 'unknown');
+  const now = Date.now(); if (treasuryHits.size > 50000) treasuryHits.clear();
+  const b = treasuryHits.get(ip); if (!b || now - b.start >= TREASURY_WINDOW) { treasuryHits.set(ip, { start: now, n: 1 }); return false; }
+  return ++b.n > TREASURY_LIMIT;
+}
+// SR available for player Chest claims: from the game's own read-only action once launched; in pre-launch nothing is
+// configured, so the status says so (no placeholder number). Any failure is reported as unavailable.
+async function treasuryClaimFunding(dir) {
+  const rewards = require(path.join(dir, 'treasury-rewards.cjs'));
+  if (PRELAUNCH) return rewards.claimFundingNotConfigured();
+  if (!game) return rewards.claimFundingNotConfigured('The game is not installed on this server, so no claim wallet is configured.');
+  try {
+    const origin = String(process.env.RYO_SITE_ORIGIN || '').trim();
+    const reply = await Promise.race([require(path.join(dir, 'netlify-handler.cjs')).handler({ httpMethod: 'POST', headers: { 'content-type': 'application/json', ...(origin ? { origin: new URL(origin).origin } : {}) }, body: JSON.stringify({ action: 'treasury-claim-funding' }) }),
+      new Promise((_, reject) => setTimeout(() => reject(Error('timeout')), 8000))]);
+    if (reply.statusCode !== 200) throw Error('status ' + reply.statusCode);
+    return JSON.parse(reply.body);
+  } catch { return { applicable: true, status: 'unavailable', availableRyo: null, claimsOpen: false, note: 'Claim funding is temporarily unavailable. Nothing is shown as available.' }; }
+}
+async function treasuryRoute(req, res, url, name) {
+  if (NET.key !== 'mainnet') return sendSite(req, res, 404, 'Not found.');
+  if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
+  if (name === '/treasury/') { res.writeHead(308, { Location: '/treasury' + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
+  if (name === '/treasury-registry.json') {
+    if (treasuryLimited(req)) { res.writeHead(429, { 'Content-Type': TYPES['.json'], 'Retry-After': '60', 'Cache-Control': 'no-store', ...SITE_HEADERS }); return res.end(JSON.stringify({ error: 'Too many requests. Try again in a minute.' })); }
+    let body;
+    try {
+      const dir = path.join(GAME_DIR, 'server'), registry = require(path.join(dir, 'treasury-registry.cjs')), verify = require(path.join(dir, 'treasury-verify.cjs'));
+      treasurySnapshot = treasurySnapshot || verify.cachedSnapshot(() => verify.mainnetConnection(process.env));
+      const [snap, claimFunding] = await Promise.all([treasurySnapshot(), treasuryClaimFunding(dir)]);
+      body = JSON.stringify({ marker: 'shinobi-treasury-public-v1', readOnly: true, registry: registry.publicView(), verification: verify.publicSummary(snap), claimFunding, paymentsEnabled: !PRELAUNCH && require(path.join(dir, 'launch-gates.cjs')).srRoutingEnabled(), prelaunch: PRELAUNCH });
+    } catch { return sendSite(req, res, 503, 'The treasury registry is unavailable until the game build is installed.'); }
+    res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'public, max-age=30', ...SITE_HEADERS });
+    return res.end(req.method === 'HEAD' ? '' : body);
+  }
+  const file = TREASURY_FILES[name];
+  if (!file) return sendSite(req, res, 404, 'Not found.');
+  res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)], 'Cache-Control': 'no-cache', ...SITE_HEADERS, 'Content-Security-Policy': TREASURY_CSP });
+  if (req.method === 'HEAD') return res.end();
+  fs.createReadStream(path.join(TREASURY_DIR, file)).on('error', () => res.destroy()).pipe(res);
+}
+
 const prelaunch = PRELAUNCH ? loadPrelaunch() : null;
 const game = loadGame();
 
@@ -149,6 +201,7 @@ const server = http.createServer((req, res) => {
       return res.end(req.method==='HEAD'?'':JSON.stringify({...policy,prelaunch:PRELAUNCH,monetaryEndpointsMounted:!PRELAUNCH}));
     }catch{return sendSite(req,res,503,'Economy policy is unavailable until the game build is installed.');}
   }
+  if (name === '/treasury' || name.startsWith('/treasury/') || name === '/treasury-registry.json') return treasuryRoute(req, res, url, name).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   if (PRELAUNCH && prelaunchRoute(req, res, url, name) !== null) return;
   // Public login shell only. Every data read and mutation uses the wallet-authenticated Ryo API.
   if (name === '/admin') { res.writeHead(308, { Location: '/admin/', 'Cache-Control': 'no-store' }); return res.end(); }

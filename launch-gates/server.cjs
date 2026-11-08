@@ -48,4 +48,8 @@ function check(action, body, env = process.env) {
 function publicGates(env = process.env) {
   return Object.fromEntries(Object.keys(GATES).map(g => [g, isOn(g, env)]));
 }
-module.exports = { GATES, gateFor, isOn, check, publicGates };
+/* SR_REVENUE_ROUTING_ENABLED: one of four independent locks on live SR service routing (with the Mainnet build
+ * stamp, the committed registry activation approval and the two-person DB configuration). Strictly opt-in on
+ * every build: unset means OFF, and it is refused at start-up while PRELAUNCH_MODE is on. */
+function srRoutingEnabled(env = process.env) { return /^(1|on|true|yes)$/i.test(String(env.SR_REVENUE_ROUTING_ENABLED ?? '').trim()); }
+module.exports = { GATES, gateFor, isOn, check, publicGates, srRoutingEnabled };
