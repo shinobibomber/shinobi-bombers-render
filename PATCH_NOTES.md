@@ -20,6 +20,18 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 9, 2026 · New Chat Screen)**
+
+**✨ New**
+• **Chat screen redesign** — a full Chat screen with channels on the left, the live feed in the middle, and Online Ninjas, My Guild and Quick Actions on the right.
+• **Open full chat** — press ⤢ in the Home chat pop-up, or More → Chat on phones.
+• **Phone and tablet layouts** — channels become a top strip and the side panels open from a Social button.
+
+**ℹ️ Preview only for now**
+• Global and System chat are live. Guild, Team, Direct Messages, Trade and Event channels, plus the Online Ninjas list, guild card and Quick Actions, are previews and open when those features launch.
+
+---
+
 **SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Tsukiyomi Expressions)**
 
 • Added gentle breathing and blinking to Tsukiyomi's idle animation in his approved character design.
