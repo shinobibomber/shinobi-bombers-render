@@ -13,6 +13,15 @@
 Test server only. Existing levels, permanent perks, ownership, damage and attack chakra costs are preserved.
 
 ---
+
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Deployment Reliability)**
+
+• Game updates now recover from temporary archive-download failures with timed retries and an official GitHub fallback.
+• Builds can reuse a verified archive copy when available. Every archive must still pass the original security and integrity checks.
+
+Test server only. Existing accounts, heroes, training, shards and reward rules are preserved.
+
+---
 inobi Bombers patch notes
 
 Player-facing notes, newest first. Each entry is ready to paste into Discord (under 2,000
