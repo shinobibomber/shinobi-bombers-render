@@ -90,12 +90,12 @@ function keyPair() {
     // The approved creator's link enrolls new players permanently; the creator sees them by username.
     st = await call('creator', {}, creator.c);
     assert.equal(st.body.creator.status, 'APPROVED'); assert.equal(st.body.creator.publicNote, 'Welcome aboard!');
-    assert.equal(st.body.link, ORIGIN + '/?creator=' + st.body.creator.code); assert.deepEqual(st.body.stats, { total: 0, qualified: 0, pending: 0 }); assert.equal(st.body.balanceMilli, '0');
+    assert.equal(st.body.link, ORIGIN + '/?creator=' + st.body.creator.code); assert.deepEqual(st.body.stats, { total: 1, qualified: 0, pending: 1, playerLink: 1 }, 'one combined count: Ref joined via the player link and, being a creator wallet, stays a player referral'); assert.equal(st.body.balanceMilli, '0');
     const fan = await player('Fan1', st.body.creator.code.toLowerCase());
     assert.deepEqual(fan.r.referral, { accepted: true, existing: false }); assert.equal(fan.r.referredBy, 'Akira Plays');
     st = await call('creator', {}, creator.c);
-    assert.deepEqual(st.body.stats, { total: 1, qualified: 0, pending: 1 }); assert.equal(st.body.referrals.length, 1);
-    assert.deepEqual({ ...st.body.referrals[0], joined: 0 }, { player: 'Fan1', joined: 0, status: 'IN_PROGRESS' });
+    assert.deepEqual(st.body.stats, { total: 2, qualified: 0, pending: 2, playerLink: 1 }); assert.equal(st.body.referrals.length, 2); assert.deepEqual(st.body.referrals.map(r => r.via).sort(), ['creator', 'player']);
+    assert.deepEqual({ ...st.body.referrals[0], joined: 0 }, { player: 'Fan1', joined: 0, via: 'creator', status: 'IN_PROGRESS' });
     assert.ok(!JSON.stringify(st.body).includes(fan.k.wallet), 'no wallets in the creator view');
     assert.equal((await pool.query('SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1', [SCOPE])).rows[0].n, 1);
     const originalCreatorReferral = (await pool.query('SELECT * FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [SCOPE, fan.k.wallet])).rows;

@@ -125,12 +125,19 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     const page = body.page ?? 0; if (!Number.isSafeInteger(page) || page < 0 || page > 10000) fail('Invalid page.');
     const [s] = await rows(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE qualified IS NULL) AS progress, COUNT(*) FILTER (WHERE qualified IS NOT NULL) AS qualified
       FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2`, [w]);
+    // An approved creator sees one combined count: their player-link referrals joined the Creator Program.
+    const creatorId = (await rows("SELECT id FROM ryo_creators WHERE scope=$1 AND wallet=$2 AND status='APPROVED'", [w]))[0]?.id || null;
+    const [cs] = creatorId ? await rows(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE qualified IS NULL) AS progress, COUNT(*) FILTER (WHERE qualified IS NOT NULL) AS qualified
+      FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2`, [creatorId]) : [{ total: 0, progress: 0, qualified: 0 }];
     const [r] = await rows('SELECT COALESCE(SUM(passes-claimed),0) AS available, COALESCE(SUM(claimed),0) AS earned FROM ryo_player_referral_rewards WHERE scope=$1 AND wallet=$2', [w]);
-    const list = await rows(`SELECT r.wallet, r.attributed, r.paid_mints, r.stage5, r.qualified, p.username FROM ryo_player_referrals r
-      LEFT JOIN ryo_players p ON p.scope=r.scope AND p.wallet=r.wallet WHERE r.scope=$1 AND r.referrer=$2 ORDER BY r.attributed DESC, r.wallet LIMIT 20 OFFSET $3`, [w, page * 20]);
+    const list = await rows(`SELECT r.wallet, r.attributed, r.paid_mints, r.stage5, r.qualified, r.via, p.username FROM (
+        SELECT wallet, attributed, paid_mints, stage5, qualified, 'player' AS via FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2
+        UNION ALL SELECT wallet, attributed, paid_mints, stage5, qualified, 'creator' AS via FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$4) r
+      LEFT JOIN ryo_players p ON p.scope=$1 AND p.wallet=r.wallet ORDER BY r.attributed DESC, r.wallet LIMIT 20 OFFSET $3`, [w, page * 20, creatorId]);
     return { page, pageSize: 20, prelaunch: true,
-      stats: { invited: Number(s.total), inProgress: Number(s.progress), qualified: Number(s.qualified), rewardsAvailable: Number(r.available), heroesEarned: Number(r.earned) },
-      referrals: list.map(x => ({ player: x.username || cp.privateId(x.wallet), joined: Number(x.attributed),
+      stats: { invited: Number(s.total) + Number(cs.total), inProgress: Number(s.progress) + Number(cs.progress), qualified: Number(s.qualified) + Number(cs.qualified),
+        rewardsAvailable: Number(r.available), heroesEarned: Number(r.earned), creatorProgram: !!creatorId },
+      referrals: list.map(x => ({ player: x.username || cp.privateId(x.wallet), joined: Number(x.attributed), via: x.via,
         status: x.qualified ? 'QUALIFIED' : 'IN_PROGRESS', paidHeroes: Math.min(15, Number(x.paid_mints)), stage5: !!x.stage5, rewardLocked: !x.qualified })) };
   }
   async function leaderboard(body) {
@@ -149,11 +156,13 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     const out = { creator: s.creator, adminRole: s.adminRole, termsAccepted: s.termsAccepted, applicationsOpen: flags.creatorApply && !r.applicationsPaused,
       rules: { milestone: r.milestone, adventurePercent: r.adventurePercent, purchasePercent: r.purchasePercent, commissionDays: r.commissionDays, paidHeroes: r.paidHeroes, clearedStage: r.clearedStage, cpWithdrawable: false } };
     if (s.creator?.status === 'APPROVED') {
-      const list = await rows(`SELECT r.wallet, r.attributed, r.qualified, p.username FROM ryo_creator_referrals r LEFT JOIN ryo_players p ON p.scope=r.scope AND p.wallet=r.wallet
-        WHERE r.scope=$1 AND r.creator_id=$2 ORDER BY r.attributed DESC, r.wallet LIMIT 20 OFFSET $3`, [s.creator.id, page * 20]);
-      Object.assign(out, { link: s.link, page, pageSize: 20, stats: { total: Number(s.stats.total), qualified: Number(s.stats.qualified), pending: Number(s.stats.pending) },
+      const list = await rows(`SELECT r.wallet, r.attributed, r.qualified, r.via, p.username FROM (
+          SELECT wallet, attributed, qualified, 'creator' AS via FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2
+          UNION ALL SELECT wallet, attributed, qualified, 'player' AS via FROM ryo_player_referrals WHERE scope=$1 AND referrer=$4) r
+        LEFT JOIN ryo_players p ON p.scope=$1 AND p.wallet=r.wallet ORDER BY r.attributed DESC, r.wallet LIMIT 20 OFFSET $3`, [s.creator.id, page * 20, w]);
+      Object.assign(out, { link: s.link, page, pageSize: 20, stats: { total: Number(s.stats.total), qualified: Number(s.stats.qualified), pending: Number(s.stats.pending), playerLink: Number(s.stats.playerLink?.total || 0) },
         balanceMilli: s.points.balanceMilli,
-        referrals: list.map(x => ({ player: x.username || cp.privateId(x.wallet), joined: Number(x.attributed), status: x.qualified ? 'QUALIFIED' : 'IN_PROGRESS' })) });
+        referrals: list.map(x => ({ player: x.username || cp.privateId(x.wallet), joined: Number(x.attributed), via: x.via, status: x.qualified ? 'QUALIFIED' : 'IN_PROGRESS' })) });
     }
     return out;
   }

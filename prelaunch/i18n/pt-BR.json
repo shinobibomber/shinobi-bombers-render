@@ -412,5 +412,7 @@
   "trs.notConfigured": "Não configurado (pré-lançamento)",
   "trs.claimNote": "Pré-lançamento: a carteira de resgates do jogo não está configurada e os resgates do Baú estão fechados. Os pagamentos na Mainnet estão desativados.",
   "trs.custody": "Carteira de resgates do jogo (custódia)",
-  "trs.custodyNote": "Criada, inativa até o lançamento. A chave fica apenas no Render. No lançamento o saldo também inclui depósitos de jogadores, então nem tudo é resgatável."
+  "trs.custodyNote": "Criada, inativa até o lançamento. A chave fica apenas no Render. No lançamento o saldo também inclui depósitos de jogadores, então nem tudo é resgatável.",
+  "crd.playerLinkNote": "Inclui {n} indicação(ões) do seu link de jogador que já foram recompensadas com passes de herói.",
+  "dash.creatorSync": "Você é um criador aprovado: suas indicações agora contam no Programa de Criadores e rendem Pontos de Criador."
 }

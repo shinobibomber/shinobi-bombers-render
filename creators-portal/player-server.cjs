@@ -75,7 +75,11 @@ async function beginAdventure(store, c, wallet, profile, active, report) {
 async function summary(store, wallet, origin, body = {}) {
   const page = body.page ?? 0; if (!Number.isSafeInteger(page) || page < 0 || page > 100000) fail('Invalid referral page.');
   const owner = await identity(store, wallet), args = [store.scope, wallet];
-  const [stats] = await query(store.pool, `SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE qualified IS NOT NULL) AS qualified,COUNT(*) FILTER(WHERE qualified IS NULL) AS pending FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2`, args);
+  const [ownStats] = await query(store.pool, `SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE qualified IS NOT NULL) AS qualified,COUNT(*) FILTER(WHERE qualified IS NULL) AS pending FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2`, args);
+  // An approved creator's player-link referrals joined the Creator Program: show the same combined count.
+  const creatorId = (await query(store.pool, "SELECT id FROM ryo_creators WHERE scope=$1 AND wallet=$2 AND status='APPROVED'", args))[0]?.id || null;
+  const [viaCreator] = creatorId ? await query(store.pool, `SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE qualified IS NOT NULL) AS qualified,COUNT(*) FILTER(WHERE qualified IS NULL) AS pending FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2`, [store.scope, creatorId]) : [{ total: 0, qualified: 0, pending: 0 }];
+  const stats = { total: String(Number(ownStats.total) + Number(viaCreator.total)), qualified: String(Number(ownStats.qualified) + Number(viaCreator.qualified)), pending: String(Number(ownStats.pending) + Number(viaCreator.pending)), creatorProgram: !!creatorId };
   const [passes] = await query(store.pool, 'SELECT COALESCE(SUM(passes-claimed),0) AS available,COALESCE(SUM(passes),0) AS earned,COALESCE(SUM(claimed),0) AS claimed FROM ryo_player_referral_rewards WHERE scope=$1 AND wallet=$2', args);
   const refs = await query(store.pool, 'SELECT wallet,paid_mints,stage5,qualified,attributed FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2 ORDER BY attributed DESC,wallet LIMIT 20 OFFSET $3', [...args, page * 20]);
   const claims = await query(store.pool, 'SELECT id,quantity,result,created FROM ryo_player_referral_claims WHERE scope=$1 AND wallet=$2 ORDER BY created DESC,id LIMIT 20 OFFSET $3', [...args, page * 20]);

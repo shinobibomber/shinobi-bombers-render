@@ -20,6 +20,18 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Creator Referral Sync)**
+
+**🔄 Changes**
+• Approved creators now see **one referral count**: players who joined through your earlier player referral link now count in your Creator Program.
+• Those referrals move into the Creator Program and earn **Creator Points** when they qualify. Their join date and progress are kept.
+• Once you are approved, **both** of your links (player link and creator link) enroll new players in the Creator Program.
+
+**🛠️ Fixes**
+• Fixed creator referral counts missing referrals made before approval. Referrals already rewarded with hero passes keep their rewards and are included in your total.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Game Claim Wallet)**
 
 **✨ New**

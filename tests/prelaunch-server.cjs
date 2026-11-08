@@ -124,9 +124,9 @@ function keyPair() {
 
     // Dashboard: only real data; pre-launch progress is not invented.
     const dash = await call('referrals', {}, { cookie: cookieA });
-    assert.deepEqual(dash.body.stats, { invited: 1, inProgress: 1, qualified: 0, rewardsAvailable: 0, heroesEarned: 0 });
+    assert.deepEqual(dash.body.stats, { invited: 1, inProgress: 1, qualified: 0, rewardsAvailable: 0, heroesEarned: 0, creatorProgram: false });
     assert.equal(dash.body.prelaunch, true); assert.equal(dash.body.referrals.length, 1);
-    assert.deepEqual({ ...dash.body.referrals[0], joined: 0 }, { player: 'Bunta', joined: 0, status: 'IN_PROGRESS', paidHeroes: 0, stage5: false, rewardLocked: true });
+    assert.deepEqual({ ...dash.body.referrals[0], joined: 0 }, { player: 'Bunta', joined: 0, via: 'player', status: 'IN_PROGRESS', paidHeroes: 0, stage5: false, rewardLocked: true });
     assert.ok(!JSON.stringify(dash.body).includes(B.wallet), 'invitee wallets are never exposed');
     assert.equal((await call('referrals', { page: -1 }, { cookie: cookieA })).status, 400);
 

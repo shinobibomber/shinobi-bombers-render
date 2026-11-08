@@ -108,6 +108,16 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+### Nov 8, 2026 — Creator referral sync (CODE + TESTS DONE on `release/live-treasury-2026-11-08`; awaiting owner OK to push to `live`)
+
+Implemented: convertPlayerReferrals() + syncApprovedCreators() + RP-link routing in creators-portal/server.cjs; combined counts in summary(), player-server summary(), prelaunch creatorState()/referrals(); UI notes (crd.playerLinkNote, dash.creatorSync). New tests/creator-referral-sync.cjs; prelaunch-creators/prelaunch-server expectations updated for combined counts and `via`. Remaining: full-suite result → commit → owner approval → push to live.
+
+Bug: when a player is approved as a creator, their earlier player-link (RP…) referrals did not count toward the creator referral count.
+Owner decisions: (1) CONVERT existing RP referrals into creator referrals (CP milestone/commissions instead of hero passes); (2) after approval, new sign-ups via the old RP link enroll in the creator program; (3) LIVE ONLY; ask before pushing to `live`.
+Branch `release/live-treasury-2026-11-08`. Safety: convert only unqualified RP referrals with no hero-pass reward row and whose wallet is not a creator wallet; keep join time/progress; rewarded or creator-wallet rows stay player referrals but count in the creator total; never touch the creator's own attribution.
+Steps: (1) convertPlayerReferrals() in creators-portal/server.cjs — on approval/re-approval/manual-add + one-time sync from initialize(); (2) attribute() routes approved creators' RP codes to the creator path; (3) combined counts in summary(), prelaunch creatorState()/referrals(), player-server summary(), UI notes + i18n; (4) tests/creator-referral-sync.cjs + existing referral suites + full npm test; (5) commit, patch notes, ask before push.
+
+
 ### Nov 8, 2026 — LIVE treasury & wallet integration (Phase A–F), released to `live` only (pre-launch, all money paths OFF)
 
 Cherry-picked onto `live` only (owner request "commit to live server only"); the 4 beta-only main commits (combat perks, Tsukiyomi/Mythic animation) were NOT brought to live. Beta (`main`) does not have this change yet. No Render setting changed; no transaction. Known pre-existing on `live`: preservation pins for gameplay-options/server.cjs and app/server/gameplay-options.cjs do not match (live lacks main's eol=lf attributes); not part of the Render build.

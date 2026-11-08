@@ -37,6 +37,7 @@ async function program(store, c = store.pool, lock = false) {
 }
 async function initialize(store) {
   await program(store);
+  await syncApprovedCreators(store);
   for (const [itemId, name, kind, price, supply, monthly, detail] of ITEMS) await store.pool.query(`INSERT INTO ryo_creator_shop(scope,id,name,kind,price,supply,monthly_limit,detail)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING`, [store.scope, itemId, name, kind, price * 1000, supply, monthly, detail]);
 }
@@ -99,6 +100,41 @@ async function initLots(store, c, r, pending) {
   await c.query('UPDATE ryo_creator_referrals SET pending_initialized=TRUE WHERE scope=$1 AND wallet=$2', [store.scope, r.wallet]);
 }
 const privateId = wallet => 'Player ' + crypto.createHash('sha256').update(wallet).digest('hex').slice(0, 10).toUpperCase();
+// Owner decision (2026-11-08): an approved creator's earlier player-link (RP…) referrals join the Creator Program,
+// so one creator has one referral count and earns CP for them instead of hero passes. Only referrals that are not yet
+// qualified and were never paid hero passes move; join time and progress are kept. Already-rewarded referrals and
+// referred creator wallets stay player referrals (counted in the creator total). Rows move inside one transaction,
+// so the shared enrollment total is unchanged. The creator's OWN attribution is never touched.
+async function convertPlayerReferrals(store, c, creator) {
+  if (creator?.status !== 'APPROVED' || !creator.application?.termsAt) return 0;
+  const rows = await query(c, `SELECT r.* FROM ryo_player_referrals r WHERE r.scope=$1 AND r.referrer=$2 AND r.qualified IS NULL
+    AND NOT EXISTS(SELECT 1 FROM ryo_player_referral_rewards w WHERE w.scope=r.scope AND w.referral_wallet=r.wallet)
+    AND NOT EXISTS(SELECT 1 FROM ryo_creator_wallets cw WHERE cw.scope=r.scope AND cw.wallet=r.wallet)
+    AND NOT EXISTS(SELECT 1 FROM ryo_creator_referrals x WHERE x.scope=r.scope AND x.wallet=r.wallet)
+    ORDER BY r.attributed, r.wallet FOR UPDATE`, [store.scope, creator.wallet]);
+  for (const p of rows) {
+    await c.query('INSERT INTO ryo_creator_referrals(scope,wallet,creator_id,attributed,paid_mints,stage5,proof) VALUES($1,$2,$3,$4,$5,$6,$7)',
+      [store.scope, p.wallet, creator.id, p.attributed, p.paid_mints, p.stage5, JSON.stringify(p.proof || {})]);
+    await c.query('DELETE FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2 AND referrer=$3', [store.scope, p.wallet, creator.wallet]);
+    await recordEvent(store, c, 'converted:' + p.wallet, p.wallet, 'player-referral-converted', { creatorId: creator.id, attributed: number(p.attributed) });
+    await qualify(store, c, await referral(store, c, p.wallet));
+  }
+  if (rows.length) await audit(store, c, 'system', 'referrals.converted', creator.id, 'Approved creator: player-link referrals joined the Creator Program', { count: rows.length });
+  return rows.length;
+}
+// One-time sync for creators approved before this change (idempotent; once per process and scope).
+const syncedScopes = new Set();
+async function syncApprovedCreators(store) {
+  if (syncedScopes.has(store.scope)) return;
+  try {
+    const approved = await query(store.pool, "SELECT id FROM ryo_creators WHERE scope=$1 AND status='APPROVED' ORDER BY created,id", [store.scope]);
+    for (const { id: creatorId } of approved) await store.transaction(async c => {
+      const creator = (await query(c, 'SELECT * FROM ryo_creators WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, creatorId]))[0];
+      await convertPlayerReferrals(store, c, creator);
+    });
+    syncedScopes.add(store.scope);
+  } catch (error) { console.error('[creators] referral sync will retry:', error.message); }
+}
 async function application(store, wallet, body) {
   const platform = text(body.platform, 20), channel = safeUrl(body.channelUrl);
   if (!['YouTube', 'Twitch', 'TikTok', 'Facebook', 'X'].includes(platform)) fail('Choose a supported primary platform.');
@@ -133,8 +169,13 @@ function advanceProof(store, profile, proof, active, report) {
   return require('./adventure.cjs').advance(Object.keys(proof || {}).length ? proof : undefined, profile, store.now(), active || !!require('./gameplay-options.cjs').killReport(report), 50, null);
 }
 async function attribute(store, wallet, body) {
-  const code = text(body.code, 32).toUpperCase();
-  if (code.startsWith('RP')) return require('./player-referrals.cjs').attribute(store, wallet, code);
+  let code = text(body.code, 32).toUpperCase();
+  if (code.startsWith('RP')) {
+    // An approved creator's player link enrolls new players in the Creator Program; every other RP link is unchanged.
+    const owner = (await query(store.pool, "SELECT c.code FROM ryo_player_referrers p JOIN ryo_creators c ON c.scope=p.scope AND c.wallet=p.wallet WHERE p.scope=$1 AND p.code=$2 AND c.status='APPROVED'", [store.scope, code]))[0];
+    if (!owner || await require('./player-referrals.cjs').referral(store, store.pool, wallet, false)) return require('./player-referrals.cjs').attribute(store, wallet, code);
+    code = owner.code;
+  }
   return store.transaction(async c => {
     const { config } = await program(store, c, true);
     await store.locked(c, wallet);
@@ -237,13 +278,19 @@ async function summary(store, wallet, origin, body = {}) {
   result.attribution = ownReferral ? { referral: privateId(wallet), paidMints: ownReferral.paid_mints, stage5: !!ownReferral.stage5, qualified: ownReferral.qualified, appeal: ownReferral.appeal } : null;
   if (creator?.status !== 'APPROVED') return result;
   const args = [store.scope, creator.id], offset = page(body) * 20;
-  const [stats] = await query(store.pool, `SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE qualified IS NOT NULL) AS qualified,COUNT(*) FILTER(WHERE qualified IS NULL) AS pending
-    FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2`, args);
+  const linkStats = async (sql, key) => (await query(store.pool, 'SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE qualified IS NOT NULL) AS qualified,COUNT(*) FILTER(WHERE qualified IS NULL) AS pending ' + sql, [store.scope, key]))[0];
+  // One count per creator: creator-link referrals plus any remaining player-link referrals (already rewarded with hero passes).
+  const viaCreator = await linkStats('FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2', creator.id), viaPlayer = await linkStats('FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2', creator.wallet);
+  const counts = s => ({ total: number(s.total), qualified: number(s.qualified), pending: number(s.pending) }), cl = counts(viaCreator), pl = counts(viaPlayer);
+  const stats = { total: cl.total + pl.total, qualified: cl.qualified + pl.qualified, pending: cl.pending + pl.pending, creatorLink: cl, playerLink: pl };
   const [points] = await query(store.pool, `SELECT COALESCE(SUM(delta) FILTER(WHERE delta>0),0) AS earned,COALESCE(-SUM(delta) FILTER(WHERE kind='redemption'),0) AS redeemed,
     COALESCE(SUM(delta) FILTER(WHERE kind IN ('adventure-commission','purchase-commission')),0) AS commission FROM ryo_creator_ledger WHERE scope=$1 AND creator_id=$2`, args);
   const [pending] = await query(store.pool, `SELECT COALESCE(SUM(l.remaining),0) AS n FROM ryo_creator_adventure_lots l JOIN ryo_creator_referrals r ON r.scope=l.scope AND r.wallet=l.wallet
     WHERE r.scope=$1 AND r.creator_id=$2 AND l.eligible AND l.remaining>0`, args);
-  const referrals = await query(store.pool, `SELECT wallet,paid_mints,stage5,qualified,expires,attributed FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2 ORDER BY attributed DESC,wallet LIMIT 20 OFFSET $3`, [...args, offset]);
+  const referrals = await query(store.pool, `SELECT wallet,paid_mints,stage5,qualified,expires,attributed,via FROM (
+    SELECT wallet,paid_mints,stage5,qualified,expires,attributed,'creator' AS via FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2
+    UNION ALL SELECT wallet,paid_mints,stage5,qualified,NULL::bigint AS expires,attributed,'player' AS via FROM ryo_player_referrals WHERE scope=$1 AND referrer=$4) x
+    ORDER BY attributed DESC,wallet LIMIT 20 OFFSET $3`, [...args, offset, creator.wallet]);
   const entries = await query(store.pool, 'SELECT sequence,kind,delta,source_sr,detail,created FROM ryo_creator_ledger WHERE scope=$1 AND creator_id=$2 ORDER BY sequence DESC LIMIT 20 OFFSET $3', [...args, offset]);
   const redemptions = await query(store.pool, 'SELECT id,item_id,price,status,result,created FROM ryo_creator_redemptions WHERE scope=$1 AND creator_id=$2 ORDER BY created DESC,id LIMIT 20 OFFSET $3', [...args, offset]);
   const shop = await query(store.pool, "SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id='hero-pass' ORDER BY price,id", [store.scope]);
@@ -319,15 +366,18 @@ async function adminAction(store, wallet, body) {
       const creatorId = id(); target = creatorId;
       await c.query(`INSERT INTO ryo_creators(scope,id,wallet,display_name,status,code,reviewed_by,created,reviewed,application) VALUES($1,$2,$3,$4,'APPROVED',$5,$6,$7,$7,$8)`, [store.scope, creatorId, address, text(body.displayName, 60), codeFor(), wallet, store.now(), JSON.stringify({ manual: true, termsRequired: true })]);
       await c.query('INSERT INTO ryo_creator_wallets(scope,wallet,creator_id) VALUES($1,$2,$3)', [store.scope, address, creatorId]); detail = { wallet: address };
+      detail.convertedPlayerReferrals = await convertPlayerReferrals(store, c, (await query(c, 'SELECT * FROM ryo_creators WHERE scope=$1 AND id=$2', [store.scope, creatorId]))[0]);
     } else if (action === 'status') {
       const creator = (await query(c, 'SELECT * FROM ryo_creators WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, text(body.creatorId, 80)]))[0];
       if (!creator) fail('Creator not found.', 404);
       const transitions = { PENDING: ['APPROVED', 'REJECTED'], APPROVED: ['SUSPENDED'], REJECTED: ['APPROVED'], SUSPENDED: ['APPROVED'] };
       if (!transitions[creator.status]?.includes(body.status)) fail('Invalid creator status transition.', 409);
-      // Creator approval adds a role; it never deletes, converts or re-qualifies a referral.
+      // Approval never changes the creator's OWN attribution (who referred them). Their own eligible
+      // player-link referrals join the Creator Program (convertPlayerReferrals).
       const attribution = body.status === 'APPROVED' ? (await query(c,
         "SELECT 'creator' AS kind, creator_id AS referrer FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2 UNION ALL SELECT 'player' AS kind, referrer FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2", [store.scope, creator.wallet])) : [];
       await c.query('UPDATE ryo_creators SET status=$3,reviewed_by=$4,reviewed=$5,public_note=$6 WHERE scope=$1 AND id=$2', [store.scope, creator.id, body.status, wallet, store.now(), body.publicNote ? text(body.publicNote, 240) : '']); detail = { previous: creator.status, status: body.status, preservedAttribution: attribution };
+      if (body.status === 'APPROVED') detail.convertedPlayerReferrals = await convertPlayerReferrals(store, c, { ...creator, status: 'APPROVED' });
     } else if (action === 'adjust') {
       const creatorId = text(body.creatorId, 80), delta = integer(body.deltaMilli, -1000000000000, 1000000000000); if (!delta) fail('An adjustment must be non-zero.');
       const key = requestId(body.requestId); await ledger(store, c, creatorId, 'adjust:' + key, 'adjustment', BigInt(delta), 0n, { reason, actor: wallet, reasonCode: text(body.reasonCode, 40) }); detail = { deltaMilli: delta, event: key };
@@ -396,4 +446,4 @@ async function handle(ctx, wallet, action, body = {}) {
   if (action === 'creator-appeal') { const message = text(body.message, 1000); return store.transaction(async c => { await store.locked(c, wallet); const r = await referral(store, c, wallet); const creator = !r && await creatorByWallet(store, c, wallet, true); if (!r && !creator) fail('No creator application or referral attribution found.', 404); if (r?.appeal || creator?.application?.appeal) fail('An appeal is already recorded. An administrator will review it.', 409); if (r) await c.query('UPDATE ryo_creator_referrals SET appeal=$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, message]); else await c.query('UPDATE ryo_creators SET application=$3 WHERE scope=$1 AND id=$2', [store.scope, creator.id, JSON.stringify({ ...creator.application, appeal: { message, at: store.now() } })]); await audit(store, c, wallet, 'review.appeal', creator?.id || privateId(wallet), 'Player submitted an appeal', { message }); return { ok: true }; }); }
   fail('Unknown Creators Portal action.', 404);
 }
-module.exports = { program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole };
+module.exports = { convertPlayerReferrals, syncApprovedCreators, program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole };

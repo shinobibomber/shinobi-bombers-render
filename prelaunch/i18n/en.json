@@ -412,5 +412,7 @@
   "trs.notConfigured": "Not configured (pre-launch)",
   "trs.claimNote": "Pre-launch: the game claim wallet is not configured and Chest claims are closed. Mainnet payments are disabled.",
   "trs.custody": "Game claim wallet (custody)",
-  "trs.custodyNote": "Created, not active until launch. Its key lives only in Render. At launch its balance also holds player deposits, so it is not all claimable."
+  "trs.custodyNote": "Created, not active until launch. Its key lives only in Render. At launch its balance also holds player deposits, so it is not all claimable.",
+  "crd.playerLinkNote": "Includes {n} referral(s) from your player link that were already rewarded with hero passes.",
+  "dash.creatorSync": "You are an approved creator: your referrals now count in the Creator Program and earn Creator Points."
 }

@@ -267,6 +267,7 @@
     box.replaceChildren(el('div', { class: 'row' }, pill('APPROVED'), el('b', { text: t('crd.approved') }), el('span', { class: 'note', text: t('crd.code') + ': ' }), el('b', { class: 'mono', id: 'creatorCode', text: c.code })),
       note, el('h4', { text: t('crd.link') }), el('div', { class: 'link-row' }, input, copy, share),
       el('div', { class: 'cstats' }, stat(fmtNum(cr.stats.total), 'crd.total'), stat(fmtNum(cr.stats.pending), 'crd.progress'), stat(fmtNum(cr.stats.qualified), 'crd.qualified'), stat(fmtNum(cp), 'crd.cp')),
+      cr.stats.playerLink ? el('p', { class: 'note', 'data-player-link': '', text: t('crd.playerLinkNote', { n: fmtNum(cr.stats.playerLink) }) }) : null,
       list, el('p', { class: 'note', text: t('crd.launchNote') }));
   }
   function openCreatorDialog() {
@@ -366,6 +367,7 @@
       const d = await api('referrals', { page: refPage });
       $('#sInvited').textContent = fmtNum(d.stats.invited); $('#sProgress').textContent = fmtNum(d.stats.inProgress); $('#sQualified').textContent = fmtNum(d.stats.qualified);
       $('#sAvailable').textContent = fmtNum(d.stats.rewardsAvailable); $('#sEarned').textContent = fmtNum(d.stats.heroesEarned);
+      const sync = $('#creatorSyncNote'); if (sync) sync.hidden = !d.stats.creatorProgram;
       if (!d.referrals.length) { box.replaceChildren(el('p', { class: 'note', text: t('dash.none') })); }
       else {
         const cell = (label, ...content) => el('div', {}, el('span', { class: 'lbl', text: label }), ...content);
