@@ -20,6 +20,16 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Mythic Skills)**
+
+- Tsukiyomi now uses Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion visuals from the supplied reference artwork.
+- Smoother effect timing, separate ground and foreground layers, and bounded effects for mobile keep Adventure readable.
+- The approved character and permanent Mythic Aura are preserved. One attack still deals Hero Power damage and costs one chakra; skill visuals add no damage or chakra cost.
+
+Test server only. Rewards, ownership and training are unchanged. These effects use native-resolution reference artwork; clean isolated HD exports remain pending.
+
+---
+
 **SHINOBI BOMBERS - LOCAL REVIEW NOTES (Nov 8, 2026 | Mythic Skills)**
 
 - Tsukiyomi previews Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion using the supplied reference artwork.

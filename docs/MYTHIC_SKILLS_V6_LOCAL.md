@@ -1,6 +1,6 @@
 # Tsukiyomi skill set v6 - local review
 
-This change is local to `review/mythic-skills-v6-local-2026-11-08` in `tmp/training-shards-beta`. Do not push `main`, deploy Render, mint NFTs, or change SR systems without explicit owner approval. The production checkout and both Render services are outside this change.
+The owner authorized test-server deployment after local review of commit `7f96328`. Release scope is beta branch `main` / `shinobi-bombers-beta` only. Production branch `live`, Mainnet NFT operations and SR systems remain excluded. The developer VFX Lab stays local-only and is not enabled on Render. Implementation work is in `tmp/training-shards-beta`, branch `review/mythic-skills-v6-local-2026-11-08`.
 
 ## Implemented
 

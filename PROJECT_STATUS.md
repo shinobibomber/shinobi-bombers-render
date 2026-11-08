@@ -108,6 +108,10 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+### Nov 8, 2026 - Mythic skills v6 TEST SERVER release authorized
+
+Owner approved deployment to the test server after reviewing local implementation 7f96328. Release only beta main / shinobi-bombers-beta (srv-dbib5q0m7kps73cddr90); production live / ShinobiBombers remains excluded. The developer VFX lab stays loopback-only and unavailable on Render. The reviewed gameplay code already passed all 65 game suites, 20 website checks, lint, the 48-team rewards guard, exact aura/body preservation and five decoded MP4 checks. Only release documentation changes follow review. Verify deployed presentationVersion 6, TsukiyomiSkillV6.version 6 and the exact reference-v6.png SHA against the tested generated assets, and confirm /vfx-lab/tsukiyomi returns 404. Native reference-art quality limitations still apply.
+
 ### Nov 8, 2026 - Mythic skills v6 (LOCAL REVIEW ONLY, no push/deploy)
 
 Work stays in `tmp/training-shards-beta` on `review/mythic-skills-v6-local-2026-11-08`, based on ca071cd. Four new skill names preserve permanent IDs. New transparent reference-derived atlas comes from owner-supplied `Mythic-Skill.png`, SHA-256 5176a1625f97edcb50b26d0a043d71b4afab0af4e6a13eda37f231ad5866c414; actual source drawings 7/8/9/11 interpolate to 8/8/10/12 logical stages. This is not HD production art. Aura/character/rig are unchanged; no new damage, costs, rewards or NFT operations. Local loopback-only `/vfx-lab/tsukiyomi` requires SHINOBI_VFX_LAB=on and refuses Render/Mainnet/prelaunch. Run `node dev-vfx-lab/preview.cjs` or `node dev-vfx-lab/export-videos.cjs`. Four actual H.264 720p ~6s videos plus a ~24s showcase are in ignored `previews/mythic-v6/`, each decoded and duration/dimension checked. See `docs/MYTHIC_SKILLS_V6_LOCAL.md` for limitations, files, tests and usage. Owner explicitly requires approval before any main push or Render deployment. Final validation passed: 65 isolated game suites, 20 website checks, lint and the 48-team rewards guard; final ground/front layer test and all five decoded MP4s verified.
