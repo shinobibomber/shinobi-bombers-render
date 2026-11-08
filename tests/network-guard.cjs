@@ -141,6 +141,14 @@ const temps = [];
     const privEnv={...process.env,...priv,DATABASE_URL:'postgres://nobody@127.0.0.1:1/none',GAME_RUNTIME_DIR:mainDir,STARTER_PACK:'off',RYO_TREASURY_SECRET:'',RYO_TOKEN_MINT:'',RYO_STUDIO_WALLET:'',RYO_REVENUE_WALLET:''};
     const privRun=spawnSync(process.execPath,['-e',verifyPrivate],{cwd:root,encoding:'utf8',timeout:30000,env:privEnv});
     assert.equal(privRun.status,0,privRun.stderr);
+    // Mainnet game page without the token settings: /beta-config.json carries the browser RPC (never the public node,
+    // which refuses website requests with 403). With the token settings it is the game's own answer again.
+    const verifyRpcConfig=`(async()=>{const assert=require('node:assert/strict'),{server}=require('./server/site-server.cjs');await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;try{for(const p of ['/play/beta-config.json','/beta-config.json']){const r=await fetch(base+p);assert.equal(r.status,200,p);const j=await r.json();const expected=process.env.EXPECT==='rpc-only'?{network:'solana-mainnet',rpcUrl:process.env.SOLANA_PUBLIC_RPC_URL}:{network:'solana-mainnet',rpcUrl:process.env.SOLANA_PUBLIC_RPC_URL,tokenAddress:process.env.RYO_TOKEN_MINT,studioAddress:process.env.RYO_STUDIO_WALLET};assert.deepEqual(j,expected,p);assert.equal(r.headers.get('cache-control'),'no-store')}}finally{await new Promise(r=>server.close(r))}})().catch(e=>{console.error(e);process.exitCode=1});`;
+    const pubEnv={...process.env,...MAINNET_ENV,GAME_RUNTIME_DIR:mainDir,PRELAUNCH_MODE:'',STARTER_PACK:'off',RYO_TREASURY_SECRET:'',RYO_REVENUE_WALLET:'',SR_REVENUE_ROUTING_ENABLED:''};
+    const rpcOnly=spawnSync(process.execPath,['-e',verifyRpcConfig],{cwd:root,encoding:'utf8',timeout:30000,env:{...pubEnv,RYO_TOKEN_MINT:'',RYO_STUDIO_WALLET:'',EXPECT:'rpc-only'}});
+    assert.equal(rpcOnly.status,0,rpcOnly.stderr);
+    const withToken=spawnSync(process.execPath,['-e',verifyRpcConfig],{cwd:root,encoding:'utf8',timeout:30000,env:{...pubEnv,RYO_TOKEN_MINT:TESTER,RYO_STUDIO_WALLET:TESTER,EXPECT:'game'}});
+    assert.match(withToken.stderr+withToken.stdout,/SR mint is still pending|tokenAddress/,'with token settings the game answers (here the reviewed registry refuses the unregistered mint at start-up)');
     const privBad=spawnSync(process.execPath,['-e',"require('./server/site-server.cjs')"],{cwd:root,encoding:'utf8',timeout:20000,env:{...privEnv,RYO_PRIVATE_TEST_WALLETS:'',PORT:'0'}});
     assert.notEqual(privBad.status,0);assert.match(privBad.stderr,/needs RYO_PRIVATE_TEST_WALLETS/,'no testers: the server does not start');
 

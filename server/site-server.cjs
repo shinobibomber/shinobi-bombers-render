@@ -252,6 +252,19 @@ const server = http.createServer((req, res) => {
   route(req, res, url, name, !PRELAUNCH);
 });
 
+/* Mainnet without the token settings (private live testing before the SR mint is registered): the game's own
+ * /beta-config.json answers 503, so the browser falls back to Solana's public RPC, which refuses website requests
+ * (403 "Access forbidden"). Answer with the network and the browser RPC only; the client accepts this form
+ * ({network, rpcUrl}, no tokenAddress) and keeps every payment path disabled. Anything else: the game's own answer. */
+function rpcOnlyConfig(req, res) {
+  if (NET.key !== 'mainnet' || (process.env.RYO_TOKEN_MINT && process.env.RYO_STUDIO_WALLET)) return false;
+  let rpcUrl; try { const u = new URL(String(process.env.SOLANA_PUBLIC_RPC_URL || '')); if (u.protocol !== 'https:' || u.username || u.password) return false; rpcUrl = u.href; } catch { return false; }
+  if (!['GET', 'HEAD'].includes(req.method)) return false;
+  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' });
+  res.end(req.method === 'HEAD' ? undefined : JSON.stringify({ network: NET.id, rpcUrl }));
+  return true;
+}
+
 /** Website, admin shell and (when `gameOpen`) the game. While the portal is public, gameOpen is true only after a private pass. */
 function route(req, res, url, name, gameOpen) {
   // Public login shell only. Every data read and mutation uses the wallet-authenticated Ryo API.
@@ -270,6 +283,7 @@ function route(req, res, url, name, gameOpen) {
   if (name === '/whitepaper/' || name === '/whitepaper.html') { res.writeHead(308, { Location: '/whitepaper' + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
   if (name === '/whitepaper') return serveSite(req, res, '/whitepaper.html').catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   if (game && gameOpen) {
+    if ((name === '/beta-config.json' || name === MOUNT + '/beta-config.json') && rpcOnlyConfig(req, res)) return;
     if (GAME_ROOT_PATHS.has(name)) return game.listener(req, res);
     if (name === '/' && !PRELAUNCH) { res.writeHead(302, { Location: MOUNT + '/' + url.search, 'Cache-Control': 'no-store', ...SITE_HEADERS }); return res.end(); }
     if (name === MOUNT) { res.writeHead(308, { Location: MOUNT + '/' + url.search }); return res.end(); }
