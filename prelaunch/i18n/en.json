@@ -102,6 +102,7 @@
   "err.CREATOR_PLATFORM": "Choose your main platform.",
   "err.CREATOR_PAUSED": "Creator applications are closed right now.",
   "err.ADMIN_ONLY": "Only Shinobi Bombers admins can do that.",
+  "err.PRIVATE_TESTING": "That action is not available before launch.",
   "err.CREATOR_TRANSITION": "That status change isn't allowed.",
   "err.CREATOR_UNKNOWN": "That creator link isn't active, so you're registered without a referrer.",
   "err.CREATOR_NOT_FOUND": "Creator not found.",

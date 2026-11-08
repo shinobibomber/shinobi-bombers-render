@@ -55,17 +55,20 @@ function transfers(hash){return wireByHash.get(hash).instructions.filter(i=>i.pr
 
  const {advance,rewardRatePercent,REWARD_POOL_STEP}=require('../app/server/adventure.cjs');
  for(const [pool,expected]of [[0,50],[REWARD_POOL_STEP-1,50],[REWARD_POOL_STEP,60],[2*REWARD_POOL_STEP,70],[3*REWARD_POOL_STEP,80],[4*REWARD_POOL_STEP,90],[5*REWARD_POOL_STEP,100],[99*REWARD_POOL_STEP,100],[-10,50]])assert.equal(rewardRatePercent(pool),expected);
- const oneHero={dojo:0,heroes:[{tokenId:'rate-test',rank:0,level:1,baseStats:{pw:3,sp:3,st:3}}]},nearKill={map:1,target:0,hp:1,kills:0,pending:0,claimed:0,last:now,active:true,energy:{}};
- assert.equal(advance(structuredClone(nearKill),oneHero,now+1000,true,50).pending,17812);
- assert.equal(advance(structuredClone(nearKill),oneHero,now+1000,true,60).pending,21375);
- assert.equal(advance(structuredClone(nearKill),oneHero,now+1000,true,100).pending,35625);
- assert.equal(advance(structuredClone(nearKill),oneHero,now+1000,true,500).pending,35625);
+ const oneHero={dojo:0,sensei:true,heroes:[{tokenId:'rate-test',rank:0,level:1,perks:[6],baseStats:{pw:3,sp:3,st:3}}]},nearKill={map:1,target:0,hp:1,kills:0,pending:0,claimed:0,last:now,active:false,energy:{}};
+ assert.equal(advance(structuredClone(nearKill),structuredClone(oneHero),now+1000,false,50).pending,17812);
+ assert.equal(advance(structuredClone(nearKill),structuredClone(oneHero),now+1000,false,60).pending,21375);
+ assert.equal(advance(structuredClone(nearKill),structuredClone(oneHero),now+1000,false,100).pending,35625);
+ assert.equal(advance(structuredClone(nearKill),structuredClone(oneHero),now+1000,false,500).pending,35625);
  const savedEarned=structuredClone(nearKill);savedEarned.pending=777777;assert.equal(advance(savedEarned,oneHero,now,false,50).pending,777777);
  const testProfile=economy.initialProfile();const firstAdventure=advance(null,testProfile,now,true);
  assert.equal(firstAdventure.pending,0);assert.equal(advance(structuredClone(firstAdventure),testProfile,now,true).pending,0);
  assert.equal(advance(structuredClone(firstAdventure),testProfile,now+999999,true).hp,firstAdventure.hp);
  let chestState=await call('adventure',{active:true,pending:999999999,map:99999,rewardRatePercent:9000});assert.equal(chestState.chest.rewardRatePercent,rewardRatePercent(chestState.chest.pool));assert.equal(chestState.chest.rewardPoolStep,REWARD_POOL_STEP);assert.equal(chestState.chest.pending,0);assert.equal(chestState.chest.map,1);
- for(let i=0;i<8;i++){now+=15000;chestState=await call('adventure',{active:true})}
+ // Finance assertions use genuine cooperative Bronze defeats, independent of starter RNG.
+ const rules=require('../app/server/combat-rules.cjs'),combatProfile=await store.profile(wallet),ready=new Set(combatProfile.battleReady),fighters=combatProfile.heroes.filter(h=>ready.has(h.tokenId)).slice(0,10),started=now;
+ const report=()=>{const combatHeroes=fighters.map(h=>({id:h.tokenId,attacks:Math.min(Math.floor(h.chakra?.value??rules.maxChakra(h)),Math.floor((now-started)/(rules.cooldown(h)*1000))),kills:[0,0,0,0,0]}));const damage=combatHeroes.reduce((n,r,i)=>n+r.attacks*rules.damage(fighters[i]),0);if(combatHeroes.length)combatHeroes[0].kills[0]=Math.min(combatHeroes[0].attacks,Math.floor(damage/100));return {combatVersion:1,killSession:'financial-actions',deployed:fighters.map(h=>h.tokenId),combatHeroes}};
+ await call('adventure',{active:true,...report()});for(let i=0;i<8;i++){now+=15000;chestState=await call('adventure',{active:true,...report()})}
  assert(chestState.chest.pending>=1);const balanceBeforeClaim=await store.balance(wallet);
  if(LIVE){await require('./sr-revenue-fixture.cjs').budget(store);await require('./sr-revenue-fixture.cjs').topUp(store,100000)}
  const concurrent=await Promise.allSettled([call('claim-adventure',{active:false,amount:99999999}),call('claim-adventure',{active:false,amount:99999999})]);assert.equal(concurrent.filter(r=>r.status==='fulfilled').length,1,'concurrent claims credit once');assert.equal(concurrent.filter(r=>r.status==='rejected').length,1);const claimedReward=concurrent.find(r=>r.status==='fulfilled').value;assert(claimedReward.chest.credited>0);assert.equal(claimedReward.balance,balanceBeforeClaim+claimedReward.chest.credited);assert.equal(claimedReward.chest.rewardRatePercent,rewardRatePercent(claimedReward.chest.pool));

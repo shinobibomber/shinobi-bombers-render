@@ -67,7 +67,8 @@ async function settledPurchase(store, c, row) {
 }
 async function beginAdventure(store, c, wallet, profile, active, report) {
   const r = await referral(store, c, wallet); if (!r || r.qualified || r.stage5) return;
-  const proof = cp().advanceProof(store, profile, r.proof, active, report);
+  const verified=(await c.query('SELECT data FROM ryo_adventures WHERE scope=$1 AND wallet=$2',[store.scope,wallet])).rows[0]?.data;
+  const proof = cp().advanceProof(store, profile, r.proof, active, report, verified);
   r.stage5 = Number(proof.kills) >= 100 ? store.now() : null;
   await c.query('UPDATE ryo_player_referrals SET proof=$3,stage5=$4 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, JSON.stringify(proof), r.stage5]);
   await qualify(store, c, r);

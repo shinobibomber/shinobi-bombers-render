@@ -1,5 +1,15 @@
 # Shinobi Bombers — Project Status
 
+## 2026-11-09 — Mythic poster VFX Beta release
+
+User authorized test-server deployment after reviewing the four recreated skills.
+The reviewed RGBA atlases are integrated as presentation v11, with premultiplied
+frame blending and authored ground anchors. Earlier automatic-rotation and full
+effect-lifetime fixes are included. Character/aura/rarity and combat/economy files
+are preserved. Target: `shinobi-bombers-beta` / `main`; production `live` excluded.
+See `docs/MYTHIC_VFX_V11_RELEASE.md`. Deployment completion is recorded separately
+after Render reaches live and the served metadata/assets are verified.
+
 _Development copy created 2026-11-01 (Asia/Singapore)._
 
 | | |
@@ -108,6 +118,114 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+### Nov 9, 2026 - Faithful Mythic poster recreation (PREVIEW ONLY)
+
+Owner requested a faithful recreation from Mythic-Skill.png, with explicit art review before gameplay integration. New `dev-vfx-lab/recreation/` contains four built-in imagegen RGBA masters, exact prompts, deterministic authoring/baker, 38 frames (8/8/10/12) in twelve transparent 512px ground/front/combined sheets, JSON timing/anchor/provenance metadata and a separate interactive reference-comparison page at `/vfx-lab/recreation`. Existing source elements are reused only where their earlier transparent extraction is usable. Generated master shapes and interpolated/deformed frames are documented as recreation, not exact poster extraction or independently drawn frames. Five actual 720p H.264 MP4s (four ~6s and one ~24s), decoded frames and screenshots are in ignored `previews/mythic-recreation/`. The existing `/vfx-lab/tsukiyomi` and active v10 gameplay renderer are preserved. The preview page does not replace Adventure/Hunt effects. The new test checks 38 unique frames, RGBA/margins/provenance, controls/downloads, desktop/mobile layouts, route restrictions, unchanged renderer/state and 597 local source/build hashes; 178 protected source hashes are also saved with the preview for reproducibility. See `dev-vfx-lab/recreation/README.md` for differences and commands. No character, aura, rarity, NFT, combat or economics edits. The inherited branch already suppresses the star display; this task does not alter it. No push or deployment; gameplay integration awaits owner art review.
+
+### Nov 9, 2026 - Mythic VFX motion study / all-mode rotation (LOCAL REVIEW ONLY)
+
+Branch review/mythic-vfx-rotation-local-2026-11-09, based on deployed Beta 5cb01b3; no push/deploy authorization for this update. Preserves the clean Beta baseline without Legacy Pass. See docs/MYTHIC_VFX_V10.md. New engine-baked transparent effect atlases use reference/skill-motion-v10.png as a static geometry/style guide; no poster crops or placeholder hero. All four cosmetic skills accept melee or ranged native attacks, retain 12/18/24/30-second cooldowns and use a persistent fair cursor. Version 2 cosmetic receipts migrate to version 3 without clearing clocks or replay history. Basic melee uses its own small crescent. Full pooled skill timelines run separately from basic attacks and .8-second Hunt hit labels; Hunt has separate ground/front render hooks. No backend, reward, NFT, character art or aura changes. Focused tests passed 64 native attacks across both distances/four directions plus actual paid-fixture Hunt and complete late-stage effects. Validation complete: production build with isolated PGlite schema initialization, lint, typecheck and the 48-team guard passed; the complete serial npm test passed all 69 game suites and 20 website checks on Node 26.13.0. Seven changed-scope suites also passed on the project's Node 22.23.4. An initial parallel Chest confirmation timeout did not recur in the full serial run; no Chest code/assertions changed. Local HTTP version/assets verified and showcase, Hunt and phone previews inspected. No real transactions, push or deployment. Exact separately drawn character poses remain unavailable; the approved rig is preserved. Do not push or deploy without owner approval.
+
+
+### Beta release validation - Nov 9, 2026
+
+Beta release validation (Nov 9, 2026): production build and isolated database schema initialization passed under Node 22; lint passed; npm test passed all 68 game suites and 20 website checks with two isolated workers. Local HTTP checks returned 200 for health, game, metadata, three scripts and two new PNG assets. No real wallet or external transaction was executed. Public deployment verification follows the authorized push.
+
+
+### Nov 9, 2026 - Mythic Beta release authorized
+
+Owner authorized the Mythic release to the Beta test server only. Release branch release/mythic-beta-2026-11-09 starts at beta main 645f2f9 and contains only the reviewed Mythic V2/completion changes. Legacy Pass, its schema, finance hooks, UI and unrelated offline handoff fix are excluded. No backend combat, NFT, economy, service settings or production branch changes. Rebuild and rerun the Beta suites before pushing main; verify an actual HTTP response and presentationVersion 9 / 12-18-24-30 second cooldown markers after Render rollout.
+
+
+### Nov 9, 2026 - Mythic completion: no stars, approved test cooldowns, clean atlases (LOCAL REVIEW ONLY)
+
+Branch review/mythic-completion-local-2026-11-09 in tmp/training-shards-beta; base 5c95916 includes earlier inactive Legacy Pass review. See docs/MYTHIC_COMPLETION_LOCAL.md and exact file list. Removed Mythic rating row/client presentation star field; NFT attributes/records untouched. Approved per-hero visual CDs 12/18/24/30 seconds; native attacks continue during cooldowns. New bake-production.cjs produces 36 four-direction character atlases (216 rig cells) and 8 separate VFX layers (38 combined stages) from the unchanged approved views, native geometry and existing isolated dragon texture. Clean atlas renderer avoids per-frame path construction; existing aura and all 19 source PNGs verified unchanged. Exact independently drawn poster poses remain missing, explicitly documented; no substitute hero design. Validation: Node 22 production build against disposable PGlite, lint, typecheck, 48-team guard and a complete npm test run passed all 72 game suites and 20 website checks. Local HTTP page/health/new scripts/PNGs returned 200. Public Beta play and health each timed out at 30 seconds; extra health probe completed TCP/TLS but no HTTP first byte at 15 seconds. Render says not_suspended; recent logs/events do not identify cause. No Render config/cache/restart/deploy or financial/NFT operation. Do not push/deploy without explicit owner approval.
+
+
+### Nov 9, 2026 - Mythic automatic combat V2 (LOCAL ONLY, no push/deploy)
+
+Worktree tmp/training-shards-beta; branch review/mythic-auto-combat-v2-local-2026-11-08; base d9ca4d5 includes the previous disabled Legacy Pass review. See docs/MYTHIC_AUTOMATIC_COMBAT_V2.md. Refactors existing rotation into basic/skill alternation with independent cosmetic cooldowns, eligible native Adventure/Hunt actions, per-wallet/per-hero presentation persistence and replay guards. Stable skill IDs now display Dragon Slash / Void Shuriken / Raijin Field / Mythic Dragon Ascension. Latest specification restores seven-star metadata/details, retains rank 5 and all stats/perks/ownership. New ranged state and four rig-baked 6-frame directional atlases; 4 logical idle, 6 defeat/victory, unchanged clip durations. Nineteen approved body/aura PNGs verified unchanged. Supplied latest-animation-v2.png remains a composite reference, not new production sprite frames. No server/economy/NFT schema changes or active damaging skills. Build runs locally against disposable PGlite, never the live database. Validation: Node 22 production build with isolated PGlite, lint, typecheck, 48-team rewards guard, all 71 registered game suites across a serialized prefix plus resumed tail, and all 20 website checks passed. Initial parallel Sensei timeout passed in isolation and in the serialized run. Fixed the old motion-test filename parser for ranged_attack_* and isolated the new cap fixture from earlier preview effects; no assertions or reward rules loosened. Eleven affected suites were re-run after the final Hunt facing/team-scope fix. Beta status/read-only public HTTP 200 recorded; no deployment/config changes. Owner explicitly forbids push or deployment without approval.
+
+
+### Nov 8, 2026 - per-hero Mythic skill rotation (beta only)
+
+Branch review/mythic-skill-rotation-beta-2026-11-08, based on c14ad1d. Runtime uses weak per-hero Adventure/Hunt counters to cycle all four skills. A weak immutable per-projectile choice survives visual cleanup, so redraws and seven decorative copies cannot advance the cycle. Hunt creation/impact carry cosmetic mythicSkill metadata only, added after combat/shard patches by apply-mythic-skill-rotation.cjs and reversed before them in preservation. Same Power/1-chakra engine remains untouched. Ground skills appear at impact, and the dragon is the fourth caster visual; unrelated attacks no longer always spawn Raijin. Hero tooltip/native guide reflect rotation. Existing hero objects survive ordinary ledger sync, and removed heroes/shot choices are weakly referenced. See tests/mythic-skill-rotation.cjs for 12 native Adventure attacks and 8 real paid-fixture Hunt attacks, duplicates, cleanup, independent actors and zero-chakra checks. Deploy beta main only; never production live. Final validation passed: fresh unpack, lint, 48-team rewards guard, preservation, all 66 game suites and all 20 website checks. Actual Adventure/Hunt screenshots were inspected. The full run exposed an existing synthetic-pagehide fixture race (a legitimate in-flight kill arrived after its expected snapshot); tests/live-rewards.cjs now freezes the fixture tick in that same snapshot task to model a closed page. Exact reward equality and all runtime guards stay unchanged.
+
+### Nov 8, 2026 - Mythic skills v6 TEST SERVER release authorized
+
+Owner approved deployment to the test server after reviewing local implementation 7f96328. Release only beta main / shinobi-bombers-beta (srv-dbib5q0m7kps73cddr90); production live / ShinobiBombers remains excluded. The developer VFX lab stays loopback-only and unavailable on Render. The reviewed gameplay code already passed all 65 game suites, 20 website checks, lint, the 48-team rewards guard, exact aura/body preservation and five decoded MP4 checks. Only release documentation changes follow review. Verify deployed presentationVersion 6, TsukiyomiSkillV6.version 6 and the exact reference-v6.png SHA against the tested generated assets, and confirm /vfx-lab/tsukiyomi returns 404. Native reference-art quality limitations still apply.
+
+### Nov 8, 2026 - Mythic skills v6 (LOCAL REVIEW ONLY, no push/deploy)
+
+Work stays in `tmp/training-shards-beta` on `review/mythic-skills-v6-local-2026-11-08`, based on ca071cd. Four new skill names preserve permanent IDs. New transparent reference-derived atlas comes from owner-supplied `Mythic-Skill.png`, SHA-256 5176a1625f97edcb50b26d0a043d71b4afab0af4e6a13eda37f231ad5866c414; actual source drawings 7/8/9/11 interpolate to 8/8/10/12 logical stages. This is not HD production art. Aura/character/rig are unchanged; no new damage, costs, rewards or NFT operations. Local loopback-only `/vfx-lab/tsukiyomi` requires SHINOBI_VFX_LAB=on and refuses Render/Mainnet/prelaunch. Run `node dev-vfx-lab/preview.cjs` or `node dev-vfx-lab/export-videos.cjs`. Four actual H.264 720p ~6s videos plus a ~24s showcase are in ignored `previews/mythic-v6/`, each decoded and duration/dimension checked. See `docs/MYTHIC_SKILLS_V6_LOCAL.md` for limitations, files, tests and usage. Owner explicitly requires approval before any main push or Render deployment. Final validation passed: 65 isolated game suites, 20 website checks, lint and the 48-team rewards guard; final ground/front layer test and all five decoded MP4s verified.
+
+### Nov 8, 2026 - consistent Adventure hero body size (beta only)
+
+Adventure bodies now use the Mythic reference height (292 canvas pixels / 36.5 logical sprite pixels), normalized once per model/direction from the already-cleaned native idle cell. `CharacterAnimations.drawAdventureHero` draws the cached native cell directly at the original foot pivot; pose frames share the reference, with no per-frame canvas allocation/readback. Back/sleep cells carry the same metadata from PlayerModels. Tier aura layers and Mythic renderer remain independent; menus keep their original portraits. See `docs/ADVENTURE_HERO_SIZE_BETA.md` and `tests/adventure-hero-size.cjs`. Only the two intentionally changed sprite source hash entries were updated; the exact Adventure hook is reversed in preservation tests.
+
+### Nov 8, 2026 — beta archive download recovery (validated for beta release)
+
+Beta manual redeploys failed with upstream HTTP 504 on the verified base ZIP. New `download-game-base.cjs` adds four bounded attempts, 45-second timeouts, cache-busting retries, SHA-verified cache reuse, and official GitHub asset API fallback after two failures. Both sources must match the existing immutable hash; `unpack.cjs` retains its independent checksum and safe extraction. A real fresh download reproduced two 504s and recovered all 53,810,393 bytes through the API with the correct hash. `build-integrity.json` records loader version/hash for post-deploy checks. Work stays on `review/archive-download-beta-2026-11-08` and beta `main`; production `live` is excluded. See `docs/ARCHIVE_BUILD_BETA.md`. Validation passed: clean rebuild, public integrity marker, lint, the 48-team rewards guard, all 63 game suites and all 20 website checks. The fresh remote download recovered through the official API and passed the original SHA-256 check. Post-deploy evidence is saved locally in `tests/out/archive-deploy-verification.json`.
+
+### Nov 8, 2026 — beta training shards and additive recovery (validated for beta release)
+
+Isolated worktree: `tmp/training-shards-beta`, branch `review/training-shards-beta-2026-11-08`, based on beta main `944a8b3`. Owner confirmed Fast Charge +0.5/min independent of Dojo; default 1/min; shard rewards and per-level costs 1/2/3/4/5/7; Mythic Ryo prices twice Legend. New `hero-upgrades/` and `apply-hero-upgrades.cjs` wrap native training and add authenticated, atomic, audited salvage. NFT-bound heroes cannot be salvaged. Pending legacy purchases retain agreed terms. Do not merge the active live-treasury release into beta or push these gameplay changes to `live`. See `docs/TRAINING_SHARDS_BETA.md`. Validated on Node 22: build, typecheck, lint, preservation, the 48-team real-time rewards guard, all 62 game suites and all 20 website checks passed. Native in-flight defeat reporting before salvage and the Chest quick-edit confirmation regression both pass. Post-deploy evidence is saved locally to `tests/out/shards-beta-live.json` in the isolated worktree. Release target is beta `main` only.
+
+### Nov 8, 2026 — beta combat/perk update (validated for test-server release)
+
+Work is isolated on `review/combat-perks-beta-2026-11-08`. New `combat-rules/` sources and `apply-combat-rules.cjs` are applied after network setup. Shared seven-perk registry, persistent chakra, Power-based attacks, paid-hunt snapshots and referral ledger integration replace old combat formulas. Mythic animation presentation version 5 uses names without stars, base stats 17–20, seven perks/visual shots and range 6+1. Existing approved Aura and NFT ownership infrastructure are retained. See `docs/COMBAT_PERKS_BETA.md` for migration and the remaining browser-owned Adventure map boundary. Never deploy this work to the `live` branch without explicit authorization. Validation: Node 22 lint passed; all 60 isolated game suites and 20 website checks passed; the real-time guard covers 48 teams across six ranks. Desktop/phone Codex, movement frames, skill effects and a ten-Mythic team were rendered and inspected. Release only through beta’s `main` branch; production remains on `live`. Deployment asset/browser evidence is written locally to `tests/out/beta-combat-live.json`.
+
+- 2026-11-08 MYTHIC EXPRESSIONS V4 — continued polish authorized for TEST SERVER ONLY.
+  Targets main / shinobi-bombers-beta; never push live. See mythic-hero/MOTION_V4.md.
+  Added localized idle blink/breathing, attack anticipation/recovery, articulated bomb,
+  hurt/kneeling defeat/victory/emote gestures and font-independent expression symbols.
+  Fixed non-looping actions bypassing reduced motion without changing event timing.
+  Existing rig-v3 bake format now contains 16 atlases / 120 frames (4 new idle atlases);
+  walk/run files are unchanged. Manifest schema v2, presentationVersion 4. No new aura,
+  VFX, ownership, combat, wallet or economy changes. Hurt/defeat/emotes use the existing
+  cosmetic integration point/preview; no new health or death rules were added.
+  Fresh unpack and focused tests passed; all-state rendered gallery inspected.
+  Release validation: fresh unpack, lint, rewards guard, all 55 suites and website checks
+  passed. Logs: tests/out/mythic-v4-{build,lint,rewards,tests-final}.log. First full run
+  exposed a Dojo fixture race: late profile responses restored its old rental time.
+  Updated the simulated server expiry along with the browser; same assertion/4s timeout.
+  Untracked Shinobi_Bombers_Live_Treasury_Integration_Pack/ remains unrelated owner work.
+
+- 2026-11-07 MYTHIC MOTION V3 — TEST SERVER ONLY, owner requested the feet/arms and
+  skill presentation fixed and optimized. Targets main / shinobi-bombers-beta only.
+  See mythic-hero/MOTION_V3.md. Added separate limb skinning of the approved views,
+  12 baked PNG atlases (88 walk/run/attack frames), independent gait through volleys,
+  gentle Comfort locomotion, new procedural celestial VFX and isolated generated dragon.
+  Aura, stats, NFT ownership, economy and all production settings/branches are unchanged.
+  Rebuild atlases only after changing the rig: node mythic-hero/tools/bake-motion.cjs;
+  then node mythic-hero/tools/build-runtime.cjs and fresh unpack. Render uses committed
+  atlases and needs no Chrome. Provenance/source hashes and prompt are checked in.
+  New tests/mythic-motion-v3.cjs covers moving limb pixels, all four views, action/gait
+  concurrency, Comfort behavior, VFX margins, warm cache allocations and 10 Mythics.
+  Validation: fresh unpack, lint, rewards guard, all 54 suites and website checks passed
+  in one complete run. All 12 atlases passed alpha/edge validation; runtime screenshots
+  inspected. Logs: tests/out/mythic-v3-{final-build,lint,rewards,tests,motion}.log.
+  The untracked Shinobi_Bombers_Live_Treasury_Integration_Pack/ is unrelated owner work;
+  do not include it in this release. Existing v2 audit below is historical.
+
+- 2026-11-07 TSUKIYOMI — OWNER AUTHORIZED TEST SERVER ONLY. The latest instruction
+  "deploy it to test server only" authorizes publishing the reviewed animation change
+  from 0230af9 onto main for shinobi-bombers-beta (srv-dbib5q0m7kps73cddr90).
+  Do not push live or deploy ShinobiBombers (srv-dbnel5bl550s73f0moa0). No environment,
+  database, wallet or live NFT operations are part of this release. The live-only wallet
+  and creator-application changes are not brought into main by this cherry-pick.
+  Added 19 presentation states, four directions, native successful-shot/bomb/impact hooks,
+  split Raijin layers, bounded caches/pools and map/menu cleanup. Mythic displays seven
+  stars while existing rank-5 saves, NFT ownership, stats, ten-hero cap and rewards remain.
+  Approved directional poses are animated as a fallback; old borrowed Fire-body strips
+  are no longer downloaded. Existing aura art/rendering is preserved. Authored character
+  frames and clean skill atlases are still missing; the legacy dragon has ten source
+  drawings across twelve logical steps. Rejected generated candidate is not shipped.
+  See mythic-hero/ASSET_AUDIT.md for import requirements, test evidence and limitations.
+  Local fixture preview: node mythic-hero/tools/preview.cjs (Node 22 and Chrome).
+  Beta release validation: fresh unpack, lint, rewards guard, all 53 beta suites and website
+  checks passed in one run; desktop/mobile Tsukiyomi screenshots inspected. Runtime source
+  matches 0230af9 exactly. Logs: tests/out/tsukiyomi-beta-{build,lint,rewards,tests}.log.
 ### Nov 8, 2026 — Creator referral sync (CODE + TESTS DONE on `release/live-treasury-2026-11-08`; awaiting owner OK to push to `live`)
 
 Implemented: convertPlayerReferrals() + syncApprovedCreators() + RP-link routing in creators-portal/server.cjs; combined counts in summary(), player-server summary(), prelaunch creatorState()/referrals(); UI notes (crd.playerLinkNote, dash.creatorSync). New tests/creator-referral-sync.cjs; prelaunch-creators/prelaunch-server expectations updated for combined counts and `via`. Remaining: full-suite result → commit → owner approval → push to live.

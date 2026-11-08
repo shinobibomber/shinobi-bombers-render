@@ -1,0 +1,107 @@
+{
+  "version": 3,
+  "source": "approved-views-skeletal-mesh",
+  "generatorSha256": "7698ef53b3186bf0f966cc3bf25a6d1d9ca8b79c7194f04ca3ad245cf839bf5a",
+  "clips": {
+    "walk_front": {
+      "path": "animations/rig-v3/walk_front.png",
+      "frames": 8,
+      "sourceSha256": "f85306f7f58b929bd229416e26da348ee1274bb9b617290aa1ca1ffe912ac00d"
+    },
+    "run_front": {
+      "path": "animations/rig-v3/run_front.png",
+      "frames": 8,
+      "sourceSha256": "f85306f7f58b929bd229416e26da348ee1274bb9b617290aa1ca1ffe912ac00d"
+    },
+    "attack_front": {
+      "path": "animations/rig-v3/attack_front.png",
+      "frames": 6,
+      "sourceSha256": "f85306f7f58b929bd229416e26da348ee1274bb9b617290aa1ca1ffe912ac00d"
+    },
+    "idle_front": {
+      "path": "animations/rig-v3/idle_front.png",
+      "frames": 8,
+      "sourceSha256": "f85306f7f58b929bd229416e26da348ee1274bb9b617290aa1ca1ffe912ac00d"
+    },
+    "ranged_attack_front": {
+      "path": "animations/rig-v3/ranged_attack_front.png",
+      "frames": 6,
+      "sourceSha256": "f85306f7f58b929bd229416e26da348ee1274bb9b617290aa1ca1ffe912ac00d"
+    },
+    "walk_left": {
+      "path": "animations/rig-v3/walk_left.png",
+      "frames": 8,
+      "sourceSha256": "122a489bfa724b3b357dd653b904b4207490507b85c6367843f9d0f300c7157f"
+    },
+    "run_left": {
+      "path": "animations/rig-v3/run_left.png",
+      "frames": 8,
+      "sourceSha256": "122a489bfa724b3b357dd653b904b4207490507b85c6367843f9d0f300c7157f"
+    },
+    "attack_left": {
+      "path": "animations/rig-v3/attack_left.png",
+      "frames": 6,
+      "sourceSha256": "122a489bfa724b3b357dd653b904b4207490507b85c6367843f9d0f300c7157f"
+    },
+    "idle_left": {
+      "path": "animations/rig-v3/idle_left.png",
+      "frames": 8,
+      "sourceSha256": "122a489bfa724b3b357dd653b904b4207490507b85c6367843f9d0f300c7157f"
+    },
+    "ranged_attack_left": {
+      "path": "animations/rig-v3/ranged_attack_left.png",
+      "frames": 6,
+      "sourceSha256": "122a489bfa724b3b357dd653b904b4207490507b85c6367843f9d0f300c7157f"
+    },
+    "walk_right": {
+      "path": "animations/rig-v3/walk_right.png",
+      "frames": 8,
+      "sourceSha256": "d49b14a71ca7730306a975f7d697103089f44c20e60c48b72a3511532e633da7"
+    },
+    "run_right": {
+      "path": "animations/rig-v3/run_right.png",
+      "frames": 8,
+      "sourceSha256": "d49b14a71ca7730306a975f7d697103089f44c20e60c48b72a3511532e633da7"
+    },
+    "attack_right": {
+      "path": "animations/rig-v3/attack_right.png",
+      "frames": 6,
+      "sourceSha256": "d49b14a71ca7730306a975f7d697103089f44c20e60c48b72a3511532e633da7"
+    },
+    "idle_right": {
+      "path": "animations/rig-v3/idle_right.png",
+      "frames": 8,
+      "sourceSha256": "d49b14a71ca7730306a975f7d697103089f44c20e60c48b72a3511532e633da7"
+    },
+    "ranged_attack_right": {
+      "path": "animations/rig-v3/ranged_attack_right.png",
+      "frames": 6,
+      "sourceSha256": "d49b14a71ca7730306a975f7d697103089f44c20e60c48b72a3511532e633da7"
+    },
+    "walk_back": {
+      "path": "animations/rig-v3/walk_back.png",
+      "frames": 8,
+      "sourceSha256": "87a7744849062f1e10a99772caae619b886b5953b85add42912da1ca492a81e0"
+    },
+    "run_back": {
+      "path": "animations/rig-v3/run_back.png",
+      "frames": 8,
+      "sourceSha256": "87a7744849062f1e10a99772caae619b886b5953b85add42912da1ca492a81e0"
+    },
+    "attack_back": {
+      "path": "animations/rig-v3/attack_back.png",
+      "frames": 6,
+      "sourceSha256": "87a7744849062f1e10a99772caae619b886b5953b85add42912da1ca492a81e0"
+    },
+    "idle_back": {
+      "path": "animations/rig-v3/idle_back.png",
+      "frames": 8,
+      "sourceSha256": "87a7744849062f1e10a99772caae619b886b5953b85add42912da1ca492a81e0"
+    },
+    "ranged_attack_back": {
+      "path": "animations/rig-v3/ranged_attack_back.png",
+      "frames": 6,
+      "sourceSha256": "87a7744849062f1e10a99772caae619b886b5953b85add42912da1ca492a81e0"
+    }
+  }
+}

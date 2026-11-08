@@ -64,12 +64,14 @@
       const buttons = $$('.sbw-acts button', dlg), msg = $('.sbw-off-msg', dlg);
       buttons.forEach(b => b.disabled = true); e.target.textContent = 'Saving…';
       try {
+        await window.CombatClient?.beginOffline?.();
         if (k === 'on') await RyoPayments.senseiSettings(d.pct, true);
         const owner = account(), chest = await RyoPayments.adventure(false, false);
         try { localStorage.setItem(OFFLINE_KEY, JSON.stringify({ account: owner, lifetime: Number(chest.pending || 0) + Number(chest.claimed || 0), at: Date.now() })); } catch {}
         dlg.close();
         const native = document.getElementById('betaDisconnect'); if (native && !native.disabled) native.click();
       } catch (err) {
+        window.CombatClient?.cancelOffline?.();
         // Stay signed in so nothing is lost; the player can retry.
         msg.hidden = false; msg.textContent = (err && err.message) || 'Could not save your progress. Check your connection and try again.';
         buttons.forEach(b => b.disabled = false); e.target.textContent = 'Try again';
@@ -287,7 +289,7 @@
     b.tiles.forEach((t, i) => {
       // Own empty-state class: the shared .sbw-empty message styles widened these tiles.
       const h = dep[i]; t.classList.toggle('sbw-tile-empty', !h); t.style.setProperty('--rc', h ? RCOL[h.r] : '#3a4a7a');
-      const label = h ? `★ Lv. ${h.lv}` : 'Deploy', title = h ? `${h.name} · ${RNAME[h.r]} · Lv. ${h.lv}` : 'Deploy a hero from Heroes';
+      const label = h ? `Lv. ${h.lv}` : 'Deploy', title = h ? `${h.name} · ${RNAME[h.r]} · Lv. ${h.lv}` : 'Deploy a hero from Heroes';
       if (t.lastChild.textContent !== label) t.lastChild.textContent = label;
       if (t.title !== title) t.title = title;
       draw(t.firstChild, h, 66, 146, 2.7);
@@ -298,10 +300,11 @@
   const gal = (arr, cap) => `<div class="gal">${arr.map(x => `<button class="gt" type="button" data-src="${BASE + x.src}" data-t="${esc(cap(x))}"><img src="${BASE + x.src}" alt="" loading="lazy"><span>${esc(cap(x))}</span></button>`).join('')}</div>`;
   function cxHtml(i) {
     const R2 = D.ref; switch (i) {
-      case 0: return `<p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Heroes nap and recover – faster in the Dojo.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
+      case 0: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Heroes nap and recover – faster in the Dojo.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
+      case 1: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Genin 1/1 · Chunin 2/2 · Jonin 3/3 · Elite 4/4 · Legend 5/5 · Mythic 7/7</p>${CombatRules.PERKS.map(p=>'<h4>'+esc(p.name)+'</h4><p>'+esc(p.description)+'</p>').join('')}`;
       case 2: return `<p>Element and rarity are independent: an element changes a hero's jutsu and aura colour, never their rank.</p><h4>Hero models · four directions</h4>${gal([R2.models], () => 'All 12 hero models')}`;
-      case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin ★</b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin ★★</b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin ★★★</b><span>3 perks</span></div><div><b style="color:#b45cff">Elite ★★★★</b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend ★★★★★</b><span>Top summon rank · 5 perks</span></div><div><b style="color:#c98bff">Mythic</b><span>Tsukiyomi · NFT only · 6 perks</span></div></div><p>Fusion combines three heroes of the same rank. Legend is the highest rank you can summon or fuse and stays tradable. Mythic Tsukiyomi comes only with the Limited NFT Box and moves with that NFT.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
-      case 4: return `<div class="cxg"><div><b>Save burst</b><span>Hold jutsu bursts for boss phases.</span></div><div><b>Balance</b><span>Mix damage dealers with chakra support.</span></div><div><b>Read the board</b><span>Blasts stop at stone – line up crates.</span></div><div><b>Rotate</b><span>A Sensei swaps in rested heroes automatically.</span></div></div><h4>Hero animation reference</h4>${gal([R2.hayate], () => 'Hayate – animation & VFX reference')}`;
+      case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin </b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin </b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin </b><span>3 perks</span></div><div><b style="color:#b45cff">Elite </b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend </b><span>Top summon rank · 5 perks</span></div><div><b style="color:#c98bff">Mythic</b><span>Tsukiyomi · NFT only · 7 perks</span></div></div><p>Genin 1/1 · Chunin 2/2 · Jonin 3/3 · Elite 4/4 · Legend 5/5 · Mythic 7/7</p><p>Fusion combines three heroes of the same rank. Legend is the highest rank you can summon or fuse and stays tradable. Mythic Tsukiyomi comes only with the Limited NFT Box and moves with that NFT.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
+      case 4: return `<div class="cxg"><div><b>Save burst</b><span>Skill animations are cosmetic and spend no additional chakra.</span></div><div><b>Balance</b><span>Mix damage dealers with chakra support.</span></div><div><b>Read the board</b><span>Blasts stop at stone – line up crates.</span></div><div><b>Rotate</b><span>A Sensei swaps in rested heroes automatically.</span></div></div><h4>Hero animation reference</h4>${gal([R2.hayate], () => 'Hayate – animation & VFX reference')}`;
       case 5: return `<p>Each boss has idle, walk, hurt and death animations plus signature attacks, ending in a rage mode at low HP.</p><h4>Boss concept sheets</h4>${gal(R2.bosses, x => `${x.n} · ${x.t}`)}<h4>Akuma animation sheets</h4>${gal(R2.akuma, x => 'Akuma sprite sheet ' + (R2.akuma.indexOf(x) + 1))}`;
       case 6: return `<div class="cxg"><div><b>Adventure Ryo</b><span>Earned while your team works stages. It collects in your Chest.</span></div><div><b>Claim</b><span>Moves verified Chest Ryo into your game balance – not an on-chain withdrawal.</span></div><div><b>Withdraw / Deposit</b><span>Use the Chest's own limits, fees, cooldown and wallet steps.</span></div></div><p><button class="gb" type="button" data-cx="chest">Open Chest</button></p>`;
       case 7: return `<div class="faq"><details open><summary>How many heroes can I deploy?</summary><p>Up to 10 at once, from up to 50 battle-ready heroes.</p></details><details><summary>Can Legend heroes be fused further?</summary><p>No – Legend is the top rank.</p></details><details><summary>Where do Adventure rewards go?</summary><p>Into your Chest. Claim them to make them spendable.</p></details><details><summary>Are Guild and Chat available?</summary><p>Not yet – they are coming soon.</p></details></div>`;
@@ -309,12 +312,19 @@
     }
   }
   INIT.codex = b => {
-    b.cx = place(mk('div', 'cxp', b.st), 306, 212, 896, 698); b.cx.hidden = true;
+    // Opaque panel interiors replace outdated star ratings and combat claims in the artwork.
+    const panel=(cls,x,y,w,h,html)=>{const e=place(mk('div',cls,b.st,html),x,y,w,h);Object.assign(e.style,{position:'absolute',zIndex:'15',background:'linear-gradient(135deg,#111329,#030916)',color:'#dde5f7',borderRadius:'8px',boxShadow:'inset 0 0 12px #020610',padding:'9px 12px',boxSizing:'border-box',fontSize:'17px',lineHeight:'1.4'});return e;};
+    panel('sbw-codex-ranks',1247,478,397,187,RNAME.map((name,i)=>'<div style="display:flex;justify-content:space-between;line-height:28px"><b style="color:'+RCOL[i]+'">'+name+'</b><span>'+[1,2,3,4,5,7][i]+' unique perk'+(i?'s':'')+'</span></div>').join(''));
+    panel('sbw-codex-elements',1247,373,397,44,'Elements change cosmetic effects.').style.padding='3px 12px';
+    panel('sbw-codex-tips',1247,727,397,177,'<p style="margin:0 0 12px">One attack spends one chakra.</p><p style="margin:0 0 12px">Skill effects add no damage or cost.</p><p style="margin:0">Rest or rotate to recover chakra.</p>');
+
+    b.cx = place(mk('div', 'cxp', b.st), 306, 212, 896, 698); b.cx.hidden = false; b.cx.style.animation='none';
     b.cx.addEventListener('click', e => { if (e.target.closest('[data-cx=chest]')) openChest(); });
+    MODS.codex.sec(1);
   };
   MODS.codex = {
-    sec: a => { const i = +a, b = built.codex; for (let n = 0; n < 8; n++) { const e = $(`.hs[data-sbwid="cs${n}"]`, b.st); if (e) { e.classList.toggle('on2', n === i && n !== 1); e.classList.toggle('dimact', n === 1 && i !== 1); } } b.cx.hidden = i === 1; if (i !== 1) { b.cx.innerHTML = `<h2>${CXT[i]}</h2><div class="cxb">${cxHtml(i)}</div>`; b.cx.scrollTop = 0; } },
-    elem: a => toast(['Fire – burns enemies over time', 'Water – flowing sustained damage', 'Wind – speed and mobility', 'Shadow – ambush and burst damage', 'Lightning – chains between foes and stuns'][+a])
+    sec: a => { const i = +a, b = built.codex; for (let n = 0; n < 8; n++) { const e = $(`.hs[data-sbwid="cs${n}"]`, b.st); if (e) { e.classList.toggle('on2', n === i); e.classList.toggle('dimact', n === 1 && i !== 1); } } b.cx.hidden = false; b.cx.innerHTML = `<h2>${CXT[i]}</h2><div class="cxb">${cxHtml(i)}</div>`; b.cx.scrollTop = 0; },
+    elem: a => toast(['Fire – cosmetic flame effects', 'Water – cosmetic flowing effects', 'Wind – cosmetic wind effects', 'Shadow – cosmetic shadow effects', 'Lightning – cosmetic lightning effects'][+a])
   };
 
   /* ---------- Summon (website screen ↔ Combat.quantity / Combat.summonBatch) ---------- */
@@ -497,7 +507,7 @@
     b.rate.innerHTML = `<b>${rec[tier] || 1}/min</b>`; b.lvl.innerHTML = `<b>${tier}/6</b>`;
     b.rowhl.style.top = (DROWY[tier] - 41) + 'px';
     b.stat.forEach((e, i) => { const [t, c] = i < tier ? ['Unlocked', 'own'] : i === tier ? ['Active', 'act'] : i === next ? ['Next', 'nxt'] : ['—', 'lck']; if (e.textContent !== t) e.textContent = t; e.className = 'sbw-dstat ' + c; });
-    const k = next <= 6 ? `<i>⌂</i><span>UPGRADE - ${fmt(prices[next])} Ryo</span>` : '<i>★</i><span>MAX TIER REACHED</span>'; if (b.up.dataset.k !== k) { b.up.dataset.k = k; b.up.innerHTML = k; } b.up.disabled = next > 6;
+    const k = next <= 6 ? `<i>⌂</i><span>UPGRADE - ${fmt(prices[next])} Ryo</span>` : '<i></i><span>MAX TIER REACHED</span>'; if (b.up.dataset.k !== k) { b.up.dataset.k = k; b.up.innerHTML = k; } b.up.disabled = next > 6;
   };
   INIT['dojo-sen'] = b => {
     dojoBack(b, 'SENSEI');
@@ -697,9 +707,22 @@
   const shortMint = m => m ? m.slice(0, 4) + '…' + m.slice(-4) : '';
   function mythicBlock(h) {
     const MH = window.MythicHero, aura = MH ? MH.auraEnabled : true, skills = MH ? MH.skills : [];
-    return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC</b><span>Exclusive Mythic Shinobi</span></div>
+    return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC </b><span>FIRST GENERATION NFT</span></div>
       <div class="sbw-myth-nft"><span>${h.starter && !h.nft ? 'Starter Mythic · test server' : h.nft?.mint ? '✔ NFT verified · ' + esc(shortMint(h.nft.mint)) : 'NFT hero'}</span><button type="button" data-k="mcheck">Check NFT</button><button type="button" data-k="maura" aria-pressed="${aura}">Aura: ${aura ? 'On' : 'Off'}</button></div>
-      <ul class="sbw-myth-skills" aria-label="Skills">${skills.map(k => `<li class="${k.ultimate ? 'ult' : ''}" title="${esc(k.text)}"><b>${esc(k.ultimate ? '⚡ ' + k.name.replace('Mythic ', '') : k.name)}</b></li>`).join('')}</ul></div>`;
+      <div class="sbw-myth-generation">TSUKIYOMI<small>Lunar / Celestial / Void</small></div>
+      <ul class="sbw-myth-skills" aria-label="Automatic abilities">${[{name:'Melee Attack',icon:'⚔',text:'Basic purple crescent attack.'},{name:'Ranged Attack',icon:'✧',text:'Basic celestial projectile.'},...skills].map((k,i) => `<li class="${k.ultimate ? 'ult' : ''}"><button type="button" data-k="mability${i}" title="${esc(k.text)}"><span aria-hidden="true">${esc(k.icon)}</span> ${esc(k.name)}${k.cooldownMs!=null?'<small class="sbw-myth-cooldown">'+k.cooldownMs/1000+'s testing cooldown</small>':''}</button></li>`).join('')}</ul><small class="sbw-myth-auto">All four rotate on melee or ranged attacks · Skill VFX add no damage or chakra cost</small></div>`;
+  }
+  function mythicAbility(index) {
+    const mh=window.MythicHero;if(!mh?.animationSource)return;
+    const basic=[{name:'Melee Attack',state:'ATTACK',text:'Basic purple crescent slash.'},{name:'Ranged Attack',state:'RANGED_ATTACK',text:'Basic celestial projectile.'}],skill=mh.skills[index-2];
+    const item=basic[index]||skill,definition=skill&&window.MythicAutomaticSkills.definitions[skill.key],state=basic[index]?.state||definition?.state;
+    if(!item||!state)return;
+    if(!dlg)dlg=mk('dialog','sbw-dialog',document.body);dlg.onclick=null;dlg.classList.add('sbw-myth-preview');
+    const cd=definition&&mh.automaticSkills?.rules[skill.key]?.cooldownMs;
+    dlg.innerHTML=`<h2>${esc(item.name)}</h2><p>${definition?.ultimate?'Ultimate':definition?'Signature skill':'Basic attack'} · Automatic activation</p><canvas width="420" height="260" aria-label="Cosmetic animation preview"></canvas><p>${esc(item.text)}</p><p>${definition?cd==null?'Extra skill cooldown: pending balance approval. Native attack timing applies.':'Beta testing cooldown: '+cd/1000+'s. Native attacks continue while it recharges.':'Uses native attack timing.'}</p><p>1 Attack = Hero Power Damage = 1 Chakra<br>Skill VFX = 0 Additional Chakra</p><small>Cosmetic preview only. No attacks, chakra use or rewards.</small><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`;
+    const canvas=$('canvas',dlg),c=canvas.getContext('2d'),hero={id:'mythic-menu-preview',r:5},start=performance.now();let frame;
+    const paint=time=>{if(!dlg.open||!canvas.isConnected)return;const clip=mh.animationSource.states[state],elapsed=(time-start)%(clip.durationMs+500),t=Math.min(.999,elapsed/clip.durationMs);c.clearRect(0,0,420,260);c.fillStyle='#100923';c.fillRect(0,0,420,260);const body=mh.renderFrame(hero,state,Math.floor(t*clip.frames),'front');ShinobiSprites.blit(c,body,210,235,3.5,false,1);if(skill)c.drawImage(mh.skillFrame(skill.key,Math.floor(t*definition.frames)),95,0,230,230);frame=requestAnimationFrame(paint)};
+    const close=()=>{cancelAnimationFrame(frame);dlg.classList.remove('sbw-myth-preview')};dlg.onclose=close;$('.sbw-btn',dlg).onclick=()=>dlg.close();dlg.showModal();mh.preload().then(()=>{if(dlg.open)frame=requestAnimationFrame(paint)}).catch(()=>{});
   }
   function heroPageButton(previous) { return document.querySelector('#p1 .heroes-pagination button[aria-label="' + (previous ? 'Previous page' : 'Next page') + '"]'); }
   INIT.heroes = b => {
@@ -720,7 +743,7 @@
     return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
       <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
       <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}${h.referralBound ? '<b class="sbw-bound" title="Referral-bound hero: cannot be listed, sold or transferred">🔒</b>' : ''}</div>
-      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Slash' : c.attack || c.style)}</span></div>
+      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? '4 automatic skills' : c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
       <div class="sbw-hc-ch"><span>CHAKRA</span><span>${esc(c.ch.replace(/\s/g, ' '))}</span></div><div class="sbw-bar"><i style="width:${pct}%"></i></div>
       <div class="sbw-hc-btns">${btn('tog', c.tog ? c.tog.textContent.trim().replace(/^Reserve$/, 'In Reserve') : 'Deploy hero', c.status === 'DEPLOYED' ? 'rest' : 'deploy', !c.tog || c.tog.disabled)}${btn('mode', c.mode ? c.mode.textContent.trim() : '—', 'mode', !c.mode || c.mode.disabled)}</div></div>`;
@@ -734,7 +757,7 @@
     const pageSelect = root.querySelector('.heroes-page-select'); setText(b.page, pageSelect?.selectedOptions[0]?.textContent || '1 / 1');
     for (const id of ['pp', 'pn']) { const e = $(`.hs[data-sbwid="${id}"]`, b.st), button = heroPageButton(id === 'pp'); if (e) { const disabled = !button || button.disabled; e.setAttribute('aria-disabled', String(disabled)); e.classList.toggle('dim', disabled); } }
     if (b.sel >= cards.length) b.sel = 0;
-    const sig = cards.map(c => [c.idx, c.status, c.lvl, c.ch, c.pw, c.tog && c.tog.textContent, c.up && c.up.textContent, c.mode && c.mode.textContent].join(',')).join('|') + '#' + b.sel;
+    const sig = cards.map(c => [c.idx, c.status, c.lvl, c.pw, c.tog && c.tog.textContent, c.up && c.up.textContent, c.mode && c.mode.textContent].join(',')).join('|') + '#' + b.sel;
     if (sig !== b.sig) {
       b.sig = sig;
       // Chakra/status updates replace text and controls, but an unchanged model
@@ -746,7 +769,7 @@
     }
     $$('.sbw-hcard canvas', b.grid).forEach(c => { const card = cards[+c.dataset.i]; drawHero(c, card && card.h, 2.7, now, 2); });
     const c = cards[b.sel];
-    const dsig = c ? [c.idx, c.lvl, c.ch, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint].join(',') : 'none';
+    const dsig = c ? [c.idx, c.lvl, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint,ledger().profile?.upgradeShards].join(',') : 'none';
     if (dsig !== b.dsig) {
       b.dsig = dsig;
       const portrait = $('.sbw-h2-port canvas', b.det);
@@ -759,13 +782,14 @@
         b.det.innerHTML = `<div class="sbw-h2" style="--rc:${RCOL[r]}">
           <div class="sbw-h2-top"><div><h3 data-fs="23">${esc(c.name)}</h3><p>Lv. ${esc(lv)} / ${esc(lvMax || '5')}<em>${esc(c.status)}</em></p></div><i class="sbw-h2-rank">${esc(RNAME[r].toUpperCase())}</i></div>
           ${r === 5 ? mythicBlock(h) : `<div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>`}${h.referralBound ? BOUND_NOTE : ''}
-          <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + (r + 1))}</div>
+          <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + CombatRules.perkCount(r))}</div>
             <div class="sbw-h2-port"><canvas width="292" height="344"></canvas></div></div>
           <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
+          <div class="sbw-shard-balance" title="Account-bound items for hero training"><span>UPGRADE SHARDS</span><b>${ledger().profile?.upgradeShards || 0}</b></div>
           <h4>PERKS</h4>
           <ul class="sbw-perks2">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
           <div class="sbw-h2-btns">
-            <button type="button" class="sbw-xbtn train${maxed ? ' max' : ''}" data-k="train" ${c.up && !c.up.disabled ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MAX LEVEL' : 'TRAIN'}</b><small>${maxed ? 'Fully trained' : price ? '<i class="coin"></i>' + esc(price) : 'Level ' + esc(lv) + ' → ' + (Number(lv) + 1)}</small></span></button>
+            <button type="button" class="sbw-xbtn train${maxed ? ' max' : ''}" data-k="train" ${h.tokenId && account() ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MANAGE' : 'TRAIN'}</b><small>${maxed ? 'Max level' : esc(price || 'Upgrade hero')} · ${HeroUpgradeRules.shards(r)} shards</small></span></button>
             ${r === 5 ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>◈</i><span><b>NFT ONLY</b><small>Trade the box NFT</small></span></button>' : h.referralBound ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>🔒</i><span><b>BOUND</b><small>Cannot be sold</small></span></button>' : `<button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>`}
           </div></div>`;
         const n = $('h3', b.det); if (n) fitText(n);
@@ -774,9 +798,20 @@
         else fresh.dataset.sbwHero = String(h.id);
       }
     }
+    // Energy changes in place so active combat cannot detach focused controls or reset phone scroll.
+    const energy = (el, row, selector) => {
+      if (!el || !row) return;
+      const [value, max] = (row.ch || '0/1').split('/').map(x => +x.trim() || 0);
+      const label = $(selector, el), fill = $('.sbw-bar i', el);
+      if (label) setText(label, value + ' / ' + max);
+      if (fill) fill.style.width = Math.max(0, Math.min(100, max ? value / max * 100 : 0)) + '%';
+    };
+    $$('.sbw-hcard', b.grid).forEach(el => energy(el, cards[+el.dataset.i], '.sbw-hc-ch span:last-child'));
+    energy(b.det, c, '.sbw-h2-ch span:last-child');
     drawCentered($('.sbw-h2-port canvas', b.det), c && c.h, now, 6);
   };
   MODS.heroes = {
+    mability0:()=>mythicAbility(0),mability1:()=>mythicAbility(1),mability2:()=>mythicAbility(2),mability3:()=>mythicAbility(3),mability4:()=>mythicAbility(4),mability5:()=>mythicAbility(5),
     tab: a => { const v = HF[+a]; if (v != null) window.HeroFilters && HeroFilters.choose(v); built.heroes.sel = 0; built.heroes.sig = ''; },
     search: () => { const inp = document.querySelector('#p1 .heroes-search'); if (!inp) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.onclick = null; dlg.innerHTML = '<h2>Search heroes</h2><form><input type="search" placeholder="Hero name"><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt">Clear</button><button class="sbw-btn">Search</button></div></form>'; const q = $('input', dlg); q.value = inp.value; const run = v => { inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); built.heroes.sig = ''; dlg.close(); }; $('.sbw-alt', dlg).onclick = () => run(''); $('form', dlg).onsubmit = e => { e.preventDefault(); run(q.value); }; dlg.showModal(); q.focus(); },
     sort: () => { const s = document.querySelector('#p1 .heroes-sort'); if (!s) return; s.selectedIndex = (s.selectedIndex + 1) % s.options.length; s.dispatchEvent(new Event('change', { bubbles: true })); toast('Sort: ' + s.options[s.selectedIndex].text); built.heroes.sig = ''; },
@@ -785,7 +820,7 @@
     sel: a => { built.heroes.sel = +a; built.heroes.sig = ''; },
     fav: () => toast('Favourites are not available yet.'),
     dtab: a => { built.heroes.dt = +a; built.heroes.dsig = ''; for (let i = 0; i < 4; i++) { const e = $(`.hs[data-sbwid="dt${i}"]`, built.heroes.st); if (e) e.classList.toggle('on2', i === +a); } },
-    train: () => { const c = heroCards()[built.heroes.sel]; if (c && c.up && !c.up.disabled) c.up.click(); else toast('Training is not available for this hero right now.'); },
+    train: () => { const c = heroCards()[built.heroes.sel]; if (c?.h?.tokenId && window.HeroUpgrades) HeroUpgrades.open(c.h.tokenId); else toast('Choose an owned hero.'); },
     sell: () => { const c = heroCards()[built.heroes.sel]; if (c?.h?.referralBound) return toast('Referral-bound heroes cannot be listed, sold or transferred.'); if (c && c.list && !c.list.disabled) c.list.click(); else toast('This hero cannot be listed right now.'); },
     maura: () => { const MH = window.MythicHero; if (!MH) return; MH.setAura(!MH.auraEnabled); toast('Mythic aura ' + (MH.auraEnabled ? 'on' : 'off')); built.heroes.dsig = ''; },
     mcheck: async () => { if (!window.RyoPayments?.mythic) return toast('Sign in to check your NFT.'); try { const r = await RyoPayments.mythic(); const n = r?.mythic?.mints?.length || 0; toast(r?.mythic?.enabled === false ? 'The Mythic NFT check opens at launch.' : n ? 'NFT verified · ' + n + ' Mythic hero' + (n === 1 ? '' : 'es') : 'No Mythic box NFT found in this wallet.'); } catch (e) { toast(e.message || 'NFT check failed. Try again shortly.'); } built.heroes.sig = built.heroes.dsig = ''; },
@@ -836,7 +871,7 @@
       if (e.dataset.k !== k) {
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
         e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
-        e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">✦ ${esc(RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
+        e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${esc(h.r===5?'MYTHIC':RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
         if (keep && e.dataset.sbwHero === String(h.id)) e.querySelector('canvas').replaceWith(keep);
         e.dataset.sbwHero = String(h.id);
       }
@@ -1083,25 +1118,25 @@
 
   /* ---------- Boss Hunt (game page 8): paid daily damage rankings ---------- */
   // Each hunt costs 10,000 Ryo (80% to today's prize pool, 10% treasury, 10% burned) and is a 60-second damage run
-  // by the 5 strongest battle-ready heroes; no chakra is used. Total damage per UTC day ranks the
+  // by up to 5 battle-ready heroes with chakra. Total damage per UTC day ranks the
   // players, and the top 10 share the pool when the day ends (boss-hunt.cjs on the server). Daily places
   // also earn weekly points (1st 10 … 10th 1): the week's top 3 win a Legend hero and 4th–10th an Elite. The
   // artwork keeps its title and frames; every panel inside them is live HTML.
   const GUARD = ['Akuma · Fallen Shinobi', 'Yuki Onna · Frozen Moon', 'Raijin · Thunder Lord', 'Daichi · Ancient Golem', 'Orochi · Serpent King'];
   const BH = { board: null, at: 0, busy: false, error: '', pending: null, active: null, last: null, timer: 0 };
   const ORD = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
-  const huntTeam = () => { try { return BattleRoster.list().slice().sort((a, c) => c.pw - a.pw).slice(0, 5); } catch { return []; } };
+  const huntTeam = () => { try { return BattleRoster.list().filter(h => h.en >= 1).sort((a, c) => c.pw - a.pw).slice(0, 5); } catch { return []; } };
   const dur = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm'; };
   async function huntLoad() {
     if (!account() || !window.RyoPayments?.hunt || BH.busy) return;
     BH.busy = true;
-    try { BH.board = (await RyoPayments.hunt('hunt-board')).hunt; BH.error = ''; BH.at = Date.now(); }
+    try { BH.board = (await RyoPayments.hunt('hunt-board')).hunt; if (BH.board?.open && !BH.active) BH.pending = { id: BH.board.open.id, pending: true }; BH.error = ''; BH.at = Date.now(); }
     catch (e) { BH.error = e.message || 'Boss Hunt is unavailable right now.'; BH.at = Date.now(); }
     finally { BH.busy = false; if (built['boss-hunt']) built['boss-hunt'].sig = ''; }
   }
   function huntReport(final) {
     const a = BH.active, s = window.V2?.bossState?.(); if (!a || !s) return Promise.resolve();
-    return RyoPayments.hunt('hunt-report', { entryId: a.id, damage: Math.round(s.damage || 0) }).catch(() => {}).then(r => { if (final) { BH.active = null; huntLoad(); } return r; });
+    return RyoPayments.hunt('hunt-report', { entryId: a.id, damage: Math.round(s.damage || 0), finish: !!final }).then(r => { if (final) { if (BH.last) BH.last.damage = r.damage; window.CombatClient?.reconcile(r); BH.active = null; huntLoad(); } return r; }).catch(e => { BH.error = e.message || 'The hunt report is waiting for a connection.'; });
   }
   // Bridge used by the game's startBoss/endHunt hooks (apply-boss-hunt.cjs).
   window.BossHunt = {
@@ -1121,12 +1156,12 @@
     b.ranks = cv(b, 30, 892, 966, 110, 'sbw-bh-ranks');
     b.team = cv(b, 1020, 200, 488, 678, 'sbw-bh-team');
     b.mine = cv(b, 1020, 890, 488, 110, 'sbw-bh-mine');
-    b.team.innerHTML = `<h3>⚔ PREPARE YOUR TEAM</h3><p class="bh-note">Your 5 strongest battle-ready heroes fight. No chakra is used.</p>
+    b.team.innerHTML = `<h3>⚔ PREPARE YOUR TEAM</h3><p class="bh-note">Up to 5 rested battle-ready heroes fight. Each attack deals Power damage and costs 1 chakra.</p>
       <div class="bh-fee"><span>ENTRANCE FEE</span><b><i class="coin"></i>10,000 Ryo</b><small>8,000 prize pool · 1,000 treasury · 1,000 burned</small></div>
       <div class="bh-label"><b>Hunt team</b><span class="bh-count"></span></div><div class="bh-tiles"></div>
       <button type="button" class="sbw-mbtn bh-auto" data-act="auto">⟳ Auto-select strongest 5</button>
       <button type="button" class="sbw-mbtn buy bh-go" data-act="go">CHALLENGE · 10,000 Ryo</button><button type="button" class="sbw-mbtn ghost bh-stop" data-act="stop" hidden>End hunt now</button>
-      <ul class="bh-rules"><li>⏱ 60-second damage run · Adventure keeps going</li><li>✦ No chakra needed · every volley fires</li><li>🏆 Top 10 by total damage today share the prize pool</li><li>👑 Weekly top 3 win a Legend hero · 4th–10th an Elite</li><li>🕛 Prizes are paid at 00:00 UTC to your Ryo balance</li></ul>`;
+      <ul class="bh-rules"><li>⏱ 60-second run · other heroes can continue Adventure</li><li>1 Attack = Hero Power Damage = 1 Chakra</li><li>Skill VFX = 0 Additional Chakra</li><li>🏆 Top 10 by total damage today share the prize pool</li><li>👑 Weekly top 3 win a Legend hero · 4th–10th an Elite</li><li>🕛 Prizes are paid at 00:00 UTC to your Ryo balance</li></ul>`;
     b.tiles = Array.from({ length: 5 }, () => mk('div', 'bh-tile', $('.bh-tiles', b.team)));
     b.team.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (!a || a.disabled) return; ({ auto: huntAuto, go: huntChallenge, stop: () => window.V2?.retreat?.() })[a.dataset.act]?.(); });
     b.ranks.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && !a.disabled) huntRankings(a.dataset.act); });
@@ -1139,18 +1174,26 @@
     if (!account()) return notice('Boss Hunt', 'Sign in with your wallet to enter the Boss Hunt.');
     if (window.V2?.isBossActive?.()) return toast('A hunt is already running.');
     if (S?.v2?.revealBatch?.length) return toast('Finish your card reveal first.');
-    const team = huntTeam(); if (!team.length) return notice('Boss Hunt', 'Make at least one hero battle-ready in Heroes first.');
+    if (BH.pending?.id) return resumeHunt(BH.pending.id).catch(e => notice('Boss Hunt', e.message));
+    const team = huntTeam(); if (!team.length) return notice('Boss Hunt', 'Rest at least one battle-ready hero until it has 1 chakra.');
     const bal = spendable(), g = BH.board ? BH.board.guardianName : GUARD[0];
     const d = confirmDialog('Enter today\'s Boss Hunt?', `<p>Fight <b>${esc(g)}</b> for 60 seconds with ${team.map(h => esc(h.name.split(' ')[0])).join(', ')}.</p>
       <p class="sbw-mbuyline">Entrance fee <b>10,000 Ryo</b><br><span class="sbw-small">8,000 prize pool · 1,000 treasury · 1,000 burned · your balance after: ${fmt(bal - 10000)} Ryo</span></p>
       ${bal < 10000 ? '<p class="sbw-small sbw-warn">Not enough Ryo. Deposit Ryo from your Chest first.</p>' : ''}`, 'Pay 10,000 Ryo & start', async () => {
       const data = await RyoPayments.hunt('hunt-enter', { requestId: crypto.randomUUID(), name: (gs() && gs().nick) || '' });
       if (data.hunt) BH.board = data.hunt;
-      BH.pending = data.entry; go(8); V2.startBoss();
-      if (!V2.isBossActive()) { BH.pending = null; throw Error('The hunt could not start. Your entry still counts for today; contact support if this repeats.'); }
-      clearInterval(BH.timer); BH.timer = setInterval(() => { if (V2.isBossActive()) huntReport(false); else clearInterval(BH.timer); }, 10000);
+      BH.pending = data.entry; await resumeHunt(data.entry.id, data.entry);
     }, 'sbw-hunt');
     if (bal < 10000) $('[data-k="go"]', d).disabled = true;
+  }
+  async function resumeHunt(id, entry) {
+    entry = entry && !entry.pending ? entry : (await RyoPayments.hunt('hunt-ready', { entryId: id })).entry;
+    if (entry.refunded) { BH.pending = null; throw Error('The entry payment was refunded.'); }
+    BH.pending = entry;
+    if (entry.pending) { toast('Entry payment is pending. Press Challenge to check the same entry; no second fee is charged.'); return; }
+    go(8); V2.startBoss();
+    if (!V2.isBossActive()) throw Error('Your paid entry is ready. Press Challenge to resume.');
+    clearInterval(BH.timer); BH.timer = setInterval(() => { if (V2.isBossActive()) huntReport(false); else clearInterval(BH.timer); }, 10000);
   }
   // Rankings pop-ups: Daily (today's damage standings + the previous day's winners) and Weekly
   // (this week's points standings + last week's winners).
@@ -1220,10 +1263,13 @@
   MODS['boss-hunt'] = { challenge: () => huntChallenge(), team: () => huntAuto(), ranking: () => huntRankings(), bossinfo: () => {}, locked: () => {} };
 
   /* ---------- Guild and Chat: previews (no backend yet) ---------- */
-  ['guild', 'chat'].forEach(k => {
-    INIT[k] = b => { const r = mk('div', 'sbw-preview', b.sec); r.innerHTML = k === 'guild' ? '<b>PREVIEW</b> Guilds are not available yet — this screen shows example artwork, not real players or data.' : '<b>PREVIEW</b> This screen shows example artwork. Live Global chat opens from the chat bar on Home.'; b.previewNotice = r; };
-    MODS[k] = new Proxy({}, { get: () => () => notice(k === 'guild' ? 'Guild' : 'Chat', k === 'guild' ? 'Guilds are not available yet. This screen is a preview of the design.' : 'This screen is a preview of the design. Open live Global chat from the chat bar on Home.') });
+  ['guild'].forEach(k => {
+    INIT[k] = b => { const r = mk('div', 'sbw-preview', b.sec); r.innerHTML = '<b>PREVIEW</b> Guilds are not available yet — this screen shows example artwork, not real players or data.'; b.previewNotice = r; };
+    MODS[k] = new Proxy({}, { get: () => () => notice('Guild', 'Guilds are not available yet. This screen is a preview of the design.') });
   });
+  // The Chat screen is real DOM (see "Chat screen" below), not artwork.
+  INIT.chat = b => initChatScreen(b);
+  MODS.chat = {};
 
   /* ---------- the shared header (identical on every menu; fixed at the top) ---------- */
   let HDR = null;
@@ -1323,8 +1369,7 @@
       { parts: [[862, 462, 1110, 650], [1300, 462, 1592, 650]] }, [842, 662, 1600, 830, { fit: 1 }], [72, 138, 806, 842, { fit: 1 }]],
     market: [[60, 120, 500, 235, { fit: 1 }], { flow: '.sbw-mbar' }, { flow: '.sbw-mgrid', zoom: 0.85, cols: 2 }, { flow: '.sbw-mpages' }, { flow: '.sbw-mdet' }],
     'boss-hunt': [[20, 108, 660, 192, { fit: 1 }], { flow: '.sbw-bh-head' }, { flow: '.sbw-bh-arena' }, { flow: '.sbw-bh-team' }, { flow: '.sbw-bh-prize' }, { flow: '.sbw-bh-ranks' }, { flow: '.sbw-bh-mine' }, { flow: '.sbw-bh-sched' }],
-    codex: [[20, 108, 960, 200, { fit: 1 }], [20, 208, 292, 726], [305, 210, 1205, 724, { pan: 0.7 }], [1215, 210, 1652, 420], [1215, 425, 1652, 666], [1215, 672, 1652, 906],
-      [305, 728, 1205, 906, { pan: 0.7 }]],
+    codex: [[20, 108, 960, 200, { fit: 1 }], [20, 208, 292, 726], { flow: '.cxp' }, [1215, 210, 1652, 420], [1215, 425, 1652, 666], [1215, 672, 1652, 906]],
     guild: [[208, 205, 978, 524, { pan: 0.7 }], [988, 205, 1515, 524], [208, 530, 978, 706, { pan: 0.7 }], [988, 530, 1515, 706], [25, 712, 506, 1002], [515, 712, 1026, 1002, { pan: 0.7 }],
       [1035, 712, 1513, 1002], [25, 160, 200, 652]],
   };
@@ -1349,7 +1394,7 @@
     const moreBtn = mk('button', 'sbw-ph-item sbw-ph-morebtn', nav); moreBtn.type = 'button'; moreBtn.setAttribute('aria-expanded', 'false'); moreBtn.innerHTML = '<i class="dots">•••</i><span>More</span>';
     const sheet = mk('div', 'sbw-ph-sheet', more); const head = mk('p', 'sbw-ph-sheethead', sheet); head.innerHTML = 'More <small>Players online: <b>—</b></small>';
     const grid = mk('div', 'sbw-ph-grid', sheet); for (const [k, id, label] of PHONE_MORE) items[k] = item(k, id, label, grid);
-    const chat = mk('button', 'sbw-ph-item', grid); chat.type = 'button'; chat.innerHTML = '<i class="dots">💬</i><span>Chat</span>'; chat.addEventListener('click', () => { more.hidden = true; goScreen('home'); setTimeout(() => toggleChat(true), 50); });
+    const chat = mk('button', 'sbw-ph-item', grid); chat.type = 'button'; chat.innerHTML = '<i class="dots">💬</i><span>Chat</span>'; chat.addEventListener('click', () => { more.hidden = true; goScreen('chat'); });
     const setMore = open => { more.hidden = !open; moreBtn.setAttribute('aria-expanded', String(open)); };
     moreBtn.addEventListener('click', () => setMore(more.hidden)); more.addEventListener('click', e => { if (e.target === more) setMore(false); });
     addEventListener('keydown', e => { if (e.key === 'Escape' && !more.hidden) setMore(false); });
@@ -1438,6 +1483,7 @@
   function fit() {
     geometryRevision++;
     const b = cur && built[cur]; if (!b) return;
+    if (b.chatRoot) { fitChatScreen(b); return; }
     if (isPhone()) {
       try { layoutPhone(b); placeTrigger(); placeChat(); return; }
       // Never leave a phone on raw full-size artwork: fall back to the fitted desktop layout.
@@ -1540,24 +1586,25 @@
     addMessages(chatMsgs, list); chatAfter = chatMsgs.at(-1)?.id || chatAfter;
     if (system) {
       // Announcements already present at first load are history, not new.
-      if (addMessages(sysMsgs, system) && sysPrimed && !(chatPop && !chatPop.hidden && chatTab === 'System')) sysUnread = true;
+      if (addMessages(sysMsgs, system) && sysPrimed && !(chatPop && !chatPop.hidden && chatTab === 'System') && !(cur === 'chat' && csTab === 'System')) sysUnread = true;
       sysAfter = sysMsgs.at(-1)?.id || sysAfter; sysPrimed = true;
     }
-    renderChat(); refresh();
+    renderChat(); renderChatScreen(); refresh();
   }
   async function pollChat() {
-    clearTimeout(chatTimer); const open = !!chatPop && !chatPop.hidden;
-    if (!chatFetching && chatReady() && !document.hidden && (open || cur === 'home')) {
+    clearTimeout(chatTimer); const open = !!chatPop && !chatPop.hidden, onScreen = cur === 'chat';
+    if (!chatFetching && chatReady() && !document.hidden && (open || onScreen || cur === 'home')) {
       chatFetching = true;
       try {
         if (RyoPayments.state.account !== chatOwner) mergeChat([]);
         const feed = await RyoPayments.chat('chat-list', { channel: 'global', after: chatAfter, systemAfter: sysAfter });
         mergeChat(feed.messages, feed.system);
         if (open && !chatSending && $('.sbw-cp-note', chatPop).classList.contains('sbw-cp-error')) chatNote('');
-      } catch { if (open) chatNote('Chat is temporarily unavailable. Retrying…', true); }
+        if (onScreen && !chatSending) csNote('');
+      } catch { if (open) chatNote('Chat is temporarily unavailable. Retrying…', true); if (onScreen) csNote('Chat is temporarily unavailable. Retrying…', true); }
       finally { chatFetching = false; }
     }
-    chatTimer = setTimeout(pollChat, chatPop && !chatPop.hidden ? 3000 : 20000);
+    chatTimer = setTimeout(pollChat, (chatPop && !chatPop.hidden) || cur === 'chat' ? 3000 : 20000);
   }
   async function sendChat(e) {
     e.preventDefault(); const input = $('input', chatPop), text = input.value.trim();
@@ -1573,12 +1620,13 @@
   function toggleChat(open) {
     if (!chatPop) {
       chatPop = mk('div', 'sbw-chatpop', layer); chatPop.hidden = true; chatPop.setAttribute('role', 'dialog'); chatPop.setAttribute('aria-label', 'Global chat');
-      chatPop.innerHTML = `<div class="sbw-cp-head"><b>💬 GLOBAL CHAT</b><div class="sbw-cp-tabs" role="tablist">${['Global', 'Guild', 'System'].map((t, i) => `<button type="button" role="tab" aria-selected="${!i}">${t}</button>`).join('')}</div><button type="button" class="sbw-cp-x" aria-label="Close chat">✕</button></div>
+      chatPop.innerHTML = `<div class="sbw-cp-head"><b>💬 GLOBAL CHAT</b><div class="sbw-cp-tabs" role="tablist">${['Global', 'Guild', 'System'].map((t, i) => `<button type="button" role="tab" aria-selected="${!i}">${t}</button>`).join('')}</div><button type="button" class="sbw-cp-full" aria-label="Open full chat screen" title="Open full chat">⤢</button><button type="button" class="sbw-cp-x" aria-label="Close chat">✕</button></div>
         <div class="sbw-cp-log" role="log" aria-live="polite"></div>
         <p class="sbw-cp-note" role="status"></p>
         <form class="sbw-cp-in"><input type="text" maxlength="200" autocomplete="off" aria-label="Message"><small class="sbw-cp-count">0 / 200</small><button type="submit">Send</button></form>
         <p class="sbw-cp-rules">Be kind. Links are blocked, and the team never messages you first about wallets or trades.</p>`;
       $('.sbw-cp-x', chatPop).onclick = () => toggleChat(false);
+      $('.sbw-cp-full', chatPop).onclick = () => { toggleChat(false); goScreen('chat'); };
       $('form', chatPop).onsubmit = sendChat;
       $('input', chatPop).addEventListener('input', updateCount);
       $$('[role="tab"]', chatPop).forEach(tab => tab.onclick = () => { chatTab = tab.textContent; $$('[role="tab"]', chatPop).forEach(t => t.setAttribute('aria-selected', String(t === tab))); renderChat(); });
@@ -1601,12 +1649,135 @@
     if (!r || above >= 260) { s.top = ''; s.bottom = (r ? innerHeight - r.top + 8 : 16) + 'px'; s.maxHeight = Math.min(420, above) + 'px'; }
     else { s.bottom = ''; s.top = (r.bottom + 8) + 'px'; s.maxHeight = Math.min(420, innerHeight - r.bottom - 24) + 'px'; }
   }
+  /* ---------- Chat screen (real DOM; Global + System are live, the rest is marked placeholder) ---------- */
+  // LIVE: Global send/receive and System announcements (shared data layer with the Home pop-up above).
+  // PLACEHOLDER: other channels, announcement cards, Online Ninjas, My Guild, Quick Actions, levels, avatars.
+  // TODO(backend): bind each placeholder block to real data when its endpoint exists (see plan notes).
+  const CS_CHANNELS = [['Global', '🌐'], ['Guild', '🔖'], ['Team', '👥'], ['Direct Messages', '✉️'], ['Trade', '⚖️'], ['System', '⚙️'], ['Event', '📅'], ['Help', '❓']];
+  const CS_SOON = { Guild: 'Guild chat opens when guilds launch.', Team: 'Team chat opens with parties.', 'Direct Messages': 'Direct messages are coming soon.', Trade: 'Trade chat is coming soon.', Event: 'Event chat is coming soon.' };
+  const CS_HELP = ['Be kind to fellow shinobi.', 'Links are blocked and messages are limited to 200 characters.', 'You can send one message every 2 seconds.', 'The team never messages you first about wallets or trades.'];
+  const CS_ANN = [['🎁', 'Weekend Boost Event!', 'Increased drop rates and rewards!', '3d 12h 45m', 'gold'], ['⚔️', 'Guild War Sign-Up!', 'Register your guild by Jan 28!', '1d 18h 30m', 'cyan'], ['⚙️', 'Maintenance Notice', 'Server maintenance on Jan 27, 03:00 – 05:00 (UTC).', '', 'purple']];
+  const CS_NINJAS = [['NinjaMaster', 68, '🏯 In Dojo', 'ok'], ['ShadowKage', 72, '⚔️ Boss Hunt', 'warn'], ['RyoSenpai', 70, '🏪 In Market', 'ok'], ['KuroFox', 75, '🌿 In Adventure', 'ok'], ['EmberLeaf', 65, '💤 Idle', 'idle']];
+  const CS_EMOJI = ['😀', '😂', '😎', '🔥', '⚔️', '💥', '🍃', '🌸', '👍', '🙏', '🎉', '💎'];
+  let csTab = 'Global';
+  const csHue = n => { let h = 0; for (const c of n) h = (h * 31 + c.codePointAt(0)) % 360; return h; };
+  function csAvatar(parent, name, cls) { const a = mk('span', 'sbw-cs-av' + (cls ? ' ' + cls : ''), parent); a.textContent = ([...name][0] || '?').toUpperCase(); a.style.setProperty('--h', csHue(name)); a.setAttribute('aria-hidden', 'true'); return a; }
+  function csNote(text, isError = false) { const b = built.chat, n = b && b.cs && b.cs.note; if (!n) return; n.textContent = text; n.classList.toggle('sbw-cs-error', isError); n.setAttribute('role', isError ? 'alert' : 'status'); }
+  function csCount() { const b = built.chat; b.cs.count.textContent = [...b.cs.input.value].length + ' / 200'; }
+  function csTime(parent, created) { const d = new Date(created), t = mk('time', '', parent); t.dateTime = d.toISOString(); t.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+  function initChatScreen(b) {
+    b.st.replaceChildren(); b.st.style.display = 'none';          // drop the artwork + stub hotspots
+    const r = mk('div', 'sbw-chat', b.sec); b.chatRoot = r;
+    r.innerHTML = `
+      <div class="sbw-cs-bg" aria-hidden="true"></div>
+      <div class="sbw-cs-top"><h2>CHAT</h2><p>Chat, coordinate, and connect with fellow shinobi.</p>
+        <button type="button" class="sbw-cs-social-btn" aria-expanded="false" aria-controls="sbwCsSide">👥 Social</button></div>
+      <nav class="sbw-cs-left sbw-cs-panel" aria-label="Chat channels"><h3>💬 CHAT CHANNELS</h3><div class="sbw-cs-tabs" role="tablist" aria-orientation="vertical"></div></nav>
+      <section class="sbw-cs-main sbw-cs-panel" aria-label="Chat">
+        <header class="sbw-cs-head"><h3><span class="sbw-cs-title">GLOBAL CHAT</span></h3><span class="sbw-cs-online">👥 <b>—</b> online</span>
+          <select class="sbw-cs-pick" aria-label="Channel">${CS_CHANNELS.map(([n]) => `<option>${n}</option>`).join('')}</select></header>
+        <div class="sbw-cs-ann">${CS_ANN.map(([i, t, d, c, k]) => `<article class="sbw-cs-card ${k}"><i aria-hidden="true">${i}</i><div><b></b><span></span>${c ? '<em>⏱ </em>' : ''}</div></article>`).join('')}</div>
+        <div class="sbw-cs-log" role="log" aria-live="polite" tabindex="0" aria-label="Messages"></div>
+        <p class="sbw-cs-note" role="status"></p>
+        <form class="sbw-cs-form">
+          <select class="sbw-cs-ch2" aria-label="Send to channel"><option>Global</option></select>
+          <span class="sbw-cs-emoji-wrap"><button type="button" class="sbw-cs-ico sbw-cs-emoji" aria-label="Emoji" aria-expanded="false">😊</button><span class="sbw-cs-emoji-pop" hidden></span></span>
+          <button type="button" class="sbw-cs-ico sbw-cs-sticker" aria-label="Stickers (coming soon)">🎭</button>
+          <button type="button" class="sbw-cs-ico" aria-label="Attach (coming soon)" disabled title="Attachments are not supported yet">📎</button>
+          <input type="text" maxlength="200" autocomplete="off" aria-label="Message"><small class="sbw-cs-count">0 / 200</small>
+          <button type="submit" class="sbw-cs-send">➤ Send</button></form>
+      </section>
+      <aside class="sbw-cs-side" id="sbwCsSide" aria-label="Social">
+        <section class="sbw-cs-panel"><h3>👥 ONLINE NINJAS <span class="sbw-cs-tag">Preview data</span><button type="button" class="sbw-cs-link" data-soon="Full online-player list">View All ›</button></h3><ul class="sbw-cs-ninjas"></ul></section>
+        <section class="sbw-cs-panel sbw-cs-guild"><h3>🔖 MY GUILD <span class="sbw-cs-tag">Preview</span></h3><div><span class="sbw-cs-crest" aria-hidden="true">忍</span><p><b>ShadowLegacy</b><small>Members: 48 / 50</small><small class="ok">● 12 online</small></p><button type="button" data-soon="Guild chat">💬 Guild Chat</button></div></section>
+        <section class="sbw-cs-panel"><h3>⚡ QUICK ACTIONS</h3><div class="sbw-cs-qa"><button type="button" data-soon="Create Party">➕ Create Party</button><button type="button" data-soon="Invite">✉️ Invite</button><button type="button" data-soon="Whisper">💬 Whisper</button><button type="button" data-soon="Report">⚠️ Report</button></div></section>
+      </aside>`;
+    // Announcement cards: text through textContent (static placeholder content).
+    $$('.sbw-cs-card', r).forEach((c, i) => { $('b', c).textContent = CS_ANN[i][1]; $('span', c).textContent = CS_ANN[i][2]; const em = $('em', c); if (em) em.append(CS_ANN[i][3]); });
+    const ul = $('.sbw-cs-ninjas', r);
+    for (const [n, lv, st, k] of CS_NINJAS) {
+      const li = mk('li', '', ul); csAvatar(li, n); const p = mk('p', '', li);
+      mk('b', '', p).textContent = n; mk('small', 'sbw-cs-lv', p).textContent = 'Lv. ' + lv; mk('small', 'sbw-cs-st ' + k, p).textContent = st;
+      const w = mk('button', 'sbw-cs-ico', li); w.type = 'button'; w.textContent = '💬'; w.setAttribute('aria-label', 'Whisper ' + n); w.dataset.soon = 'Whisper';
+    }
+    const tabs = $('.sbw-cs-tabs', r), pick = $('.sbw-cs-pick', r);
+    CS_CHANNELS.forEach(([n, ico]) => {
+      const t = mk('button', 'sbw-cs-tab', tabs); t.type = 'button'; t.setAttribute('role', 'tab'); t.dataset.ch = n;
+      mk('i', '', t).textContent = ico; mk('span', '', t).textContent = n; mk('em', 'sbw-cs-badge', t).hidden = true;
+    });
+    const setTab = n => { csTab = n; pick.value = n; if (n === 'System') sysUnread = false; renderChatScreen(); $('.sbw-cs-log', r).scrollTop = 1e9; };
+    tabs.addEventListener('click', e => { const t = e.target.closest('.sbw-cs-tab'); if (t) setTab(t.dataset.ch); });
+    tabs.addEventListener('keydown', e => {
+      const all = $$('.sbw-cs-tab', tabs), i = all.indexOf(document.activeElement); if (i < 0) return;
+      const d = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key]; if (!d) return;
+      e.preventDefault(); const n = all[(i + d + all.length) % all.length]; n.focus(); setTab(n.dataset.ch);
+    });
+    pick.onchange = () => setTab(pick.value);
+    const form = $('form', r), input = $('input', form), pop = $('.sbw-cs-emoji-pop', r), eb = $('.sbw-cs-emoji', r);
+    pop.replaceChildren(...CS_EMOJI.map(em => { const x = mk('button', '', null); x.type = 'button'; x.textContent = em; x.setAttribute('aria-label', 'Insert ' + em); x.onclick = () => { if (!input.disabled && [...input.value].length < 199) { input.value += em; csCount(); } input.focus(); }; return x; }));
+    eb.onclick = () => { pop.hidden = !pop.hidden; eb.setAttribute('aria-expanded', String(!pop.hidden)); };
+    r.addEventListener('keydown', e => { if (e.key === 'Escape' && !pop.hidden) { pop.hidden = true; eb.setAttribute('aria-expanded', 'false'); eb.focus(); } });
+    $('.sbw-cs-social-btn', r).onclick = e => { const o = r.classList.toggle('sbw-cs-social-open'); e.currentTarget.setAttribute('aria-expanded', String(o)); };
+    r.addEventListener('click', e => { const s = e.target.closest('[data-soon]'); if (s) notice(s.dataset.soon, 'This is a preview of the design. It opens when the feature launches.'); });
+    $('.sbw-cs-sticker', r).dataset.soon = 'Stickers';
+    input.addEventListener('input', csCount); form.onsubmit = csSend;
+    b.cs = { tabs, pick, log: $('.sbw-cs-log', r), note: $('.sbw-cs-note', r), input, send: $('.sbw-cs-send', r), count: $('.sbw-cs-count', r), title: $('.sbw-cs-title', r), online: $('.sbw-cs-online b', r), ch2: $('.sbw-cs-ch2', r) };
+    renderChatScreen();
+  }
+  function renderChatScreen() {
+    const b = built.chat, c = b && b.cs; if (!c || cur !== 'chat') return;
+    const log = c.log, stick = log.scrollHeight - log.scrollTop - log.clientHeight < 40, nodes = [];
+    const msg = (cls, who, text, created, from, mine) => {
+      const a = document.createElement('article'); a.className = 'sbw-cs-msg ' + cls + (mine ? ' mine' : '');
+      if (cls === 'sys') mk('span', 'sbw-cs-av sys', a).textContent = '⚙'; else csAvatar(a, who);
+      const h = mk('p', 'sbw-cs-mh', a); mk('b', '', h).textContent = who; if (from) mk('small', 'sbw-cs-lvb', h).textContent = from; if (created) csTime(h, created);
+      mk('p', 'sbw-cs-mt', a).textContent = text; return a;
+    };
+    if (csTab === 'Global') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of chatMsgs) nodes.push(msg('', m.name, m.text, m.created, m.from, m.mine)); }
+    else if (csTab === 'System') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of sysMsgs) { const n = msg('sys legend', '[System]', m.text, m.created); nodes.push(n); } }
+    else if (csTab === 'Help') for (const t of CS_HELP) nodes.push(msg('sys', '[Help]', t));
+    else { const p = document.createElement('p'); p.className = 'sbw-cs-empty'; p.textContent = CS_SOON[csTab]; nodes.push(p); }
+    log.replaceChildren(...nodes); if (stick) log.scrollTop = log.scrollHeight;
+    const ready = chatReady(), live = csTab === 'Global' && ready;
+    $$('.sbw-cs-tab', c.tabs).forEach(t => { const on = t.dataset.ch === csTab; t.classList.toggle('on', on); t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1;
+      const bd = $('.sbw-cs-badge', t); bd.hidden = !(t.dataset.ch === 'System' && sysUnread); bd.textContent = 'NEW'; });
+    c.title.textContent = csTab.toUpperCase() + ' CHAT'; c.pick.value = csTab; c.ch2.replaceChildren(new Option(csTab === 'Global' ? 'Global' : csTab));
+    c.input.disabled = !live; c.send.disabled = !live || chatSending;
+    c.input.placeholder = csTab !== 'Global' ? 'Switch to Global to chat' : ready ? 'Type your message…' : 'Sign in to chat';
+    const op = document.getElementById('onlinePlayers'); c.online.textContent = ((op && /\d[\d,]*/.exec(op.textContent)) || ['—'])[0];
+  }
+  async function csSend(e) {
+    e.preventDefault(); const c = built.chat.cs, text = c.input.value.trim();
+    if (!text || chatSending || !chatReady() || csTab !== 'Global') return;
+    chatSending = true; renderChatScreen();
+    try {
+      mergeChat((await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter })).messages);
+      c.input.value = ''; csNote(''); csCount();
+    } catch (err) { csNote(err.message || 'Message could not be sent.', true); }
+    finally { chatSending = false; renderChatScreen(); c.input.focus(); }
+  }
+  // Position the DOM screen under the shared header (desktop) or between the phone top bar and bottom nav.
+  function fitChatScreen(b) {
+    const r = b.chatRoot, vw = viewW(), vh = viewH();
+    b.sec.style.clipPath = 'none';
+    if (isPhone()) {
+      buildPhoneChrome(); layer.classList.add('sbw-phone'); document.body.classList.add('sbw-phone-ui'); markPhoneNav();
+      r.style.top = PH.top.offsetHeight + 'px'; r.style.bottom = PH.nav.offsetHeight + 'px';
+    } else {
+      try { leavePhone(); } catch (error) { console.error(error); }
+      const H = D.header, hs = HDR ? Math.min(vw / H.W, (vh * 0.14) / H.body) : 0;
+      if (HDR) { HDR.st.style.transform = `translate(${(vw - H.W * hs) / 2}px,0) scale(${hs})`; HDR.el.style.height = (107 * hs) + 'px'; }
+      r.style.top = (107 * hs) + 'px'; r.style.bottom = '0';
+    }
+    placeTrigger(); placeChat();
+  }
+
   function sync() {
     const k = screenForPage();
     if (k !== cur) {
       if (chatPop && !chatPop.hidden) toggleChat(false);
       if (cur && built[cur]) built[cur].sec.classList.remove('on');
-      cur = k; if (k === 'home') pollChat();
+      cur = k; if (k === 'home' || k === 'chat') pollChat();
       if (k) { const b = built[k] || build(k); b.sec.classList.add('on'); if (!RM) { b.sec.classList.remove('enter'); void b.sec.offsetWidth; b.sec.classList.add('enter'); } }
       layer.hidden = !k; markNav();
       document.body.classList.toggle('sbw-active', !!k);
@@ -1639,7 +1810,7 @@
     setInterval(() => { sync(); placeTrigger(); }, 700);
     let last = 0; const loop = now => { if (!document.hidden) { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     sync();
-    window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync };
+    window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync, open: goScreen };
   }
   init().catch(e => console.error('Website designs could not be applied:', e));
 })();

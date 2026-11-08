@@ -32,21 +32,57 @@ const NETWORK_TEXT = new Set([path.join(ADMIN_DIR, 'index.html'), path.join(ADMI
 const MAINNET_RULES = NET.key === 'mainnet' ? network.mainnetRules() : null;
 const networkText = file => network.rewriteText(fs.readFileSync(file, 'utf8'), file, MAINNET_RULES);
 
-// PRELAUNCH_MODE=on (live server before launch): only the pre-launch portal and its API are served;
-// the game page, the game API and the admin dashboard are not mounted at all (see prelaunch/server.cjs).
+// PRELAUNCH_MODE=on (live server before launch): the pre-launch portal and its API are the only public pages.
+// RELEASE_STAGE=portal (default): the game page, the game API and the admin dashboard are not mounted at all.
+// RELEASE_STAGE=private (Stage 1, private live testing): the game is mounted, but every game path answers exactly
+// as in "portal" unless the request carries a private pass (PRIVATE_COOKIE) for a live session of a wallet listed
+// in RYO_PRIVATE_TEST_WALLETS. The check runs on the server for every request, on every hostname.
 const PRELAUNCH = network.prelaunch();
+const PRIVATE = network.privateTesting();
+const TESTERS = PRIVATE ? network.privateTesters() : new Set();
 const PRELAUNCH_DIR = path.join(ROOT, 'prelaunch');
+const PRIVATE_DIR = path.join(ROOT, 'private-access');
 const PRELAUNCH_PAGES = { '/': 'index.html', '/rules': 'rules.html', '/privacy': 'privacy.html', '/terms': 'terms.html' };
 const IMAGE_TYPES = new Set(['.webp', '.png', '.jpg', '.svg']);
+const { PRIVATE_COOKIE } = require(path.join(PRELAUNCH_DIR, 'server.cjs'));
 
 function loadPrelaunch() {
   if (!fs.existsSync(path.join(GAME_DIR, 'server', 'store.cjs'))) throw Error('Refusing to start: PRELAUNCH_MODE=on but the app is not built (run `npm run build`).');
   network.assertStartup(process.env, path.join(GAME_DIR, 'server'));
-  return require(path.join(PRELAUNCH_DIR, 'server.cjs')).createPrelaunch({ gameDir: GAME_DIR });
+  if (PRIVATE && !TESTERS.size) throw Error('Refusing to start: RELEASE_STAGE=private without valid RYO_PRIVATE_TEST_WALLETS.');
+  return require(path.join(PRELAUNCH_DIR, 'server.cjs')).createPrelaunch({ gameDir: GAME_DIR, privateAccess: PRIVATE ? { allowed: w => TESTERS.has(w) } : null });
+}
+
+/* Paths of the game that stay closed to everyone without a private pass while the portal is public. */
+const gamePath = name => name === MOUNT || name.startsWith(MOUNT + '/') || (GAME_ROOT_PATHS.has(name) && name !== '/healthz') || name === '/admin' || name.startsWith('/admin/');
+const passes = new Map(), PASS_CACHE_MS = 15000;
+/** True only for a live session token of an allowlisted wallet. Any error answers false (fail closed). */
+async function privatePass(req) {
+  const raw = (String(req.headers.cookie || '').split(/;\s*/).find(c => c.startsWith(PRIVATE_COOKIE + '=')) || '').slice(PRIVATE_COOKIE.length + 1);
+  if (!raw || raw.length > 200) return false;
+  let token; try { token = decodeURIComponent(raw); } catch { return false; }
+  const key = require('node:crypto').createHash('sha256').update(token).digest('hex'), t = Date.now(), hit = passes.get(key);
+  if (hit && hit.until > t) return TESTERS.has(hit.wallet);
+  let wallet; try { wallet = await prelaunch.store.authenticate(token); } catch { passes.delete(key); return false; }
+  if (!TESTERS.has(wallet)) return false;
+  if (passes.size > 1000) passes.clear();
+  passes.set(key, { wallet, until: t + PASS_CACHE_MS });
+  return true;
+}
+const PRIVATE_PAGE_HEADERS = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY',
+  'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" };
+/** The owner's sign-in page for private testing. Only exists when RELEASE_STAGE=private. */
+function servePrivatePage(req, res, name) {
+  if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
+  const file = { '/private-test': 'index.html', '/private-test/private-access.js': 'private-access.js', '/private-test/private-access.css': 'private-access.css' }[name];
+  if (!file) return sendSite(req, res, 404, 'Not found.');
+  res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)], ...PRIVATE_PAGE_HEADERS });
+  if (req.method === 'HEAD') return res.end();
+  fs.createReadStream(path.join(PRIVATE_DIR, file)).on('error', () => res.destroy()).pipe(res);
 }
 
 function loadGame() {
-  if (PRELAUNCH) return null;
+  if (PRELAUNCH && !PRIVATE) return null;
   if (!fs.existsSync(path.join(GAME_DIR, 'server', 'render-server.cjs'))) {
     if (NET.key === 'mainnet') throw Error('Refusing to start: SOLANA_NETWORK=mainnet but the game is not built (run `npm run build`).');
     console.warn('[site] app/ not found – run `npm run build` to assemble the game. Website only.');
@@ -194,6 +230,7 @@ const server = http.createServer((req, res) => {
   let url; try { url = new URL(req.url, 'http://localhost'); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   // Read-only release policy: available during pre-launch without mounting any game or money API.
+  if (require('../dev-vfx-lab/handler.cjs').handle(req, res, name)) return;
   if(name==='/economy-policy.json'){
     if(!['GET','HEAD'].includes(req.method))return sendSite(req,res,405,'GET or HEAD required.');
     try { const policy=require(path.join(GAME_DIR,'server/sr-revenue.cjs')).publicPolicy();
@@ -202,7 +239,21 @@ const server = http.createServer((req, res) => {
     }catch{return sendSite(req,res,503,'Economy policy is unavailable until the game build is installed.');}
   }
   if (name === '/treasury' || name.startsWith('/treasury/') || name === '/treasury-registry.json') return treasuryRoute(req, res, url, name).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
+  if (PRIVATE && gamePath(name)) {
+    const fail = () => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); };
+    return privatePass(req).then(ok => {
+      if (ok) { res.setHeader('X-Robots-Tag', 'noindex, nofollow'); return route(req, res, url, name, true); }
+      // No pass: exactly the portal's answer for this path (302 to the portal, 403 PRELAUNCH, 404, or artwork).
+      if (prelaunchRoute(req, res, url, name) === null) sendSite(req, res, 404, 'Not found.');
+    }).catch(fail);
+  }
+  if (PRIVATE && (name === '/private-test' || name.startsWith('/private-test/'))) return servePrivatePage(req, res, name);
   if (PRELAUNCH && prelaunchRoute(req, res, url, name) !== null) return;
+  route(req, res, url, name, !PRELAUNCH);
+});
+
+/** Website, admin shell and (when `gameOpen`) the game. While the portal is public, gameOpen is true only after a private pass. */
+function route(req, res, url, name, gameOpen) {
   // Public login shell only. Every data read and mutation uses the wallet-authenticated Ryo API.
   if (name === '/admin') { res.writeHead(308, { Location: '/admin/', 'Cache-Control': 'no-store' }); return res.end(); }
   if (name.startsWith('/admin/')) {
@@ -218,22 +269,25 @@ const server = http.createServer((req, res) => {
   // The whitepaper (website/whitepaper.html) at a clean URL, with or without the game installed.
   if (name === '/whitepaper/' || name === '/whitepaper.html') { res.writeHead(308, { Location: '/whitepaper' + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
   if (name === '/whitepaper') return serveSite(req, res, '/whitepaper.html').catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
-  if (game) {
+  if (game && gameOpen) {
     if (GAME_ROOT_PATHS.has(name)) return game.listener(req, res);
-    if (name === '/') { res.writeHead(302, { Location: MOUNT + '/' + url.search, 'Cache-Control': 'no-store', ...SITE_HEADERS }); return res.end(); }
+    if (name === '/' && !PRELAUNCH) { res.writeHead(302, { Location: MOUNT + '/' + url.search, 'Cache-Control': 'no-store', ...SITE_HEADERS }); return res.end(); }
     if (name === MOUNT) { res.writeHead(308, { Location: MOUNT + '/' + url.search }); return res.end(); }
     if (url.pathname.startsWith(MOUNT + '/')) { req.url = url.pathname.slice(MOUNT.length) + url.search; return game.listener(req, res); }
+    if (gamePath(name)) return sendSite(req, res, 404, 'Not found.');   // e.g. an encoded mount path: never served from website/
+  } else if (game) {
+    if (gamePath(name)) return sendSite(req, res, 404, 'Not found.');   // closed game (no private pass): never reachable here, kept as a backstop
   } else if (name === MOUNT || name.startsWith(MOUNT + '/') || GAME_ROOT_PATHS.has(name)) {
     return sendSite(req, res, 503, 'The game is not installed on this server yet.');
   }
   serveSite(req, res, name).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
-});
+}
 server.requestTimeout = 30000; server.headersTimeout = 15000;
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 10000;
   server.listen(port, process.env.HOST || '0.0.0.0', () => {
-    console.log(`[site] Website on http://localhost:${port}/  ·  Solana ${NET.label}${PRELAUNCH ? '  ·  PRE-LAUNCH portal (game closed until launch)' : '  ·  game ' + (game ? 'at ' + MOUNT + '/' + (game.ready ? '' : ' (API dependencies missing)') : 'not installed')}`);
+    console.log(`[site] Website on http://localhost:${port}/  ·  Solana ${NET.label}${PRIVATE ? '  ·  PRE-LAUNCH portal public  ·  PRIVATE LIVE TESTING (game for ' + TESTERS.size + ' allowlisted wallet' + (TESTERS.size === 1 ? '' : 's') + ' only)' : PRELAUNCH ? '  ·  PRE-LAUNCH portal (game closed until launch)' :'  ·  game ' + (game ? 'at ' + MOUNT + '/' + (game.ready ? '' : ' (API dependencies missing)') : 'not installed')}`);
     if (game && !process.env.RYO_SITE_ORIGIN) console.warn('[site] RYO_SITE_ORIGIN is not set – wallet sign-in will be rejected until it matches this host\'s public origin.');
   });
   process.on('SIGTERM', () => { server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 10000).unref(); });

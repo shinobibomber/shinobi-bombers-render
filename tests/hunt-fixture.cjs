@@ -2,7 +2,7 @@
  * shares, guardian rotation and damage cap. Other players' damage today is seeded in
  * f.hunt.others ([{ name, damage }]); yesterday's winners in f.hunt.yesterday. */
 const crypto = require('node:crypto');
-const hunt = require('../app/server/boss-hunt.cjs'), economy = require('../app/server/economy.cjs');
+const hunt = require('../app/server/boss-hunt.cjs'), economy = require('../app/server/economy.cjs'),R=require('../app/server/combat-rules.cjs'),H=require('../app/server/combat-hunt.cjs');
 const fail = (message, status = 400) => { throw Object.assign(Error(message), { status }); };
 
 function board(f, account, now) {
@@ -36,14 +36,15 @@ async function handle(f, req, account, snapshot) {
     if (f.hunt.entries.some(e => now - e.started < hunt.HUNT_SECONDS * 1000)) fail('Finish your current hunt first.', 409);
     if (f.balance < hunt.FEE) fail('Not enough deposited Ryo, including the studio fee.');
     f.balance -= hunt.FEE; const day = hunt.dayOf(now);
-    const e = { id: req.requestId || crypto.randomUUID(), name: String(req.name || '').slice(0, 14), day, guardian: hunt.guardianOf(day), started: now, damage: 0 }; f.hunt.entries.push(e);
+    const e = { id: req.requestId || crypto.randomUUID(), name: String(req.name || '').slice(0, 14), day, guardian: hunt.guardianOf(day), started: now, damage: 0 }; e.combat={version:1,started:now,ends:now+60000,team:economy.normalizeProfile(f.profile).heroes.filter(h=>f.profile.battleReady.includes(h.tokenId)).sort((a,b)=>R.damage(b)-R.damage(a)).slice(0,5).map(h=>({id:h.tokenId,started:now,power:R.damage(h),cooldown:R.cooldown(h)*1000,energy:Math.floor(h.chakra?.value??R.maxChakra(h))}))};f.hunt.entries.push(e);
     f.purchases = [{ request_id: e.id, amount: String(hunt.FEE), status: 'confirmed', acknowledged: true, created: String(now), signature: 'H'.repeat(80), quote: hunt.quote(2), result: { product: 'hunt', outputs: [] } }, ...f.purchases];
-    return { entry: { id: e.id, day, guardian: e.guardian, guardianName: hunt.GUARDIANS[e.guardian], started: now, seconds: hunt.HUNT_SECONDS }, hunt: board(f, account, now), ...snapshot() };
+    return { entry: { id: e.id, day, guardian: e.guardian, guardianName: hunt.GUARDIANS[e.guardian], started: now, seconds: hunt.HUNT_SECONDS,combat:e.combat,team:e.combat.team.map(u=>u.id),pending:false }, hunt: board(f, account, now), ...snapshot() };
   }
+  if(req.action==='hunt-ready'){const e=f.hunt.entries.find(e=>e.id===req.entryId);return {entry:{...e,team:e.combat.team.map(u=>u.id),seconds:60,pending:false}}}
   if (req.action === 'hunt-report') {
     const e = f.hunt.entries.find(x => x.id === req.entryId); if (!e) fail('That hunt is not yours.');
     const cap = hunt.teamCap(economy.normalizeProfile(f.profile)), elapsed = Math.min(hunt.HUNT_SECONDS, (now - e.started) / 1000);
-    e.damage = Math.max(e.damage, Math.min(Math.floor(req.damage), Math.floor(elapsed * cap.dps * 1.1 + cap.volley)));
+    if(req.finish)e.combat.ends=Math.min(e.combat.ends,now);e.damage=Math.max(e.damage,e.combat.team.reduce((n,u)=>n+H.attacks(u,now,e.combat.ends)*u.power,0));
     (f.hunt.reports = f.hunt.reports || []).push({ id: e.id, damage: req.damage, kept: e.damage });
     return { damage: e.damage };
   }

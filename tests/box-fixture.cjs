@@ -6,7 +6,7 @@ function info(f) {
   const b = f.box, mine = b.mine, supply = b.supply ?? 20, remaining = Math.max(0, supply - (b.sold || 0) - mine.length);
   return { network: 'solana-devnet', supply, sold: (b.sold || 0) + mine.filter(m => m.status === 'confirmed').length, reserved: mine.filter(m => m.status === 'pending').length, remaining,
     perWallet: 2, owned: mine.length, price: mine.length < 2 ? (mine.length ? 1.5 : 1) : null, firstPrice: 1, secondPrice: 1.5,
-    perks: ['7-star Mythic hero: Tsukiyomi', 'Mythic Aura', '10% off', 'Exclusive NFT holder tier'], mine: mine.map(m => ({ serial: m.serial, mint: m.mint, status: m.status, price: m.price })), soldOut: remaining === 0, limitReached: mine.length >= 2 };
+    perks: ['Mythic hero: Tsukiyomi', 'Mythic Aura', '10% off', 'Exclusive NFT holder tier'], mine: mine.map(m => ({ serial: m.serial, mint: m.mint, status: m.status, price: m.price })), soldOut: remaining === 0, limitReached: mine.length >= 2 };
 }
 function handle(f, req, snapshot) {
   f.box = f.box || {}; f.box.mine = f.box.mine || [];

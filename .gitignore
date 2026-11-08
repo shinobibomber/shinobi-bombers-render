@@ -1,7 +1,10 @@
 node_modules/
 app/
 .env*
+*.env
 *.log
+# Local wallet/treasury hand-off pack: may hold private settings - never commit.
+Shinobi_Bombers_Live_Treasury_Integration_Pack/
 
 verified-game.zip
 chest-ui/dist/
@@ -20,3 +23,7 @@ shrine-fusion-design/summoning-shrine.png
 shrine-fusion-design/fusion-menu.png
 # Tsukiyomi's HD menu views are build sources, not generated previews.
 !/mythic-hero/assets/previews/
+
+# Local Claude Code session checkpoints (task context, machine-specific) - never commit.
+.claude/session-checkpoints/
+.claude/settings.local.json

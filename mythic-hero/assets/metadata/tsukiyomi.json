@@ -7,7 +7,20 @@
     "title": "Mythic Shinobi",
     "rarity": "Mythic",
     "rank": 5,
-    "theme": "Lunar / Celestial / Void"
+    "theme": "Lunar / Celestial / Void",
+    "classification": "Exclusive Mythic NFT",
+    "presentation": {
+      "rarityLabel": "Mythic",
+      "baseStatBand": [
+        17,
+        20
+      ],
+      "visualVolley": 7,
+      "baseRange": 6,
+      "effectiveRange": 7,
+      "perks": 7
+    },
+    "generation": "First Generation"
   },
   "sources": {
     "model": {
@@ -476,7 +489,8 @@
       "direction": "right",
       "events": {
         "impact": 6
-      }
+      },
+      "name": "Dragon Slash"
     },
     "void_shuriken": {
       "label": "Void Shuriken",
@@ -494,7 +508,8 @@
       "events": {
         "launch": 5,
         "impact": 6
-      }
+      },
+      "name": "Void Shuriken"
     },
     "raijin_field": {
       "label": "Raijin Field",
@@ -512,7 +527,8 @@
       "events": {
         "strike": 6,
         "peak": 7
-      }
+      },
+      "name": "Raijin Field"
     },
     "mythic_dragon_ascension": {
       "label": "Mythic Dragon Ascension",
@@ -556,7 +572,8 @@
       "events": {
         "burst": 10,
         "end": 11
-      }
+      },
+      "name": "Mythic Dragon Ascension"
     }
   },
   "aura": {

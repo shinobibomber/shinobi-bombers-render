@@ -171,8 +171,8 @@
     face.querySelector('.cinematic-element').textContent = element[1] + ' ' + element[0];
     face.querySelector('.cinematic-name').textContent = hero.name;
     const stars = face.querySelector('.cinematic-stars');
-    stars.textContent = '★'.repeat(rank + 1); stars.setAttribute('aria-label', ranks[rank] + ': rank ' + (rank + 1) + ' of 5');
-    stars.title = 'Stars indicate rarity rank, not an additional hero stat';
+    stars.textContent = ''; stars.hidden = true;
+    stars.removeAttribute('title');
     const number = value => Number.isFinite(Number(value)) ? Number(value).toLocaleString('en-US', { maximumFractionDigits: 1 }) : '—';
     face.querySelector('.cinematic-stats').textContent = 'Lv. ' + number(hero.lv) + ' · Power ' + number(hero.pw) + ' · Stamina ' + number(hero.st);
     face.querySelector('.cinematic-rank').textContent = ranks[rank];

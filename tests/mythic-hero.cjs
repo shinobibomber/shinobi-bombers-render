@@ -1,5 +1,5 @@
-/* Tsukiyomi in the browser (isolated fixtures): the Mythic card with seven stars and its NFT, the
- * details panel (NFT status, aura switch, Check NFT, four skills, NFT-only selling, Legend training
+/* Tsukiyomi in the browser (isolated fixtures): the Mythic card with its rarity name and NFT, the
+ * details panel (NFT status, aura switch, Check NFT, four skills, NFT-only selling, twice-Legend training
  * price), his own art from the supplied sheets (front/side/back, true LEFT view, aura layers), his
  * skill effects on the game's combat events, Adventure and Boss Hunt play, and the phone layout. */
 const fs = require('node:fs'), path = require('node:path');
@@ -28,18 +28,22 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     await p.evaluate(() => go(1)); await p.waitForFunction(() => WebsiteDesign.current() === 'heroes' && document.querySelector('.sbw-scr.on .sbw-hcard.mythic'));
     await p.waitForFunction(() => MythicHero.assetsReady, null, { timeout: 20000 });
     const card = await p.locator('.sbw-scr.on .sbw-hcard.mythic').textContent();
-    assert.match(card, /MYTHIC/); assert(!/★/.test(card), 'Mythic shows no star count'); assert.match(card, /NFT/); assert.match(card, /Tsukiyomi[\s\S]*Dragon Slash/);
+    assert.match(card, /MYTHIC/); assert.equal((card.match(/★/g)||[]).length,0,'rarity name only'); assert.match(card, /NFT/); assert.match(card, /Tsukiyomi[\s\S]*4 automatic skills/); assert(!card.includes('Dragon Slash'),'collection card must not imply only one skill');
     await p.locator('.sbw-scr.on .sbw-hcard.mythic .sbw-hc-name').click();
     await p.waitForSelector('.sbw-scr.on .sbw-myth');
     const det = await p.evaluate(() => { const d = document.querySelector('.sbw-scr.on .sbw-hd2');
       return { text: d.innerText.replace(/\s+/g, ' '), sell: d.querySelector('[data-k="sell"]').disabled, rank: d.querySelector('.sbw-h2-rank').textContent, train: d.querySelector('[data-k="train"]').textContent.replace(/\s+/g, ' ') }; });
     assert.equal(det.rank, 'MYTHIC');
-    assert.match(det.text, /MYTHIC Exclusive Mythic Shinobi/i); assert(!/★/.test(det.text));
+    assert.match(det.text, /FIRST GENERATION NFT/); assert.equal((det.text.match(/★/g)||[]).length,0);
     assert.match(det.text, /NFT verified · TsuK…1111/, 'the box NFT is shown');
-    for (const skill of ['Dragon Slash', 'Void Shuriken', 'Raijin Field', '⚡ Dragon Ascension']) assert(det.text.includes(skill), skill + ' listed');
-    assert.match(det.text, /PERKS 6 \/ 6/, 'six perks');
+    for (const skill of ['Dragon Slash', 'Void Shuriken', 'Raijin Field', 'Mythic Dragon Ascension']) assert(det.text.includes(skill), skill + ' listed');
+    assert.match(det.text, /PERKS 7 \/ 7/, 'seven perks');
+    const energyView = await p.evaluate(() => { const h=S.h.find(h=>h.r===5); window.__mythicPanel=document.querySelector('.sbw-scr.on .sbw-myth'); h.en-=2; return {count:h.pk.length,capacity:CombatRules.maxChakra(h),expected:h.st*55}; });
+    assert.equal(energyView.count,7); assert.equal(energyView.capacity,energyView.expected);
+    await p.waitForTimeout(500);
+    assert(await p.evaluate(()=>window.__mythicPanel===document.querySelector('.sbw-scr.on .sbw-myth')),'chakra updates preserve focused Mythic controls');
     assert.equal(det.sell, true); assert.match(det.text, /NFT ONLY/, 'traded only as the NFT');
-    assert.match(det.train, /60,000/, 'Lv 2 → 3 training at the Legend price (20,000 × 3)');
+    assert.match(det.train, /120,000/, 'Lv 2 → 3 Mythic training costs twice Legend (20,000 × 6)');
     // His portrait is his own art (not one of the eight shared models), with the aura around it.
     const portrait = await p.evaluate(() => { const c = document.querySelector('.sbw-scr.on .sbw-h2-port canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0, violet = 0;
       for (let i = 3; i < d.length; i += 4) if (d[i] > 40) { n++; if (d[i - 1] > d[i - 2] + 30 && d[i - 3] > 90) violet++; }
@@ -61,7 +65,7 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
       const side = ShinobiSprites.heroFrame(h, 'clip:walk:1', false, 'side'), back = ShinobiSprites.heroFrame(h, 'w2', false, 'back'), idle = ShinobiSprites.heroFrame(h, 'i0');
       return { side: side.mythicBody && side.playerModel.direction, left: side.mythicMirror?.playerModel.direction, back: back.playerModel.direction, idle: idle.playerModel.direction, size: [idle.width, idle.height],
         legend: !!ShinobiSprites.heroFrame(legend, 'i0').mythicBody, attack: ShinobiSprites.heroFrame(h, 'clip:ranged:0', false, 'side').playerModel.direction,
-        fx: ['projectile', 'explosion', 'skill'].map(t => CharacterAnimations.effectFrame({ id: h.id }, t, 2)?.mythicEffect?.skill), legendFx: !!CharacterAnimations.effectFrame({ id: legend.id }, 'projectile', 2)?.mythicEffect,
+        fx: ['dragon_slash', 'raijin_field', 'mythic_dragon_ascension'].map(t => MythicHero.skillFrame(t,2)?.mythicEffect?.skill), legendFx: !!CharacterAnimations.effectFrame({ id: legend.id }, 'projectile', 2)?.mythicEffect,
         meta: Object.keys(MythicHero.source.animations).length };
     });
     assert.deepEqual([frames.side, frames.left, frames.back, frames.idle], ['walk_right', 'walk_left', 'walk_back', 'idle']);
@@ -69,7 +73,7 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     assert.deepEqual(frames.fx.slice(1), ['raijin_field', 'mythic_dragon_ascension']); assert(['dragon_slash', 'void_shuriken'].includes(frames.fx[0]));
     assert.equal(frames.legendFx, false); assert.equal(frames.meta, 21);
     // Skills are visuals on normal shots: Tsukiyomi volleys like a Legend (5 shots, 1 chakra each).
-    assert.deepEqual(await p.evaluate(() => { const h = S.h.find(x => x.r === 5), l = S.h.find(x => x.r === 4); return [h.bm, h.rg, l.bm]; }), [5, 5, 5]);
+    assert.deepEqual(await p.evaluate(() => { const h = S.h.find(x => x.r === 5), l = S.h.find(x => x.r === 4); return [h.bm, h.rg, l.bm]; }), [7, 7, 5]);
 
     // Adventure: he deploys, walks and fights with his own effects; nothing else changes.
     await p.evaluate(() => { go(0); Experience.workAll(); });
@@ -93,5 +97,5 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     await p.screenshot({ path: path.join(output, 'mythic-phone.png') });
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: Tsukiyomi shows as a Mythic NFT hero (no star count) (card, details, aura switch, Check NFT, skills, NFT-only selling, Legend training price), uses his own front/side/back/left art, aura and skill effects, plays in Adventure and Boss Hunt, and fits phones.');
+  console.log('PASS: Mythic rarity-name NFT display, own directional pose fallback, aura/skills, NFT checks, unchanged Adventure/Boss Hunt mechanics and phone layout. Authored animation assets remain incomplete.');
 })().catch(e => { console.error(e); process.exit(1); });

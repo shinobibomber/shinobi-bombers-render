@@ -102,6 +102,7 @@
   "err.CREATOR_PLATFORM": "Escolha sua plataforma principal.",
   "err.CREATOR_PAUSED": "As inscrições de criadores estão fechadas no momento.",
   "err.ADMIN_ONLY": "Apenas administradores do Shinobi Bombers podem fazer isso.",
+  "err.PRIVATE_TESTING": "Essa ação não está disponível antes do lançamento.",
   "err.CREATOR_TRANSITION": "Essa mudança de status não é permitida.",
   "err.CREATOR_UNKNOWN": "Esse link de criador não está ativo, então você foi cadastrado sem indicação.",
   "err.CREATOR_NOT_FOUND": "Criador não encontrado.",

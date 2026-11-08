@@ -24,7 +24,8 @@ function hashes(dir) {
   })('');
   return out;
 }
-const MAINNET_ENV = { SOLANA_NETWORK: 'mainnet', RYO_SITE_ORIGIN: 'https://live.example.com', SOLANA_RPC_URL: 'https://rpc.example.com/?key=server', SOLANA_PUBLIC_RPC_URL: 'https://rpc.example.com/?key=browser', RYO_SCOPE: 'solana-mainnet:live' };
+const MAINNET_ENV = { SOLANA_NETWORK: 'mainnet', RELEASE_STAGE: 'public', RYO_SITE_ORIGIN: 'https://live.example.com', SOLANA_RPC_URL: 'https://rpc.example.com/?key=server', SOLANA_PUBLIC_RPC_URL: 'https://rpc.example.com/?key=browser', RYO_SCOPE: 'solana-mainnet:live' };
+const TESTER = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
 const temps = [];
 
 (async () => {
@@ -99,6 +100,33 @@ const temps = [];
     { const bad = path.join(mainDir, 'server/treasury-registry.json'), original = fs.readFileSync(bad, 'utf8'), broken = JSON.parse(original); broken.destinations[1].address = broken.destinations[2].address;
       fs.writeFileSync(bad, JSON.stringify(broken)); const fresh = spawnSync(process.execPath, ['-e', 'const n=require(process.argv[1]);process.stdout.write(n.startupProblems(JSON.parse(process.argv[2]),process.argv[3]).join("\\n"))', path.join(mainDir, 'server/network.cjs'), JSON.stringify(pre), path.join(mainDir, 'server')], { encoding: 'utf8' });
       assert.match(fresh.stdout, /Treasury registry: destination addresses must be distinct/, 'a broken registry stops the live server'); fs.writeFileSync(bad, original); }
+    // Release stages: deployment never opens the game; only an explicit stage setting does (fail closed).
+    assert.match(problems({ ...MAINNET_ENV, RELEASE_STAGE: undefined }), /set RELEASE_STAGE=public explicitly/, 'removing PRELAUNCH_MODE alone never opens the Mainnet game');
+    assert.match(problems({ ...MAINNET_ENV, RELEASE_STAGE: 'private' }), /needs PRELAUNCH_MODE=on/);
+    assert.match(problems({ ...MAINNET_ENV, RELEASE_STAGE: 'investor' }), /needs PRELAUNCH_MODE=on/);
+    assert.equal(network.releaseStage(pre), 'portal', 'pre-launch defaults to the portal-only stage');
+    for (const bad of ['public', 'investor', 'open', 'PUBLIC ']) assert.match(problems({ ...pre, RELEASE_STAGE: bad }), /RELEASE_STAGE must be "portal" \(default\) or "private"/, bad);
+    assert.equal(problems({ ...pre, RELEASE_STAGE: 'portal' }), '');
+    const priv = { ...pre, RELEASE_STAGE: 'private', RYO_PRIVATE_TEST_WALLETS: TESTER, SOLANA_RPC_URL: MAINNET_ENV.SOLANA_RPC_URL, SOLANA_PUBLIC_RPC_URL: MAINNET_ENV.SOLANA_PUBLIC_RPC_URL };
+    assert.equal(problems(priv), '', 'private live testing starts with testers and the Mainnet RPCs');
+    assert.equal(network.privateTesting(priv), true); assert.deepEqual([...network.privateTesters(priv)], [TESTER]);
+    assert.match(problems({ ...priv, RYO_PRIVATE_TEST_WALLETS: '' }), /needs RYO_PRIVATE_TEST_WALLETS/);
+    assert.match(problems({ ...priv, RYO_PRIVATE_TEST_WALLETS: TESTER + ',not-a-wallet' }), /valid Solana wallet addresses only/);
+    assert.equal(network.privateTesters({ RYO_PRIVATE_TEST_WALLETS: TESTER + ',not-a-wallet' }).size, 0, 'one bad entry empties the allowlist');
+    assert.match(problems({ ...priv, SOLANA_RPC_URL: '' }), /needs SOLANA_RPC_URL/);
+    assert.match(problems({ ...priv, SOLANA_PUBLIC_RPC_URL: 'http://x' }), /needs SOLANA_PUBLIC_RPC_URL/);
+    // Money settings (owner-approved): only in private live testing with testers, and only complete.
+    const money = { RYO_TREASURY_SECRET: '[1]', RYO_TOKEN_MINT: TESTER, RYO_STUDIO_WALLET: TESTER, RYO_REVENUE_WALLET: TESTER };
+    // Allowed in principle, but the reviewed treasury registry still governs the mint (pending in this build).
+    assert.equal(problems({ ...priv, ...money }), 'RYO_TOKEN_MINT is set but the SR mint is still pending in the reviewed treasury registry (treasury/treasury-registry.json). Register the mint through a reviewed commit first.',
+      'private live testing holds complete money settings only under the same registry locks as launch');
+    assert.match(problems({ ...priv, RYO_TREASURY_SECRET: '[1]' }), /all money settings or none \(missing RYO_TOKEN_MINT, RYO_STUDIO_WALLET, RYO_REVENUE_WALLET\)/);
+    assert.match(problems({ ...pre, ...money }), /must not hold money settings/, 'the portal-only stage still refuses money settings');
+    assert.match(problems({ ...pre, ...money, RELEASE_STAGE: 'portal' }), /must not hold money settings/);
+    assert.match(problems({ ...priv, ...money, RYO_PRIVATE_TEST_WALLETS: '' }), /must not hold money settings/, 'no testers: no money settings');
+    assert.match(problems({ ...priv, ...money, RYO_PRIVATE_TEST_WALLETS: 'bad' }), /must not hold money settings/);
+    assert.match(problems({ ...priv, SR_REVENUE_ROUTING_ENABLED: 'on' }), /SR_REVENUE_ROUTING_ENABLED must be off/);
+    assert.match(problems({ ...priv, STARTER_PACK: 'on' }), /STARTER_PACK must be off/);
     // The launch gates ship in the Mainnet build and default to closed there.
     const liveGates = require(path.join(mainDir, 'server/launch-gates.cjs'));
     assert.deepEqual(Object.values(liveGates.publicGates({})), [false, false, false, false, false]);
@@ -107,6 +135,14 @@ const temps = [];
     const verifySecureHeaders=verifyLive.replace("const policy=await", "const landing=await fetch(base+'/');assert.equal(landing.headers.get('strict-transport-security'),'max-age=31536000');assert.equal(landing.headers.get('x-frame-options'),'DENY');assert(landing.headers.get('content-security-policy').includes(\"script-src 'self'\"));const policy=await");
     const liveRun=spawnSync(process.execPath,['-e',verifySecureHeaders],{cwd:root,encoding:'utf8',timeout:20000,env:{...process.env,...pre,GAME_RUNTIME_DIR:mainDir,STARTER_PACK:'off',RYO_TREASURY_SECRET:'',RYO_TOKEN_MINT:'',RYO_STUDIO_WALLET:'',RYO_REVENUE_WALLET:'',SR_REVENUE_ROUTING_ENABLED:'',SOLANA_RPC_URL:'https://127.0.0.1:9/'}});
     assert.equal(liveRun.status,0,liveRun.stderr);
+    // The real Mainnet host in private live testing: starts, keeps the portal public and every game path closed,
+    // and a pass cookie that cannot be checked (database unreachable here) is refused: fail closed.
+    const verifyPrivate=`(async()=>{const assert=require('node:assert/strict'),fs=require('node:fs'),{server,prelaunch}=require('./server/site-server.cjs');await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;try{const home=await fetch(base+'/');assert.equal(await home.text(),fs.readFileSync('prelaunch/index.html','utf8'));for(const cookie of [undefined,'sb_pt='+'A'.repeat(43)]){const h=cookie?{cookie}:{};const play=await fetch(base+'/play/',{redirect:'manual',headers:h});assert.equal(play.status,302);assert.equal(play.headers.get('location'),'/');const api=await fetch(base+'/api/ryo',{method:'POST',headers:{...h,'content-type':'application/json'},body:'{"action":"challenge"}'});assert.equal(api.status,403);assert.equal((await api.json()).code,'PRELAUNCH');assert.equal((await fetch(base+'/admin/',{headers:h})).status,404);}assert.equal((await fetch(base+'/private-test')).status,200);}finally{await new Promise(r=>server.close(r));await prelaunch.close();}})().catch(e=>{console.error(e);process.exitCode=1});`;
+    const privEnv={...process.env,...priv,DATABASE_URL:'postgres://nobody@127.0.0.1:1/none',GAME_RUNTIME_DIR:mainDir,STARTER_PACK:'off',RYO_TREASURY_SECRET:'',RYO_TOKEN_MINT:'',RYO_STUDIO_WALLET:'',RYO_REVENUE_WALLET:''};
+    const privRun=spawnSync(process.execPath,['-e',verifyPrivate],{cwd:root,encoding:'utf8',timeout:30000,env:privEnv});
+    assert.equal(privRun.status,0,privRun.stderr);
+    const privBad=spawnSync(process.execPath,['-e',"require('./server/site-server.cjs')"],{cwd:root,encoding:'utf8',timeout:20000,env:{...privEnv,RYO_PRIVATE_TEST_WALLETS:'',PORT:'0'}});
+    assert.notEqual(privBad.status,0);assert.match(privBad.stderr,/needs RYO_PRIVATE_TEST_WALLETS/,'no testers: the server does not start');
 
     // render-server (also `npm run start:game-only`) refuses an unsafe environment, and publishes the browser RPC.
     const { createServer } = require(path.join(mainDir, 'server/render-server.cjs'));

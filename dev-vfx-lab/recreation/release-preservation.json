@@ -1,0 +1,11 @@
+{
+  "mythic-hero/animation-runtime.js": "7512da88b01e5b51a75755fda3b1f525b2e0224bbd40ed6ed36d98571f208900",
+  "mythic-hero/assets/metadata/animations.json": "8116c78cc648f9b04455fef9b4ffa4db8e1dcd0357c7a74c5d7f9e26d40f104a",
+  "mythic-hero/clean-effects.js": "41875370d987d2b8ebecd96673e0eaec453b957142173fd0e6a47f1fde20ad3d",
+  "mythic-hero/tools/build-runtime.cjs": "d3d737cdb4f998c31b210e6c63a4bfbc0e5f0ea514293ffbc441aa13d3e80d99",
+  "tests/mythic-mode-rotation.cjs": "50ca6d731874b8eac2d693128558bb24ff0596d36173a080ba96e0d3ee3458a4",
+  "tests/mythic-animation-controller.cjs": "0d65f70e437bd97b75c5d53c6c5d0cda958c19591422e8ba90ba7e569b6c3244",
+  "tests/mythic-completion.cjs": "cf8b04c953b97649e52157ee9dc6e53473cd1b31338869ea12e8a86b66b6aa9c",
+  "app/public/index.html": "0cb1ae67371f037524d9caa46a6f90b12593a2fbe3b7595ae81b7de9377761b4",
+  "app/public/assets/mythic-hero/metadata/animations.json": "8116c78cc648f9b04455fef9b4ffa4db8e1dcd0357c7a74c5d7f9e26d40f104a"
+}

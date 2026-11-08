@@ -1,4 +1,4 @@
-/* Tsukiyomi's production assets match their metadata: the supplied reference sheets (by hash), 128×128
+/* Tsukiyomi's legacy extracted assets match their metadata (not proof of production art quality): 128×128
  * RGBA character frames with the centre-bottom anchor, every required animation with its frame count
  * and four walk directions, the four skills, the existing Mythic Aura parts and 8-frame animation,
  * transparent backgrounds (no baked-in sheet panels), and the copies the build ships to the game. */
@@ -7,10 +7,10 @@ const sharp = require('sharp');
 const root = path.resolve(__dirname, '..'), dir = path.join(root, 'mythic-hero/assets'), meta = require(path.join(dir, 'metadata/tsukiyomi.json'));
 
 (async () => {
-  assert.deepEqual([meta.hero.name, meta.hero.rarity, meta.hero.rank, meta.hero.id, 'stars' in meta.hero], ['Tsukiyomi', 'Mythic', 5, 13, false]);
+  assert.deepEqual([meta.hero.name, meta.hero.rarity, meta.hero.rank, meta.hero.id, meta.hero.stars], ['Tsukiyomi', 'Mythic', 5, 13, undefined]);
   for (const source of Object.values(meta.sources)) assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'mythic-hero', source.file))).digest('hex'), source.sha256, 'reference unchanged: ' + source.file);
   assert.deepEqual([meta.frame.width, meta.frame.height, meta.frame.anchor], [128, 128, [64, 124]]);
-  // Movement and attacks use the Fire hero's real frames (hands, feet, body) wearing Tsukiyomi's head.
+  // Legacy files remain archived for provenance; the v2 runtime never loads these borrowed bodies.
   const required = { idle: 4, walk_front: 10, walk_left: 6, walk_right: 6, walk_back: 4, run_front: 10, run_left: 6, run_right: 6, run_back: 4, attack_front: 6, attack_left: 6, attack_right: 6, attack_back: 6,
     bomb_place: 3, hurt: 4, defeat: 8, victory: 5, alert: 4, question: 4, like: 4, celebrate: 4 };
   assert.deepEqual(Object.keys(meta.animations).sort(), Object.keys(required).sort(), 'every required animation');
@@ -66,5 +66,5 @@ const root = path.resolve(__dirname, '..'), dir = path.join(root, 'mythic-hero/a
   for (const file of [meta.animations.idle.path, meta.skills.raijin_field.path, meta.aura.parts.outer_glyph_ring.path, 'metadata/tsukiyomi.json'])
     assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(shipped, file))).digest('hex'), crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, file))).digest('hex'), 'shipped ' + file);
   assert.equal(fs.readFileSync(path.join(shipped, 'mythic-hero.js'), 'utf8'), fs.readFileSync(path.join(root, 'mythic-hero/mythic-hero.js'), 'utf8'));
-  console.log('PASS: Tsukiyomi assets: hashed reference sheets, 21 animations (128×128 RGBA, centre-bottom anchor, 4 walk/run/attack directions), 4 skills, 14 Mythic Aura parts and 8 aura frames, transparent backgrounds, shipped to the game unchanged.');
+  console.log('PASS: Tsukiyomi legacy asset archive: hashed references, 21 archived 128×128 RGBA strips, 4 extracted skills, 14 original Aura parts and 8 aura frames; unchanged shipped bytes. Archived strips are not v2 production animation art.');
 })().catch(e => { console.error(e); process.exit(1); });

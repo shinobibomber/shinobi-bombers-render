@@ -1,6 +1,6 @@
-/* Boss Hunt server rules on the real store (in-memory Postgres): the 10,000 Ryo entry through the
- * purchase flow (1,000 burned, 9,000 to the day's pool), one open hunt, damage capped by elapsed time
- * and the team's top damage, refunded entries never counting, daily settlement paying the top 10
+/* Boss Hunt settlement rules on the real store (in-memory Postgres): the 10,000 Ryo entry through the
+ * purchase flow (1,000 burned, 1,000 treasury, 8,000 prize pool), one open hunt,
+ * refunded entries never counting, daily settlement paying the top 10
  * 30/20/12/9/7/6/5/4/4/3% (rescaled when fewer played), pending fees delaying it, carry-over, and
  * the purchases pause. */
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), { PGlite } = require('@electric-sql/pglite');
@@ -24,7 +24,9 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
     const row = await store.purchase(wallet, id, 'hunt', {}, hunt.FEE, async q => { tx.push(q); return { signature: 'H' + serial + 'x'.repeat(80), wire: 'd2lyZQ==', lastHeight: 1 }; });
     return { row, entry: await hunt.record(store, wallet, row, { name }) }; };
   const confirm = (wallet, entry) => store.settlePurchase(wallet, entry.id, 'confirmed');
-  const report = (wallet, entry, damage) => hunt.report(store, wallet, { entryId: entry.id, damage });
+  // Settlement-only fixture: seed already-validated damage to control exact ranking/tie scenarios.
+  // This is not a client report. combat-hunt.cjs tests real activation, scoring and chakra debits.
+  const seedDamage = (wallet, entry, damage) => store.pool.query('UPDATE ryo_hunt_entries SET damage=$4,reported=$5 WHERE scope=$1 AND id=$2 AND wallet=$3', [store.scope,entry.id,wallet,damage,clock]);
 
   // Entry: the fee is 10,000 total: 8,000 to the prize pool, 1,000 treasury, 1,000 burned.
   const strong = [hero('s1', 4, 15), hero('s2', 4, 15), hero('s3', 3, 12), hero('s4', 3, 12), hero('s5', 2, 9), hero('s6', 0, 1)];
@@ -34,26 +36,24 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
   assert.equal(await balance('alice'), 990000, 'the entrance fee is taken');
   assert.equal(a1.entry.guardian, hunt.guardianOf('2030-01-10'), "today's guardian");
   await rejects(enter('alice'), /Finish your current hunt/, 'one open hunt at a time');
-  // Damage is capped by elapsed time and the team's top damage; the highest report is kept.
+  // The informational cap uses one trained Power hit per cooldown, without volley multipliers.
   const cap = hunt.teamCap(economy.normalizeProfile({ heroes: strong, battleReady: strong.map(h => h.tokenId) }));
-  clock += 30000; let r = await report('alice', a1.entry, 1e9);
-  assert(r.capped && r.damage <= 30 * cap.dps * 1.1 + cap.volley && r.damage > 0 && hunt.HUNT_SECONDS === 60, 'reported damage is capped by 30 seconds of the team');
-  r = await report('alice', a1.entry, 10); assert.equal(r.damage > 10, true, 'a lower report never reduces kept damage');
-  clock += 60000; r = await report('alice', a1.entry, 20000); assert.equal(r.damage, 20000, 'real damage within the cap is kept');
-  clock += 10 * 60000; assert.equal((await report('alice', a1.entry, 30000)).closed, true, 'late reports are ignored');
+  assert.equal(cap.volley,63);assert(cap.dps>0&&cap.dps<100);assert.equal(hunt.HUNT_SECONDS,60);
+  assert.equal((await hunt.report(store,'alice',{entryId:a1.entry.id,damage:1e9})).damage,0,'pending fees cannot score');
+  clock += 90000;await seedDamage('alice',a1.entry,20000);
   await confirm('alice', a1.entry);
   // Board: the pool, ranking and my stats; the name is cleaned.
   let b = (await hunt.board(store, 'alice')).hunt;
   assert.equal(b.pool, 8000); assert.equal(b.top[0].damage, 20000); assert.equal(b.top[0].name, 'Alicescript'); assert.equal(b.me.rank, 1); assert.equal(b.me.entries, 1);
   // A second entry adds up; a refunded one never counts.
-  const a2 = await enter('alice'); clock += 90000; await report('alice', a2.entry, 5000); await confirm('alice', a2.entry);
-  const a3 = await enter('alice'); clock += 90000; await report('alice', a3.entry, 7000); await store.settlePurchase('alice', a3.entry.id, 'refunded');
+  const a2 = await enter('alice'); clock += 90000; await seedDamage('alice', a2.entry, 5000); await confirm('alice', a2.entry);
+  const a3 = await enter('alice'); clock += 90000; await seedDamage('alice', a3.entry, 7000); await store.settlePurchase('alice', a3.entry.id, 'refunded');
   b = (await hunt.board(store, 'alice')).hunt;
   assert.equal(b.me.damage, 25000, 'damage adds up across finalized entries only'); assert.equal(b.pool, 16000, 'a refunded entry adds nothing to the pool');
   assert.equal(await balance('alice'), 980000, 'the refunded fee came back');
 
   // Eleven more players on the same day; one fee is still pending at midnight.
-  for (let i = 0; i < 11; i++) { const w = 'p' + i; await setup(w, strong); const { entry } = await enter(w); clock += 90000; await report(w, entry, 1000 * (i + 1)); if (i !== 10) await confirm(w, entry); }
+  for (let i = 0; i < 11; i++) { const w = 'p' + i; await setup(w, strong); const { entry } = await enter(w); clock += 90000; await seedDamage(w, entry, 1000 * (i + 1)); if (i !== 10) await confirm(w, entry); }
   clock = Date.parse('2030-01-11T00:06:00Z'); await hunt.settleDue(store);
   assert.equal((await store.pool.query("SELECT settled FROM ryo_hunt_days WHERE scope=$1 AND day='2030-01-10'", [store.scope])).rows[0].settled, false, 'a pending fee delays settlement');
   await confirm('p10', { id: 'hunt-' + serial });
@@ -69,8 +69,8 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
   assert.equal(b.yesterday.winners.length, 10); assert.equal(b.yesterday.winners[0].name, 'Alicescript', 'yesterday winners are listed');
 
   // Fewer than 10 players: the shares are rescaled so the whole pool is paid.
-  const b1 = await enter('p1'); clock += 90000; await report('p1', b1.entry, 500); await confirm('p1', b1.entry);
-  const b2 = await enter('p2'); clock += 90000; await report('p2', b2.entry, 900); await confirm('p2', b2.entry);
+  const b1 = await enter('p1'); clock += 90000; await seedDamage('p1', b1.entry, 500); await confirm('p1', b1.entry);
+  const b2 = await enter('p2'); clock += 90000; await seedDamage('p2', b2.entry, 900); await confirm('p2', b2.entry);
   const p1Before = await balance('p1'), p2Before = await balance('p2');
   clock = Date.parse('2030-01-12T00:06:00Z'); await hunt.settleDue(store);
   assert.deepEqual([await balance('p2') - p2Before, await balance('p1') - p1Before], [Math.floor(16000 * 30 / 50) + (16000 - Math.floor(16000 * 30 / 50) - Math.floor(16000 * 20 / 50)), Math.floor(16000 * 20 / 50)], '2 players share 30:20 of the pool');
@@ -102,5 +102,5 @@ const rejects = async (promise, pattern, message) => { await assert.rejects(prom
   await store.pool.query("INSERT INTO ryo_admin_control(scope,version,config,pauses,installed) VALUES($1,1,'{}',$2,$3)", [store.scope, JSON.stringify({ purchases: true }), clock]);
   await rejects(guard(store, 'hunt-enter', 'p4', { requestId: 'new' }), /paused/); await guard(store, 'hunt-board', 'p4', {});
   await db.close();
-  console.log('PASS: Boss Hunt entry (10,000 Ryo: 8,000 pool, 1,000 treasury, 1,000 burned), one open hunt, elapsed/team damage caps, refunded entries excluded, top-10 daily settlement with exact shares (80% pool, 10% treasury, 10% burn), pending delay, rescaling, carry-over, weekly points with Legend/Elite awards (ties, waiting for room, once) and the purchases pause.');
+  console.log('PASS: Boss Hunt entry (10,000 Ryo: 8,000 pool, 1,000 treasury, 1,000 burned), one open hunt, Power/cooldown cap, pending fees cannot score, refunded entries excluded, top-10 daily settlement with exact shares, pending delay, rescaling, carry-over, weekly points with Legend/Elite awards (ties, waiting for room, once) and the purchases pause.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

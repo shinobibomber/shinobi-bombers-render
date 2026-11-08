@@ -1,0 +1,127 @@
+{
+  "version": 11,
+  "effectStatus": "reviewed-poster-recreation-rgba",
+  "reference": {
+    "path": "reference/mythic-skill-v6.png",
+    "sha256": "5176a1625f97edcb50b26d0a043d71b4afab0af4e6a13eda37f231ad5866c414",
+    "status": "composite-reference-faithful-recreation"
+  },
+  "generator": {
+    "path": "../dev-vfx-lab/recreation/authoring.js",
+    "sha256": "80d11553921267195ab2be2eeaab13fec3238a929772843a30f10bd58d865fb8"
+  },
+  "method": "Four imagegen RGBA master effects, recovered original reusable elements, deterministic Canvas transformation/deformation and keyframe interpolation. Not independently hand-drawn frames.",
+  "cell": {
+    "width": 512,
+    "height": 512,
+    "columns": 4,
+    "spacing": 0,
+    "anchor": [
+      256,
+      420
+    ],
+    "transparentMargin": 16
+  },
+  "skills": {
+    "dragon_slash": {
+      "frames": 8,
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "columns": 4,
+      "anchor": [
+        256,
+        420
+      ],
+      "durationMs": 1000,
+      "layers": {
+        "ground": {
+          "path": "skills/poster-v11/dragon_slash_ground.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "919113ee0311d8ae621c5dc53dd6a6d74a834027d346747fd6517d15dc500fe0"
+        },
+        "front": {
+          "path": "skills/poster-v11/dragon_slash_front.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "9998591494aeb32e2874afd1899e4c3f9a08367b6eb33bf3999712b61501b54f"
+        }
+      }
+    },
+    "void_shuriken": {
+      "frames": 8,
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "columns": 4,
+      "anchor": [
+        256,
+        420
+      ],
+      "durationMs": 1200,
+      "layers": {
+        "ground": {
+          "path": "skills/poster-v11/void_shuriken_ground.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "ade03372ac0e52bacd1b6a732febcda9a221f3995afcbc1fed9107bd07ee8b3c"
+        },
+        "front": {
+          "path": "skills/poster-v11/void_shuriken_front.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "25999f6fd757e677f93889240183d3a492cf6c1b66a53f5c96b3d108048cbe46"
+        }
+      }
+    },
+    "raijin_field": {
+      "frames": 10,
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "columns": 4,
+      "anchor": [
+        256,
+        420
+      ],
+      "durationMs": 1500,
+      "layers": {
+        "ground": {
+          "path": "skills/poster-v11/raijin_field_ground.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "da1b88bfc564db33d1304bbc911a8adc8df165bfe83272531ff800e86c601ca3"
+        },
+        "front": {
+          "path": "skills/poster-v11/raijin_field_front.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "4bdbe3608b64ec4075fc75eaa5e7ab1007b86d029495c59a4c9ebd2f6d1a1b3f"
+        }
+      }
+    },
+    "mythic_dragon_ascension": {
+      "frames": 12,
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "columns": 4,
+      "anchor": [
+        256,
+        420
+      ],
+      "durationMs": 2000,
+      "layers": {
+        "ground": {
+          "path": "skills/poster-v11/mythic_dragon_ascension_ground.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "5327850edfaa41162a5bdb5644a2805df806225c3a483645ea18ebb9fe7c7b92"
+        },
+        "front": {
+          "path": "skills/poster-v11/mythic_dragon_ascension_front.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "e26753bda9c2d3892e980e62ec1b65ce6c11c5178f8684547642178d59222792"
+        }
+      }
+    }
+  }
+}

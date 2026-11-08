@@ -33,8 +33,31 @@ function built(dir = __dirname) {
 const httpsUrl = value => { try { return new URL(String(value || '')).protocol === 'https:'; } catch { return false; } };
 const on = value => /^(1|on|true|yes)$/i.test(String(value || ''));
 
-/** PRELAUNCH_MODE=on: the site serves only the pre-launch portal; the game API is not mounted. */
+/** PRELAUNCH_MODE=on: the site serves the pre-launch portal as the only public page. */
 const prelaunch = (env = process.env) => on(env.PRELAUNCH_MODE);
+
+/* Release stage (RELEASE_STAGE). Deploying never changes it; only an explicit environment change by the owner does.
+ *   PRELAUNCH_MODE=on:  "portal"  (default when unset) – portal only, the game is not loaded at all.
+ *                       "private" – the game is loaded but every game path is closed to everyone except the
+ *                                   wallets in RYO_PRIVATE_TEST_WALLETS (Stage 1, private live testing).
+ *   PRELAUNCH_MODE off: "public" must be set explicitly on Mainnet (Stage 3), so removing PRELAUNCH_MODE by
+ *                       mistake refuses to start instead of opening the game.
+ * Investor early access (Stage 2) is not implemented; it needs a separate, explicit approval.
+ * Any other value is reported by startupProblems() and the server does not start (fail closed). */
+const STAGES = Object.freeze(['portal', 'private', 'public']);
+function releaseStage(env = process.env) {
+  const raw = String(env.RELEASE_STAGE ?? '').trim().toLowerCase();
+  if (!raw) return prelaunch(env) ? 'portal' : null;
+  return STAGES.includes(raw) ? raw : 'invalid';
+}
+const WALLET_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+/** Wallets allowed into the game during private live testing (comma, space or newline separated). */
+function privateTesters(env = process.env) {
+  const list = String(env.RYO_PRIVATE_TEST_WALLETS || '').split(/[\s,]+/).filter(Boolean);
+  return list.length && list.every(w => WALLET_RE.test(w)) ? new Set(list) : new Set();
+}
+/** True only when the portal is public and the game is loaded for allowlisted testers. */
+const privateTesting = (env = process.env) => prelaunch(env) && releaseStage(env) === 'private';
 // Money settings that must not exist while only the pre-launch portal runs.
 const MONEY_SETTINGS = ['RYO_TREASURY_SECRET', 'RYO_TOKEN_MINT', 'RYO_STUDIO_WALLET', 'RYO_REVENUE_WALLET'];
 /** The account scope must be fixed before players register, so it survives creating the mint/treasury. */
@@ -70,12 +93,33 @@ function startupProblems(env = process.env, dir = __dirname) {
     if (build.key === 'mainnet') { try { treasuryRegistry(dir); } catch (e) { problems.push(e.message); } }
     if (on(env.STARTER_PACK)) problems.push('STARTER_PACK must be off while PRELAUNCH_MODE is on.');
     const money = MONEY_SETTINGS.filter(k => String(env[k] || '').trim());
-    if (money.length) problems.push('PRELAUNCH_MODE=on must not hold money settings (' + money.join(', ') + '). Add them only when the game launches.');
+    // Owner-approved (2026-11-09): money settings may exist only in private live testing, where every game/money
+    // path is closed by the server to all but RYO_PRIVATE_TEST_WALLETS. They must be complete (all or none).
+    // The portal-only stage still refuses them. Mainnet launch gates stay closed unless set explicitly.
+    const testers = privateTesters(env).size > 0;
+    if (money.length && !(releaseStage(env) === 'private' && testers)) problems.push('PRELAUNCH_MODE=on must not hold money settings (' + money.join(', ') + '). Add them only when the game launches, or for private live testing (RELEASE_STAGE=private with RYO_PRIVATE_TEST_WALLETS).');
+    else if (money.length && money.length !== MONEY_SETTINGS.length) problems.push('Private live testing needs all money settings or none (missing ' + MONEY_SETTINGS.filter(k => !money.includes(k)).join(', ') + ').');
+    // The same reviewed treasury-registry locks as a launched Mainnet server (e.g. RYO_TOKEN_MINT must match the registry).
+    if (money.length && build.key === 'mainnet') problems.push(...treasuryProblems(env, dir));
     if (!String(env.DATABASE_URL || '').trim()) problems.push('DATABASE_URL is required to store pre-launch registrations.');
     if (!scopeOk(env, net)) problems.push('RYO_SCOPE must be set and fixed before registrations open, e.g. "' + net.id + ':live".');
     if (!httpsUrl(env.RYO_SITE_ORIGIN) && !(net.key === 'devnet' && localOrigin(env.RYO_SITE_ORIGIN))) problems.push('RYO_SITE_ORIGIN must be this server\'s public https:// origin (wallet sign-in is bound to it).');
+    const stage = releaseStage(env);
+    if (stage !== 'portal' && stage !== 'private') problems.push('RELEASE_STAGE must be "portal" (default) or "private" while PRELAUNCH_MODE is on (got "' + String(env.RELEASE_STAGE).trim() + '"). Investor and public access need a separate, explicit release.');
+    if (stage === 'private') {
+      const raw = String(env.RYO_PRIVATE_TEST_WALLETS || '').split(/[\s,]+/).filter(Boolean);
+      if (!raw.length) problems.push('RELEASE_STAGE=private needs RYO_PRIVATE_TEST_WALLETS (the wallets allowed to test the game).');
+      else if (!raw.every(w => WALLET_RE.test(w))) problems.push('RYO_PRIVATE_TEST_WALLETS must list valid Solana wallet addresses only.');
+      if (net.key === 'mainnet') {
+        if (!httpsUrl(env.SOLANA_RPC_URL)) problems.push('RELEASE_STAGE=private on Mainnet needs SOLANA_RPC_URL (private, server-side RPC) as an https:// URL.');
+        if (!httpsUrl(env.SOLANA_PUBLIC_RPC_URL)) problems.push('RELEASE_STAGE=private on Mainnet needs SOLANA_PUBLIC_RPC_URL (browser RPC) as an https:// URL.');
+      }
+    }
     return problems;
   }
+  const stage = releaseStage(env);
+  if (stage === 'invalid' || stage === 'portal' || stage === 'private') problems.push('RELEASE_STAGE="' + String(env.RELEASE_STAGE).trim() + '" needs PRELAUNCH_MODE=on (the portal stays the public page). Use RELEASE_STAGE=public only for the approved public release.');
+  if (net.key === 'mainnet' && stage !== 'public') problems.push('The Mainnet game is public when PRELAUNCH_MODE is off: set RELEASE_STAGE=public explicitly for the approved public release, or keep PRELAUNCH_MODE=on.');
   if (net.key === 'mainnet') {
     if (!scopeOk(env, net)) problems.push('RYO_SCOPE must be set on Mainnet (the same value used during pre-launch, e.g. "solana-mainnet:live") so accounts carry over.');
     if (on(env.STARTER_PACK)) problems.push('STARTER_PACK must be off on Mainnet (it grants free Ryo and heroes). Remove it from this service.');
@@ -130,4 +174,4 @@ function rewriteText(text, file, rules) {
   return text;
 }
 
-module.exports = { NETWORKS, resolve, built, prelaunch, startupProblems, assertStartup, mainnetRules, rewriteText, MAINNET_LEFTOVERS };
+module.exports = { NETWORKS, resolve, built, prelaunch, releaseStage, privateTesters, privateTesting, startupProblems, assertStartup, mainnetRules, rewriteText, MAINNET_LEFTOVERS };

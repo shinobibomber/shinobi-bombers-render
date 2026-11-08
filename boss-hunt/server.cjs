@@ -2,8 +2,9 @@
  *
  * Each hunt costs a 10,000 Ryo entrance fee, paid through the token purchase flow: 8,000 (80%) goes to
  * that UTC day's prize pool, 1,000 (10%) to the treasury and 1,000 (10%) is burned. A hunt is a 60-second damage run
- * with the player's 5 strongest battle-ready heroes (no chakra used). Reported damage is capped by
- * what those heroes can deal in the elapsed time, and only entries whose fee finalized count. When
+ * with up to 5 battle-ready heroes. The server snapshots trained Power, cooldown and available
+ * chakra at activation; each timed attack costs one chakra and deals exactly Power damage. Client
+ * damage totals do not determine the score, and only entries whose fee finalized count. When
  * the day ends, the top 10 players by total damage share the pool 30/20/12/9/7/6/5/4/4/3% (rescaled
  * if fewer played); the payouts are credited to their Ryo balances. A day with no damage carries its
  * pool to the next day.
@@ -42,12 +43,12 @@ function prizes(pool, players = SHARES.length) {
   const out = weights.map(w => Math.floor(pool * w / total)); out[0] += pool - out.reduce((a, b) => a + b, 0);
   return out;
 }
-// Highest damage per second the 5 strongest battle-ready heroes can deal in a hunt (every volley,
-// no chakra): rank+1 projectiles of (trained power + Armor Breaker) per cooldown, Swift Hands applied.
+// Display/preflight cap only. Scoring uses combat-hunt's persistent per-entry attack schedule.
+// Decorative volley count and Armor Breaker never multiply Power or grant damage.
 function teamCap(profile) {
-  const { trainedStats } = require('./gameplay-options.cjs'), ready = new Set(profile.battleReady || []);
-  const rows = profile.heroes.filter(h => ready.has(h.tokenId)).map(h => { const s = trainedStats(h); return { dps: (Math.min(h.rank, 4) + 1) * (Math.max(1, s.pw) + 1) / (Math.max(.6, 1.6 - s.sp * .05) * .85), volley: (Math.min(h.rank, 4) + 1) * (Math.max(1, s.pw) + 1) }; })
-    .sort((a, b) => b.dps - a.dps).slice(0, 5);
+  const rules = require('./combat-rules.cjs'), ready = new Set(profile.battleReady || []);
+  const rows = profile.heroes.filter(h => ready.has(h.tokenId)).sort((a,b)=>rules.damage(b)-rules.damage(a)).slice(0,5)
+    .map(h => ({ dps: rules.damage(h) / rules.cooldown(h), volley: rules.damage(h) }));
   return { dps: rows.reduce((n, r) => n + r.dps, 0), volley: rows.reduce((n, r) => n + r.volley, 0) };
 }
 function quote(version) {
@@ -56,10 +57,11 @@ function quote(version) {
 // Run before the fee is taken: one open hunt at a time, and a battle-ready team.
 async function beforeEnter(store, wallet) {
   const now = store.now(), open = (await store.pool.query(`SELECT e.id FROM ryo_hunt_entries e JOIN ryo_purchases p ON p.scope=e.scope AND p.wallet=e.wallet AND p.request_id=e.id
-    WHERE e.scope=$1 AND e.wallet=$2 AND e.started>$3 AND p.status<>'refunded' LIMIT 1`, [store.scope, wallet, now - HUNT_SECONDS * 1000])).rows[0];
+    WHERE e.scope=$1 AND e.wallet=$2 AND (e.started>$3 OR e.combat->>'waiting'='true') AND p.status<>'refunded' LIMIT 1`, [store.scope, wallet, now - HUNT_SECONDS * 1000])).rows[0];
   if (open) fail('Finish your current hunt first.', 409);
   const profile = await store.profile(wallet);
-  if (!teamCap(profile).dps) fail('Make at least one hero battle-ready to enter a Boss Hunt.');
+  const chakra = require('./combat-chakra.cjs'), ready = new Set(profile.battleReady || []);
+  if (!profile.heroes.some(h => ready.has(h.tokenId) && chakra.recover(h,now,profile.dojo).value >= 1 && !(h.chakra.lockUntil > now))) fail('Rest at least one battle-ready hero before entering a Boss Hunt.');
 }
 // Record the hunt for a reserved fee (idempotent on the purchase request ID).
 async function record(store, wallet, row, body) {
@@ -71,20 +73,7 @@ async function record(store, wallet, row, body) {
   return { id: e.id, day: e.day, guardian: e.guardian, guardianName: GUARDIANS[e.guardian], started: Number(e.started), seconds: HUNT_SECONDS };
 }
 async function report(store, wallet, body) {
-  if (typeof body.entryId !== 'string') fail('Choose a hunt.');
-  const damage = Math.floor(Number(body.damage));
-  if (!Number.isFinite(damage) || damage < 0) fail('Invalid hunt damage.');
-  return store.transaction(async c => {
-    await store.locked(c, wallet);
-    const e = (await c.query('SELECT * FROM ryo_hunt_entries WHERE scope=$1 AND id=$2 AND wallet=$3 FOR UPDATE', [store.scope, body.entryId, wallet])).rows[0];
-    if (!e) fail('That hunt is not yours.');
-    const now = store.now(), elapsed = Math.max(0, Math.min(HUNT_SECONDS, (now - Number(e.started)) / 1000));
-    if (now > Number(e.started) + HUNT_SECONDS * 1000 + REPORT_GRACE_MS) return { damage: Number(e.damage), closed: true };
-    const cap = teamCap(await store.profileLocked(c, wallet)), allowed = Math.floor(elapsed * cap.dps * 1.1 + cap.volley);
-    const kept = Math.max(Number(e.damage), Math.min(damage, allowed));
-    await c.query('UPDATE ryo_hunt_entries SET damage=$3,reported=$4 WHERE scope=$1 AND id=$2', [store.scope, e.id, kept, now]);
-    return { damage: kept, capped: damage > allowed };
-  });
+  return require('./combat-hunt.cjs').report(store,wallet,body);
 }
 // Pay out every finished day: top 10 by total damage of finalized entries.
 async function settleDue(store) {
@@ -97,6 +86,12 @@ async function settleDue(store) {
       if (!row || row.settled) return;
       const join = 'FROM ryo_hunt_entries e JOIN ryo_purchases p ON p.scope=e.scope AND p.wallet=e.wallet AND p.request_id=e.id WHERE e.scope=$1 AND e.day=$2';
       if ((await c.query(`SELECT 1 ${join} AND p.status='pending' LIMIT 1`, [store.scope, day])).rows.length) return; // wait for fees to finalize
+      // A confirmed timed auto-battle completes even if its last browser report was lost.
+      for (const e of (await c.query(`SELECT e.id,e.combat,e.damage ${join} AND p.status='confirmed' AND e.combat IS NOT NULL`,[store.scope,day])).rows) {
+        if (!Array.isArray(e.combat.team)) continue;
+        const score=e.combat.team.reduce((n,u)=>n+require('./combat-hunt.cjs').attacks(u,now,e.combat.ends)*u.power,0);
+        await c.query('UPDATE ryo_hunt_entries SET damage=$3 WHERE scope=$1 AND id=$2',[store.scope,e.id,Math.max(Number(e.damage),score)]);
+      }
       const pool = Number(row.carry) + Number((await c.query(`SELECT COALESCE(SUM(e.prize),0) AS n ${join} AND p.status='confirmed'`, [store.scope, day])).rows[0].n);
       const top = (await c.query(`SELECT e.wallet, MAX(NULLIF(e.name,'')) AS name, SUM(e.damage) AS damage, MIN(e.started) AS first ${join} AND p.status='confirmed' GROUP BY e.wallet HAVING SUM(e.damage)>0 ORDER BY SUM(e.damage) DESC, MIN(e.started) ASC LIMIT 10`, [store.scope, day])).rows;
       if (!top.length) {
@@ -177,7 +172,7 @@ async function board(store, wallet) {
   const best = (await q('SELECT day, SUM(damage) AS damage FROM ryo_hunt_entries WHERE scope=$1 AND wallet=$2 GROUP BY day ORDER BY SUM(damage) DESC LIMIT 1', [store.scope, wallet]))[0];
   const last = (await q('SELECT day, pool FROM ryo_hunt_days WHERE scope=$1 AND settled=TRUE ORDER BY day DESC LIMIT 1', [store.scope]))[0];
   const winners = last ? (await q('SELECT * FROM ryo_hunt_payouts WHERE scope=$1 AND day=$2 ORDER BY rank', [store.scope, last.day])).map(r => ({ rank: r.rank, name: r.name, wallet: short(r.wallet), damage: Number(r.damage), prize: Number(r.amount), me: r.wallet === wallet })) : [];
-  const open = (await q(`SELECT e.* FROM ryo_hunt_entries e JOIN ryo_purchases p ON p.scope=e.scope AND p.wallet=e.wallet AND p.request_id=e.id WHERE e.scope=$1 AND e.wallet=$2 AND e.started>$3 AND p.status<>'refunded' ORDER BY e.started DESC LIMIT 1`, [store.scope, wallet, now - HUNT_SECONDS * 1000]))[0];
+  const open = (await q(`SELECT e.* FROM ryo_hunt_entries e JOIN ryo_purchases p ON p.scope=e.scope AND p.wallet=e.wallet AND p.request_id=e.id WHERE e.scope=$1 AND e.wallet=$2 AND (e.started>$3 OR e.combat->>'waiting'='true') AND p.status<>'refunded' ORDER BY e.started DESC LIMIT 1`, [store.scope, wallet, now - HUNT_SECONDS * 1000]))[0];
   const endsAt = Date.parse(day + 'T00:00:00Z') + DAY_MS, guardian = guardianOf(day);
   // This week: settled daily places plus today's live top 10 (provisional points).
   const week = weekOf(day), weekEnd = dayOf(Date.parse(week + 'T00:00:00Z') + 7 * DAY_MS);

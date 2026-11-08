@@ -67,7 +67,7 @@ async function heldMints(connection, wallet, cfg) {
   return out.sort();
 }
 
-// A new Tsukiyomi for a box NFT: Mythic stats (15–18), six perks, his own model. Rolled once per NFT.
+// A new Tsukiyomi for a box NFT: Mythic stats (17–20), seven perks, his own model. Rolled once per NFT.
 function mythicHero(mint) {
   const hero = require('./economy.cjs').hero(RANK);
   return { ...hero, tokenId: 'mythic-' + mint, name: 'Tsukiyomi', mythic: 'tsukiyomi', nft: { mint } };

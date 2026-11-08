@@ -1,8 +1,13 @@
 # Tsukiyomi — Mythic Shinobi (hero 13, rank 5)
 
-The exclusive hero of the **Limited NFT Box** for initial investors. Mythic is a sixth rank above
-Legend: base stats 15–18, six perks, Legend volleys (5 shots, 1 chakra each; his skills are visuals on
-those shots and the 8th-volley Mythic Dragon Ascension is visual only), Legend training prices, never summoned, fused or listed on the in-game Market.
+**Current beta expressions/reactions:** [MOTION_V4.md](MOTION_V4.md) covers idle blinking, gestures, reaction poses, vector emotes and reduced-motion fixes. [MOTION_V3.md](MOTION_V3.md) documents the prior movement/effects work. No production deployment is authorized for this update.
+
+**Animation v2 beta release:** see [ASSET_AUDIT.md](ASSET_AUDIT.md) for the historical v2 behavior,
+the former star display, runtime/import contract, preview commands, test evidence and missing
+authored art. The legacy art generation description below is historical provenance, not a
+claim of production readiness. V2 no longer loads the Fire-body animation strips.
+
+The exclusive hero of the **Limited NFT Box** for initial investors. Current beta: Mythic is the sixth rank above Legend, with base stats 17–20, all seven unique perks, and seven decorative projectiles per attack. One actual attack spends one chakra and deals trained Power damage; skill effects and the eighth-volley ultimate add no damage or chakra cost. Training costs twice Legend’s Ryo price plus seven Upgrade Shards per level. The NFT hero is never standard-summoned, fused, listed on the in-game Market or salvaged. See [Training and Upgrade Shards](../docs/TRAINING_SHARDS_BETA.md).
 
 ## Ownership (server: `server.cjs` → `app/server/mythic-hero.cjs`)
 
@@ -20,10 +25,12 @@ Set one or both on the Render service; until then the feature is dormant and nob
 * An RPC failure never removes a hero. A full collection (500) waits until there is room.
 * Supply, price and addresses are launch configuration, never code.
 
-## Art (`reference/` → `tools/build-assets.cjs` → `assets/`)
+## Historical asset provenance
 
-`node mythic-hero/tools/build-assets.cjs` rebuilds every asset from the three supplied sheets
-(their SHA-256 is recorded in `assets/metadata/tsukiyomi.json`):
+The retired `tools/build-assets.cjs` produced the legacy assets below from three supplied sheets
+(their SHA-256 is recorded in `assets/metadata/tsukiyomi.json`). Do not rerun it as the v2 build:
+it overwrites the metadata and restores the old borrowed-body strips. The normal `node unpack.cjs`
+build copies the reviewed assets and v2 runtime without running that extractor.
 
 * **Character** — the FRONT / LEFT / RIGHT / BACK views of `tsukiyomi-model.png`, cut from their
   backdrop (exterior flood fill, enclosed black clothing kept, soft un-blended edges). Previews keep
@@ -38,10 +45,12 @@ Set one or both on the Render service; until then the feature is dormant and nob
 * **Aura** — the existing Mythic Aura (`mythic-aura-sheet.png`): its 14 asset tiles and the 8-frame
   animation, keyed off the checkerboard. Nothing is redesigned.
 
-## Game (`mythic-hero.js` → `assets/mythic-hero/`)
+## Game (`mythic-hero.js` + `animation-controller.js` + `animation-runtime.js`)
 
-* Only the metadata loads at start; the art (≈3.5 MB) loads the first time a Mythic hero is drawn.
-* Frames: arena, menus and Boss Hunt use his frames (his real LEFT view for left-facing moves).
+* Only metadata loads at start; shared art loads the first time a Mythic hero is drawn. Legacy
+  character animation strips are excluded from downloads.
+* Arena, menus and Boss Hunt use the approved pose fallback until authored atlases are supplied
+  (including his real LEFT view for left-facing moves). See the audit for limitations and imports.
 * Aura layers (behind → front): energy pillars, floor sigil, inner halo, ground particles, orbit
   rings, energy wings, golden glyph ring, rune tablets · hero · crystal shards, divine crown. Cached
   in 8 phases; reduced motion / low effects use fewer layers. Players can switch it off (Heroes).

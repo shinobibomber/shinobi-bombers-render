@@ -1,0 +1,1812 @@
+{
+  "version": 2,
+  "presentationVersion": 11,
+  "automaticSkills": {
+    "dragon_slash": {
+      "name": "Dragon Slash",
+      "vfxName": "Dragon Crescent Gale",
+      "state": "SKILL_DRAGON_SLASH",
+      "frames": 8,
+      "trigger": "authorized_attack",
+      "cooldownMs": 12000,
+      "gameplayEffect": false,
+      "icon": "☽",
+      "enabled": true
+    },
+    "void_shuriken": {
+      "name": "Void Shuriken",
+      "vfxName": "Void Eclipse Shuriken",
+      "state": "SKILL_VOID_SHURIKEN",
+      "frames": 8,
+      "trigger": "authorized_attack",
+      "cooldownMs": 18000,
+      "gameplayEffect": false,
+      "icon": "✧",
+      "enabled": true
+    },
+    "raijin_field": {
+      "name": "Raijin Field",
+      "vfxName": "Thunder Chain Vortex",
+      "state": "SKILL_RAIJIN_FIELD",
+      "frames": 10,
+      "trigger": "authorized_attack",
+      "cooldownMs": 24000,
+      "gameplayEffect": false,
+      "icon": "ϟ",
+      "enabled": true
+    },
+    "mythic_dragon_ascension": {
+      "name": "Mythic Dragon Ascension",
+      "vfxName": "Mythic Dragon Dominion",
+      "state": "ULTIMATE_DRAGON_ASCENSION",
+      "frames": 12,
+      "trigger": "ultimate_eligible",
+      "cooldownMs": 30000,
+      "gameplayEffect": false,
+      "ultimate": true,
+      "icon": "♜",
+      "enabled": true
+    }
+  },
+  "skillSet": {
+    "version": 6,
+    "assetStatus": "reference-derived-native-resolution-not-HD-production-art",
+    "source": {
+      "path": "reference/mythic-skill-v6.png",
+      "sha256": "5176a1625f97edcb50b26d0a043d71b4afab0af4e6a13eda37f231ad5866c414",
+      "width": 1536,
+      "height": 1024,
+      "hasAlpha": false
+    },
+    "atlas": {
+      "path": "skills/reference-v6.png",
+      "width": 1280,
+      "height": 960,
+      "format": "PNG RGBA"
+    },
+    "clips": {
+      "dragon_slash": {
+        "name": "Dragon Slash",
+        "keyStages": 8,
+        "sourceFrames": [
+          "dragon_slash_0",
+          "dragon_slash_1",
+          "dragon_slash_2",
+          "dragon_slash_3",
+          "dragon_slash_4",
+          "dragon_slash_5",
+          "dragon_slash_6"
+        ],
+        "durationMs": 1000,
+        "loop": false,
+        "layer": "foreground",
+        "origin": [
+          160,
+          160
+        ],
+        "anchor": [
+          160,
+          160
+        ],
+        "visualPeak": 0.68,
+        "damage": false,
+        "chakraCost": 0
+      },
+      "void_shuriken": {
+        "name": "Void Shuriken",
+        "keyStages": 8,
+        "sourceFrames": [
+          "void_shuriken_0",
+          "void_shuriken_1",
+          "void_shuriken_2",
+          "void_shuriken_3",
+          "void_shuriken_4",
+          "void_shuriken_5",
+          "void_shuriken_6",
+          "void_shuriken_7"
+        ],
+        "durationMs": 1200,
+        "loop": false,
+        "layer": "foreground",
+        "origin": [
+          160,
+          160
+        ],
+        "anchor": [
+          160,
+          160
+        ],
+        "visualPeak": 0.68,
+        "damage": false,
+        "chakraCost": 0
+      },
+      "raijin_field": {
+        "name": "Raijin Field",
+        "keyStages": 10,
+        "sourceFrames": [
+          "raijin_field_0",
+          "raijin_field_1",
+          "raijin_field_2",
+          "raijin_field_3",
+          "raijin_field_4",
+          "raijin_field_5",
+          "raijin_field_6",
+          "raijin_field_7",
+          "raijin_field_8"
+        ],
+        "durationMs": 1500,
+        "loop": false,
+        "layer": "split",
+        "origin": [
+          160,
+          160
+        ],
+        "anchor": [
+          160,
+          160
+        ],
+        "visualPeak": 0.68,
+        "damage": false,
+        "chakraCost": 0
+      },
+      "mythic_dragon_ascension": {
+        "name": "Mythic Dragon Ascension",
+        "keyStages": 12,
+        "sourceFrames": [
+          "mythic_dragon_ascension_0",
+          "mythic_dragon_ascension_1",
+          "mythic_dragon_ascension_2",
+          "mythic_dragon_ascension_3",
+          "mythic_dragon_ascension_4",
+          "mythic_dragon_ascension_5",
+          "mythic_dragon_ascension_6",
+          "mythic_dragon_ascension_7",
+          "mythic_dragon_ascension_8",
+          "mythic_dragon_ascension_9",
+          "mythic_dragon_ascension_10"
+        ],
+        "durationMs": 2000,
+        "loop": false,
+        "layer": "foreground",
+        "origin": [
+          160,
+          160
+        ],
+        "anchor": [
+          160,
+          160
+        ],
+        "visualPeak": 0.68,
+        "damage": false,
+        "chakraCost": 0
+      }
+    },
+    "tiles": {
+      "dragon_slash_0": {
+        "rect": [
+          52,
+          62,
+          55,
+          94
+        ],
+        "anchor": [
+          27.5,
+          47
+        ],
+        "sourceRect": [
+          316,
+          151,
+          55,
+          94
+        ]
+      },
+      "dragon_slash_1": {
+        "rect": [
+          202,
+          62,
+          76,
+          94
+        ],
+        "anchor": [
+          38,
+          47
+        ],
+        "sourceRect": [
+          378,
+          151,
+          76,
+          94
+        ]
+      },
+      "dragon_slash_2": {
+        "rect": [
+          360,
+          62,
+          80,
+          94
+        ],
+        "anchor": [
+          40,
+          47
+        ],
+        "sourceRect": [
+          454,
+          151,
+          80,
+          94
+        ]
+      },
+      "dragon_slash_3": {
+        "rect": [
+          518,
+          62,
+          84,
+          94
+        ],
+        "anchor": [
+          42,
+          47
+        ],
+        "sourceRect": [
+          534,
+          151,
+          84,
+          94
+        ]
+      },
+      "dragon_slash_4": {
+        "rect": [
+          678,
+          62,
+          84,
+          94
+        ],
+        "anchor": [
+          42,
+          47
+        ],
+        "sourceRect": [
+          618,
+          151,
+          84,
+          94
+        ]
+      },
+      "dragon_slash_5": {
+        "rect": [
+          838,
+          62,
+          84,
+          94
+        ],
+        "anchor": [
+          42,
+          47
+        ],
+        "sourceRect": [
+          702,
+          151,
+          84,
+          94
+        ]
+      },
+      "dragon_slash_6": {
+        "rect": [
+          988,
+          62,
+          104,
+          94
+        ],
+        "anchor": [
+          52,
+          47
+        ],
+        "sourceRect": [
+          786,
+          151,
+          104,
+          94
+        ]
+      },
+      "void_shuriken_0": {
+        "rect": [
+          1172,
+          74,
+          56,
+          82
+        ],
+        "anchor": [
+          28,
+          41
+        ],
+        "sourceRect": [
+          311,
+          333,
+          56,
+          82
+        ]
+      },
+      "void_shuriken_1": {
+        "rect": [
+          48,
+          234,
+          64,
+          82
+        ],
+        "anchor": [
+          32,
+          41
+        ],
+        "sourceRect": [
+          378,
+          333,
+          64,
+          82
+        ]
+      },
+      "void_shuriken_2": {
+        "rect": [
+          207,
+          234,
+          66,
+          82
+        ],
+        "anchor": [
+          33,
+          41
+        ],
+        "sourceRect": [
+          447,
+          333,
+          66,
+          82
+        ]
+      },
+      "void_shuriken_3": {
+        "rect": [
+          366,
+          234,
+          68,
+          82
+        ],
+        "anchor": [
+          34,
+          41
+        ],
+        "sourceRect": [
+          517,
+          333,
+          68,
+          82
+        ]
+      },
+      "void_shuriken_4": {
+        "rect": [
+          524,
+          234,
+          72,
+          82
+        ],
+        "anchor": [
+          36,
+          41
+        ],
+        "sourceRect": [
+          589,
+          333,
+          72,
+          82
+        ]
+      },
+      "void_shuriken_5": {
+        "rect": [
+          683,
+          234,
+          73,
+          82
+        ],
+        "anchor": [
+          36.5,
+          41
+        ],
+        "sourceRect": [
+          663,
+          333,
+          73,
+          82
+        ]
+      },
+      "void_shuriken_6": {
+        "rect": [
+          841,
+          234,
+          77,
+          82
+        ],
+        "anchor": [
+          38.5,
+          41
+        ],
+        "sourceRect": [
+          737,
+          333,
+          77,
+          82
+        ]
+      },
+      "void_shuriken_7": {
+        "rect": [
+          998,
+          234,
+          84,
+          82
+        ],
+        "anchor": [
+          42,
+          41
+        ],
+        "sourceRect": [
+          816,
+          333,
+          84,
+          82
+        ]
+      },
+      "raijin_field_0": {
+        "rect": [
+          1174,
+          224,
+          52,
+          92
+        ],
+        "anchor": [
+          26,
+          85
+        ],
+        "sourceRect": [
+          303,
+          503,
+          52,
+          92
+        ]
+      },
+      "raijin_field_1": {
+        "rect": [
+          50,
+          384,
+          60,
+          92
+        ],
+        "anchor": [
+          30,
+          85
+        ],
+        "sourceRect": [
+          357,
+          503,
+          60,
+          92
+        ]
+      },
+      "raijin_field_2": {
+        "rect": [
+          207,
+          384,
+          65,
+          92
+        ],
+        "anchor": [
+          32.5,
+          85
+        ],
+        "sourceRect": [
+          419,
+          503,
+          65,
+          92
+        ]
+      },
+      "raijin_field_3": {
+        "rect": [
+          367,
+          384,
+          65,
+          92
+        ],
+        "anchor": [
+          32.5,
+          85
+        ],
+        "sourceRect": [
+          486,
+          503,
+          65,
+          92
+        ]
+      },
+      "raijin_field_4": {
+        "rect": [
+          527,
+          384,
+          66,
+          92
+        ],
+        "anchor": [
+          33,
+          85
+        ],
+        "sourceRect": [
+          553,
+          503,
+          66,
+          92
+        ]
+      },
+      "raijin_field_5": {
+        "rect": [
+          687,
+          384,
+          65,
+          92
+        ],
+        "anchor": [
+          32.5,
+          85
+        ],
+        "sourceRect": [
+          621,
+          503,
+          65,
+          92
+        ]
+      },
+      "raijin_field_6": {
+        "rect": [
+          847,
+          384,
+          66,
+          92
+        ],
+        "anchor": [
+          33,
+          85
+        ],
+        "sourceRect": [
+          687,
+          503,
+          66,
+          92
+        ]
+      },
+      "raijin_field_7": {
+        "rect": [
+          1005,
+          384,
+          70,
+          92
+        ],
+        "anchor": [
+          35,
+          85
+        ],
+        "sourceRect": [
+          753,
+          503,
+          70,
+          92
+        ]
+      },
+      "raijin_field_8": {
+        "rect": [
+          1157,
+          384,
+          86,
+          92
+        ],
+        "anchor": [
+          43,
+          85
+        ],
+        "sourceRect": [
+          824,
+          503,
+          86,
+          92
+        ]
+      },
+      "mythic_dragon_ascension_0": {
+        "rect": [
+          57,
+          523,
+          45,
+          113
+        ],
+        "anchor": [
+          22.5,
+          106
+        ],
+        "sourceRect": [
+          303,
+          687,
+          45,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_1": {
+        "rect": [
+          217,
+          523,
+          45,
+          113
+        ],
+        "anchor": [
+          22.5,
+          106
+        ],
+        "sourceRect": [
+          349,
+          687,
+          45,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_2": {
+        "rect": [
+          377,
+          523,
+          45,
+          113
+        ],
+        "anchor": [
+          22.5,
+          106
+        ],
+        "sourceRect": [
+          396,
+          687,
+          45,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_3": {
+        "rect": [
+          537,
+          523,
+          46,
+          113
+        ],
+        "anchor": [
+          23,
+          106
+        ],
+        "sourceRect": [
+          443,
+          687,
+          46,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_4": {
+        "rect": [
+          696,
+          523,
+          48,
+          113
+        ],
+        "anchor": [
+          24,
+          106
+        ],
+        "sourceRect": [
+          490,
+          687,
+          48,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_5": {
+        "rect": [
+          854,
+          523,
+          51,
+          113
+        ],
+        "anchor": [
+          25.5,
+          106
+        ],
+        "sourceRect": [
+          539,
+          687,
+          51,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_6": {
+        "rect": [
+          1012,
+          523,
+          55,
+          113
+        ],
+        "anchor": [
+          27.5,
+          106
+        ],
+        "sourceRect": [
+          591,
+          687,
+          55,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_7": {
+        "rect": [
+          1171,
+          523,
+          57,
+          113
+        ],
+        "anchor": [
+          28.5,
+          106
+        ],
+        "sourceRect": [
+          647,
+          687,
+          57,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_8": {
+        "rect": [
+          52,
+          683,
+          56,
+          113
+        ],
+        "anchor": [
+          28,
+          106
+        ],
+        "sourceRect": [
+          705,
+          687,
+          56,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_9": {
+        "rect": [
+          209,
+          683,
+          62,
+          113
+        ],
+        "anchor": [
+          31,
+          106
+        ],
+        "sourceRect": [
+          762,
+          687,
+          62,
+          113
+        ]
+      },
+      "mythic_dragon_ascension_10": {
+        "rect": [
+          358,
+          683,
+          83,
+          113
+        ],
+        "anchor": [
+          41.5,
+          106
+        ],
+        "sourceRect": [
+          825,
+          687,
+          83,
+          113
+        ]
+      },
+      "sigil": {
+        "rect": [
+          495,
+          717,
+          130,
+          79
+        ],
+        "anchor": [
+          65,
+          39.5
+        ],
+        "sourceRect": [
+          27,
+          918,
+          130,
+          79
+        ]
+      },
+      "gold_circle": {
+        "rect": [
+          656,
+          723,
+          127,
+          73
+        ],
+        "anchor": [
+          63.5,
+          36.5
+        ],
+        "sourceRect": [
+          171,
+          921,
+          127,
+          73
+        ]
+      },
+      "crescent": {
+        "rect": [
+          815,
+          715,
+          130,
+          81
+        ],
+        "anchor": [
+          65,
+          40.5
+        ],
+        "sourceRect": [
+          310,
+          918,
+          130,
+          81
+        ]
+      },
+      "vortex": {
+        "rect": [
+          988,
+          716,
+          104,
+          80
+        ],
+        "anchor": [
+          52,
+          40
+        ],
+        "sourceRect": [
+          445,
+          919,
+          104,
+          80
+        ]
+      },
+      "flash": {
+        "rect": [
+          1156,
+          716,
+          88,
+          80
+        ],
+        "anchor": [
+          44,
+          40
+        ],
+        "sourceRect": [
+          554,
+          918,
+          88,
+          80
+        ]
+      },
+      "crystals": {
+        "rect": [
+          17,
+          874,
+          125,
+          82
+        ],
+        "anchor": [
+          62.5,
+          41
+        ],
+        "sourceRect": [
+          649,
+          917,
+          125,
+          82
+        ]
+      },
+      "pillar": {
+        "rect": [
+          195,
+          876,
+          90,
+          80
+        ],
+        "anchor": [
+          45,
+          40
+        ],
+        "sourceRect": [
+          781,
+          918,
+          90,
+          80
+        ]
+      },
+      "impact": {
+        "rect": [
+          347,
+          874,
+          106,
+          82
+        ],
+        "anchor": [
+          53,
+          41
+        ],
+        "sourceRect": [
+          877,
+          916,
+          106,
+          82
+        ]
+      },
+      "flame": {
+        "rect": [
+          499,
+          876,
+          122,
+          80
+        ],
+        "anchor": [
+          61,
+          40
+        ],
+        "sourceRect": [
+          993,
+          918,
+          122,
+          80
+        ]
+      },
+      "trail": {
+        "rect": [
+          659,
+          894,
+          122,
+          62
+        ],
+        "anchor": [
+          61,
+          31
+        ],
+        "sourceRect": [
+          1122,
+          928,
+          122,
+          62
+        ]
+      }
+    },
+    "notes": [
+      "Poster labels omit some stage numbers: actual separable rows contain 7/8/9/11 drawings.",
+      "8/8/10/12 logical stages use time-based interpolation, not fabricated source frames.",
+      "Native RGB and geometry retained; exterior alpha and two-pixel edge feather only.",
+      "Clean isolated high-resolution effects and separate authored ground/foreground exports remain missing."
+    ]
+  },
+  "vfxReference": {
+    "path": "reference/mythic-skill-v6.png",
+    "sha256": "5176a1625f97edcb50b26d0a043d71b4afab0af4e6a13eda37f231ad5866c414",
+    "status": "composite-reference-faithful-recreation"
+  },
+  "characterReference": {
+    "file": "reference/latest-animation-v2.png",
+    "productionFramesAvailable": false,
+    "status": "composite-design-reference-only"
+  },
+  "hero": {
+    "id": 13,
+    "key": "tsukiyomi",
+    "name": "Tsukiyomi",
+    "title": "Mythic Shinobi",
+    "rarity": "Mythic",
+    "rank": 5,
+    "theme": "Lunar / Celestial / Void",
+    "classification": "Exclusive Mythic NFT",
+    "presentation": {
+      "rarityLabel": "Mythic",
+      "baseStatBand": [
+        17,
+        20
+      ],
+      "visualVolley": 7,
+      "baseRange": 6,
+      "effectiveRange": 7,
+      "perks": 7
+    },
+    "generation": "First Generation"
+  },
+  "frame": {
+    "width": 128,
+    "height": 128,
+    "anchor": [
+      64,
+      124
+    ],
+    "format": "PNG RGBA",
+    "displaySizes": [
+      32,
+      48,
+      64
+    ]
+  },
+  "states": {
+    "IDLE": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1600,
+      "fps": 2.5,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {},
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "directionTextures": {
+        "front": "animations/approved-v9/idle_front.png",
+        "left": "animations/approved-v9/idle_left.png",
+        "right": "animations/approved-v9/idle_right.png",
+        "back": "animations/approved-v9/idle_back.png"
+      },
+      "columns": 4
+    },
+    "WALK_FRONT": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 800,
+      "fps": 10,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "front",
+      "events": {},
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "directionTextures": {
+        "front": "animations/approved-v9/walk_front.png",
+        "left": "animations/approved-v9/walk_left.png",
+        "right": "animations/approved-v9/walk_right.png",
+        "back": "animations/approved-v9/walk_back.png"
+      },
+      "columns": 8
+    },
+    "WALK_LEFT": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 800,
+      "fps": 10,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "left",
+      "events": {},
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "directionTextures": {
+        "front": "animations/approved-v9/walk_front.png",
+        "left": "animations/approved-v9/walk_left.png",
+        "right": "animations/approved-v9/walk_right.png",
+        "back": "animations/approved-v9/walk_back.png"
+      },
+      "columns": 8
+    },
+    "WALK_RIGHT": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 800,
+      "fps": 10,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "right",
+      "events": {},
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "directionTextures": {
+        "front": "animations/approved-v9/walk_front.png",
+        "left": "animations/approved-v9/walk_left.png",
+        "right": "animations/approved-v9/walk_right.png",
+        "back": "animations/approved-v9/walk_back.png"
+      },
+      "columns": 8
+    },
+    "WALK_BACK": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 800,
+      "fps": 10,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "back",
+      "events": {},
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "directionTextures": {
+        "front": "animations/approved-v9/walk_front.png",
+        "left": "animations/approved-v9/walk_left.png",
+        "right": "animations/approved-v9/walk_right.png",
+        "back": "animations/approved-v9/walk_back.png"
+      },
+      "columns": 8
+    },
+    "RUN": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 13.333333333333334,
+      "loop": true,
+      "priority": 0,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {},
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "directionTextures": {
+        "front": "animations/approved-v9/run_front.png",
+        "left": "animations/approved-v9/run_left.png",
+        "right": "animations/approved-v9/run_right.png",
+        "back": "animations/approved-v9/run_back.png"
+      },
+      "columns": 8
+    },
+    "ATTACK": {
+      "frames": 6,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 550,
+      "fps": 10.909090909090908,
+      "loop": false,
+      "priority": 2,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "blade": 3,
+        "recover": 5
+      },
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 3,
+      "directionTextures": {
+        "front": "animations/approved-v9/attack_front.png",
+        "left": "animations/approved-v9/attack_left.png",
+        "right": "animations/approved-v9/attack_right.png",
+        "back": "animations/approved-v9/attack_back.png"
+      },
+      "columns": 6
+    },
+    "RANGED_ATTACK": {
+      "frames": 6,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 550,
+      "fps": 10.909090909090908,
+      "loop": false,
+      "priority": 2,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "release": 3,
+        "recover": 5
+      },
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 3,
+      "directionTextures": {
+        "front": "animations/approved-v9/ranged_attack_front.png",
+        "left": "animations/approved-v9/ranged_attack_left.png",
+        "right": "animations/approved-v9/ranged_attack_right.png",
+        "back": "animations/approved-v9/ranged_attack_back.png"
+      },
+      "columns": 6
+    },
+    "BOMB_PLACE": {
+      "frames": 6,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 10,
+      "loop": false,
+      "priority": 2,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "place": 2
+      },
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 2,
+      "directionTextures": {
+        "front": "animations/approved-v9/bomb_place_front.png",
+        "left": "animations/approved-v9/bomb_place_left.png",
+        "right": "animations/approved-v9/bomb_place_right.png",
+        "back": "animations/approved-v9/bomb_place_back.png"
+      },
+      "columns": 6
+    },
+    "HURT": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 400,
+      "fps": 10,
+      "loop": false,
+      "priority": 4,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "recoil": 0
+      },
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1,
+      "directionTextures": {
+        "front": "animations/approved-v9/hurt_front.png",
+        "left": "animations/approved-v9/hurt_left.png",
+        "right": "animations/approved-v9/hurt_right.png",
+        "back": "animations/approved-v9/hurt_back.png"
+      },
+      "columns": 4
+    },
+    "DEFEAT": {
+      "frames": 6,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1000,
+      "fps": 6,
+      "loop": false,
+      "priority": 5,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "down": 5
+      },
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 5,
+      "directionTextures": {
+        "front": "animations/approved-v9/defeat_front.png",
+        "left": "animations/approved-v9/defeat_left.png",
+        "right": "animations/approved-v9/defeat_right.png",
+        "back": "animations/approved-v9/defeat_back.png"
+      },
+      "columns": 6
+    },
+    "VICTORY": {
+      "frames": 6,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1200,
+      "fps": 5,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "sparkle": 3
+      },
+      "assetStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 3,
+      "directionTextures": {
+        "front": "animations/approved-v9/victory_front.png",
+        "left": "animations/approved-v9/victory_left.png",
+        "right": "animations/approved-v9/victory_right.png",
+        "back": "animations/approved-v9/victory_back.png"
+      },
+      "columns": 6
+    },
+    "EMOTE_ALERT": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "expression": 1
+      },
+      "texture": null,
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1
+    },
+    "EMOTE_QUESTION": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "expression": 1
+      },
+      "texture": null,
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1
+    },
+    "EMOTE_LIKE": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "expression": 1
+      },
+      "texture": null,
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1
+    },
+    "EMOTE_CELEBRATE": {
+      "frames": 4,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 600,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 1,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "expression": 1
+      },
+      "texture": null,
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh",
+      "reducedFrame": 1
+    },
+    "SKILL_DRAGON_SLASH": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1000,
+      "fps": 8,
+      "loop": false,
+      "priority": 3,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "visualPeak": 5
+      },
+      "texture": null,
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
+    },
+    "SKILL_VOID_SHURIKEN": {
+      "frames": 8,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1200,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 3,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "visualPeak": 5
+      },
+      "texture": null,
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
+    },
+    "SKILL_RAIJIN_FIELD": {
+      "frames": 10,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 1500,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "priority": 3,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "visualPeak": 6
+      },
+      "texture": null,
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
+    },
+    "ULTIMATE_DRAGON_ASCENSION": {
+      "frames": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "durationMs": 2000,
+      "fps": 6,
+      "loop": false,
+      "priority": 3,
+      "anchor": [
+        64,
+        124
+      ],
+      "direction": "facing",
+      "events": {
+        "visualPeak": 7
+      },
+      "texture": null,
+      "assetStatus": "runtime-skinned-approved-views",
+      "fallback": "approved-view-skeletal-mesh"
+    }
+  },
+  "skills": {
+    "dragon_slash": {
+      "name": "Dragon Slash",
+      "path": null,
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "frameCount": 8,
+      "fps": 8,
+      "anchor": [
+        256,
+        420
+      ],
+      "requiredFrames": 8,
+      "durationMs": 1000,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "eventsMs": {
+        "impact": 375
+      },
+      "renderer": "baked-v11",
+      "assetStatus": "reviewed-poster-recreation-rgba",
+      "legacySource": {
+        "path": "skills/dragon_slash.png",
+        "frameCount": 8
+      },
+      "damage": false,
+      "columns": 4,
+      "vfxName": "Dragon Crescent Gale",
+      "layers": {
+        "ground": {
+          "path": "skills/poster-v11/dragon_slash_ground.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "919113ee0311d8ae621c5dc53dd6a6d74a834027d346747fd6517d15dc500fe0"
+        },
+        "front": {
+          "path": "skills/poster-v11/dragon_slash_front.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "9998591494aeb32e2874afd1899e4c3f9a08367b6eb33bf3999712b61501b54f"
+        }
+      },
+      "animationEvents": {
+        "visualOnly": true,
+        "hitAuthority": "native-combat-only"
+      }
+    },
+    "void_shuriken": {
+      "name": "Void Shuriken",
+      "path": null,
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "frameCount": 8,
+      "fps": 6.666666666666667,
+      "anchor": [
+        256,
+        420
+      ],
+      "requiredFrames": 8,
+      "durationMs": 1200,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "eventsMs": {
+        "launch": 312.5,
+        "impact": 375
+      },
+      "renderer": "baked-v11",
+      "assetStatus": "reviewed-poster-recreation-rgba",
+      "legacySource": {
+        "path": "skills/void_shuriken.png",
+        "frameCount": 8
+      },
+      "damage": false,
+      "columns": 4,
+      "vfxName": "Void Eclipse Shuriken",
+      "layers": {
+        "ground": {
+          "path": "skills/poster-v11/void_shuriken_ground.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "ade03372ac0e52bacd1b6a732febcda9a221f3995afcbc1fed9107bd07ee8b3c"
+        },
+        "front": {
+          "path": "skills/poster-v11/void_shuriken_front.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "25999f6fd757e677f93889240183d3a492cf6c1b66a53f5c96b3d108048cbe46"
+        }
+      },
+      "animationEvents": {
+        "visualOnly": true,
+        "hitAuthority": "native-combat-only"
+      }
+    },
+    "raijin_field": {
+      "name": "Raijin Field",
+      "path": null,
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "frameCount": 10,
+      "fps": 6.666666666666667,
+      "anchor": [
+        256,
+        420
+      ],
+      "requiredFrames": 10,
+      "durationMs": 1500,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "eventsMs": {
+        "strike": 428.57142857142856,
+        "peak": 500
+      },
+      "renderer": "baked-v11",
+      "assetStatus": "reviewed-poster-recreation-rgba",
+      "legacySource": {
+        "path": "skills/raijin_field.png",
+        "frameCount": 10
+      },
+      "damage": false,
+      "columns": 4,
+      "vfxName": "Thunder Chain Vortex",
+      "layers": {
+        "ground": {
+          "path": "skills/poster-v11/raijin_field_ground.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "da1b88bfc564db33d1304bbc911a8adc8df165bfe83272531ff800e86c601ca3"
+        },
+        "front": {
+          "path": "skills/poster-v11/raijin_field_front.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "4bdbe3608b64ec4075fc75eaa5e7ab1007b86d029495c59a4c9ebd2f6d1a1b3f"
+        }
+      },
+      "animationEvents": {
+        "visualOnly": true,
+        "hitAuthority": "native-combat-only"
+      }
+    },
+    "mythic_dragon_ascension": {
+      "name": "Mythic Dragon Ascension",
+      "path": null,
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "frameCount": 12,
+      "fps": 6,
+      "anchor": [
+        256,
+        420
+      ],
+      "requiredFrames": 12,
+      "durationMs": 2000,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "eventsMs": {
+        "burst": 833.3333333333334,
+        "end": 916.6666666666666
+      },
+      "renderer": "baked-v11",
+      "assetStatus": "reviewed-poster-recreation-rgba",
+      "legacySource": {
+        "path": "skills/mythic_dragon_ascension.png",
+        "frameCount": 10
+      },
+      "damage": false,
+      "columns": 4,
+      "vfxName": "Mythic Dragon Dominion",
+      "layers": {
+        "ground": {
+          "path": "skills/poster-v11/mythic_dragon_ascension_ground.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "5327850edfaa41162a5bdb5644a2805df806225c3a483645ea18ebb9fe7c7b92"
+        },
+        "front": {
+          "path": "skills/poster-v11/mythic_dragon_ascension_front.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "e26753bda9c2d3892e980e62ec1b65ce6c11c5178f8684547642178d59222792"
+        }
+      },
+      "animationEvents": {
+        "visualOnly": true,
+        "hitAuthority": "native-combat-only"
+      }
+    }
+  },
+  "vfxSources": [
+    {
+      "path": "skills/poster-v11/dragon_slash_ground.png",
+      "width": 2048,
+      "height": 1024,
+      "sha256": "919113ee0311d8ae621c5dc53dd6a6d74a834027d346747fd6517d15dc500fe0"
+    },
+    {
+      "path": "skills/poster-v11/dragon_slash_front.png",
+      "width": 2048,
+      "height": 1024,
+      "sha256": "9998591494aeb32e2874afd1899e4c3f9a08367b6eb33bf3999712b61501b54f"
+    },
+    {
+      "path": "skills/poster-v11/void_shuriken_ground.png",
+      "width": 2048,
+      "height": 1024,
+      "sha256": "ade03372ac0e52bacd1b6a732febcda9a221f3995afcbc1fed9107bd07ee8b3c"
+    },
+    {
+      "path": "skills/poster-v11/void_shuriken_front.png",
+      "width": 2048,
+      "height": 1024,
+      "sha256": "25999f6fd757e677f93889240183d3a492cf6c1b66a53f5c96b3d108048cbe46"
+    },
+    {
+      "path": "skills/poster-v11/raijin_field_ground.png",
+      "width": 2048,
+      "height": 1536,
+      "sha256": "da1b88bfc564db33d1304bbc911a8adc8df165bfe83272531ff800e86c601ca3"
+    },
+    {
+      "path": "skills/poster-v11/raijin_field_front.png",
+      "width": 2048,
+      "height": 1536,
+      "sha256": "4bdbe3608b64ec4075fc75eaa5e7ab1007b86d029495c59a4c9ebd2f6d1a1b3f"
+    },
+    {
+      "path": "skills/poster-v11/mythic_dragon_ascension_ground.png",
+      "width": 2048,
+      "height": 1536,
+      "sha256": "5327850edfaa41162a5bdb5644a2805df806225c3a483645ea18ebb9fe7c7b92"
+    },
+    {
+      "path": "skills/poster-v11/mythic_dragon_ascension_front.png",
+      "width": 2048,
+      "height": 1536,
+      "sha256": "e26753bda9c2d3892e980e62ec1b65ce6c11c5178f8684547642178d59222792"
+    }
+  ],
+  "aura": {
+    "source": "metadata/tsukiyomi.json",
+    "unchanged": true,
+    "quality": "legacy-extracted-layers"
+  },
+  "limits": {
+    "actors": 128,
+    "effects": 48,
+    "lowEffects": 12,
+    "textureFrames": 160
+  },
+  "assetStatus": "approved-rig-atlases-and-poster-vfx"
+}

@@ -12,7 +12,7 @@ const SCREENS = ['home', 'adventure', 'heroes', 'summon', 'fusion', 'dojo', 'mar
     p.on('console', m => { if (m.type() === 'error') issues.push('console: ' + m.text().slice(0, 160)); });
     p.on('requestfailed', r => { if (!/favicon/.test(r.url())) issues.push('failed: ' + r.url() + ' ' + (r.failure()?.errorText || '')); });
     p.on('response', r => { if (r.status() >= 400) issues.push('HTTP ' + r.status() + ': ' + r.url()); });
-    f.holdAdventure = false; f.balance = 5000000;
+    f.holdAdventure = false;f.profile.upgradeShards=100; f.balance = 5000000;
     const heroes = Array.from({ length: 16 }, (_, i) => hero(i, i % 5));
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.slice(0, 12).map(h => h.tokenId), sensei: true });
     await p.locator('#loginPhantom').click();
@@ -33,6 +33,7 @@ const SCREENS = ['home', 'adventure', 'heroes', 'summon', 'fusion', 'dojo', 'mar
       await p.evaluate(() => go(2)); await p.waitForFunction(() => WebsiteDesign.current() === 'summon');
       await p.evaluate(() => document.querySelector('.sbw-scr.on [data-sbwid="sb-hist"]').click()); await p.waitForSelector('.sbw-history[open]'); await p.keyboard.press('Escape');
       await p.evaluate(() => { up(S.h.findIndex(h => h.tokenId === 's-0')); });
+      await p.locator('.hero-upgrade-dialog button').filter({hasText:/^Upgrade/}).click();
       await p.waitForSelector('#checkoutCancel', { state: 'visible' }); await p.locator('#checkoutCancel').click();
       // Adventure keeps running on both layouts.
       await p.evaluate(() => go(0)); await p.waitForTimeout(1500);

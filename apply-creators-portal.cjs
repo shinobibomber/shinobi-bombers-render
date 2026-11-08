@@ -41,7 +41,8 @@ function applyCreatorsPortal(appDir = path.join(__dirname, 'app')) {
   const schema = path.join(server, 'schema.sql'); if (!fs.readFileSync(schema, 'utf8').includes('-- Creators Portal v1:')) fs.appendFileSync(schema, '\n' + fs.readFileSync(path.join(src, 'schema.sql'), 'utf8').replace(/\r\n?/g, '\n') + '\n');
   if (!fs.readFileSync(schema, 'utf8').includes('-- Player Referrals v1:')) fs.appendFileSync(schema, '\n' + fs.readFileSync(path.join(src, 'player-schema.sql'), 'utf8').replace(/\r\n?/g, '\n') + '\n');
   for (const [file, hooks] of [['service.cjs', serviceHooks], ['store.cjs', storeHooks], ['adventure.cjs', adventureHooks]]) {
-    const p = path.join(server, file); fs.writeFileSync(p, hooks.reduce((s, hook, i) => replace(s, hook, file + ':' + i), fs.readFileSync(p, 'utf8')));
+    const p = path.join(server, file), source = fs.readFileSync(p, 'utf8');
+    fs.writeFileSync(p, hooks.reduce((s, hook, i) => file==='adventure.cjs' && source.includes("const advance=require('./combat-adventure.cjs').advance;") && i<5 ? s : replace(s, hook, file + ':' + i), source));
   }
   const index = path.join(publicDir, 'index.html'); let html = fs.readFileSync(index, 'utf8');
   for (const hook of creatorPatches) html = replace(html, hook, 'authenticated client API');

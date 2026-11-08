@@ -75,7 +75,12 @@ services:
       - key: REFERRAL_ENROLLMENT_LIMIT   # shared referral cap (default 1000)
         value: "100000"
       # STARTER_PACK must never be set on this service.
-      # Phase 2 = OFFICIAL LAUNCH. Remove PRELAUNCH_MODE, keep RYO_SCOPE, then add:
+      # Phase 1b = PRIVATE LIVE TESTING (owner only; portal stays the public page). Set by hand in the dashboard:
+      #   RELEASE_STAGE=private, RYO_PRIVATE_TEST_WALLETS=<owner wallet(s)>, SOLANA_RPC_URL, SOLANA_PUBLIC_RPC_URL.
+      #   To sign into the game, also the 4 money settings (all or none; allowed ONLY in this stage). Launch gates stay off.
+      #   Unset RELEASE_STAGE = portal only (game not loaded). Deploys never change the stage. README "Private live testing".
+      # Phase 2 = OFFICIAL LAUNCH (separate explicit approval). Remove PRELAUNCH_MODE, set RELEASE_STAGE=public
+      #   (required on Mainnet: without it the server refuses to start), keep RYO_SCOPE, then add:
       #   SOLANA_RPC_URL, SOLANA_PUBLIC_RPC_URL, RYO_TREASURY_SECRET (NEW Mainnet keypair), RYO_TOKEN_MINT,
       #   RYO_STUDIO_WALLET, RYO_REVENUE_WALLET, optional RYO_TOKEN_SYMBOL, and open features one at a time:
       #   SUMMONING_ENABLED, MARKETPLACE_ENABLED, REWARD_CLAIMS_ENABLED, SOL_DEPOSITS_ENABLED, SOL_WITHDRAWALS_ENABLED

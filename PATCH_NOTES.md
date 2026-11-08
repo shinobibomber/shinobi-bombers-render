@@ -20,6 +20,178 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 9, 2026 · New Chat Screen)**
+
+**✨ New**
+• **Chat screen redesign** — a full Chat screen with channels on the left, the live feed in the middle, and Online Ninjas, My Guild and Quick Actions on the right.
+• **Open full chat** — press ⤢ in the Home chat pop-up, or More → Chat on phones.
+• **Phone and tablet layouts** — channels become a top strip and the side panels open from a Social button.
+
+**ℹ️ Preview only for now**
+• Global and System chat are live. Guild, Team, Direct Messages, Trade and Event channels, plus the Online Ninjas list, guild card and Quick Actions, are previews and open when those features launch.
+
+---
+
+SHINOBI BOMBERS - BETA PATCH NOTES (Nov 9, 2026 | Mythic Poster Effects)
+
+- Tsukiyomi now uses four new skill effects: Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion.
+- Effects play in full in Adventure and Boss Hunt, even during quick attacks.
+- Character art, Mythic Aura, damage, chakra and rewards are unchanged.
+- Faithful recreation of the supplied poster; fine details differ from original production sprite art.
+
+---
+
+SHINOBI BOMBERS - LOCAL REVIEW NOTES (Nov 9, 2026 | Mythic Skill Variety)
+
+- All four Mythic skill visuals can rotate during melee or ranged combat, including Boss Hunt.
+- Added crescent blades, eclipse shuriken, a lightning-chain vortex and a violet dragon with gold orbits based on the new VFX motion study.
+- Basic melee attacks have their own restrained slash, so they no longer look like repeated Dragon Slash casts.
+- Skill effects finish their animation independently of basic attacks and short impact flashes. Decorative volleys cannot create duplicate casts.
+- Independent 12s / 18s / 24s / 30s testing cooldowns remain in place. Skills on cooldown fall back to normal attacks.
+- Tsukiyomi's model, original aura, stats and NFT ownership are preserved. One attack still deals Hero Power damage and costs one chakra; skill visuals add no damage, chakra cost or rewards.
+
+Local review only; not pushed or deployed.
+
+---
+
+SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 9, 2026 | Mythic Animations)
+
+- Tsukiyomi now displays MYTHIC and FIRST GENERATION NFT without a star rating.
+- Automatic signature visuals use independent Beta testing cooldowns: Dragon Slash 12s, Void Shuriken 18s, Raijin Field 24s and Mythic Dragon Ascension 30s. Normal attacks continue during cooldowns.
+- Added complete transparent rig-baked movement/action atlases in four directions and clean layered skill-effect atlases. The original hero model and Mythic Aura are preserved.
+- Heroes Collection shows each testing cooldown and cosmetic ability previews.
+- One attack still deals Hero Power damage and costs one chakra. Skill visuals add no damage, chakra cost or rewards.
+
+Beta test server only. Production is unchanged. Exact hand-drawn poster poses remain unavailable; working animations use the approved rig.
+
+---
+
+**SHINOBI BOMBERS - LOCAL REVIEW NOTES (Nov 9, 2026 | Mythic Automatic Skills V2)**
+
+- Tsukiyomi now alternates basic attacks with Dragon Slash, Void Shuriken, Raijin Field and Mythic Dragon Ascension automatically. No manual combat buttons are required.
+- Each skill has its own eligibility and configurable cosmetic cooldown. Unavailable skills fall back without stopping attacks; final additional cooldown values await balance approval.
+- Heroes Collection lists melee/ranged basics, three signature skills and the Ultimate, with read-only animation previews and clear activation information.
+- Restored the latest requested seven-star Mythic designation. Added a separate four-direction ranged-attack animation using the existing approved hero art.
+- Hunt animations face the guardian and stay scoped to Hunt team members, preserving other heroes' Adventure movement.
+- Preserved the permanent Mythic Aura, stats, NFT ownership, rewards and economy. One attack still deals Hero Power damage and costs one chakra; skill visuals add neither damage nor chakra cost.
+
+Local review only. Not pushed or deployed. Exact new character artwork still needs isolated transparent frames; current animation uses the approved-view rig and existing reference-resolution VFX.
+
+---
+
+**SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Mythic Skill Rotation)**
+
+- Each Mythic hero now cycles Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion, using a different skill visual on every attack.
+- Boss Hunt keeps the same chosen skill across decorative volley trails and its impact. Redrawing a projectile does not change the skill.
+- Removed the repeated lightning layer from unrelated Mythic attacks.
+
+Test server only. Damage remains Hero Power, each attack costs one chakra, and skill visuals add no extra damage or chakra cost. Aura, stats, ownership and rewards are unchanged.
+
+---
+
+**SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Mythic Skills)**
+
+- Tsukiyomi now uses Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion visuals from the supplied reference artwork.
+- Smoother effect timing, separate ground and foreground layers, and bounded effects for mobile keep Adventure readable.
+- The approved character and permanent Mythic Aura are preserved. One attack still deals Hero Power damage and costs one chakra; skill visuals add no damage or chakra cost.
+
+Test server only. Rewards, ownership and training are unchanged. These effects use native-resolution reference artwork; clean isolated HD exports remain pending.
+
+---
+
+**SHINOBI BOMBERS - LOCAL REVIEW NOTES (Nov 8, 2026 | Mythic Skills)**
+
+- Tsukiyomi previews Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion using the supplied reference artwork.
+- Added a private local VFX lab with playback, frame inspection, background, direction, character, aura and quality controls.
+- Added four short MP4 demonstrations and a combined skill showcase.
+- Effects remain cosmetic: Hero Power damage, one chakra per attack, zero additional skill chakra. The approved character and permanent Mythic Aura are preserved.
+
+Local review only; not deployed. Artwork remains reference-derived at its native resolution. Clean isolated HD exports are still required for final production quality.
+
+---
+**SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Clearer Adventure Heroes)**
+
+- Adventure heroes now match Mythic's body size, with more consistent sizing when they turn.
+- Hero bodies draw directly from their original sprite cells for clearer movement and fewer resize artifacts.
+- Existing rarity auras, Mythic artwork, skill effects and menu portraits are preserved.
+
+Test server only. Combat, chakra, stats, ownership and Ryo rewards are unchanged.
+
+---
+
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Training & Upgrade Shards)**
+
+• Resting heroes recover 1 chakra per minute by default. Fast Charge now adds 0.5 chakra per minute, and active Dojo bonuses add separately.
+• The Train button opens a choice: Upgrade / Train or Salvage. Max-level heroes can still open Manage to salvage.
+• Salvaging permanently removes a spare in-game hero and grants Upgrade Shards: Genin 1, Chunin 2, Jonin 3, Elite 4, Legend 5, Mythic 7. A second confirmation explains the permanent loss. In-flight defeats are saved before removal.
+• Each training level now requires the same rarity-based shard amount plus its Ryo price. Your shard balance appears in hero details and the training dialog.
+• Mythic training now costs twice Legend: 60,000 / 120,000 / 240,000 / 480,000 Ryo for levels 2–5, plus 7 shards each time.
+• Failed training keeps your shards. Retried salvage cannot grant duplicate rewards. NFT-bound heroes and heroes committed to an active Boss Hunt are protected from salvage.
+
+• Chest confirmation stays stable after quick amount edits; changing an amount always requires a fresh review.
+
+Test server only. Existing levels, permanent perks, ownership, damage and attack chakra costs are preserved.
+
+---
+
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Deployment Reliability)**
+
+• Game updates now recover from temporary archive-download failures with timed retries and an official GitHub fallback.
+• Builds can reuse a verified archive copy when available. Every archive must still pass the original security and integrity checks.
+
+Test server only. Existing accounts, heroes, training, shards and reward rules are preserved.
+
+---
+
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Mythic & Combat Perks)**
+
+• Tsukiyomi has stronger arm and foot movement in all four directions, with brighter Dragon Slash, Void Shuriken, Raijin Field and Dragon Ascension effects.
+• Rarity labels now show names without stars. Mythic base Power, Speed and Stamina roll 17–20, with seven visual projectiles, 6 base range (7 with Piercing), and all seven unique perks.
+• Every actual attack deals trained Power damage and spends exactly 1 chakra. Decorative volleys, elemental effects and ultimates add no damage or chakra cost.
+• Updated all seven perks: Bounty +3% Adventure Ryo, Armor Breaker target priority, Wind Step +12% movement, Fast Charge +15% resting recovery, Chakra Saver +10% capacity, Piercing +1 range, and Swift Hands 8% shorter cooldown.
+• Boss Hunt now uses chakra and server-validated attacks. Pending entries can be resumed without a second fee.
+• Preserved hero identities and training, repaired Mythic perk counts, and protected chakra across purchases, reconnects and NFT transfers.
+• Referral qualification observes verified defeats without spending chakra twice. Mobile hero controls stay stable as chakra changes.
+• Going offline safely saves in-flight defeats before disconnecting, and delayed requests cannot restart Adventure.
+
+Test server only. Existing reward funding, fees and the approved Mythic Aura are preserved.
+
+---
+
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Tsukiyomi Expressions)**
+
+• Added gentle breathing and blinking to Tsukiyomi's idle animation in his approved character design.
+• Polished attack wind-up, follow-through and recovery, plus bomb-placement and victory gestures.
+• Improved the hurt, kneeling defeat and four emote animations available in the test preview.
+• Alert, Question, Like and Celebrate now use consistent, clear symbols across browsers.
+• Fixed action animations ignoring reduced-motion settings. Animation events retain their original timing.
+• Added shared idle frames and retained bounded caches. Combat, NFT ownership, the Mythic Aura and Ryo rewards are unchanged.
+
+Test server only. Production is unchanged.
+
+---
+
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 7, 2026 · Mythic Motion & Effects)**
+
+• Tsukiyomi now moves his arms and legs while walking and running in all four directions. Attacks no longer freeze his footsteps.
+• Comfort mode keeps a gentler walking cycle while reducing visual effects. System reduced-motion settings are still respected.
+• Upgraded Dragon Slash trails, spinning Void Shuriken, layered Raijin lightning and a new spectral dragon for Mythic Dragon Ascension.
+• Added 88 reusable movement/attack frames and bounded effect caches for smoother rendering with multiple Mythic heroes.
+• The approved character, existing Mythic Aura, combat stats, NFT ownership and Ryo rewards are preserved.
+
+Test server only. Production is unchanged.
+
+---
+
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 7, 2026 · Tsukiyomi Animations)**
+
+Test server only; production unchanged.
+
+• Tsukiyomi now displays exactly seven Mythic stars in the Collection, hero details and Adventure team.
+• Added animation support for movement, attacks, bomb placement, reactions, victory and emotes, plus four skill-effect timelines connected to existing Adventure actions.
+• Kept Tsukiyomi's approved appearance and existing Mythic Aura, with bounded effects and cleanup between maps.
+• Production animation artwork is still pending. The preview uses animated poses and older skill art; it does not yet contain fully authored character motion or twelve distinct dragon frames.
+• NFT ownership, deployed hero limits, combat balance and Ryo rewards remain unchanged.
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Creator Referral Sync)**
 
 **🔄 Changes**

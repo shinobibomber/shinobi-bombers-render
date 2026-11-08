@@ -21,13 +21,18 @@ const patches = [
  ],
  [
   "SS.blit(g,img,sx,sy+hop,s,flip);",
-  "SS.blit(g,img,sx,sy+hop,s,flip);if(window.CharacterAnimations?.loaded)CharacterAnimations.drawActorEffects(g,h,now,{x:sx,y:sy+hop,scale:s,flip});"
+  "if(window.CharacterAnimations?.loaded)CharacterAnimations.drawAdventureHero(g,img,sx,sy+hop,s,flip,now);else SS.blit(g,img,sx,sy+hop,s,flip);if(window.CharacterAnimations?.loaded)CharacterAnimations.drawActorEffects(g,h,now,{x:sx,y:sy+hop,scale:s,flip});"
  ],
  [
   "drawParticles(dt);\r\n  for(const f of fl)",
   "drawParticles(dt);if(window.CharacterAnimations?.loaded)CharacterAnimations.drawImpacts(g,now,{proj,Sg});\r\n  for(const f of fl)"
  ]
 ];
+// Only this presentation delta must be reversed against the frozen native module.
+const adventureSizingPatches = [[
+ "SS.blit(g,img,sx,sy+hop,s,flip);if(window.CharacterAnimations?.loaded)CharacterAnimations.drawActorEffects(g,h,now,{x:sx,y:sy+hop,scale:s,flip});",
+ patches[4][1], 1
+]];
 function count(text, value) { return text.split(value).length - 1; }
 function patchHtml(html) {
  if(count(html,'</head>')!==1)throw Error('Animation setup requires one HTML head.');
@@ -52,5 +57,5 @@ function applyCharacterAnimations(appDir=path.join(__dirname,'app')){
  if(html!==patched)fs.writeFileSync(index,patched);
  console.log('Character-specific animation sets and effects applied.');
 }
-module.exports={applyCharacterAnimations,patchHtml};
+module.exports={applyCharacterAnimations,patchHtml,adventureSizingPatches};
 if(require.main===module)applyCharacterAnimations();

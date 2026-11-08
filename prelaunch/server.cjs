@@ -14,7 +14,7 @@
 'use strict';
 const crypto = require('node:crypto'), fs = require('node:fs'), path = require('node:path');
 
-const COOKIE = 'sb_pl';
+const COOKIE = 'sb_pl', PRIVATE_COOKIE = 'sb_pt';
 const RESERVED = new Set(['admin', 'administrator', 'moderator', 'mod', 'support', 'shinobi', 'shinobibombers', 'official', 'staff', 'system', 'team', 'dev', 'developer', 'null', 'undefined', 'root']);
 // Per client address per minute. Generous enough for many players behind one shared address (mobile carriers, cafés).
 const LIMITS = { all: 240, challenge: 20, register: 20 }, WINDOW = 60000;
@@ -46,7 +46,10 @@ function readAnnouncements(file) {
   } catch { return []; }
 }
 
-function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null } = {}) {
+/* privateAccess (only when RELEASE_STAGE=private, see network/network.cjs): { allowed(wallet) -> boolean }.
+ * The "private-access" action then hands an allowlisted, signed-in wallet the same session token in a second
+ * cookie (PRIVATE_COOKIE, Path=/) that the site host checks on every game path. Without it the action does not exist. */
+function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null, privateAccess = null } = {}) {
   const server = path.join(gameDir, 'server'), need = name => require(path.join(server, name));
   const fromApp = name => require(require.resolve(name, { paths: [server] }));
   const { Store } = need('store.cjs'), { verifySignature } = need('service.cjs'), cp = need('creators-portal.cjs'), players = need('player-referrals.cjs');
@@ -237,6 +240,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     'Sign in to Shinobi Bombers. This is free: it does not send a transaction or move any funds.', '',
     'URI: ' + origin, 'Version: 1', 'Chain ID: ' + net.key, 'Nonce: ' + nonce,
     'Issued At: ' + new Date(t).toISOString(), 'Expiration Time: ' + new Date(t + 120000).toISOString()].join('\n');
+  const privateCookie = (token, maxAge) => PRIVATE_COOKIE + '=' + (token ? encodeURIComponent(token) : '') + '; Path=/; HttpOnly; SameSite=Strict; Max-Age=' + maxAge + (secureCookie ? '; Secure' : '');
 
   async function dispatch(req, body, ip) {
     const action = body.action; limit(ip, action);
@@ -261,6 +265,12 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
       const token = sessionToken(req);
       if (token) await rows('DELETE FROM ryo_sessions WHERE scope=$1 AND token_hash=$2', [hash(token)]);
       return { data: { ok: true }, cookie: cookie('', 0) };
+    }
+    if (action === 'private-access') {
+      if (!privateAccess) fail('Unknown action.', 404, 'UNKNOWN_ACTION');
+      const { wallet: w, token } = await authenticated(req);
+      if (!privateAccess.allowed(w)) fail('This wallet is not authorized for private testing.', 403, 'PRIVATE_TESTING');
+      return { data: { ok: true, play: '/play/' }, cookie: privateCookie(token, 3600) };
     }
     const { wallet: w } = await authenticated(req);
     if (action === 'me') return { data: await me(w) };
@@ -306,4 +316,4 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
   }
   return { handle, store, pool, status, close: () => pool.end?.() };
 }
-module.exports = { createPrelaunch, COOKIE, readAnnouncements };
+module.exports = { createPrelaunch, COOKIE, PRIVATE_COOKIE, readAnnouncements };

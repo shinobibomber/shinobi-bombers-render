@@ -69,7 +69,7 @@ body.sbw-active .gc-header .gc-tools>div>strong{display:none}
 #sbwLayer .sbw-cp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #sbwLayer .sbw-cp-head b{font:800 18px Rajdhani,sans-serif;letter-spacing:.6px;color:#ffd447}
 #sbwLayer .sbw-cp-tabs{display:flex;gap:4px;margin-left:auto}
-#sbwLayer .sbw-cp-tabs button,#sbwLayer .sbw-cp-x{min-height:30px;padding:2px 10px;border:1px solid #5d4a9a;border-radius:6px;background:#1c1442;color:#cfc4f5;font:700 14px Rajdhani,sans-serif;cursor:pointer}
+#sbwLayer .sbw-cp-tabs button,#sbwLayer .sbw-cp-x,#sbwLayer .sbw-cp-full{min-height:30px;padding:2px 10px;border:1px solid #5d4a9a;border-radius:6px;background:#1c1442;color:#cfc4f5;font:700 14px Rajdhani,sans-serif;cursor:pointer}
 #sbwLayer .sbw-cp-tabs button[aria-selected="true"]{border-color:#c69bff;background:linear-gradient(#7b3dff,#4b1fb0);color:#fff}
 #sbwLayer .sbw-cp-x{width:32px;padding:0;color:#fff}
 #sbwLayer .sbw-chatpop button:focus-visible{outline:2px solid #ffd447;outline-offset:2px}
@@ -887,3 +887,126 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 @media (max-width:560px){.sbw-boxdlg .bx-top{grid-template-columns:90px 1fr}.sbw-boxdlg .bx-tsu{display:none}.sbw-boxdlg .bx-box{width:90px;height:90px}.sbw-boxdlg h2{font-size:22px}.sbw-boxdlg .bx-perks{grid-template-columns:1fr}}
 .sbw-boxdlg .bx-perks .sbw-stars{color:#ffd257;font-size:17px}
 #sbwLayer .sbw-myth-top .sbw-mythic{font:900 17px Rajdhani,sans-serif;letter-spacing:2px;color:#ffd257;text-shadow:0 0 8px #c98bff}
+#sbwLayer .sbw-myth-stars{display:block;font:700 12px/1.3 system-ui,sans-serif;letter-spacing:1px;color:#ffd257;white-space:nowrap}
+
+/* hero-upgrades-v1: accessible account-bound shard training and destructive salvage choices. */
+.hero-upgrade-dialog{width:min(540px,calc(100vw - 32px));max-height:85dvh;overflow:auto;box-sizing:border-box}.hero-upgrade-dialog h2{overflow-wrap:anywhere}.hero-upgrade-choices{display:grid;gap:12px;margin:18px 0}.hero-upgrade-choices .sbw-btn{white-space:normal;text-align:left;min-height:66px;line-height:1.35;padding:14px 18px}.hero-upgrade-note{font-size:15px;color:#cfc0ed}.hero-upgrade-dialog button:focus-visible{outline:3px solid #4edbff;outline-offset:3px}.hero-salvage-confirm{background:linear-gradient(#a72b59,#62133e)!important;border:1px solid #ff93a8!important}.hero-upgrade-dialog .sbw-acts{flex-wrap:wrap}.hero-upgrade-dialog button:disabled{opacity:.5;cursor:not-allowed}
+
+#sbwLayer .sbw-xbtn.train{gap:8px;padding:0 10px 0 8px}#sbwLayer .sbw-xbtn.train>i{width:30px;height:30px}#sbwLayer .sbw-xbtn.train>span{flex:1;white-space:normal}#sbwLayer .sbw-xbtn.train b{font-size:16px;letter-spacing:0}#sbwLayer .sbw-xbtn.train small{font-size:11px;line-height:1.1;letter-spacing:0}.hero-salvage-confirm{color:#fff!important}
+
+#sbwLayer .sbw-shard-balance{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 10px;margin-top:8px;background:#130d2d;border:1px solid #67419e;border-radius:7px;font-size:13px;color:#d5c7f4}#sbwLayer .sbw-shard-balance b{font-size:17px;color:#ffd781}
+/* Automatic Mythic abilities: retain the collection panel and open detail on demand. */
+#sbwLayer .sbw-myth-generation{font:800 13px Rajdhani,sans-serif;color:#f0d9ff}
+#sbwLayer .sbw-myth-cooldown{display:block;margin-top:2px;font:600 10px/1.2 system-ui;color:#c4aedb}
+#sbwLayer .sbw-myth-generation small{display:block;color:#c5b9db;font-weight:500}
+#sbwLayer .sbw-myth-skills button{width:100%;min-height:30px;padding:4px;border:0;background:transparent;color:inherit;font:700 12px Rajdhani,sans-serif;cursor:pointer;text-align:left;line-height:1.15}
+#sbwLayer .sbw-myth-skills button:focus-visible{outline:2px solid #ffe098;outline-offset:2px}
+#sbwLayer .sbw-myth-auto{font:600 11px/1.3 Rajdhani,sans-serif;color:#d8c5ed}
+.sbw-myth-preview{max-height:90dvh;overflow:auto}.sbw-myth-preview canvas{display:block;width:100%;max-width:420px;height:auto;margin:auto}.sbw-myth-preview small{display:block;line-height:1.5;color:#c4b8d9}
+/* ===== Chat screen (real DOM) ===== */
+#sbwLayer .sbw-chat{--cs-bg:#070420;--cs-panel:#0d0830;--cs-line:#b05cff;--cs-pink:#ff4fd8;--cs-gold:#ffd447;--cs-orange:#ff9a2e;--cs-cyan:#4fd8ff;--cs-green:#4be08a;--cs-ink:#f5efff;--cs-mut:#b9aee0;
+  position:absolute;left:0;right:0;display:grid;grid-template-columns:260px minmax(0,1fr) 320px;grid-template-rows:auto minmax(0,1fr);gap:12px;padding:10px 14px 14px;box-sizing:border-box;overflow:hidden;background:var(--cs-bg);color:var(--cs-ink)}
+#sbwLayer .sbw-cs-bg{position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(circle at 50% -10%,rgba(255,79,216,.25),transparent 45%),radial-gradient(circle at 90% 100%,rgba(176,92,255,.22),transparent 40%),radial-gradient(circle at 5% 100%,rgba(255,154,46,.14),transparent 35%)}
+#sbwLayer .sbw-chat>*{position:relative;z-index:1}
+#sbwLayer .sbw-chat>.sbw-cs-bg{position:absolute}
+#sbwLayer .sbw-cs-top{grid-column:1/-1;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+#sbwLayer .sbw-cs-top h2{margin:0;font:800 34px/1 Rajdhani,system-ui,sans-serif;font-style:italic;letter-spacing:.04em;color:var(--cs-gold);text-shadow:0 0 14px rgba(255,154,46,.7),0 2px 0 #7a2b00}
+#sbwLayer .sbw-cs-top p{margin:0;font-size:15px;text-transform:uppercase;color:var(--cs-mut);flex:1}
+#sbwLayer .sbw-cs-panel{display:flex;flex-direction:column;min-height:0;box-sizing:border-box;border:2px solid var(--cs-line);border-radius:12px;background:linear-gradient(180deg,#170d38,var(--cs-panel));box-shadow:0 0 14px rgba(176,92,255,.45),inset 0 0 16px rgba(176,92,255,.12);padding:10px 12px}
+#sbwLayer .sbw-cs-panel h3{display:flex;align-items:center;gap:8px;margin:0 0 8px;font:800 17px/1.1 Rajdhani,system-ui,sans-serif;letter-spacing:.04em;color:var(--cs-gold)}
+#sbwLayer .sbw-cs-tag{font-size:11px;font-weight:700;padding:1px 6px;border-radius:8px;background:#2a1450;color:var(--cs-cyan);letter-spacing:0}
+#sbwLayer .sbw-cs-link{margin-left:auto;background:none;border:0;color:var(--cs-cyan);font:inherit;cursor:pointer}
+#sbwLayer .sbw-cs-tabs{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0}
+#sbwLayer .sbw-cs-tab{display:flex;align-items:center;gap:10px;padding:9px 12px;border:2px solid transparent;border-radius:10px;background:rgba(255,255,255,.04);color:var(--cs-ink);font:700 17px Rajdhani,system-ui,sans-serif;cursor:pointer;text-align:left}
+#sbwLayer .sbw-cs-tab span{flex:1}
+#sbwLayer .sbw-cs-tab.on{border-color:var(--cs-pink);background:linear-gradient(90deg,rgba(176,92,255,.45),rgba(255,79,216,.2));box-shadow:0 0 12px rgba(255,79,216,.6)}
+#sbwLayer .sbw-cs-badge{font-style:normal;font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px;background:#ff3860;color:#fff}
+#sbwLayer .sbw-cs-badge[hidden]{display:none}
+#sbwLayer .sbw-cs-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+#sbwLayer .sbw-cs-head h3{margin:0;font-size:22px}
+#sbwLayer .sbw-cs-online{margin-left:auto;color:var(--cs-green);font-weight:700}
+#sbwLayer .sbw-cs-pick,#sbwLayer .sbw-cs-ch2,#sbwLayer .sbw-cs-form input{background:#0a0626;color:var(--cs-ink);border:1px solid #5a3ba8;border-radius:8px;padding:8px 10px;font:600 16px Rajdhani,system-ui,sans-serif}
+#sbwLayer .sbw-cs-ann{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:8px}
+#sbwLayer .sbw-cs-card{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:2px solid var(--cs-line);border-radius:10px;background:#140a3a;font-size:14px;line-height:1.25;min-width:0}
+#sbwLayer .sbw-cs-card.gold{border-color:var(--cs-orange)}
+#sbwLayer .sbw-cs-card.cyan{border-color:var(--cs-cyan)}
+#sbwLayer .sbw-cs-card i{font-style:normal;font-size:28px}
+#sbwLayer .sbw-cs-card b{display:block;color:var(--cs-gold);font-size:16px}
+#sbwLayer .sbw-cs-card span{display:block;color:var(--cs-ink)}
+#sbwLayer .sbw-cs-card em{display:block;font-style:normal;color:var(--cs-orange);font-weight:700}
+#sbwLayer .sbw-cs-log{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:2px;padding-right:4px}
+#sbwLayer .sbw-cs-msg{display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:10px;padding:7px 8px;border-radius:8px}
+#sbwLayer .sbw-cs-msg.mine{background:rgba(255,212,71,.07)}
+#sbwLayer .sbw-cs-msg.sys{background:linear-gradient(90deg,rgba(176,92,255,.4),rgba(40,10,80,.4));border:1px solid var(--cs-line)}
+#sbwLayer .sbw-cs-msg.legend{border-color:var(--cs-gold);box-shadow:0 0 10px rgba(255,212,71,.4)}
+#sbwLayer .sbw-cs-av{grid-row:1/3;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#fff;background:hsl(var(--h,270) 60% 38%);border:2px solid hsl(var(--h,270) 80% 65%);flex:none}
+#sbwLayer .sbw-cs-av.sys{background:#2a1450;border-color:var(--cs-line)}
+#sbwLayer .sbw-cs-mh{margin:0;display:flex;align-items:baseline;gap:8px}
+#sbwLayer .sbw-cs-mh b{color:var(--cs-cyan);font-size:17px}
+#sbwLayer .sbw-cs-msg.mine .sbw-cs-mh b,#sbwLayer .sbw-cs-msg.sys .sbw-cs-mh b{color:var(--cs-gold)}
+#sbwLayer .sbw-cs-lvb{padding:0 7px;border-radius:6px;background:#2a1450;color:var(--cs-mut);font-size:12px}
+#sbwLayer .sbw-cs-mh time{margin-left:auto;color:var(--cs-mut);font-size:13px}
+#sbwLayer .sbw-cs-mt{margin:0;font-size:17px;line-height:1.3;overflow-wrap:anywhere;color:var(--cs-ink)}
+#sbwLayer .sbw-cs-empty{margin:auto;color:var(--cs-mut);font-size:18px;text-align:center}
+#sbwLayer .sbw-cs-note{margin:4px 0 0;min-height:1.2em;font-size:14px;color:var(--cs-mut)}
+#sbwLayer .sbw-cs-note.sbw-cs-error{color:#ff9aa8}
+#sbwLayer .sbw-cs-form{display:flex;align-items:center;gap:8px;margin-top:6px}
+#sbwLayer .sbw-cs-form input{flex:1;min-width:0}
+#sbwLayer .sbw-cs-count{color:var(--cs-mut);white-space:nowrap}
+#sbwLayer .sbw-cs-ico{width:40px;height:40px;border-radius:50%;border:1px solid #5a3ba8;background:#140a3a;color:var(--cs-ink);font-size:18px;cursor:pointer;flex:none}
+#sbwLayer .sbw-cs-ico:disabled{opacity:.45;cursor:not-allowed}
+#sbwLayer .sbw-cs-send,#sbwLayer .sbw-cs-guild button,#sbwLayer .sbw-cs-qa button{padding:9px 16px;border-radius:10px;border:2px solid var(--cs-orange);background:linear-gradient(180deg,#ffb830,#e07a00);color:#1b0b00;font:800 17px Rajdhani,system-ui,sans-serif;cursor:pointer}
+#sbwLayer .sbw-cs-send:disabled{opacity:.5;cursor:not-allowed}
+#sbwLayer .sbw-cs-emoji-wrap{position:relative}
+#sbwLayer .sbw-cs-emoji-pop{position:absolute;bottom:46px;left:0;z-index:5;display:grid;grid-template-columns:repeat(4,38px);gap:4px;padding:8px;border:2px solid var(--cs-line);border-radius:10px;background:#0d0830}
+#sbwLayer .sbw-cs-emoji-pop[hidden]{display:none}
+#sbwLayer .sbw-cs-emoji-pop button{height:38px;font-size:20px;background:#140a3a;border:1px solid #3a2478;border-radius:8px;cursor:pointer}
+#sbwLayer .sbw-cs-side{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:auto}
+#sbwLayer .sbw-cs-side .sbw-cs-panel:first-child{flex:1;min-height:200px}
+#sbwLayer .sbw-cs-ninjas{list-style:none;margin:0;padding:0;overflow:auto;min-height:0}
+#sbwLayer .sbw-cs-ninjas li{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(176,92,255,.2)}
+#sbwLayer .sbw-cs-ninjas p{margin:0;flex:1;display:grid;grid-template-columns:auto 1fr;column-gap:8px;min-width:0}
+#sbwLayer .sbw-cs-ninjas b{font-size:17px}
+#sbwLayer .sbw-cs-lv{color:var(--cs-mut);align-self:center}
+#sbwLayer .sbw-cs-st{grid-column:1/-1;font-size:14px}
+#sbwLayer .sbw-cs-st.ok{color:var(--cs-green)}
+#sbwLayer .sbw-cs-st.warn{color:var(--cs-orange)}
+#sbwLayer .sbw-cs-st.idle{color:var(--cs-cyan)}
+#sbwLayer .sbw-cs-guild>div{display:flex;align-items:center;gap:10px}
+#sbwLayer .sbw-cs-guild p{margin:0;flex:1;display:flex;flex-direction:column}
+#sbwLayer .sbw-cs-guild small{color:var(--cs-mut)}
+#sbwLayer .sbw-cs-guild small.ok{color:var(--cs-green)}
+#sbwLayer .sbw-cs-crest{width:48px;height:60px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;background:linear-gradient(180deg,#7a2bd0,#3a1070);border:2px solid var(--cs-gold);border-radius:6px 6px 24px 24px}
+#sbwLayer .sbw-cs-qa{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#sbwLayer .sbw-cs-qa button{background:#140a3a;color:var(--cs-ink);border-color:var(--cs-cyan);font-size:16px}
+#sbwLayer .sbw-cs-social-btn{display:none;padding:6px 12px;border-radius:10px;border:2px solid var(--cs-cyan);background:#140a3a;color:var(--cs-ink);font:700 15px Rajdhani,system-ui,sans-serif;cursor:pointer}
+#sbwLayer .sbw-chat :focus-visible{outline:3px solid var(--cs-cyan);outline-offset:2px}
+#sbwLayer .sbw-chat select option{background:#0a0626;color:#f5efff}
+/* tablet and narrow windows: side panels open from the Social button */
+@media (max-width:1100px){
+  #sbwLayer .sbw-chat{grid-template-columns:200px minmax(0,1fr)}
+  #sbwLayer .sbw-cs-social-btn{display:inline-block}
+  #sbwLayer .sbw-cs-side{display:none;position:absolute;z-index:6;right:14px;bottom:14px;top:56px;width:min(340px,calc(100% - 28px));padding:8px;border:2px solid var(--cs-line);border-radius:12px;background:#0a0626;box-shadow:0 0 24px #000}
+  #sbwLayer .sbw-chat.sbw-cs-social-open .sbw-cs-side{display:flex}
+  #sbwLayer .sbw-cs-ann{grid-template-columns:1fr}
+  #sbwLayer .sbw-cs-card:nth-child(n+2){display:none}
+}
+/* phone: feed first, channels as a top strip, composer docked */
+#sbwLayer.sbw-phone .sbw-chat{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);gap:8px;padding:8px}
+#sbwLayer.sbw-phone .sbw-cs-top h2{font-size:24px}
+#sbwLayer.sbw-phone .sbw-cs-top p{display:none}
+#sbwLayer.sbw-phone .sbw-cs-top{justify-content:space-between}
+#sbwLayer.sbw-phone .sbw-cs-left{padding:6px}
+#sbwLayer.sbw-phone .sbw-cs-left h3{display:none}
+#sbwLayer.sbw-phone .sbw-cs-tabs{flex-direction:row;overflow-x:auto}
+#sbwLayer.sbw-phone .sbw-cs-tab{flex:none;padding:7px 10px;font-size:15px}
+#sbwLayer.sbw-phone .sbw-cs-tab i{display:none}
+#sbwLayer.sbw-phone .sbw-cs-ann,#sbwLayer.sbw-phone .sbw-cs-pick{display:none}
+#sbwLayer.sbw-phone .sbw-cs-side{top:auto;left:8px;right:8px;width:auto;max-height:60%}
+#sbwLayer.sbw-phone .sbw-cs-form{flex-wrap:wrap}
+#sbwLayer.sbw-phone .sbw-cs-ch2,#sbwLayer.sbw-phone .sbw-cs-count{display:none}
+#sbwLayer.sbw-phone .sbw-cs-form input{flex:1 1 100%;order:-1}
+@media (prefers-reduced-motion:reduce){#sbwLayer .sbw-chat *{animation:none!important;transition:none!important}}
+#sbwLayer .sbw-cs-head{background:none;border:0;padding:0;box-shadow:none}
+#sbwLayer .sbw-cs-tag,#sbwLayer .sbw-cs-link,#sbwLayer .sbw-cs-panel h3{white-space:nowrap}
+#sbwLayer .sbw-cs-guild button,#sbwLayer .sbw-cs-qa button{white-space:nowrap;padding:9px 8px;font-size:16px}

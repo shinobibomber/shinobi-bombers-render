@@ -194,7 +194,8 @@ function keyPair() {
     const home = await get('/?referral=RPABC'); assert.equal(home.status, 200); assert.match(await home.text(), /THE SHINOBI ERA BEGINS SOON/);
     assert.match(home.headers.get('content-security-policy'),/script-src 'self'/);assert.match(home.headers.get('content-security-policy'),/connect-src 'self'/);assert.equal(home.headers.get('x-frame-options'),'DENY');
     for (const [p, status, location] of [['/play/', 302, '/'], ['/play', 302, '/'], ['/play/index.html?referral=RPX', 302, '/?referral=RPX'], ['/rules.html', 308, '/rules'], ['/privacy/', 308, '/privacy'],
-      ['/beta-config.json', 404], ['/admin/', 404], ['/admin', 404], ['/pl/server.cjs', 404], ['/pl/schema.sql', 404], ['/pl/../server/site-server.cjs', 404], ['/play/assets/beta-wallet.js', 404], ['/play/assets/creators-portal/portal.js', 404]]) {
+      ['/beta-config.json', 404], ['/admin/', 404], ['/admin', 404], ['/pl/server.cjs', 404], ['/pl/schema.sql', 404], ['/pl/../server/site-server.cjs', 404], ['/play/assets/beta-wallet.js', 404], ['/play/assets/creators-portal/portal.js', 404],
+      ['/private-test', 404], ['/private-test/private-access.js', 404]]) {   // the private-testing page exists only with RELEASE_STAGE=private
       const r = await get(p); assert.equal(r.status, status, p); if (location) assert.equal(r.headers.get('location'), location, p);
     }
     for (const p of ['/rules', '/privacy', '/terms', '/whitepaper', '/pl/prelaunch.js', '/pl/wallet.js', '/pl/i18n/pt-BR.json', '/pl/announcements.json', '/pl/assets/logo.webp', '/play/assets/login-exact/login-reference.webp']) assert.equal((await get(p)).status, 200, p);
@@ -210,6 +211,9 @@ function keyPair() {
     // The portal API answers status without a database round-trip.
     const s = await get('/api/prelaunch', { method: 'POST', headers: { 'content-type': 'application/json', origin: siteOrigin, 'x-sb-prelaunch': '1' }, body: JSON.stringify({ action: 'status' }) });
     assert.equal(s.status, 200); assert.equal((await s.json()).prelaunch, true);
+    // No private pass can be issued in the portal-only stage (answered before any database round-trip).
+    const pa = await get('/api/prelaunch', { method: 'POST', headers: { 'content-type': 'application/json', origin: siteOrigin, 'x-sb-prelaunch': '1' }, body: JSON.stringify({ action: 'private-access' }) });
+    assert.equal(pa.status, 404); assert.equal((await pa.json()).code, 'UNKNOWN_ACTION'); assert.equal(pa.headers.get('set-cookie'), null);
     console.log('PASS: PRELAUNCH_MODE host — portal pages, clean URLs, artwork only from the game, game API/admin/config closed (403/404), unsafe settings refused at start-up.');
   } finally { child.kill(); }
 })().catch(e => { console.error(e); process.exit(1); });

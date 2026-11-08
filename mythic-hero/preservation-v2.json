@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "latestReference": {
+    "path": "mythic-hero\\reference\\latest-animation-v2.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "13993ddbf67b6bf82c4d0fbdcf1e6d2a137623bafb35e7dc76c1abbe442f14f8",
+    "type": "composite illustration; not production sprites"
+  },
+  "unchangedFrom": "d9ca4d5840187dd57168073861aada45bf0e0a13",
+  "assets": [
+    {
+      "path": "mythic-hero/assets/aura/aerial_shards.png",
+      "width": 96,
+      "height": 78,
+      "alpha": true,
+      "sha256": "71d226f0c1eddc4daef73e5bd0cdfbc8a1f837ecf83dda036b3eedf745951be7"
+    },
+    {
+      "path": "mythic-hero/assets/aura/aura_flames.png",
+      "width": 93,
+      "height": 85,
+      "alpha": true,
+      "sha256": "04b6b8f0f357ef3c1ea7beac1bc6ca80ef7dd65d5828fedc9713aeda18ae0ca0"
+    },
+    {
+      "path": "mythic-hero/assets/aura/aura_frames.png",
+      "width": 704,
+      "height": 84,
+      "alpha": true,
+      "sha256": "0bd07e4dfb116de8f3bb269f0ee9db3b4643f412a9bd820e8942aa2d76fea2ac"
+    },
+    {
+      "path": "mythic-hero/assets/aura/divine_halo_crown.png",
+      "width": 95,
+      "height": 63,
+      "alpha": true,
+      "sha256": "8c163088ad593d05ffd3e34eed6152043c6d424d1676b9f2593c3eab9b86b3db"
+    },
+    {
+      "path": "mythic-hero/assets/aura/energy_pillars.png",
+      "width": 98,
+      "height": 85,
+      "alpha": true,
+      "sha256": "64e83db88e9757671eb6da887e6199428b0548230be0b22305fdd029d2057d6f"
+    },
+    {
+      "path": "mythic-hero/assets/aura/energy_wings_left.png",
+      "width": 92,
+      "height": 86,
+      "alpha": true,
+      "sha256": "43c4de358113060157bc26702eb78852f027416a66b8fe82ef90990c515415b2"
+    },
+    {
+      "path": "mythic-hero/assets/aura/energy_wings_right.png",
+      "width": 91,
+      "height": 86,
+      "alpha": true,
+      "sha256": "8ac9f99662d31779e06fd59af71cd7c5d7088c4fd62ff60e895315187390fd38"
+    },
+    {
+      "path": "mythic-hero/assets/aura/inner_halo_ring.png",
+      "width": 98,
+      "height": 55,
+      "alpha": true,
+      "sha256": "624acf189f7cebdf770c28ff76d249b7e67a47310e72861b7379c385b914e96c"
+    },
+    {
+      "path": "mythic-hero/assets/aura/light_burst.png",
+      "width": 97,
+      "height": 85,
+      "alpha": true,
+      "sha256": "e86ff76c0d1b0d462b75a7846b7850fd2ad2e9b7d2641d822ccad18fbcc193c9"
+    },
+    {
+      "path": "mythic-hero/assets/aura/orbit_rings.png",
+      "width": 98,
+      "height": 77,
+      "alpha": true,
+      "sha256": "4722fa67c8114141f35af821d7428855a967724a8ae8526b83adce0faa8af007"
+    },
+    {
+      "path": "mythic-hero/assets/aura/outer_glyph_ring.png",
+      "width": 98,
+      "height": 86,
+      "alpha": true,
+      "sha256": "3b20c2a07830d74f986096057e6cc16e7fc2f04fb180f9befc3b4f65d76f749b"
+    },
+    {
+      "path": "mythic-hero/assets/aura/particle_sparks.png",
+      "width": 90,
+      "height": 77,
+      "alpha": true,
+      "sha256": "5d68942b06ef3aec668ead04b4a2fc5b9dd4af0a9bbbf682e8af441bea4f9544"
+    },
+    {
+      "path": "mythic-hero/assets/aura/rune_tablets.png",
+      "width": 94,
+      "height": 82,
+      "alpha": true,
+      "sha256": "4fe0aa7ea688046bf1468d704fccb73e05e2ad614a258c5c5b3361be89463b8f"
+    },
+    {
+      "path": "mythic-hero/assets/aura/sacred_floor_sigil.png",
+      "width": 98,
+      "height": 52,
+      "alpha": true,
+      "sha256": "f85395213c96a63e06941e322433331bf563cbc48be805aa9da8808b033a2b38"
+    },
+    {
+      "path": "mythic-hero/assets/aura/summoning_seal.png",
+      "width": 86,
+      "height": 86,
+      "alpha": true,
+      "sha256": "d1588ac8881915f4a1ee6bf4ea623d773d4d19f4bfbee80e2510abd0268d7b70"
+    },
+    {
+      "path": "mythic-hero/assets/character/tsukiyomi_back.png",
+      "width": 128,
+      "height": 128,
+      "alpha": true,
+      "sha256": "87a7744849062f1e10a99772caae619b886b5953b85add42912da1ca492a81e0"
+    },
+    {
+      "path": "mythic-hero/assets/character/tsukiyomi_front.png",
+      "width": 128,
+      "height": 128,
+      "alpha": true,
+      "sha256": "f85306f7f58b929bd229416e26da348ee1274bb9b617290aa1ca1ffe912ac00d"
+    },
+    {
+      "path": "mythic-hero/assets/character/tsukiyomi_left.png",
+      "width": 128,
+      "height": 128,
+      "alpha": true,
+      "sha256": "122a489bfa724b3b357dd653b904b4207490507b85c6367843f9d0f300c7157f"
+    },
+    {
+      "path": "mythic-hero/assets/character/tsukiyomi_right.png",
+      "width": 128,
+      "height": 128,
+      "alpha": true,
+      "sha256": "d49b14a71ca7730306a975f7d697103089f44c20e60c48b72a3511532e633da7"
+    }
+  ]
+}

@@ -151,7 +151,7 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert.deepEqual(newModels.slice().sort(), [...new Set(batchModels)].filter(model => !priorModels.includes(model)).sort(), 'NEW marks only the first copy of a model absent from the previous collection');
     assert.equal(new Set(newModels).size, newModels.length, 'duplicate models within one batch are not all NEW');
     const starRanks = await p.locator('.reveal-card').evaluateAll(cards => cards.map(card => ({ rank: +card.dataset.rank, stars: card.querySelector('.cinematic-stars').textContent, label: card.querySelector('.cinematic-stars').getAttribute('aria-label') })));
-    for (const card of starRanks) { assert.equal(card.stars, '★'.repeat(card.rank + 1)); assert.match(card.label, new RegExp('rank ' + (card.rank + 1) + ' of 5')); }
+    for (const card of starRanks) { assert.equal(card.stars, ''); assert.equal(card.label, null); }
     await p.waitForFunction(() => document.querySelector('.cinematic-cost')?.textContent === '250,000 Ryo' && !RyoPayments.state.busy);
     assert.equal(count(f, 'quote'), 2, 'the results cost is one read-only native quote');
     assert.equal(count(f, 'purchase'), 1, 'displaying the price cannot purchase');

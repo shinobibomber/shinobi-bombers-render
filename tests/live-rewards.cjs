@@ -2,6 +2,9 @@
  * Adventure "Session gained" banner follow it live. Isolated fixtures only. */
 const { withGame } = require('./harness.cjs');
 const economy = require('../app/server/economy.cjs');
+// Keep this sync test independent of random target priority and the old multi-shot damage rate.
+// Targets retain the real Bronze HP. Rarity, trained Power, cooldowns and chakra remain native.
+const deployFixture = p => p.evaluate(() => { for(const row of G)for(const c of row)if(c.k>1){c.k=2;c.hp=c.maxHp=GameBalance.enemyHP(2);delete c.boss;}go(0);Experience.workAll(); });
 // Register before authentication: a live battle can defeat a target during the login wait.
 // Observe the entire authenticated session, exactly as the real cumulative kill report does.
 const observeKills = (p, details=false) => p.evaluate(details => {
@@ -18,10 +21,15 @@ const observeKills = (p, details=false) => p.evaluate(details => {
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId) });
     await p.locator('#loginPhantom').click();
     await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready);
-    await p.evaluate(() => { go(0); Experience.workAll(); });
+    // Measure synthetic defeat bursts with a stationary roster. Deployment has its own valid
+    // acknowledgement sync, which must not be mistaken for a duplicate defeat request.
+    await p.evaluate(()=>{Experience.restAll();go(0);});
     await p.waitForFunction(() => WebsiteDesign.current() === 'adventure' && AdventureChest.snapshot.chest?.pending === 12345);
     const label = () => p.evaluate(() => [...document.querySelectorAll('.sbw-scr.on .sbw-cover')].some(e => e.textContent === 'SESSION GAINED'));
     assert.equal(await label(), true, 'the banner reads SESSION GAINED, not POTENTIAL REWARD');
+    await p.waitForFunction(()=>!AdventureChest.snapshot.busy&&!RyoPayments.state.busy);
+    await p.waitForTimeout(1600);
+    await p.waitForFunction(()=>!AdventureChest.snapshot.busy&&!RyoPayments.state.busy);
 
     // The server credits the Chest; a defeated enemy must bring it in without the 15s poll.
     const before = f.requests.filter(r => r.action === 'adventure').length;
@@ -42,6 +50,7 @@ const observeKills = (p, details=false) => p.evaluate(details => {
 
     // The real battle dispatches the event when an enemy falls.
     await p.evaluate(() => { window.__defeats = 0; addEventListener('shinobi-enemy-defeated', () => window.__defeats++); });
+    await deployFixture(p);
     await p.waitForFunction(() => window.__defeats > 0, null, { timeout: 30000 });
     assert.deepEqual(errors, []);
   });
@@ -54,7 +63,7 @@ const observeKills = (p, details=false) => p.evaluate(details => {
     await observeKills(p,true);
     await p.locator('#loginPhantom').click();
     await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready);
-    await p.evaluate(() => { go(0); Experience.workAll(); });
+    await deployFixture(p);
     await p.waitForFunction(() => __k.length >= 12, null, { timeout: 90000 });
     // Stop the battle so no kill lands after the comparison, then let the final sync settle.
     await p.evaluate(() => Experience.restAll());
@@ -75,11 +84,15 @@ const observeKills = (p, details=false) => p.evaluate(details => {
     const signIn = async () => { await p.locator('#loginPhantom').click(); await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready); };
     await observeKills(p);
     await signIn();
-    await p.evaluate(() => { go(0); Experience.workAll(); });
+    await deployFixture(p);
     await p.waitForFunction(() => __k >= 6, null, { timeout: 90000 });
     // Stop the scheduled sync, then close the page the moment more kills are unsent.
     await p.waitForFunction(() => KillReport.pending > 0, null, { timeout: 30000 });
-    const atClose = await p.evaluate(() => { Experience.restAll(); return { kills: __k, gained: SessionRyo.gained }; });
+    // A synthetic pagehide does not actually stop this fixture's animation loop.
+    // Match a closed page: freeze simulation in the same task as the snapshot,
+    // otherwise an already-fired projectile can legitimately add another kill
+    // after atClose and make the exact closing-total assertion race the battle.
+    const atClose = await p.evaluate(() => { Experience.restAll(); tick=()=>{}; return { kills: __k, gained: SessionRyo.gained }; });
     const before = f.requests.filter(r => r.action === 'adventure').length;
     await p.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide')));
     await p.waitForFunction(n => true, before);
@@ -105,21 +118,26 @@ const observeKills = (p, details=false) => p.evaluate(details => {
     await observeKills(p);
     await signIn();
     assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'GO OFFLINE');
-    await p.evaluate(() => { go(0); Experience.workAll(); });
+    await deployFixture(p);
     await p.waitForFunction(() => __k >= 5 && KillReport.pending > 0, null, { timeout: 90000 });
     await p.locator('.sbw-hdr [data-sbwid="wallet"]').click();
     await p.waitForSelector('.sbw-offline[open]');
     assert.match(await p.locator('.sbw-offline').textContent(), /Sensei keeps your team fighting for up to 12 hours/);
     const kills = await p.evaluate(() => { Experience.restAll(); return __k; });
+    f.holdAdventure=true;const held=p.waitForRequest(r=>r.url().includes('/.netlify/functions/ryo')&&r.postDataJSON()?.action==='adventure');
+    await p.evaluate(()=>{void RyoPayments.adventure(true,false).catch(()=>{});});await held;
     const before = f.requests.filter(r => r.action === 'adventure').length;
     await p.locator('.sbw-offline [data-k="go"]').click();
+    await p.waitForFunction(()=>CombatClient.leaving);assert(await p.evaluate(()=>RyoPayments.state.authenticated),'offline save waits for the held active read');
+    f.holdAdventure=false;f.release('adventure');
     await p.waitForFunction(() => !RyoPayments.state.authenticated && LoginScreen.active, null, { timeout: 10000 });
     const final = f.requests.filter(r => r.action === 'adventure').slice(before);
     assert(final.some(r => r.active === false && Array.isArray(r.killTotals)), 'going offline sends the final kill totals as offline');
-    assert.equal(f.advData.reportedKills, kills, 'every kill before going offline is in the Chest');
+    const finalKills=await p.evaluate(()=>__k);assert(finalKills>=kills);assert.equal(f.advData.reportedKills,finalKills,'all in-flight defeats are saved before disconnect');
     assert.equal(f.advData.active, false, 'the server marks the player offline right away');
     // Two hours away, then sign in again.
     f.advData.last -= 2 * 3600000;
+    for(const h of f.profile.heroes)if(h.chakra){h.chakra.at-=2*3600000;h.chakra.nextAt-=2*3600000;}
     await signIn();
     await p.waitForSelector('.sbw-dialog[open]', { timeout: 10000 });
     const text = await p.locator('.sbw-dialog[open]').textContent();
