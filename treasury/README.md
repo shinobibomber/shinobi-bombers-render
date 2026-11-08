@@ -9,6 +9,7 @@ activates nothing. See [docs/treasury/ACTIVATION_CHECKLIST.md](../docs/treasury/
 | `treasury-registry.cjs` | Dependency-free validator. Rejects non-canonical base58 / non-32-byte keys, duplicates, wrong bps, key-like fields and secret-key or seed-phrase shaped values. |
 | `treasury-verify.cjs` | Read-only, finalized verifier: Squads program/discriminator/vault PDA/threshold/members/config authority/time lock, plain-wallet checks, mint program and decimals, balances. Returns explicit `verified` / `mismatch` / `unverified` states, uses a 60 s cache, never reports a silent zero. |
 | `treasury-rewards.cjs` | Live-build policy (build stamp, like the SR router). 5% withdrawal deduction to the Treasury vault in exact base units with its own ledger; no 24 h withdrawal cooldown; Chest claims once per 24 h within an approved reward budget; custody-separation start-up check. |
+| `create-custody-wallet.cjs` | Creates the Mainnet game custody wallet on the owner's computer. Writes the key only to a file outside the project, never overwrites, and prints only the public address. |
 | `schema.sql` | Additive: withdrawal deduction columns and ledger, claim index, read-only observation log. |
 | `public/` | `/treasury` transparency page (live build, strict CSP, text-only rendering). |
 

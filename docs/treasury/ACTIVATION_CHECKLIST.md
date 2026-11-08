@@ -17,7 +17,7 @@ OFF on Mainnet) and `PRELAUNCH_MODE`.
 - [ ] Decide on the custody options in [CUSTODY_MIGRATION.md](CUSTODY_MIGRATION.md), or explicitly accept the single-key Phantom risk for the 30% / 10% / 10%.
 - [ ] Create the SR mint. Verify **classic SPL Token, 6 decimals, mint authority revoked, freeze authority none** (the game refuses anything else; Token-2022 needs rework).
 - [ ] Registry PR: set `srMintAddress`. `/treasury` must show the mint VERIFIED.
-- [ ] Generate a **new** Mainnet custody keypair offline (never share it). Confirm it is not a Squads member or registry wallet; the server refuses to start otherwise.
+- [x] **Done 2026-11-08:** game custody wallet `CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT` created offline. The key is in the owner's private file only. Its public address is recorded in the registry (`gameCustody`), and the live server refuses to start if `RYO_TREASURY_SECRET` belongs to any other wallet. **Back up the key file offline.** Add it to Render only on launch day.
 - [ ] Decide the Sensei SOL allocation policy, and whether any **net** Market service fee qualifies for Chapter 04 (both are currently excluded).
 - [ ] External security review of `sr-revenue`, `treasury/*`, the withdrawal/claim hooks and, if built, the Anchor programs.
 - [ ] Review the main → `live` merge, including the 3 commits that exist only on `live` (`d1fb08d`, `9c504b4`, `ef20b54`).

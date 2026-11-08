@@ -93,6 +93,9 @@ function assertCustody(custody, studio) {
   if (!live()) return;
   const reserved = require('./treasury-registry.cjs').reservedAddresses();
   if (reserved.includes(custody)) fail('The game custody wallet must not be a Chapter 04 wallet, the Squads multisig, a Squads member or the SR mint.', 503);
+  // The launch key must belong to the public game wallet recorded in the reviewed registry (no silent key swap).
+  const expected = registry().gameCustody?.address;
+  if (expected && custody !== expected) fail('RYO_TREASURY_SECRET does not belong to the game custody wallet recorded in the reviewed treasury registry (' + expected + '). Refusing to start.', 503);
   if (Object.values(registry().addresses).includes(studio)) fail('The studio fee wallet must not be a Chapter 04 destination.', 503);
 }
 
@@ -136,7 +139,7 @@ async function claimFunding({ store, connection, mint, treasuryAddress, checkNet
 }
 /** Pre-launch (or game not installed): nothing is configured, so nothing is claimable — no placeholder number. */
 const claimFundingNotConfigured = reason => ({ applicable: true, status: 'not-configured', availableRyo: null, claimsOpen: false,
-  note: reason || 'Pre-launch: the game claim wallet is not configured and Chest claims are closed. No SR is available for player reward claims yet.' });
+  note: reason || (registry().gameCustody ? 'Pre-launch: the game claim wallet is created but not active, and Chest claims are closed. No SR is available for player reward claims yet.' : 'Pre-launch: the game claim wallet is not configured and Chest claims are closed. No SR is available for player reward claims yet.') });
 
 async function summary(store, c = store.pool) {
   if (!live()) return { applicable: false };

@@ -45,6 +45,7 @@ async function portalServer(env, options) {
     assert.equal(ok.status, 200, JSON.stringify(d)); assert.equal(d.role, 'viewer'); assert.equal(d.readOnly, true); assert.equal(d.applicable, true);
     assert.equal(d.verification.status, 'verified'); assert.equal(d.verification.squads.threshold, 2); assert.deepEqual(d.squads.members, reg.squads.members);
     assert.deepEqual(d.registry.destinations.map(x => x.address), Object.values(reg.addresses));
+    assert.equal(d.registry.gameCustody.address, 'CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT'); assert.equal(d.verification.gameCustody.verification.state, 'unfunded'); assert.match(d.claimFunding.note, /created but not active/);
     assert.equal(d.paymentsEnabled, false); assert.equal(d.claimFunding.status, 'not-configured'); assert.equal(d.claimFunding.availableRyo, null); assert.equal(d.verification.externalHeld.status, 'pending');
     assert.equal(d.flags.srRouting, false); assert.equal(d.flags.activationApproved, false); assert.equal(d.flags.mintRegistered, false); assert(Object.values(d.flags.gates).every(g => g === false), 'every money gate closed in pre-launch');
     assert.deepEqual(d.ledgers.serviceRevenue, { count: 0, raw: '0' }); assert.deepEqual(d.ledgers.withdrawalDeductions, { count: 0, raw: '0' }); assert.deepEqual(d.ledgers.proposals, { pending: 0, total: 0 });

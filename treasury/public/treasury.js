@@ -28,6 +28,14 @@
     $('claimable').textContent = cf.availableRyo !== null && cf.availableRyo !== undefined ? Number(cf.availableRyo).toLocaleString() + ' SR' : cf.status === 'not-configured' ? 'Not configured' : 'Unavailable';
     $('claimNote').textContent = cf.note || '';
     $('claimState').replaceChildren(el('span', 'Chest claims: ' + (cf.claimsOpen ? 'OPEN' : 'CLOSED'), 'badge ' + (cf.claimsOpen ? 'verified' : 'pending')), el('span', 'SR payments: ' + (data.paymentsEnabled ? 'ENABLED' : 'DISABLED'), 'badge ' + (data.paymentsEnabled ? 'verified' : 'pending')));
+    const gc = reg.gameCustody, live = v.gameCustody;
+    $('custodyPanel').hidden = !gc;
+    if (gc) {
+      const ver = live ? live.verification || {} : { status: 'unverified' };
+      $('custodyAddr').textContent = gc.address; $('custodyCopy').replaceChildren(copyRow(gc.address));
+      facts($('custodyFacts'), [['Status', badge(ver.status)], ['State', ver.state === 'unfunded' ? 'Created · not active until launch' : ver.state === 'system-account' ? 'Active wallet' : ver.state || 'Unavailable'],
+        ['SOL', sol(live ? live.solLamports : null)], ['SR', live && live.srRaw != null ? sr(live.srRaw) : reg.srMint.address ? 'Unavailable' : 'Mint pending']]);
+    }
     $('split').replaceChildren(...reg.destinations.map(d => { const box = el('div'); box.append(el('b', d.percent + '%'), el('span', d.label)); return box; }));
     $('wallets').replaceChildren(...reg.destinations.map(d => {
       const live = v.destinations?.[d.role] || {}, card = el('article', undefined, 'card'), ver = live.verification || { status: overall === 'verified' ? 'verified' : 'unverified' };

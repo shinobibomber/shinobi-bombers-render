@@ -34,6 +34,7 @@ const reg = R.registry(), DIR = path.join(__dirname, '../treasury/public'), out 
       assert(text.includes(v), v);
     for (const m of reg.squads.members) assert(!text.includes(m), 'member keys are not shown publicly');
     assert.equal(await p.locator('#held').innerText(), 'Mint pending', 'no placeholder SR total before the mint exists');
+    assert.equal(await p.locator('#custodyPanel').isVisible(), true); { const c = await p.locator('#custodyPanel').innerText(); for (const v of ['Game claim wallet', 'CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT', 'Created · not active until launch', 'not']) assert(c.includes(v), 'custody panel: ' + v); }
     assert.equal(await p.locator('#claimable').innerText(), 'Not configured'); assert.match(await p.locator('#claimState').innerText(), /Chest claims: CLOSED[\s\S]*SR payments: DISABLED/);
     assert.match(await p.locator('#status').innerText(), /Pre-launch: Mainnet payments and claims are disabled/);
     assert.equal(await p.evaluate(() => window.__xss), undefined, 'registry text is never interpreted as HTML');

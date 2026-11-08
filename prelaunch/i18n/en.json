@@ -410,5 +410,7 @@
   "trs.held": "Held in Chapter 04 wallets (external, not claimable)",
   "trs.claimable": "Available for player reward claims",
   "trs.notConfigured": "Not configured (pre-launch)",
-  "trs.claimNote": "Pre-launch: the game claim wallet is not configured and Chest claims are closed. Mainnet payments are disabled."
+  "trs.claimNote": "Pre-launch: the game claim wallet is not configured and Chest claims are closed. Mainnet payments are disabled.",
+  "trs.custody": "Game claim wallet (custody)",
+  "trs.custodyNote": "Created, not active until launch. Its key lives only in Render. At launch its balance also holds player deposits, so it is not all claimable."
 }

@@ -16,6 +16,14 @@ Both views keep two figures apart: **Held in Chapter 04 wallets** (owner-control
 Statuses: **VERIFIED** (on-chain state matches the registry), **MISMATCH** (investigate now; routing stops),
 **UNVERIFIED** (the chain could not be read; nothing is assumed).
 
+## Game custody wallet (the server's hot wallet)
+
+Public address `CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT`, recorded in the registry and shown on `/treasury` as **Game claim wallet**.
+
+- Its key exists only in your private file, and on launch day in Render's `RYO_TREASURY_SECRET`. The live server refuses to start with any other key.
+- At launch it holds player deposits plus the reward float, so its balance is **not** all claimable.
+- If the key is ever exposed: pause withdrawals and claims in `/admin/`. Then create a new wallet (`node treasury/create-custody-wallet.cjs <file outside the project>`), update `gameCustody` in the registry through a reviewed commit, and move the funds.
+
 ## Verify the addresses yourself
 
 1. Open the Squads app and select the multisig. **Account 1** must show `5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn`.

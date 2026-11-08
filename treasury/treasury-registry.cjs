@@ -97,6 +97,13 @@ function validate(raw) {
   if (seen.has(multisig)) bad('the multisig account must not be a destination (use its vault address).');
 
   const mint = raw.srMintAddress == null ? null : key(raw.srMintAddress, 'srMintAddress');
+  let gameCustody = null;
+  if (raw.gameCustody != null) {
+    if (typeof raw.gameCustody !== 'object') bad('gameCustody must be an object with a public address.');
+    const custody = key(raw.gameCustody.address, 'gameCustody.address');
+    if (seen.has(custody) || custody === multisig || members.includes(custody) || custody === mint) bad('the game custody wallet must be separate from every Chapter 04 destination, the Squads multisig, its members and the mint.');
+    gameCustody = { address: custody, purpose: String(raw.gameCustody.purpose || '').slice(0, 300), created: String(raw.gameCustody.created || '').slice(0, 20) };
+  }
   if (mint && (seen.has(mint) || members.includes(mint))) bad('srMintAddress must not equal a wallet.');
   if (!Number.isSafeInteger(raw.withdrawalTreasuryFeeBps) || raw.withdrawalTreasuryFeeBps !== 500) bad('withdrawalTreasuryFeeBps must be 500 (5%, approved policy).');
   const a = raw.activation || {};
@@ -108,7 +115,7 @@ function validate(raw) {
     schema: raw.schema, policy: String(raw.policy || ''), network: 'mainnet', destinations,
     addresses: Object.fromEntries(ROLES.map(r => [r, destinations[r].address])),
     squads: { programId: SQUADS_V4, multisig, vaultIndex: s.vaultIndex, threshold: s.threshold, timeLockSeconds: s.timeLockSeconds, members, observed: String(s.observed || '').slice(0, 400) },
-    srMintAddress: mint, withdrawalTreasuryFeeBps: raw.withdrawalTreasuryFeeBps,
+    srMintAddress: mint, gameCustody, withdrawalTreasuryFeeBps: raw.withdrawalTreasuryFeeBps,
     activation: { approved: a.approved, reference: a.approved ? a.reference.trim() : null },
   });
 }
@@ -133,6 +140,7 @@ function publicView(reg = registry()) {
     schema: reg.schema, policy: reg.policy, network: reg.network,
     destinations: ROLES.map(r => ({ ...reg.destinations[r], percent: reg.destinations[r].bps / 100 })),
     squads: { programId: reg.squads.programId, multisig: reg.squads.multisig, vaultIndex: reg.squads.vaultIndex, threshold: reg.squads.threshold, members: reg.squads.members.length, timeLockSeconds: reg.squads.timeLockSeconds },
+    gameCustody: reg.gameCustody ? { address: reg.gameCustody.address, purpose: reg.gameCustody.purpose, status: 'created — not active until launch' } : null,
     srMint: reg.srMintAddress ? { address: reg.srMintAddress, status: 'registered' } : { address: null, status: 'pending — the SR token has not launched' },
     withdrawalDeduction: { bps: reg.withdrawalTreasuryFeeBps, percent: reg.withdrawalTreasuryFeeBps / 100, destination: 'lockedTreasury', note: 'Separate ledger; never split again under 50/30/10/10.' },
     activation: { approved: reg.activation.approved },

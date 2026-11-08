@@ -20,6 +20,16 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Game Claim Wallet)**
+
+**✨ New**
+• The Treasury Transparency page now shows the **Game claim wallet** — the wallet that will pay Chest rewards and withdrawals at launch — with its live Solana verification status.
+• Its balance is shown separately from the funds available for player rewards, because at launch it will also hold players' deposited SR.
+
+Pre-launch: the wallet is created but not active. Payments, claims and withdrawals stay closed until launch.
+
+---
+
 **⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Treasury Transparency)**
 
 **✨ New**

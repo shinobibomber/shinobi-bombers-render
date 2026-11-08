@@ -69,6 +69,13 @@ const DAY = 86400000, UNIT = 1000000n, LIVE = () => network.NETWORKS.mainnet, BE
   assert.throws(() => T.assertCustody(registry.addresses.economicReserve, address()), /custody wallet must not/);
   assert.throws(() => T.assertCustody(address(), registry.addresses.communityRewards), /studio fee wallet/);
   T.assertCustody(address(), address());
+  // Launch binding: RYO_TREASURY_SECRET must belong to the recorded public game custody wallet.
+  { const Reg = require('../app/server/treasury-registry.cjs'), rawReg = JSON.parse(fs.readFileSync(Reg.FILE, 'utf8')), stripped = Reg.registry();
+    Reg.useForIsolatedTest(rawReg); assert.equal(Reg.registry().gameCustody.address, 'CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT');
+    assert.throws(() => T.assertCustody(address(), address()), /does not belong to the game custody wallet/);
+    T.assertCustody('CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT', address());
+    assert.match(T.claimFundingNotConfigured().note, /created but not active/);
+    const back = JSON.parse(fs.readFileSync(Reg.FILE, 'utf8')); delete back.gameCustody; Reg.useForIsolatedTest(back); assert.equal(Reg.registry().gameCustody, null); void stripped; }
   const summary = await T.summary(store); assert.equal(summary.rewardBudget.configured, true); assert.equal(summary.rewardBudget.claimCooldownHours, 24); assert.equal(summary.withdrawalDeduction.count, 0);
 
   // 7b. Funds available for player claims are separate from externally held funds: min(approved unclaimed, custody beyond liabilities).

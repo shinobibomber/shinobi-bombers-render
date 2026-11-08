@@ -13,7 +13,9 @@ const reject = (mutate, pattern, label) => { const r = raw(); mutate(r); assert.
  assert.deepEqual(reg.addresses, { lockedTreasury: '5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn', activeRewards: '3Rzz25x1BhGAawL8DkBKmJpmKw7CMcJ9TfgxCvenTi56', communityRewards: 'FZnW5DvUHer724sJzVr2Z8REEjK4EJeEnK9uDCekvDyL', economicReserve: 'B2aGUT7xVA8ZRzoa2XaTKUinNbyoV4VvgAvWBn1dSN8M' });
  assert.deepEqual(Object.values(reg.destinations).map(d => d.bps), [5000, 3000, 1000, 1000]);
  assert.equal(reg.squads.multisig, '38chAaSbcA4Stdg7EhCzzyVAbhz2BuKtHDfD6thsZSjX'); assert.equal(reg.squads.threshold, 2); assert.equal(reg.squads.members.length, 3);
- assert.equal(reg.srMintAddress, null, 'the SR token has not launched'); assert.equal(reg.activation.approved, false, 'financial routing is not activated');
+ assert.equal(reg.srMintAddress, null, 'the SR token has not launched');
+ assert.equal(reg.gameCustody.address, 'CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT', 'the created game custody wallet is recorded (public address only)');
+ assert(!R.reservedAddresses().includes(reg.gameCustody.address), 'custody is checked separately from reserved addresses'); assert.equal(reg.activation.approved, false, 'financial routing is not activated');
  assert(Object.isFrozen(reg) && Object.isFrozen(reg.addresses) && Object.isFrozen(reg.squads.members));
  for (const a of [...Object.values(reg.addresses), reg.squads.multisig, ...reg.squads.members]) assert.equal(new web3.PublicKey(a).toBase58(), a, 'SDK agrees: ' + a);
  const view = R.publicView(); assert.equal(view.srMint.address, null); assert.equal(view.destinations.reduce((n, d) => n + d.percent, 0), 100); assert.equal(view.withdrawalDeduction.percent, 5);
@@ -42,6 +44,12 @@ const reject = (mutate, pattern, label) => { const r = raw(); mutate(r); assert.
  reject(r => { r.squads.members[2] = r.squads.members[0]; }, /distinct/);
  reject(r => { r.squads.members[2] = r.destinations[1].address; }, /must not also be a Chapter 04 destination/);
  reject(r => { r.srMintAddress = r.destinations[0].address; }, /must not equal a wallet/);
+ reject(r => { r.gameCustody.address = r.destinations[1].address; }, /game custody wallet must be separate/);
+ reject(r => { r.gameCustody.address = r.squads.members[0]; }, /game custody wallet must be separate/);
+ reject(r => { r.gameCustody.address = r.squads.multisig; }, /game custody wallet must be separate/);
+ reject(r => { r.gameCustody.address = 'not-a-key'; }, /gameCustody.address/);
+ reject(r => { r.gameCustody.secretKey = [1, 2]; }, /not allowed/);
+ { const r = raw(); delete r.gameCustody; assert.equal(R.validate(r).gameCustody, null, 'gameCustody is optional'); }
  reject(r => { r.withdrawalTreasuryFeeBps = 200; }, /500/);
  reject(r => { r.activation = { approved: true, reference: 'Approved by owner on 2027-01-01' }; }, /before srMintAddress/);
  reject(r => { r.srMintAddress = web3.Keypair.generate().publicKey.toBase58(); r.activation = { approved: true, reference: '' }; }, /approval reference/);
@@ -73,6 +81,7 @@ const reject = (mutate, pattern, label) => { const r = raw(); mutate(r); assert.
  assert.equal(snap.status, 'verified'); assert.equal(snap.squads.status, 'verified'); assert.equal(snap.mint.status, 'pending', 'no registered mint yet');
  assert.deepEqual(Object.fromEntries(Object.entries(snap.destinations).map(([r, d]) => [r, [d.verification.status, d.solLamports]])), { lockedTreasury: ['verified', 1000000], activeRewards: ['verified', 0], communityRewards: ['verified', 5e8], economicReserve: ['verified', 0] });
  assert.equal(snap.destinations.activeRewards.verification.state, 'unfunded'); assert.deepEqual(snap.alerts, []);
+ assert.equal(snap.gameCustody.address, reg.gameCustody.address); assert.equal(snap.gameCustody.verification.state, 'unfunded'); assert.equal(snap.gameCustody.verification.status, 'verified');
  assert.equal(snap.externalHeld.status, 'pending'); assert.equal(snap.externalHeld.srRaw, null, 'no placeholder balance before the mint exists');
  // With the mint: balances in base units, Treasury token account checked.
  owned.set(reg.addresses.lockedTreasury, [5000000000n]); owned.set(reg.addresses.activeRewards, [1n, 2n]);
@@ -101,6 +110,7 @@ const reject = (mutate, pattern, label) => { const r = raw(); mutate(r); assert.
  // 5. Public summary hides member keys; the cache bounds RPC load.
  const pub = JSON.stringify(V.publicSummary(await V.snapshot(connection)));
  for (const m of reg.squads.members) assert(!pub.includes(m), 'member keys are not published on the transparency page');
+ assert(pub.includes(reg.gameCustody.address), 'the public game custody address is published');
  assert(pub.includes(reg.addresses.lockedTreasury) && pub.includes('"threshold":2'));
  let clock = 0; const cached = V.cachedSnapshot(() => connection, { ttl: 60000, clock: () => clock }); calls = 0;
  await Promise.all([cached(), cached(), cached()]); await cached(); assert.equal(calls, 1, 'concurrent and repeat requests share one RPC snapshot');

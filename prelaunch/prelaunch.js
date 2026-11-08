@@ -312,6 +312,8 @@
         ...d.registry.destinations.map(x => { const live = v.destinations && v.destinations[x.role]; return el('div', { class: 'admin-item', 'data-role': x.role },
           el('div', { class: 'row' }, pill(live && live.verification ? live.verification.status : 'unverified'), el('b', { text: x.label + ' · ' + x.percent + '%' })),
           el('p', { class: 'mono small', text: x.address }), meta(t('trs.balanceSol') + ': ' + sol(live) + ' · ' + t('trs.balanceSr') + ': ' + sr(live))); }),
+        ...(d.registry.gameCustody ? [el('div', { class: 'admin-item', 'data-role': 'gameCustody' }, el('div', { class: 'row' }, pill(v.gameCustody && v.gameCustody.verification ? v.gameCustody.verification.status : 'unverified'), el('b', { text: t('trs.custody') })),
+          el('p', { class: 'mono small', text: d.registry.gameCustody.address }), meta(t('trs.balanceSol') + ': ' + sol(v.gameCustody) + ' · ' + t('trs.balanceSr') + ': ' + sr(v.gameCustody)), el('p', { class: 'note', text: t('trs.custodyNote') }))] : []),
         el('div', { class: 'admin-item' }, el('b', { text: t('trs.squads') }), meta(sq.threshold + ' / ' + sq.members + ' · ' + t('trs.timeLock') + ': ' + sq.timeLock + ' s · ' + t('trs.proposals') + ': ' + sq.proposals),
           el('p', { class: 'mono small', text: d.squads.multisig }), ...d.squads.members.map(m => el('p', { class: 'mono small', text: m }))),
         el('div', { class: 'admin-item' }, el('b', { text: t('trs.mint') }), meta(v.mint && v.mint.address ? v.mint.address + ' · ' + String(v.mint.status).toUpperCase() : t('trs.mintPending'))),

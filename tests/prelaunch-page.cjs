@@ -186,7 +186,7 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await a.waitForSelector('#adminPanel:not([hidden]) .admin-item');
     await a.waitForSelector('#treasuryPanel:not([hidden]) [data-funding]');
     { const tp = await a.textContent('#treasuryPanel');
-      for (const v of ['TREASURY · CHAPTER 04 · READ-ONLY', '5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn', 'Locked Treasury (Squads Account 1) · 50%', 'Active Reward Pool · 30%', 'Available for player reward claims: Not configured (pre-launch)', 'SR mint', 'not launched yet', 'UNVERIFIED', 'Mainnet payments are disabled']) assert(tp.includes(v), 'Treasury card: ' + v);
+      for (const v of ['TREASURY · CHAPTER 04 · READ-ONLY', '5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn', 'Locked Treasury (Squads Account 1) · 50%', 'Active Reward Pool · 30%', 'Available for player reward claims: Not configured (pre-launch)', 'SR mint', 'not launched yet', 'UNVERIFIED', 'Mainnet payments are disabled', 'Game claim wallet (custody)', 'CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT']) assert(tp.includes(v), 'Treasury card: ' + v);
       assert.equal(await a.locator('#treasuryPanel input, #treasuryPanel form, #treasuryPanel button:not(#treasuryRefresh)').count(), 0, 'read-only card: no write controls');
       await a.locator('#treasuryPanel').screenshot({ path: path.join(OUT, 'prelaunch-treasury-card.png') }); }
     const item = a.locator('.admin-item', { hasText: 'Stream King' });

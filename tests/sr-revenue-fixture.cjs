@@ -50,9 +50,11 @@ async function budget(store, value = { dailyCapRyo: 1000000, perClaimMaxRyo: 100
 async function topUp(store, ryo, signature = 'fixture-topup-' + Math.random().toString(36).slice(2)) {
  await store.pool.query('INSERT INTO ryo_revenue_replenishments(scope,signature,source,amount_raw,proposal_id,evidence,created) VALUES($1,$2,$3,$4,$5,$6,$7)', [store.scope, signature, 'activeRewards', String(BigInt(ryo) * 1000000n), 'fixture-' + signature, JSON.stringify({ fixture: true }), store.now()]);
 }
-/** Model an activated live registry (throw-away mint, committed approval) inside this test process only. */
-function activate(mint) {
+/** Model an activated live registry (throw-away mint, committed approval) inside this test process only.
+ * Isolated tests sign with throw-away custody keys, so the recorded game custody address is replaced (or removed). */
+function activate(mint, { custody = null } = {}) {
  const raw = JSON.parse(fs.readFileSync(registryModule().FILE, 'utf8'));
+ if (custody) raw.gameCustody = { address: custody, purpose: 'Isolated test custody' }; else delete raw.gameCustody;
  raw.srMintAddress = typeof mint === 'string' ? mint : mint.toBase58(); raw.activation = { approved: true, reference: 'Isolated test activation fixture' };
  return registryModule().useForIsolatedTest(raw);
 }
@@ -62,5 +64,7 @@ function liveEconomy({ routing = true } = {}) {
  // Explicitly open only this in-memory test process, so financial/admin checks get past launch gates.
  for(const name of Object.values(require('../app/server/launch-gates.cjs').GATES))process.env[name]='on';
  if (routing) process.env.SR_REVENUE_ROUTING_ENABLED = 'on';
+ // Throw-away custody keys in isolated tests: drop the recorded live custody address in this process only.
+ const raw = JSON.parse(fs.readFileSync(registryModule().FILE, 'utf8')); delete raw.gameCustody; registryModule().useForIsolatedTest(raw);
 }
 module.exports = { stamp, multisig, squadsAccount, chainAccount, configure, budget, topUp, activate, liveEconomy, destinations, squadsFixture, owner };

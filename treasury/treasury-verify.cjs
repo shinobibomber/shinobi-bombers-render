@@ -143,7 +143,7 @@ async function srBalance(connection, owner, mint) {
  * Full read-only snapshot. `custody`/`studio` (optional) are game-controlled public keys that must not be
  * Squads members or destinations. `mint` defaults to the registry's SR mint.
  */
-async function snapshot(connection, { reg = registryModule.registry(), custody = null, studio = null, mint = reg.srMintAddress, genesis = MAINNET_GENESIS, now = Date.now() } = {}) {
+async function snapshot(connection, { reg = registryModule.registry(), custody = reg.gameCustody?.address || null, studio = null, mint = reg.srMintAddress, genesis = MAINNET_GENESIS, now = Date.now() } = {}) {
   const out = { marker: 'shinobi-treasury-verification-v1', observedAt: now, commitment: 'finalized', network: reg.network, registry: registryModule.publicView(reg), alerts: [] };
   try { const g = await withTimeout(connection.getGenesisHash()); if (g !== genesis) throw Object.assign(Error('wrong network'), { wrongNetwork: true }); }
   catch (e) {
@@ -169,6 +169,14 @@ async function snapshot(connection, { reg = registryModule.registry(), custody =
     } else d.srRaw = null;
   }
   out.destinations = destinations; out.squads = squads; out.mint = mintStatus;
+  // The game claim/custody wallet (public address from the registry). Its balance includes player deposits, so it is
+  // never presented as claimable; "available for claims" is computed separately from the game ledger.
+  if (reg.gameCustody) {
+    const w = await verifyWallet(connection, reg.gameCustody.address), gc = { address: reg.gameCustody.address, purpose: reg.gameCustody.purpose, verification: w, solLamports: w.status === 'unverified' ? null : w.lamports ?? null, srRaw: null };
+    if (mintStatus.address && mintStatus.program === 'spl-token') { try { gc.srRaw = await srBalance(connection, gc.address, mintStatus.address); } catch { gc.srRaw = null; } }
+    if (w.status === 'mismatch') out.alerts.push({ severity: 'critical', signal: 'Game custody wallet mismatch', detail: w.problems.join(' ') });
+    out.gameCustody = gc;
+  }
   // Funds in the four owner-controlled Chapter 04 wallets: external to the game, never directly claimable by players.
   const held = Object.values(destinations).map(d => d.srRaw);
   out.externalHeld = !mintStatus.address ? { status: 'pending', srRaw: null, note: 'The SR mint is not registered yet, so no SR balances exist.' }
@@ -191,7 +199,8 @@ function publicSummary(snap) {
     destinations: snap.destinations && Object.fromEntries(Object.entries(snap.destinations).map(([r, d]) => [r, { role: r, label: d.label, percent: d.bps / 100, address: d.address, custody: d.custody, purpose: d.purpose, solLamports: d.solLamports ?? null, srRaw: d.srRaw ?? null, verification: strip(d.verification) }])),
     squads: snap.squads && { status: snap.squads.status, threshold: snap.squads.threshold, members: snap.squads.members?.length, configAuthority: snap.squads.configAuthority ? 'set' : 'none', timeLockSeconds: snap.squads.timeLockSeconds, proposals: snap.squads.transactionIndex, multisig: snap.squads.multisig, note: snap.squads.note },
     mint: snap.mint && { status: snap.mint.status, address: snap.mint.address, program: snap.mint.program, decimals: snap.mint.decimals, blocking: snap.mint.blocking },
-    externalHeld: snap.externalHeld };
+    externalHeld: snap.externalHeld,
+    gameCustody: snap.gameCustody && { address: snap.gameCustody.address, purpose: snap.gameCustody.purpose, solLamports: snap.gameCustody.solLamports, srRaw: snap.gameCustody.srRaw, verification: strip(snap.gameCustody.verification) } };
 }
 
 /** Process-wide 60 s cache with in-flight de-duplication: public traffic cannot amplify RPC load. */

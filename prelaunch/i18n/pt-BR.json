@@ -410,5 +410,7 @@
   "trs.held": "Mantido nas carteiras do Capítulo 04 (externo, não resgatável)",
   "trs.claimable": "Disponível para resgates de jogadores",
   "trs.notConfigured": "Não configurado (pré-lançamento)",
-  "trs.claimNote": "Pré-lançamento: a carteira de resgates do jogo não está configurada e os resgates do Baú estão fechados. Os pagamentos na Mainnet estão desativados."
+  "trs.claimNote": "Pré-lançamento: a carteira de resgates do jogo não está configurada e os resgates do Baú estão fechados. Os pagamentos na Mainnet estão desativados.",
+  "trs.custody": "Carteira de resgates do jogo (custódia)",
+  "trs.custodyNote": "Criada, inativa até o lançamento. A chave fica apenas no Render. No lançamento o saldo também inclui depósitos de jogadores, então nem tudo é resgatável."
 }
