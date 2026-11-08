@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{PGlite}=require('@electric-sql/pglite');
 const root=path.resolve(__dirname,'../app/server');
 const economy=require(path.join(root,'economy.cjs')),{Store}=require(path.join(root,'store.cjs')),adventure=require(path.join(root,'adventure.cjs')),{saveSenseiSettings}=require(path.join(root,'gameplay-options.cjs'));
-const make=(n,rank=0,level=1)=>economy.normalizeProfile({dojo:0,sensei:true,heroes:Array.from({length:n},(_,i)=>({tokenId:'hero-'+i,rank,level,name:'Hero '+i,baseStats:{pw:2,sp:2,st:10}})),battleReady:[]});
+const make=(n,rank=0,level=1)=>economy.normalizeProfile({upgradeShards:100,dojo:0,sensei:true,heroes:Array.from({length:n},(_,i)=>({tokenId:'hero-'+i,rank,level,name:'Hero '+i,baseStats:{pw:2,sp:2,st:10}})),battleReady:[]});
 const ids=p=>p.heroes.slice(0,3).map(h=>h.tokenId),originalRandom=crypto.randomInt;
 function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===100?value:originalRandom(...args);try{return fn()}finally{crypto.randomInt=originalRandom}}
 (async()=>{
@@ -64,7 +64,7 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
   assert.deepEqual(split.result.training.gains,{pw:1,st:1},'the two Lv5 rolls may land on different stats');
   // An order quoted before the hero reached level 5 never trains past it.
   const late=make(3,0,4),order=economy.quote(late,'training',{heroId:'hero-0'});const done=economy.fulfill(late,order).profile;
-  const again=economy.fulfill(done,order);assert.equal(hero(again.profile,'hero-0').level,5);assert.equal(again.result.training,undefined);
+  assert.throws(()=>economy.fulfill(done,order),/rules or hero level changed/,'stale training cannot consume another shard');
   // Heroes trained under the old 10-level system: kept up to Lv5 with the +1s those levels now give.
   const old=economy.normalizeProfile({dojo:0,heroes:[{tokenId:'old-jonin',rank:2,level:7,name:'J',baseStats:{pw:7,sp:7,st:7}},{tokenId:'old-genin',rank:0,level:3,name:'G',baseStats:{pw:2,sp:2,st:2}},{tokenId:'new-genin',rank:0,level:1,name:'N',baseStats:{pw:2,sp:2,st:2}},{tokenId:'old-elite',rank:3,level:10,name:'E',baseStats:{pw:10,sp:10,st:10}}]});
   const j=hero(old,'old-jonin');assert.equal(j.level,5);assert.equal(j.bonus.pw+j.bonus.sp+j.bonus.st,5,'a Lv7 Jonin becomes Lv5 with five +1s');

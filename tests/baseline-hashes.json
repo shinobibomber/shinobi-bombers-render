@@ -95,7 +95,7 @@
     },
     {
       "path": "gameplay-options/server.cjs",
-      "sha256": "e4380323726807588fcfbda36d232f1cfdc42018ac349a31b7eab40978c52296"
+      "sha256": "844ddfdb2a871fb26cb2d2710dfb1bb9d860d914dc30708672ff7c8cd8c3e327"
     },
     {
       "path": "heroes-design/heroes-design.css",
@@ -271,11 +271,11 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "cf9fbbd36a7f177683d60fc65b0bfbb3f1bfb56db985b2545d2e14610e832104"
+      "sha256": "a99ef25141f645040d88365020d975b270444b6f18b4d349be5b644bbcbde663"
     },
     {
       "path": "app/server/gameplay-options.cjs",
-      "sha256": "e4380323726807588fcfbda36d232f1cfdc42018ac349a31b7eab40978c52296"
+      "sha256": "844ddfdb2a871fb26cb2d2710dfb1bb9d860d914dc30708672ff7c8cd8c3e327"
     },
     {
       "path": "app/server/init-db.cjs",
@@ -291,15 +291,15 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "fdd84bc362ee393a26a6cbca6821c00fb6167376014f7aec67247523a5149f22"
+      "sha256": "6a3185332fb730eb262032a6d3a69efd2740cc4194a796ba6c0d3a74cd48feba"
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "84bc2ab573b2b84b20b3a215358f546ece92c63dea84803085b7a2466af946d1"
+      "sha256": "0a39718bb0361216fb302c8c9cceb1f3e8ccdea323bff9a8942b9ba65a2de200"
     },
     {
       "path": "app/server/store.cjs",
-      "sha256": "d37a825ce627d5f9fe4d99e4dadeff8d84c83c13a59737788da9de07693df755"
+      "sha256": "427078359c193a04d4c16ba0024337d2153d2c6757449a15c75a6615db849124"
     },
     {
       "path": "app/server/transaction-review.cjs",

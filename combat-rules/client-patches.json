@@ -208,5 +208,15 @@
     " projectiles · ",
     " visual projectiles · ",
     5
+  ],
+  [
+    "dt/60*(window.GameBalance?GameBalance.dojoRecovery[S.dojo||0]:1)*(has(h,3)?1.15:1)",
+    "dt*CombatRules.recovery(h,S.dojo||0,true)",
+    1
+  ],
+  [
+    "Math.min(mx,h.en+dt/60*(has(h,3)?1.15:1))",
+    "Math.min(1,h.en+dt*CombatRules.recovery(h,0,true))",
+    1
   ]
 ]

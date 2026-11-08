@@ -1,3 +1,5 @@
+> Historical v2 asset audit. Current beta rules and animation behavior are documented in [COMBAT_PERKS_BETA.md](../docs/COMBAT_PERKS_BETA.md); current prices, recovery and shards are in [TRAINING_SHARDS_BETA.md](../docs/TRAINING_SHARDS_BETA.md). Earlier star/perk/price statements below describe v2.
+
 # Tsukiyomi animation review and beta release — November 7, 2026
 
 **Superseded movement/effects details:** the subsequent beta motion fix adds independently moving limbs, 88 baked movement/attack frames and new celestial VFX. See [MOTION_V3.md](MOTION_V3.md) for current behavior and asset provenance. The v2 findings below are retained as historical review evidence.

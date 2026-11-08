@@ -64,7 +64,7 @@ function rpc() {
   assert.deepEqual(t.perks.slice().sort(),[0,1,2,3,4,5,6]);
   assert(['pw', 'sp', 'st'].every(k => t.baseStats[k] >= 17 && t.baseStats[k] <= 20), 'Mythic base stats roll 17–20');
   assert.equal(gameplay.trainedStats({ rank: 5, baseStats: {}, bonus: {} }).pw, 17, 'Mythic stat band starts at 17');
-  assert.equal(gameplay.trainingPrice(5, 1), gameplay.trainingPrice(4, 1), 'Mythic trains at Legend prices');
+  assert.equal(gameplay.trainingPrice(5, 1), gameplay.trainingPrice(4, 1)*2, 'Mythic trains at twice Legend prices');
   const trained = { ...t, level: 1, bonus: { pw: 0, sp: 0, st: 0 } }; gameplay.levelUp(trained, () => 1);
   assert.deepEqual([trained.level, trained.bonus.sp], [2, 1], 'Mythic levels gain a random stat like Legend');
   assert.equal(economy.hero(5).rank, 5);

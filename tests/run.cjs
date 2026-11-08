@@ -12,6 +12,7 @@ suites.push('mythic-animation-controller.cjs','mythic-animation.cjs');
 suites.push('mythic-motion-v3.cjs');
 suites.push('mythic-expressions.cjs');
 suites.push('combat-rules.cjs','combat-identity.cjs','combat-native.cjs','combat-adventure.cjs','combat-hunt.cjs');
+suites.push('hero-upgrades-server.cjs','hero-upgrades-ui.cjs');
 if(fs.existsSync(path.join(__dirname,'archive.cjs')))suites.unshift('archive.cjs');
 console.log('Global Chest regression runner · Node '+process.version+' · isolated fixtures only');
 const concurrency=Math.max(1,Math.min(2,Number(process.env.SHINOBI_TEST_CONCURRENCY)||1));

@@ -26,10 +26,9 @@ function killReport(r){
    Power, Jonin/Elite/Legend gain a random stat, and Lv4→5 gives two +1s (random rolls may repeat).
    A hero's stats are its base (rolled inside its rank's band) plus this bonus, in the browser battle
    (GameBalance.recalculateHero), in Sensei offline time and in the kill budget alike. */
-// Rank 5 is Mythic (Tsukiyomi, NFT only): one band above Legend; it trains at Legend prices.
+// Rank 5 is Mythic (Tsukiyomi, NFT only): one band above Legend; it trains at twice Legend prices.
 const STAT_BANDS=[[1,3],[3,6],[6,9],[9,12],[12,15],[17,20]],STATS=['pw','sp','st'],MAX_LEVEL=5;
-const TRAINING_STEP=[10000,20000,40000,80000],TRAINING_RANK=[1,1.5,2,2.5,3,3];
-function trainingPrice(rank,level){return Math.round(TRAINING_STEP[level-1]*TRAINING_RANK[rank])}
+function trainingPrice(rank,level){return require('./hero-upgrade-rules.cjs').trainingPrice(rank,level)}
 function levelUp(h,rand){
  const gains={},rolls=h.level+1===MAX_LEVEL?2:1;h.bonus={pw:0,sp:0,st:0,...h.bonus};
  for(let i=0;i<rolls;i++){const key=h.rank<=1?'pw':STATS[rand(3)];h.bonus[key]++;gains[key]=(gains[key]||0)+1}

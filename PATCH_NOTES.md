@@ -1,4 +1,19 @@
-# Shinobi Bombers patch notes
+# Sh
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Training & Upgrade Shards)**
+
+• Resting heroes recover 1 chakra per minute by default. Fast Charge now adds 0.5 chakra per minute, and active Dojo bonuses add separately.
+• The Train button opens a choice: Upgrade / Train or Salvage. Max-level heroes can still open Manage to salvage.
+• Salvaging permanently removes a spare in-game hero and grants Upgrade Shards: Genin 1, Chunin 2, Jonin 3, Elite 4, Legend 5, Mythic 7. A second confirmation explains the permanent loss. In-flight defeats are saved before removal.
+• Each training level now requires the same rarity-based shard amount plus its Ryo price. Your shard balance appears in hero details and the training dialog.
+• Mythic training now costs twice Legend: 60,000 / 120,000 / 240,000 / 480,000 Ryo for levels 2–5, plus 7 shards each time.
+• Failed training keeps your shards. Retried salvage cannot grant duplicate rewards. NFT-bound heroes and heroes committed to an active Boss Hunt are protected from salvage.
+
+• Chest confirmation stays stable after quick amount edits; changing an amount always requires a fresh review.
+
+Test server only. Existing levels, permanent perks, ownership, damage and attack chakra costs are preserved.
+
+---
+inobi Bombers patch notes
 
 Player-facing notes, newest first. Each entry is ready to paste into Discord (under 2,000
 characters). Add a new entry at the top whenever an update is deployed.

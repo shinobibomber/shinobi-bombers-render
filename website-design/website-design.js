@@ -756,7 +756,7 @@
     }
     $$('.sbw-hcard canvas', b.grid).forEach(c => { const card = cards[+c.dataset.i]; drawHero(c, card && card.h, 2.7, now, 2); });
     const c = cards[b.sel];
-    const dsig = c ? [c.idx, c.lvl, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint].join(',') : 'none';
+    const dsig = c ? [c.idx, c.lvl, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint,ledger().profile?.upgradeShards].join(',') : 'none';
     if (dsig !== b.dsig) {
       b.dsig = dsig;
       const portrait = $('.sbw-h2-port canvas', b.det);
@@ -772,10 +772,11 @@
           <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + CombatRules.perkCount(r))}</div>
             <div class="sbw-h2-port"><canvas width="292" height="344"></canvas></div></div>
           <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
+          <div class="sbw-shard-balance" title="Account-bound items for hero training"><span>UPGRADE SHARDS</span><b>${ledger().profile?.upgradeShards || 0}</b></div>
           <h4>PERKS</h4>
           <ul class="sbw-perks2">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
           <div class="sbw-h2-btns">
-            <button type="button" class="sbw-xbtn train${maxed ? ' max' : ''}" data-k="train" ${c.up && !c.up.disabled ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MAX LEVEL' : 'TRAIN'}</b><small>${maxed ? 'Fully trained' : price ? '<i class="coin"></i>' + esc(price) : 'Level ' + esc(lv) + ' → ' + (Number(lv) + 1)}</small></span></button>
+            <button type="button" class="sbw-xbtn train${maxed ? ' max' : ''}" data-k="train" ${h.tokenId && account() ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MANAGE' : 'TRAIN'}</b><small>${maxed ? 'Max level' : esc(price || 'Upgrade hero')} · ${HeroUpgradeRules.shards(r)} shards</small></span></button>
             ${r === 5 ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>◈</i><span><b>NFT ONLY</b><small>Trade the box NFT</small></span></button>' : h.referralBound ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>🔒</i><span><b>BOUND</b><small>Cannot be sold</small></span></button>' : `<button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>`}
           </div></div>`;
         const n = $('h3', b.det); if (n) fitText(n);
@@ -805,7 +806,7 @@
     sel: a => { built.heroes.sel = +a; built.heroes.sig = ''; },
     fav: () => toast('Favourites are not available yet.'),
     dtab: a => { built.heroes.dt = +a; built.heroes.dsig = ''; for (let i = 0; i < 4; i++) { const e = $(`.hs[data-sbwid="dt${i}"]`, built.heroes.st); if (e) e.classList.toggle('on2', i === +a); } },
-    train: () => { const c = heroCards()[built.heroes.sel]; if (c && c.up && !c.up.disabled) c.up.click(); else toast('Training is not available for this hero right now.'); },
+    train: () => { const c = heroCards()[built.heroes.sel]; if (c?.h?.tokenId && window.HeroUpgrades) HeroUpgrades.open(c.h.tokenId); else toast('Choose an owned hero.'); },
     sell: () => { const c = heroCards()[built.heroes.sel]; if (c?.h?.referralBound) return toast('Referral-bound heroes cannot be listed, sold or transferred.'); if (c && c.list && !c.list.disabled) c.list.click(); else toast('This hero cannot be listed right now.'); },
     maura: () => { const MH = window.MythicHero; if (!MH) return; MH.setAura(!MH.auraEnabled); toast('Mythic aura ' + (MH.auraEnabled ? 'on' : 'off')); built.heroes.dsig = ''; },
     mcheck: async () => { if (!window.RyoPayments?.mythic) return toast('Sign in to check your NFT.'); try { const r = await RyoPayments.mythic(); const n = r?.mythic?.mints?.length || 0; toast(r?.mythic?.enabled === false ? 'The Mythic NFT check opens at launch.' : n ? 'NFT verified · ' + n + ' Mythic hero' + (n === 1 ? '' : 'es') : 'No Mythic box NFT found in this wallet.'); } catch (e) { toast(e.message || 'NFT check failed. Try again shortly.'); } built.heroes.sig = built.heroes.dsig = ''; },

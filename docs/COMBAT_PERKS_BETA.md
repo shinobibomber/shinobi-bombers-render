@@ -11,12 +11,14 @@ Development branch: `review/combat-perks-beta-2026-11-08`. Production deployment
 | 0 | Bounty Hunter | +3% verified Adventure reward for attributed defeats; existing funded claim/custody caps apply |
 | 1 | Armor Breaker | Prioritize guardian/high-HP targets in unobstructed cardinal attack lanes |
 | 2 | Wind Step | Movement ×1.12 |
-| 3 | Fast Charge | Resting recovery ×1.15, including Dojo/Sensei |
+| 3 | Fast Charge | Resting recovery +0.5 chakra/minute, added independently to base and Dojo/Sensei recovery |
 | 4 | Chakra Saver | Maximum chakra ×1.10; attack cost remains 1 |
 | 5 | Piercing Shuriken | Attack range +1 tile; solid walls/first target block the lane |
 | 6 | Swift Hands | Cooldown ×0.92; each extra actual attack costs 1 |
 
 One attack deals trained Power and consumes one chakra, including a miss. One native combat projectile resolves damage; a bounded draw wrapper supplies decorative volleys. Elemental and Mythic animations have no additional damage or chakra callbacks.
+
+The follow-up [Training and Upgrade Shards update](TRAINING_SHARDS_BETA.md) introduces shard costs, salvage and twice-Legend Mythic Ryo training prices.
 
 ## Persistence and authority
 

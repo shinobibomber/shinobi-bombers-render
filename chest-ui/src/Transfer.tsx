@@ -1,4 +1,4 @@
-import{useEffect,useState}from'react';
+import{useLayoutEffect,useState}from'react';
 import{bridge,money,validConfiguration,type Snapshot}from'./bridge';
 import{Icon}from'./Icons';
 export function Transfer({snapshot:s,kind,busy,recoveryRequired,run}:{snapshot:Snapshot;kind:'deposit'|'withdrawal';busy:boolean;recoveryRequired:boolean;run:(task:()=>Promise<unknown>,message:string,transfer?:boolean)=>Promise<void>}){
@@ -8,7 +8,8 @@ export function Transfer({snapshot:s,kind,busy,recoveryRequired,run}:{snapshot:S
  const cooldown=!deposit&&s.nextWithdrawalAt>s.now,pending=!deposit&&s.withdrawals.some(row=>row.status==='pending');
  let enough=false;if(valid&&configured){if(deposit){try{enough=s.wallet.tokenBalance!==null&&BigInt(s.wallet.tokenBalance)>=BigInt(n)*10n**BigInt(cfg.decimals)}catch{enough=false}}else enough=n<=s.balance}
  const disabled=!configured||!valid||!enough||busy||s.wallet.busy||cooldown||pending||recoveryRequired||(deposit&&s.pendingDeposits!==0);
- useEffect(()=>setReview(false),[amount,kind,s.account,s.balance,s.wallet.tokenBalance,s.nextWithdrawalAt,cfg?.studioFeeBps,cfg?.minAmount,cfg?.maxAmount,cfg?.withdrawalMinimum]);
+ // Invalidate before paint so a late amount effect cannot undo a fresh Review click.
+ useLayoutEffect(()=>setReview(false),[amount,kind,s.account,s.balance,s.wallet.tokenBalance,s.nextWithdrawalAt,cfg?.studioFeeBps,cfg?.minAmount,cfg?.maxAmount,cfg?.withdrawalMinimum]);
  return <section className="gc-transfer"><p className="gc-note">{deposit?'Wallet tokens → spendable Ryo balance':'Spendable Ryo balance → wallet tokens'}</p>
   {!configured&&<p className="gc-alert" role="alert">Payment configuration is unavailable. Refresh the wallet service before proceeding.</p>}
   <label className="gc-amount-label" htmlFor="gc-transfer-amount">Gross {deposit?'deposit':'withdrawal'} amount · {min===null?'—':money(min)}–{max===null?'—':money(max)} Ryo</label><input id="gc-transfer-amount" type="number" inputMode="numeric" min={min??undefined} max={max??undefined} step="1" value={amount} disabled={busy} onChange={event=>setAmount(event.target.value)} placeholder={min===null?'Waiting for configuration':String(min)}/>

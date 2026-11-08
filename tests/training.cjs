@@ -12,6 +12,7 @@ const find = (p, id) => p.evaluate(id => { const h = S.h.find(h => h.tokenId ===
 const train = async (p, id) => {
   // up() resolves only after the checkout closes, so start it without waiting for it.
   await p.evaluate(id => { up(S.h.findIndex(h => h.tokenId === id)); }, id);
+  await p.locator('.hero-upgrade-dialog button').filter({hasText:/^Upgrade/}).click();
   await p.waitForSelector('#checkoutConfirm', { state: 'visible' });
   await p.locator('#checkoutConfirm').click();
 };
@@ -20,7 +21,7 @@ const train = async (p, id) => {
   await withGame(async ({ p, f, errors, assert }) => {
     f.holdAdventure = false; f.balance = 2000000;
     // A Lv7 Jonin from the old 10-level system arrives converted to Lv5 with five +1s.
-    f.profile = economy.normalizeProfile({ ...f.profile, battleReady: [], heroes: [hero('genin', 0, 1, 2), hero('chunin', 1, 1, 4), hero('legend', 4, 4, 13), hero('old-jonin', 2, 7, 7), hero('spare', 0, 1, 1)] });
+    f.profile = economy.normalizeProfile({ ...f.profile, upgradeShards:30, battleReady: [], heroes: [hero('genin', 0, 1, 2), hero('chunin', 1, 1, 4), hero('legend', 4, 4, 13), hero('old-jonin', 2, 7, 7), hero('spare', 0, 1, 1)] });
     await login(p);
     await p.waitForFunction(() => ['genin', 'chunin', 'legend', 'old-jonin'].every(id => S.h.some(h => h.tokenId === id)));
     // Prices: step price × rank (Genin 1, Chunin 1.5, Legend 3).
@@ -58,6 +59,7 @@ const train = async (p, id) => {
     const detail = await p.evaluate(() => { const s = document.querySelector('.sbw-xbtn.train span'); return { max: s.parentElement.classList.contains('max'), fits: s.scrollWidth <= s.clientWidth + .5, level: document.querySelector('.sbw-h2-top p').textContent.replace(/\s+/g, ' ') }; });
     assert.deepEqual({ max: detail.max, fits: detail.fits }, { max: true, fits: true }, 'MAX LEVEL fits its button');
     assert.match(detail.level, /Lv\. 5 \/ 5/);
+    await p.locator('.sbw-xbtn.train').click();await p.waitForSelector('.hero-upgrade-dialog[open]');assert(await p.getByRole('button',{name:/Salvage hero/}).isEnabled(),'max-level heroes still expose salvage');await p.keyboard.press('Escape');
     assert.deepEqual(errors, []);
   });
   console.log('PASS: training checkout adds the server-rolled +1 (Genin Power, Lv4→5 double), new price table with the 2% fee, gain toast, converted old heroes, base + training battle stats and Max level at 5.');

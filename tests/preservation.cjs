@@ -6,7 +6,8 @@ let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 // The last build step points image URLs at their WebP versions; restore the original names first.
 html=require('../apply-performance.cjs').restoreReferences(html);
 const {clientPatches:combatPatches}=require('../apply-combat-rules.cjs');
-for(const [before,after,count]of combatPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact combat/perk hook: '+before.slice(0,50));html=html.split(after).join(before)}
+const {clientPatches:upgradePatches}=require('../apply-hero-upgrades.cjs');
+for(const [before,after,count]of upgradePatches.slice().reverse().concat(combatPatches.slice().reverse())){assert.equal(html.split(after).length-1,count,'exact combat/perk hook: '+before.slice(0,50));html=html.split(after).join(before)}
 const {clientPatches:srClientPatches}=require('../apply-sr-revenue.cjs');
 if(require('../app/server/sr-revenue.cjs').enabled())for(const [before,after,count]of srClientPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact SR revenue checkout hook');html=html.split(after).join(before)}
 // Launch gates and referral-bound heroes (applied after the Creators Portal): reverse them first.

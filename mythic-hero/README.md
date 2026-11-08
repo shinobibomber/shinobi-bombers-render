@@ -2,14 +2,12 @@
 
 **Current beta expressions/reactions:** [MOTION_V4.md](MOTION_V4.md) covers idle blinking, gestures, reaction poses, vector emotes and reduced-motion fixes. [MOTION_V3.md](MOTION_V3.md) documents the prior movement/effects work. No production deployment is authorized for this update.
 
-**Animation v2 beta release:** see [ASSET_AUDIT.md](ASSET_AUDIT.md) for current behavior,
-the seven-star display, runtime/import contract, preview commands, test evidence and missing
+**Animation v2 beta release:** see [ASSET_AUDIT.md](ASSET_AUDIT.md) for the historical v2 behavior,
+the former star display, runtime/import contract, preview commands, test evidence and missing
 authored art. The legacy art generation description below is historical provenance, not a
 claim of production readiness. V2 no longer loads the Fire-body animation strips.
 
-The exclusive hero of the **Limited NFT Box** for initial investors. Mythic is a sixth rank above
-Legend: base stats 15–18, six perks, Legend volleys (5 shots, 1 chakra each; his skills are visuals on
-those shots and the 8th-volley Mythic Dragon Ascension is visual only), Legend training prices, never summoned, fused or listed on the in-game Market.
+The exclusive hero of the **Limited NFT Box** for initial investors. Current beta: Mythic is the sixth rank above Legend, with base stats 17–20, all seven unique perks, and seven decorative projectiles per attack. One actual attack spends one chakra and deals trained Power damage; skill effects and the eighth-volley ultimate add no damage or chakra cost. Training costs twice Legend’s Ryo price plus seven Upgrade Shards per level. The NFT hero is never standard-summoned, fused, listed on the in-game Market or salvaged. See [Training and Upgrade Shards](../docs/TRAINING_SHARDS_BETA.md).
 
 ## Ownership (server: `server.cjs` → `app/server/mythic-hero.cjs`)
 

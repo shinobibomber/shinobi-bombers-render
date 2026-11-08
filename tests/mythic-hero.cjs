@@ -1,5 +1,5 @@
-/* Tsukiyomi in the browser (isolated fixtures): the Mythic card with seven stars and its NFT, the
- * details panel (NFT status, aura switch, Check NFT, four skills, NFT-only selling, Legend training
+/* Tsukiyomi in the browser (isolated fixtures): the Mythic card with its rarity name and NFT, the
+ * details panel (NFT status, aura switch, Check NFT, four skills, NFT-only selling, twice-Legend training
  * price), his own art from the supplied sheets (front/side/back, true LEFT view, aura layers), his
  * skill effects on the game's combat events, Adventure and Boss Hunt play, and the phone layout. */
 const fs = require('node:fs'), path = require('node:path');
@@ -43,7 +43,7 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     await p.waitForTimeout(500);
     assert(await p.evaluate(()=>window.__mythicPanel===document.querySelector('.sbw-scr.on .sbw-myth')),'chakra updates preserve focused Mythic controls');
     assert.equal(det.sell, true); assert.match(det.text, /NFT ONLY/, 'traded only as the NFT');
-    assert.match(det.train, /60,000/, 'Lv 2 → 3 training at the Legend price (20,000 × 3)');
+    assert.match(det.train, /120,000/, 'Lv 2 → 3 Mythic training costs twice Legend (20,000 × 6)');
     // His portrait is his own art (not one of the eight shared models), with the aura around it.
     const portrait = await p.evaluate(() => { const c = document.querySelector('.sbw-scr.on .sbw-h2-port canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0, violet = 0;
       for (let i = 3; i < d.length; i += 4) if (d[i] > 40) { n++; if (d[i - 1] > d[i - 2] + 30 && d[i - 3] > 90) violet++; }

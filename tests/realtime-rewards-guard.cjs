@@ -68,6 +68,9 @@ for(let rank=0;rank<6;rank++)for(const stat of [null,'pw','sp','st'])for(const b
  let d=A.advance(null,p,t0,true,60,report(0,0));d=A.advance(d,p,t0+550000,true,60,report(12,2));
  assert.equal(d.reportedKills,2,'first reconnect sync credits kills after mid-gap exhaustion and genuine recovery');
  assert.equal(d.pending,2*Math.floor(35625*.6*1.03),'recovered attacks retain only verified Bounty rewards');
- assert(p.heroes[0].chakra.value>=0&&p.heroes[0].chakra.value<1,'all twelve recovered attacks spend one chakra each');
+ assert.equal(d.combatSessions['guard-recovered'].heroes.recovered.accepted,12,'all twelve actions are verified');
+ // +0.5/min Fast Charge lets this hero finish earlier and refill its one-chakra active-idle cap.
+ assert.equal(p.heroes[0].chakra.value,1,'active idle recovery banks at most one chakra');
+ d=A.advance(d,p,t0+550000,true,60,report(13,2));assert.equal(d.combatSessions['guard-recovered'].heroes.recovered.accepted,13);assert.equal(p.heroes[0].chakra.value,0,'the recovered next attack spends exactly one chakra');d=A.advance(d,p,t0+550000,true,60,report(14,2));assert.equal(d.combatSessions['guard-recovered'].heroes.recovered.accepted,13,'no second attack is free at zero chakra');
 }
 console.log(`PASS: real-time rewards guard: ${cases} teams across six ranks, finite chakra, trained stats, 300ms/1500ms sync, first-sync kills, reconnects, replay and flood limits.`);

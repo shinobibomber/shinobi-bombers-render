@@ -888,3 +888,10 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 .sbw-boxdlg .bx-perks .sbw-stars{color:#ffd257;font-size:17px}
 #sbwLayer .sbw-myth-top .sbw-mythic{font:900 17px Rajdhani,sans-serif;letter-spacing:2px;color:#ffd257;text-shadow:0 0 8px #c98bff}
 #sbwLayer .sbw-myth-stars{display:block;font:700 12px/1.3 system-ui,sans-serif;letter-spacing:1px;color:#ffd257;white-space:nowrap}
+
+/* hero-upgrades-v1: accessible account-bound shard training and destructive salvage choices. */
+.hero-upgrade-dialog{width:min(540px,calc(100vw - 32px));max-height:85dvh;overflow:auto;box-sizing:border-box}.hero-upgrade-dialog h2{overflow-wrap:anywhere}.hero-upgrade-choices{display:grid;gap:12px;margin:18px 0}.hero-upgrade-choices .sbw-btn{white-space:normal;text-align:left;min-height:66px;line-height:1.35;padding:14px 18px}.hero-upgrade-note{font-size:15px;color:#cfc0ed}.hero-upgrade-dialog button:focus-visible{outline:3px solid #4edbff;outline-offset:3px}.hero-salvage-confirm{background:linear-gradient(#a72b59,#62133e)!important;border:1px solid #ff93a8!important}.hero-upgrade-dialog .sbw-acts{flex-wrap:wrap}.hero-upgrade-dialog button:disabled{opacity:.5;cursor:not-allowed}
+
+#sbwLayer .sbw-xbtn.train{gap:8px;padding:0 10px 0 8px}#sbwLayer .sbw-xbtn.train>i{width:30px;height:30px}#sbwLayer .sbw-xbtn.train>span{flex:1;white-space:normal}#sbwLayer .sbw-xbtn.train b{font-size:16px;letter-spacing:0}#sbwLayer .sbw-xbtn.train small{font-size:11px;line-height:1.1;letter-spacing:0}.hero-salvage-confirm{color:#fff!important}
+
+#sbwLayer .sbw-shard-balance{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 10px;margin-top:8px;background:#130d2d;border:1px solid #67419e;border-radius:7px;font-size:13px;color:#d5c7f4}#sbwLayer .sbw-shard-balance b{font-size:17px;color:#ffd781}

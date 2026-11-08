@@ -6,7 +6,7 @@
   ['Bounty Hunter','+3% server-verified Adventure Ryo; funded claim limits apply.'],
   ['Armor Breaker','Prioritizes guardians and high-HP targets; no extra damage.'],
   ['Wind Step','12% faster movement.'],
-  ['Fast Charge','15% faster resting chakra recovery.'],
+  ['Fast Charge','+0.5 chakra per minute while resting; adds to base and Dojo recovery.'],
   ['Chakra Saver','10% more maximum chakra; every attack still costs 1.'],
   ['Piercing Shuriken','+1 tile attack range; solid walls still block attacks.'],
   ['Swift Hands','8% shorter attack cooldown; each attack costs 1 chakra.']
@@ -24,7 +24,7 @@
  const damage=h=>stat(h,'pw');
  const cooldown=h=>Math.round(Math.max(.6,1.6-stat(h,'sp')*.05)*(has(h,6)?.92:1)*1e6)/1e6;
  const maxChakra=h=>Math.round(stat(h,'st')*50*(has(h,4)?1.1:1)*1000)/1000;
- const recovery=(h,dojo=0,resting=true)=>(resting?DOJO[Math.max(0,Math.min(6,dojo|0))]:1)*(resting&&has(h,3)?1.15:1)/60;
+ const recovery=(h,dojo=0,resting=true)=>((resting?DOJO[Math.max(0,Math.min(6,dojo|0))]:1)+(resting&&has(h,3)?.5:0))/60;
  const movementMultiplier=h=>has(h,2)?1.12:1;
  const range=h=>(rank(h)===5?6:rank(h)+1)+(has(h,5)?1:0);
  const volley=h=>rank(h)===5?7:rank(h)+1;
