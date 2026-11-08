@@ -19,7 +19,7 @@
       { key: 'dragon_slash', name: 'Dragon Crescent Gale', text: 'Seven violet trails decorate one attack: Hero Power damage, 1 chakra. VFX cost 0 additional chakra.' },
       { key: 'void_shuriken', name: 'Void Eclipse Shuriken', text: 'A celestial shuriken volley decorates one attack. No extra damage or chakra cost.' },
       { key: 'raijin_field', name: 'Thunder Chain Vortex', text: 'Violet lightning marks the native impact. Cosmetic only: no extra damage or chakra.' },
-      { key: 'mythic_dragon_ascension', name: 'Mythic Dragon Dominion', text: 'Every 8th attack: a spectral dragon rises. Cosmetic only: Hero Power damage, 1 attack chakra, 0 additional skill chakra.', ultimate: true }
+      { key: 'mythic_dragon_ascension', name: 'Mythic Dragon Dominion', text: 'Fourth skill in the repeating attack visual cycle. Cosmetic only: Hero Power damage, 1 attack chakra, 0 additional skill chakra.', ultimate: true }
     ]
   };
 

@@ -88,7 +88,11 @@ const observeKills = (p, details=false) => p.evaluate(details => {
     await p.waitForFunction(() => __k >= 6, null, { timeout: 90000 });
     // Stop the scheduled sync, then close the page the moment more kills are unsent.
     await p.waitForFunction(() => KillReport.pending > 0, null, { timeout: 30000 });
-    const atClose = await p.evaluate(() => { Experience.restAll(); return { kills: __k, gained: SessionRyo.gained }; });
+    // A synthetic pagehide does not actually stop this fixture's animation loop.
+    // Match a closed page: freeze simulation in the same task as the snapshot,
+    // otherwise an already-fired projectile can legitimately add another kill
+    // after atClose and make the exact closing-total assertion race the battle.
+    const atClose = await p.evaluate(() => { Experience.restAll(); tick=()=>{}; return { kills: __k, gained: SessionRyo.gained }; });
     const before = f.requests.filter(r => r.action === 'adventure').length;
     await p.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide')));
     await p.waitForFunction(n => true, before);

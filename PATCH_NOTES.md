@@ -20,6 +20,16 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Mythic Skill Rotation)**
+
+- Each Mythic hero now cycles Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion, using a different skill visual on every attack.
+- Boss Hunt keeps the same chosen skill across decorative volley trails and its impact. Redrawing a projectile does not change the skill.
+- Removed the repeated lightning layer from unrelated Mythic attacks.
+
+Test server only. Damage remains Hero Power, each attack costs one chakra, and skill visuals add no extra damage or chakra cost. Aura, stats, ownership and rewards are unchanged.
+
+---
+
 **SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Mythic Skills)**
 
 - Tsukiyomi now uses Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion visuals from the supplied reference artwork.

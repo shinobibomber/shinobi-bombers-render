@@ -16,6 +16,7 @@ suites.push('hero-upgrades-server.cjs','hero-upgrades-ui.cjs');
 if(fs.existsSync(path.join(__dirname,'archive.cjs')))suites.unshift('archive.cjs');
 suites.unshift('archive-download.cjs');
 suites.push('adventure-hero-size.cjs','mythic-vfx-v6.cjs');
+suites.push('mythic-skill-rotation.cjs');
 console.log('Global Chest regression runner · Node '+process.version+' · isolated fixtures only');
 const concurrency=Math.max(1,Math.min(2,Number(process.env.SHINOBI_TEST_CONCURRENCY)||1));
 if(concurrency===1){

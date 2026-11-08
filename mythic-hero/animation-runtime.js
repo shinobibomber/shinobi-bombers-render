@@ -1,4 +1,4 @@
-/* Tsukiyomi animation adapter v5: brighter seven-trail visuals and rarity names only.
+/* Tsukiyomi animation adapter v6: one distinct rotating skill per accepted attack.
  * Observes authoritative gameplay events; never applies damage. Approved views are skinned,
  * not replaced with another hero. See metadata/animations.json and ASSET_AUDIT.md. */
 (() => {
@@ -6,8 +6,19 @@
   const api=window.MythicHero, sprites=window.ShinobiSprites, ca=window.CharacterAnimations;
   const root=new URL('.',document.currentScript.src), motion=matchMedia('(prefers-reduced-motion: reduce)');
   const textures=new Map(), bodies=new Map(), authored=new Map(), slots=Array.from({length:48},()=>({active:false}));
-  let manifest, controller, sequence=0, shotSequence=0, sweepAt=0, observedStage;
+  let manifest, controller, sequence=0, sweepAt=0, observedStage;
   let shots=new WeakMap(), completed=new WeakSet();
+  const rotations=new WeakMap(), selected=new WeakMap();
+  const skillOrder=['dragon_slash','void_shuriken','raijin_field','mythic_dragon_ascension'];
+  const skillStates=['SKILL_DRAGON_SLASH','SKILL_VOID_SHURIKEN','SKILL_RAIJIN_FIELD','ULTIMATE_DRAGON_ASCENSION'];
+  function rotation(h){let r=rotations.get(h);if(!r){r={adventure:0,hunt:0,run:null,attack:null,skill:null};rotations.set(h,r)}return r}
+  function nextSkill(h,mode){const r=rotation(h),skill=skillOrder[r[mode]%4];r[mode]=(r[mode]+1)%4;return skill}
+  function shotFor(h,b){let r=shots.get(b);if(!r){const skill=selected.get(b)||nextSkill(h,'adventure');selected.set(b,skill);r={skill};shots.set(b,r)}return r}
+  function huntSkill(h,attack,run){
+    if(!api.isMythic(h))return undefined;
+    const r=rotation(h);if(r.run!==run||r.attack!==attack||!r.skill){r.run=run;r.attack=attack;r.skill=nextSkill(h,'hunt')}
+    return r.skill;
+  }
   const now=()=>performance.now(), owner=id=>S.h.find(h=>h.id===id && api.isMythic(h));
   const reduced=()=>motion.matches || !!window.DisplaySettings?.v.reduceMotion;
   const level=()=>window.Arena3D?.cfg?.fx ?? 2;
@@ -31,6 +42,7 @@
     })))).then(()=>{bodies.clear();textures.clear();sprites.clearCache?.();return true}).catch(error=>{loadAuthored=null;throw error}));
     controller=api.controller=MythicAnimation.create(data,event=>dispatchEvent(new CustomEvent('shinobi-mythic-animation',{detail:event})));
     api.play=play; api.resetAnimations=reset; api.renderFrame=renderFrame; api.skillFrame=skillFrame;
+    api.attackSkill=huntSkill; api.skillRotationVersion=1;
     api.paintSkill=(c,name,progress,layer='all',quality=2)=>api.assetsReady&&TsukiyomiSkillV6.paint(c,name,progress,layer,authored.get(data.skillSet.atlas.path),data.skillSet,quality);
     api.stats=()=>({actors:controller.size,effects:slots.filter(s=>s.active).length,bodyTextures:bodies.size,effectTextures:textures.size,capacity:slots.length});
     api.frameInfo=frameInfo; api.emote=(kind,index=0)=>renderFrame({id:'emote-preview',r:5},'EMOTE_'+kind.toUpperCase(),index,'front');
@@ -53,7 +65,9 @@
     ca.drawProjectile=function(c,b,time,p){
       const h=owner(b.o);if(!h)return oldProjectile.apply(this,arguments);
       if(!allowFX() || !api.assetsReady)return true;
-      let shot=shots.get(b);if(!shot){shot={skill:(shotSequence++%2?'void_shuriken':'dragon_slash')};shots.set(b,shot)}
+      const shot=shotFor(h,b);
+      // Fields resolve visually on the target tile; the dragon appears at its caster.
+      if(shot.skill==='raijin_field'||shot.skill==='mythic_dragon_ascension')return true;
       // Travel remains entirely controlled by the native projectile; art never moves it.
       const progress=Number.isFinite(b.life)&&b.life>0?Math.max(0,Math.min(1,1-b.t/b.life)):0;
       const frame=shot.skill==='void_shuriken'?2+Math.floor(progress*4)%4:Math.min(7,Math.floor(progress*8));
@@ -94,14 +108,14 @@
     const think0=think;think=function(h){
       const before=bombs.length,result=think0.apply(this,arguments);
       if(api.isMythic(h)&&bombs.length>before){const b=bombs[bombs.length-1];
-        shots.set(b,{skill:shotSequence++%2?'void_shuriken':'dragon_slash'});
-        play(h,b.mythicUlt?'ULTIMATE_DRAGON_ASCENSION':Number.isFinite(b.tx)?'ATTACK':'BOMB_PLACE',{eventId:++sequence,coalesce:true});
+        const shot=shotFor(h,b);
+        play(h,skillStates[skillOrder.indexOf(shot.skill)],{eventId:++sequence});
       }return result;
     };
     const boom0=boom;boom=function(b){
       const h=owner(b.o),valid=bombs.includes(b)&&!completed.has(b),x=Number.isFinite(b.tx)?b.tx:b.x,y=Number.isFinite(b.ty)?b.ty:b.y;
       const shot=shots.get(b),result=boom0.apply(this,arguments);
-      if(valid&&h){completed.add(b);spawn('raijin_field',h,x,y);if(shot?.skill==='void_shuriken')spawn('void_shuriken',h,x,y,6)}return result;
+      if(valid&&h){completed.add(b);if(shot?.skill==='raijin_field')spawn('raijin_field',h,x,y);else if(shot?.skill==='void_shuriken')spawn('void_shuriken',h,x,y,6)}return result;
     };
     const map0=newMap;newMap=function(){const result=map0.apply(this,arguments);reset();if(S.map>observedStage)for(const h of S.h)if(api.isMythic(h)&&h.on)play(h,'VICTORY');observedStage=S.map;return result};
     const go0=go;go=function(screen){const result=go0.apply(this,arguments);if(screen!==0)reset();return result};
@@ -118,14 +132,15 @@
     ca.drawHuntProjectile=function(c,shot,x,y,time,id,angle){
       const h=owner(id);if(!h)return huntProjectile0.apply(this,arguments);
       if(!allowFX())return true;
-      let record=shots.get(shot);if(!record){record={born:time,skill:shotSequence++%2?'void_shuriken':'dragon_slash'};shots.set(shot,record)}
+      let record=shots.get(shot);if(!record){record={born:time,skill:skillOrder.includes(shot.mythicSkill)?shot.mythicSkill:'dragon_slash'};shots.set(shot,record)}
+      if(record.skill==='raijin_field'||record.skill==='mythic_dragon_ascension')return true;
       const step=reduced()?4:Math.floor((time-record.born)/85)%6;
       draw(c,skillFrame(record.skill,step),x,y,shot.ultimate?90:66,angle,reduced()?.6:.95);return true;
     };
     ca.drawHuntImpact=function(c,hit,p,id){
       if(!owner(id))return hunt0.apply(this,arguments);
       if(!allowFX())return true;
-      const name=hit.ultimate?'mythic_dragon_ascension':'raijin_field',s=manifest.skills[name],age=Math.max(0,.8-hit.life);
+      const name=skillOrder.includes(hit.mythicSkill)?hit.mythicSkill:(hit.ultimate?'mythic_dragon_ascension':'dragon_slash'),s=manifest.skills[name],age=Math.max(0,.8-hit.life);
       draw(c,skillFrame(name,reduced()?5:Math.min(s.requiredFrames-1,Math.floor(age/.8*s.requiredFrames))),p.x,p.y,hit.ultimate?160:90,0,Math.min(1,hit.life/.2)*(reduced()?.55:.9));return true;
     };
     api.spawnSkill=(skill,h,tile)=>spawn(skill,h,tile?.x,tile?.y);
