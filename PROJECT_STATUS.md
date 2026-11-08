@@ -1,5 +1,16 @@
 # Shinobi Bombers — Project Status
 
+## Development review — Shinobi Legacy Pass (Nov 8, 2026)
+
+- Worktree: `tmp/training-shards-beta`; branch: `review/shinobi-legacy-pass-v1-2026-11-08`. Production checkout/branch and Render services are untouched.
+- New `legacy-pass/` module and `apply-legacy-pass.cjs`: free weekly Founder NFT missions, serial/week claim receipts, nonexpiring wallet-bound fragments, fixed idempotent 70% Elite / 30% Legend premium summons, delivery queue, tickets and settlement-reserved training vouchers. Two fragments per summon; every premium hero is account-bound, nonsalvageable and nonmarketable; fusion keeps the restriction.
+- Disabled by default. `SHINOBI_LEGACY_PASS=on` enables it on an existing configured development game server; pre-launch mode always disables it. Existing reward claim gates and purchases pause remain enforced. No live Ryo/SOL/revenue routing or credential changes.
+- UI entry: **Tools → Founder's Weekly Legacy Pass**. Normal hero reveal is reused without recording a paid purchase. Native collection and upgrade screens label and protect premium heroes.
+- Important verification boundary: online stage numbers are client reports and do not award mission XP. Only authoritative offline Sensei stage clears qualify. Other four missions plus a full verified Boss Hunt can reach 100 XP. NFT verification outages fail closed and do not fabricate progress.
+- Added server accounting, item/settlement, statistical and desktop/mobile browser suites to the mandatory runner. See `legacy-pass/README.md` for schema, compatibility, local preview and review limitations. No production deployment is authorized for this feature.
+- Fixed an existing final-hit handoff race found by `live-rewards.cjs`: new attacks stop immediately on Go Offline, while automatic reports remain online until fired projectiles finish draining. Explicit close remains offline. Added a deterministic regression; reward formulas and sync timing are unchanged.
+- Final validation: UI build, verified archive assembly, lint, typecheck, reward guard, all **70 game suites + 20 website checks** passed on Node 22. Desktop/mobile pass screens and a completed premium reveal were inspected. No Render deployment or live financial operation was performed.
+
 _Development copy created 2026-11-01 (Asia/Singapore)._
 
 | | |

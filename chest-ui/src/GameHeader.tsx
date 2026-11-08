@@ -2,6 +2,7 @@ import {useEffect,useState} from 'react';
 import {Icon,type IconName} from './Icons';
 
 export interface GameHeaderProps {
+ legacyPass?:boolean;
  page:number;
  mode:number;
  balance:string;
@@ -26,7 +27,7 @@ const routes:HeaderRoute[]=[
  {label:'Codex',icon:'book',page:3}
 ];
 
-export function GameHeader({page,mode,balance,claimable,wallet,onNavigate,onChest,onBack,online,muted,community,onMute}:GameHeaderProps){
+export function GameHeader({legacyPass=false,page,mode,balance,claimable,wallet,onNavigate,onChest,onBack,online,muted,community,onMute}:GameHeaderProps){
  const [expanded,setExpanded]=useState(false);
  useEffect(()=>setExpanded(false),[page,mode]);
  const navigate=(route:HeaderRoute)=>{setExpanded(false);onNavigate(route.page,route.mode)};
@@ -42,7 +43,7 @@ export function GameHeader({page,mode,balance,claimable,wallet,onNavigate,onChes
   <div className="gc-header-account">
    <div className="gc-header-ryo" aria-label={'Spendable balance '+balance+' Ryo'}><Icon name="coin"/><strong data-gc-balance>{balance}</strong><span>Ryo</span></div>
    <button className="gc-global-chest" data-gc-chest onClick={onChest} aria-label={'Open Chest. '+(claimable===null?'Checking Adventure Ryo':claimable+' Adventure Ryo')}><Icon name="chest"/><span>Chest <b aria-hidden="true">·</b> <strong data-gc-pending>{claimable??'—'}</strong></span></button>
-   <details className="gc-tools" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();event.currentTarget.open=false;event.currentTarget.querySelector('summary')?.focus()}}}><summary aria-label="Game information and sound"><Icon name="settings"/><span>Tools</span></summary><div><strong>{online}</strong><button onClick={onMute} aria-label={muted?'Unmute sound':'Mute sound'}>{muted?'🔇 Sound off · Unmute':'🔊 Sound on · Mute'}</button><button type="button" className="gc-display" onClick={()=>{(window as unknown as {DisplaySettings?:{open:()=>void}}).DisplaySettings?.open()}}>Display &amp; Accessibility</button><nav aria-label="Community links"><a href="/whitepaper">Whitepaper</a>{community.map(link=>link.url?<a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer">{link.label} ↗</a>:<button key={link.label} disabled title={link.label+' link coming soon'}>{link.label} · Coming soon</button>)}</nav></div></details>
+   <details className="gc-tools" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();event.currentTarget.open=false;event.currentTarget.querySelector('summary')?.focus()}}}><summary aria-label="Game information and sound"><Icon name="settings"/><span>Tools</span></summary><div><strong>{online}</strong><button onClick={onMute} aria-label={muted?'Unmute sound':'Mute sound'}>{muted?'🔇 Sound off · Unmute':'🔊 Sound on · Mute'}</button><button type="button" className="gc-display" onClick={()=>{(window as unknown as {DisplaySettings?:{open:()=>void}}).DisplaySettings?.open()}}>Display &amp; Accessibility</button>{legacyPass&&<button type="button" id="legacyPassButton" aria-haspopup="dialog" aria-controls="legacyPassDialog" onClick={event=>{const tools=event.currentTarget.closest("details");if(tools)tools.open=false;(window as unknown as {ShinobiLegacyPass?:{open:()=>void}}).ShinobiLegacyPass?.open()}}>Founder's Weekly Legacy Pass</button>}<nav aria-label="Community links"><a href="/whitepaper">Whitepaper</a>{community.map(link=>link.url?<a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer">{link.label} ↗</a>:<button key={link.label} disabled title={link.label+' link coming soon'}>{link.label} · Coming soon</button>)}</nav></div></details>
    <div className="gc-header-wallet" title={'Connected wallet: '+wallet}><Icon name="wallet"/><span>{wallet.length>15?wallet.slice(0,5)+'…'+wallet.slice(-5):wallet}</span></div>
   </div>
  </header>

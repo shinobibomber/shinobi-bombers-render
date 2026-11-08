@@ -13,6 +13,8 @@ const addr = k => k.publicKey.toBase58(), newWallet = () => addr(web3.Keypair.ge
    fs.mkdirSync(path.join(fixture, 'server')); fs.mkdirSync(path.join(fixture, 'public'));
    for (const file of ['service.cjs', 'store.cjs', 'adventure.cjs','economy.cjs','market.cjs','netlify-handler.cjs']) fs.copyFileSync(path.join(root, 'app/server', file), path.join(fixture, 'server', file));
    fs.copyFileSync(path.join(root, 'app/public/index.html'), path.join(fixture, 'public/index.html'));
+   // Rebuild the older Creator step on its own input, before the later reviewed Legacy observer.
+   for(const [name,hooks]of [['adventure.cjs',require('../apply-legacy-pass.cjs').adventurePatches],['service.cjs',require('../apply-legacy-pass.cjs').servicePatches]]){const file=path.join(fixture,'server',name);let restored=originalRead(file,'utf8');for(const [before,after]of hooks.slice().reverse()){assert.equal(restored.split(after).length-1,1,'exact later Legacy observer hook');restored=restored.replace(after,()=>before);}fs.writeFileSync(file,restored);}
    const expected = originalRead(path.join(root, 'app/server/schema.sql'), 'utf8').replace(/\n-- Combat contract v1[\s\S]*$/, ''), at = expected.indexOf('\n-- Creators Portal v1:'); assert(at > 0);
    fs.writeFileSync(path.join(fixture, 'server/schema.sql'), expected.slice(0, at));
    const sources = [...['schema.sql','player-schema.sql'].map(file => path.join(root, 'creators-portal',file)), path.join(root, 'prelaunch/schema.sql'),path.join(root,'sr-revenue/schema.sql')];

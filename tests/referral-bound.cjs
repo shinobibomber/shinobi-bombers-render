@@ -71,6 +71,6 @@ const hero = (id, rank, extra = {}) => ({ tokenId: id, rank, level: 1, name: 'He
   assert.ok(service.includes("require('./launch-gates.cjs').check(action,body);await require('./economic-dashboard.cjs').guard(store,action,wallet,body);"));
   assert.ok(service.includes("launchGates:require('./launch-gates.cjs').publicGates(),"));
   assert.ok(page.includes("if(configuration?.launchGates?.solDeposits===false)throw Error('Deposits are not open yet.');"));
-  assert.ok(page.includes('h.referralBound=descriptor.referralReward===true;'));
+  assert.ok(page.includes('h.referralBound=descriptor.referralReward===true||descriptor.accountBound===true;'),'both existing referrals and permanent premium rewards retain the collection lock');
   console.log('PASS: referral-bound heroes refused by the Market (audited), fusion keeps the binding per group, launch gates independent (devnet on, mainnet off) and wired before signing.');
 })().catch(e => { console.error(e); process.exit(1); });

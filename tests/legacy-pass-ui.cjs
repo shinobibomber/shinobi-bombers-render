@@ -1,0 +1,26 @@
+'use strict';
+process.env.SHINOBI_LEGACY_PASS='on';
+const {fixture,L}=require('./legacy-fixture.cjs'),{withGame}=require('./harness.cjs'),path=require('node:path');
+(async()=>{
+ const backend=await fixture();
+ try{await withGame(async({p,f,account,snapshot,assert,errors})=>{
+  backend.wallet=account;backend.held.set(account,backend.mints);await backend.save(backend.profile(),account);f.profile=await backend.store.profile(account);f.holdAdventure=false;
+  f.legacyHandler=async req=>{const response=await L.handle(backend.store,account,req.action,req);f.profile=await backend.store.profile(account);return{...response,...snapshot()};};
+  await p.locator('#loginPhantom').click();await p.waitForFunction(()=>RyoPayments.state.authenticated&&!LoginScreen.active&&window.ShinobiLegacyPass);
+  await p.locator('.gc-tools summary').click();assert(await p.locator('#legacyPassButton').isVisible(),'feature-enabled pass button is accessible in Tools');await p.locator('#legacyPassButton').click();const modal=p.locator('#legacyPassDialog');await p.waitForFunction(()=>document.querySelector('#legacyPassDialog')?.innerText.includes('0 / 100 Mission XP'));
+  assert.equal(await modal.locator('.legacy-mission').count(),6);assert.match(await modal.innerText(),/Monday 00:00 UTC/);assert(await modal.getByRole('button',{name:'Redeem Premium Summon',exact:true}).isDisabled());await modal.getByRole('button',{name:'Activate this week’s pass'}).click();await p.waitForFunction(()=>document.querySelector('#legacyPassDialog')?.innerText.includes('Verified entitlement'));
+  await backend.complete(1);await modal.getByRole('button',{name:'Refresh',exact:true}).click();await p.waitForFunction(()=>document.querySelector('#legacyPassDialog')?.innerText.includes('100 / 100 Mission XP'));await p.screenshot({path:path.join(__dirname,'out/legacy-pass-desktop.png')});
+  for(const milestone of [20,40,60,80,100]){const card=modal.locator('.legacy-milestone').filter({has:p.locator('strong',{hasText:new RegExp('^'+milestone+' XP$')})});await card.getByRole('button',{name:'Claim',exact:true}).click();await p.waitForFunction(x=>[...document.querySelectorAll('.legacy-milestone')].find(e=>e.querySelector('strong').textContent===x+' XP')?.querySelector('button').textContent==='Claimed',milestone);}
+  assert.match(await modal.innerText(),/Premium Fragments: 1 \/ 2/);assert.equal(f.profile.upgradeShards,103);assert.match(await modal.innerText(),/account-bound/);
+  await p.setViewportSize({width:390,height:844});await p.screenshot({path:path.join(__dirname,'out/legacy-pass-phone.png')});assert(await modal.evaluate(e=>e.scrollWidth<=e.clientWidth+1),'mobile screen has no horizontal overflow');
+  await modal.getByRole('button',{name:'Use on next training',exact:true}).click();await modal.getByRole('button',{name:'Clear selected training voucher',exact:true}).waitFor();const selected=(await L.status(backend.store,account)).selectedVoucher;await backend.pool.query('UPDATE ryo_legacy_items SET expires=$2 WHERE id=$1',[selected,backend.now-1]);await modal.getByRole('button',{name:'Refresh',exact:true}).click();await p.waitForFunction(()=>!document.querySelector('#legacyPassDialog')?.innerText.includes('Remove selected voucher'));await modal.getByRole('button',{name:'Clear selected training voucher',exact:true}).click();await p.waitForFunction(()=>!document.querySelector('#legacyPassDialog')?.innerText.includes('Clear selected training voucher'));
+  await backend.fragments(1);await modal.getByRole('button',{name:'Refresh',exact:true}).click();await p.waitForFunction(()=>document.querySelector('#legacyPassDialog')?.innerText.includes('Premium Fragments: 2 / 2'));const before=f.profile.heroes.length,balance=f.balance;
+  await modal.getByRole('button',{name:'Redeem Premium Summon',exact:true}).click();await p.waitForFunction(n=>RyoPayments.state.profile.heroes.length===n+1,before);await p.waitForFunction(()=>!document.querySelector('#legacyPassDialog').open&&S.v2.revealBatch?.length===1);
+  assert.equal(f.balance,balance);assert.equal(f.purchases.length,0);assert(!f.requests.some(r=>['purchase','deposit','withdraw'].includes(r.action)));assert(await p.evaluate(()=>S.v2.revealBatch[0].hero.legacyPassReward));await p.screenshot({path:path.join(__dirname,'out/legacy-premium-reveal.png')});
+  await p.evaluate(()=>{Experience.revealAll();RevealDesign.skip();});await p.waitForFunction(()=>S.v2.revealBatch?.[0]?.revealed&&!document.querySelector('#revealContinue')?.disabled);assert(await p.locator('#revealAgain').isHidden(),'free premium reward does not offer an ordinary paid repeat summon');assert(!f.requests.some(r=>r.action==='quote'),'premium reveal never requests a paid Shrine quote');await p.screenshot({path:path.join(__dirname,'out/legacy-premium-hero.png')});
+  // The default-disabled feature does not alter the other suites; this fixture explicitly opts in.
+  assert.deepEqual(errors,[]);
+ },{},{config:{legacyPass:true}});
+ console.log('PASS: rendered desktop/mobile Legacy Pass, six cards, active serial, verified claims, persistent fragment balance, free premium delivery via normal hero reveal, and zero payment actions.');
+ }finally{await backend.db.close();}
+})().catch(e=>{console.error(e);process.exitCode=1});

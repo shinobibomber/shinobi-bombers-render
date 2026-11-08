@@ -18,7 +18,8 @@
    if(!owned(id)||state().account!==selected.account)return dialog.close();dialog.close();const i=S.h.findIndex(h=>h.tokenId===id);if(i>=0)await originalUp(i);
   },max||count()<amount);
   if(!max&&count()<amount)el('p','Salvage a spare hero to collect the missing shards.',d).className='hero-upgrade-note';
-  button(choices,'Salvage hero · Receive '+amount+' Upgrade Shard(s)',()=>confirm(id),!!hero.nft,'sbw-alt');
+  button(choices,'Salvage hero · Receive '+amount+' Upgrade Shard(s)',()=>confirm(id),!!(hero.nft||hero.accountBound||hero.legacyPassReward),'sbw-alt');
+  if(hero.accountBound||hero.legacyPassReward)el('p','Premium reward hero · Permanently account-bound; cannot be sold or salvaged.',d).className='hero-upgrade-note';
   if(hero.nft)el('p','NFT-bound heroes cannot be salvaged.',d).className='hero-upgrade-note';
   const actions=el('div',null,d);actions.className='sbw-acts';button(actions,'Cancel',()=>dialog.close(),false,'sbw-alt');show();
  }

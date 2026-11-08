@@ -8,6 +8,7 @@ const walletSource=`(()=>{let connected=false,raw=100000000000000n,pending=[],se
 async function withGame(run,pageOptions={},fixtureOptions={}){
  const server=http.createServer((req,res)=>{res.writeHead(404);res.end()});await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;const url='http://127.0.0.1:'+server.address().port;
  const f={balance:500000,profile:economy.initialProfile(),purchases:[],withdrawals:[],deposits:[],nextWithdrawalAt:0,pendingChest:12345,pool:100000,claimed:0,claimError:false,holdAdventure:true,holdClaim:false,holdWithdrawal:false,pendingWithdrawal:false,settlePending:false,loginSerial:0,requests:[],gates:[],config:{economyVersion:2,network:'solana-devnet',mint,treasuryAddress,studioAddress:'STUDIO_PUBLIC_EXAMPLE',revenueAddress:'REVENUE_PUBLIC_EXAMPLE',rate:1,tokenPurchases:true,minAmount:1000,maxAmount:1000000,withdrawalMinimum:100000,withdrawalCooldownMs:86400000,studioFeeBps:200,decimals:6}};
+ Object.assign(f.config,fixtureOptions.config||{});
  const pending=new Set(),snapshot=()=>({economyVersion:2,balance:f.balance,...(f.bonus?{bonus:f.bonus}:{}),profile:economy.normalizeProfile(f.profile),purchases:f.purchases,withdrawals:f.withdrawals,deposits:f.deposits,spends:[],nextWithdrawalAt:f.nextWithdrawalAt,serverTime:Date.now()}),chest=(credited=0)=>({pending:f.pendingChest,pool:f.pool,claimed:f.claimed,credited,map:1,kills:0,rewardRatePercent:60,rewardPoolStep:100000,nextRateAt:200000,offlineCapHours:12,senseiActive:false,offlineSeconds:0});
  f.release=kind=>{for(const gate of f.gates.filter(g=>g.kind===kind))gate.resolve();f.gates=f.gates.filter(g=>g.kind!==kind)};
  const pause=kind=>new Promise(resolve=>f.gates.push({kind,resolve}));
@@ -31,6 +32,7 @@ async function withGame(run,pageOptions={},fixtureOptions={}){
   data={purchase:row,...snapshot()};if(f.holdPurchase)await pause('purchase');break;
  }
  case'hero-salvage':{const store=await chatStore(f);await store.pool.query('INSERT INTO ryo_profiles(scope,wallet,data) VALUES($1,$2,$3) ON CONFLICT(scope,wallet) DO UPDATE SET data=$3',[store.scope,account,JSON.stringify(f.profile)]);const salvage=await require('../app/server/hero-upgrades.cjs').salvage(store,account,req);f.profile=await store.profile(account);data={salvage,...snapshot()};break;}
+ case'legacy-status':case'legacy-select':case'legacy-claim':case'legacy-redeem':case'legacy-deliver':case'legacy-ticket':case'legacy-voucher':if(!f.legacyHandler)throw Error('Legacy fixture is not configured');data=await f.legacyHandler(req);break;
  case'ack-purchase':{const row=f.purchases.find(r=>r.request_id===req.requestId);if(row)row.acknowledged=true;data={ok:true};break;}
  case'ack-spend':data={ok:true};break;
  case'market-browse':case'market-mine':case'market-post':case'market-cancel':case'market-buy':case'market-offer':case'market-offer-cancel':case'market-offer-decline':case'market-accept':data=await require('./market-fixture.cjs').handle(f,req,account,snapshot);break;

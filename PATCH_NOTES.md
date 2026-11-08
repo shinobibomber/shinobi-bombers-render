@@ -20,6 +20,20 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS - LOCAL REVIEW NOTES (Nov 8, 2026 | Shinobi Legacy Pass)**
+
+- Founder's Mythic NFT Box holders can activate a free weekly Legacy Pass from Tools. Complete any five of six verified missions for 100 XP; resets are Monday at 00:00 UTC.
+- Milestones award up to 3 Upgrade Shards, 1 Recovery Ticket, 1 Training Voucher and 1 Premium Summon Fragment per NFT each week.
+- Exchange 2 fragments for a saved premium summon: Elite 70%, Legend 30%, all other ranks 0%. A full collection queues the confirmed hero without rerolling it.
+- Premium heroes are permanently account-bound. They cannot be sold or salvaged; fusion preserves this restriction.
+- Tickets restore 25% maximum chakra, capped at 20, to a resting hero outside Boss Hunt. Vouchers improve one holder training discount to 15%, with extra savings capped at 10,000 Ryo; shard costs stay the same. Both expire after 14 days and have a four-item wallet cap.
+- NFT transfers cannot repeat weekly claims. Earned fragments remain with the claiming wallet and never expire.
+- Fixed an offline transition that could leave the final in-flight defeat uncredited. Reward formulas and sync timing are unchanged.
+
+Development review only; disabled by default and not deployed. Online stage reports do not qualify as proof: only server-simulated stage clears count. No direct Ryo/SOL payout or reward-pool funding change.
+
+---
+
 **SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Mythic Skill Rotation)**
 
 - Each Mythic hero now cycles Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion, using a different skill visual on every attack.

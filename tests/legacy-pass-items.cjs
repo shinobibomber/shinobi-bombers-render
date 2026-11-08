@@ -1,0 +1,43 @@
+'use strict';
+process.env.SHINOBI_LEGACY_PASS='on';
+const assert=require('node:assert/strict'),{fixture,E,L,R}=require('./legacy-fixture.cjs'),C=require('../app/server/combat-chakra.cjs'),B=require('../app/server/combat-rules.cjs');
+const close=(a,b)=>assert(Math.abs(a-b)<1e-6,`${a} != ${b}`);
+(async()=>{
+ const f=await fixture(),{store,wallet,other,pool}=f;
+ try{
+  await f.complete();await L.claim(store,wallet,{serial:1,milestone:40});await L.claim(store,wallet,{serial:1,milestone:60});
+  let p=await store.profile(wallet);p.heroes[0].baseStats.st=1;p.heroes[0].bonus.st=0;p.heroes[0].perks=[0,1,2,3];for(const h of p.heroes)h.chakra={version:1,value:0,at:f.now,nextAt:f.now,resting:true};await f.save(p);
+  let item=(await L.status(store,wallet)).items.find(i=>i.kind==='ticket'),h=p.heroes[0],beforeRecovery=h.chakra.legacyRecovered||0;
+  await assert.rejects(L.ticket(store,other,{itemId:item.id,heroId:h.tokenId}),/owned/);
+  const result=await L.ticket(store,wallet,{itemId:item.id,heroId:h.tokenId});close(result.restored,Math.min(B.maxChakra(h)*.25,20));p=await store.profile(wallet);assert.equal(p.heroes[0].chakra.legacyRecovered||0,beforeRecovery,'ticket restoration cannot manufacture natural-recovery XP');
+  await assert.rejects(L.ticket(store,wallet,{itemId:item.id,heroId:h.tokenId}),/unavailable/);
+  const ticket=await f.item('ticket');p.heroes[0].chakra.resting=false;await f.save(p);await assert.rejects(L.ticket(store,wallet,{itemId:ticket,heroId:h.tokenId}),/resting/);
+  p.heroes[0].chakra.resting=true;p.heroes[1].chakra.lockUntil=f.now+60000;await f.save(p);await assert.rejects(L.ticket(store,wallet,{itemId:ticket,heroId:h.tokenId}),/active Boss Hunt/);delete p.heroes[1].chakra.lockUntil;p.heroes[0].chakra.value=B.maxChakra(p.heroes[0]);await f.save(p);await assert.rejects(L.ticket(store,wallet,{itemId:ticket,heroId:h.tokenId}),/full chakra/);
+  assert.equal((await pool.query('SELECT status FROM ryo_legacy_items WHERE id=$1',[ticket])).rows[0].status,'available');
+  const expired=await f.item('ticket',wallet,f.now);await assert.rejects(L.ticket(store,wallet,{itemId:expired,heroId:h.tokenId}),/expired/);
+  // Actual natural recovery flush is a persistent high-water mark, not client-provided totals.
+  p.heroes[0].chakra.value=0;await f.save(p);const before=(await L.status(store,wallet)).missions.find(m=>m.id==='recovery').value;
+  await store.transaction(async c=>{await store.locked(c,wallet);const q=await store.profileLocked(c,wallet);f.now+=60000;C.recover(q.heroes[0],f.now,q.dojo);await L.flushLocked(store,c,wallet,q);await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[store.scope,wallet,JSON.stringify(q)]);await L.flushLocked(store,c,wallet,q);});assert.equal((await L.status(store,wallet)).missions.find(m=>m.id==='recovery').value,before,'mission remains capped at 60');
+  // Vouchers use fresh NFT evidence, fixed capped pricing, unchanged shards and reserved settlement.
+  p=await store.profile(wallet);const mythic=E.hero(5);mythic.level=4;p.heroes.push(mythic);p.upgradeShards=100;p.mythicPerk=true;await f.save(p);await pool.query('UPDATE ryo_accounts SET balance=2000000 WHERE scope=$1 AND wallet=$2',[store.scope,wallet]);
+  const voucher=(await L.status(store,wallet)).items.find(i=>i.kind==='voucher');await L.chooseVoucher(store,wallet,voucher.id);
+  const q=await L.quote(store,wallet,'training',{heroId:mythic.tokenId}),raw=require('../app/server/gameplay-options.cjs').trainingPrice(5,4);assert.equal(raw,480000);assert.equal(q.total,Math.round(raw*.9)-10000);assert.equal(q.legacyVoucher.savings,10000);assert.equal(q.training.shards,7);assert.equal(q.params.legacyVoucherId,voucher.id);
+  f.held.set(wallet,[]);await assert.rejects(L.quote(store,wallet,'training',{heroId:mythic.tokenId}),/current Founder/);f.held.set(wallet,f.mints);
+  let sequence=0;const params={...q.params,upgradeRulesAccepted:1},prepare=async()=>({signature:'fixture-'+(++sequence),wire:'fixture',lastHeight:1});
+  await assert.rejects(store.purchase(wallet,'voucher-fee-failure','training',params,q.total,async()=>{throw Error('Not enough gas');}),/gas/);assert.equal((await pool.query('SELECT status FROM ryo_legacy_items WHERE id=$1',[voucher.id])).rows[0].status,'available');assert.equal((await store.profile(wallet)).upgradeShards,100);
+  await store.purchase(wallet,'voucher-refunded-order','training',params,q.total,prepare);assert.equal((await pool.query('SELECT status FROM ryo_legacy_items WHERE id=$1',[voucher.id])).rows[0].status,'reserved');assert.equal((await store.profile(wallet)).heroes.find(h=>h.tokenId===mythic.tokenId).level,4);await assert.rejects(L.quote(store,wallet,'training',{heroId:mythic.tokenId}),/unavailable/);
+  await f.fragments(2);const queued=await L.redeem(store,wallet,{requestId:'pending-purchase-delivery'});assert.equal(queued.status,'queued','premium delivery cannot be erased by a pending purchase profile snapshot');
+  await store.settlePurchase(wallet,'voucher-refunded-order','refunded');assert.equal((await pool.query('SELECT status FROM ryo_legacy_items WHERE id=$1',[voucher.id])).rows[0].status,'available');assert.equal((await store.profile(wallet)).upgradeShards,100);await L.deliver(store,wallet,{requestId:queued.request_id});
+  await store.purchase(wallet,'voucher-finalized-order','training',params,q.total,prepare);f.now+=R.EXPIRY+1;await store.settlePurchase(wallet,'voucher-finalized-order','confirmed');assert.equal((await pool.query('SELECT status FROM ryo_legacy_items WHERE id=$1',[voucher.id])).rows[0].status,'used','finalized purchase honors its reserved quote even after expiry');assert.equal((await store.profile(wallet)).upgradeShards,93);assert.equal((await store.profile(wallet)).heroes.find(h=>h.tokenId===mythic.tokenId).level,5);await store.settlePurchase(wallet,'voucher-finalized-order','confirmed');assert.equal((await store.profile(wallet)).upgradeShards,93);
+  // Normal-sized eligible training costs exactly 85% base, and caps remain per wallet.
+  const v2=await f.item('voucher');await L.chooseVoucher(store,wallet,v2);p=await store.profile(wallet);p.mythicPerk=true;const elite=E.hero(3);p.heroes.push(elite);await f.save(p);const normal=await L.quote(store,wallet,'training',{heroId:elite.tokenId});assert.equal(normal.total,Math.round(require('../app/server/gameplay-options.cjs').trainingPrice(3,1)*.85));assert.equal(normal.training.shards,4);
+  await f.complete(2);for(const kind of ['ticket','voucher']){await pool.query("UPDATE ryo_legacy_items SET status='used' WHERE scope=$1 AND wallet=$2 AND kind=$3",[store.scope,wallet,kind]);const ids=[];for(let i=0;i<4;i++)ids.push(await f.item(kind));const milestone=kind==='ticket'?40:60;await assert.rejects(L.claim(store,wallet,{serial:2,milestone}),/Inventory full/);await pool.query('UPDATE ryo_legacy_items SET expires=$2 WHERE id=$1',[ids[0],f.now]);await L.claim(store,wallet,{serial:2,milestone});assert.equal((await L.status(store,wallet)).items.filter(i=>i.kind===kind).length,4);}
+  // A real paid Boss Hunt completes once only; an early finish never qualifies.
+  await L.select(store,wallet,2);p=await store.profile(wallet);p.battleReady=p.heroes.slice(0,3).map(h=>h.tokenId);for(const h of p.heroes){h.chakra={version:1,value:B.maxChakra(h),at:f.now,nextAt:f.now,resting:true};}await f.save(p);
+  const H=require('../app/server/combat-hunt.cjs'),boss=require('../app/server/boss-hunt.cjs');
+  const hunt=async id=>{const row=await store.purchase(wallet,id,'hunt',{},10000,prepare);await boss.record(store,wallet,row,{});await store.settlePurchase(wallet,id,'confirmed');return H.activate(store,wallet,id);};
+  await hunt('legacy-early-hunt');f.now+=5000;await H.report(store,wallet,{entryId:'legacy-early-hunt',finish:true});f.now+=60000;await H.report(store,wallet,{entryId:'legacy-early-hunt',finish:true});assert.equal(Number((await pool.query("SELECT COUNT(*) n FROM ryo_legacy_events WHERE event_id='hunt:legacy-early-hunt'")).rows[0].n),0);
+  await hunt('legacy-full-hunt');f.now+=60000;await H.report(store,wallet,{entryId:'legacy-full-hunt',finish:true});await H.report(store,wallet,{entryId:'legacy-full-hunt',finish:true});assert.equal(Number((await pool.query("SELECT COUNT(*) n FROM ryo_legacy_events WHERE event_id='hunt:legacy-full-hunt'")).rows[0].n),1);
+  console.log('PASS: Legacy tickets enforce ownership/resting/hunt/full/expiry rules; recovery watermark deduplication; 15% training discount and 10k extra cap; unchanged shards; fresh NFT proof; fee failure/refund preservation, confirmed-only voucher use, pending delivery queue, four-item caps, and full-Hunt-only proof.');
+ }finally{await f.db.close();}
+})().catch(e=>{console.error(e);process.exitCode=1});

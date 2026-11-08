@@ -9,8 +9,10 @@ function state(h,now,legacy){
 function recover(h,now,dojo=0){
  const s=state(h,now);
  if(s.hunt){const v=s.hunt,end=Math.min(now,v.ends-1),n=Math.min(v.energy,Math.max(0,Math.floor((end-v.started)/v.cooldown)+1));s.value=Math.max(0,s.value-Math.max(0,n-v.spent));v.spent=Math.max(v.spent,n);s.nextAt=Math.max(s.nextAt,v.started+n*v.cooldown);s.lockUntil=v.ends;if(now<v.ends){s.at=Math.max(s.at,now);return s;}s.at=Math.max(s.at,v.ends);s.resting=true;delete s.hunt;}
+ const beforeRecovery=s.value;
  if(s.resting&&now>Number(s.lockUntil||0))s.value=Math.min(R.maxChakra(h),s.value+Math.min(CAP_MS,Math.max(0,now-Math.max(s.at,Number(s.lockUntil)||0)))/1000*R.recovery(h,dojo,true));
  else if(s.value<1&&!(s.lockUntil>now))s.value=Math.min(1,s.value+Math.min(CAP_MS,Math.max(0,now-s.at))/1000*R.recovery(h,0,true));
+ if(process.env.SHINOBI_LEGACY_PASS==='on'&&process.env.PRELAUNCH_MODE!=='on'&&s.value>beforeRecovery)s.legacyRecovered=(Number(s.legacyRecovered)||0)+s.value-beforeRecovery;
  if(s.lockUntil<=now)delete s.lockUntil;
  s.at=Math.max(s.at,now);return s;
 }

@@ -9,7 +9,7 @@ function parse(r){
  if(r.deployed.some(id=>typeof id!=='string')||new Set(r.deployed).size!==r.deployed.length)return null;
  return {id:r.killSession,seq:Number.isSafeInteger(r.combatSeq)&&r.combatSeq>0&&r.combatSeq<=1e9?r.combatSeq:0,heroes:r.combatHeroes,deployed:r.deployed,stage:Number.isSafeInteger(r.killStage)&&r.killStage>=1&&r.killStage<=1e6?r.killStage:1};
 }
-function advance(data,profile,now,active,ratePercent=50,report=null,onReward=null){
+function advance(data,profile,now,active,ratePercent=50,report=null,onReward=null,onActivity=null){
  require('./economy.cjs').normalizeProfile(profile);
  const d=data||{map:1,target:0,hp:100,kills:0,pending:0,claimed:0,last:now,active:false,energy:{}};
  const last=Number.isFinite(d.last)?Math.min(d.last,now):now,gap=Math.max(0,now-last),rate=Math.max(50,Math.min(100,Number(ratePercent)||50))/100;
@@ -26,12 +26,12 @@ function advance(data,profile,now,active,ratePercent=50,report=null,onReward=nul
  let team=(Array.isArray(d.team)?d.team:roster.slice().sort((a,b)=>R.damage(b)/R.cooldown(b)-R.damage(a)/R.cooldown(a)).slice(0,10).map(h=>h.tokenId)).map(id=>byId.get(id)).filter(Boolean).slice(0,10);
  const teamRate=team.reduce((n,h)=>n+1/R.cooldown(h),0);
  d.actionBudget=d.active?Math.min(10+600*teamRate,(Number(d.actionBudget)||0)+Math.min(gap,600000)/1000*teamRate):10;
- const pay=(kind,h,at)=>{const earned=Math.floor(PAY[kind]*Math.max(.35,1-.1*Math.floor(d.map/100))*rate*R.rewardMultiplier(h));d.pending+=earned;d.kills++;if(onReward&&earned)onReward(earned,at)};
+ const pay=(kind,h,at)=>{const earned=Math.floor(PAY[kind]*Math.max(.35,1-.1*Math.floor(d.map/100))*rate*R.rewardMultiplier(h));d.pending+=earned;d.kills++;if(onReward&&earned)onReward(earned,at);if(onActivity)onActivity({kind:'kills',quantity:1,heroId:h.tokenId,at})};
  d.offlineSeconds=0;
  if(online){
   const record=d.combatSessions[tally.id],previous=new Set(team.map(h=>h.tokenId));
   for(const row of tally.heroes){const h=byId.get(row.id);if(!h)continue;const v=record.heroes[row.id]||(record.heroes[row.id]={seen:0,accepted:0,kills:[0,0,0,0,0]});const delta=Math.max(0,row.attacks-v.seen);v.seen=Math.max(v.seen,row.attacks);
-   const n=previous.has(row.id)?C.spend(h,Math.min(delta,Math.floor(d.actionBudget+1e-7)),now,{dojo:profile.dojo,activeSince:d.teamSince[row.id]??last}):0;d.actionBudget-=n;v.accepted+=n;d.combatDamage=(d.combatDamage||0)+n*R.damage(h);
+   const n=previous.has(row.id)?C.spend(h,Math.min(delta,Math.floor(d.actionBudget+1e-7)),now,{dojo:profile.dojo,activeSince:d.teamSince[row.id]??last}):0;d.actionBudget-=n;v.accepted+=n;d.combatDamage=(d.combatDamage||0)+n*R.damage(h);if(n&&onActivity)onActivity({kind:'attacks',quantity:n,heroId:h.tokenId,at:now});
   }
   d.map=Math.max(Number(d.map)||1,tally.stage,Math.floor((d.reportedKills||0)/100)+1);
   for(const row of tally.heroes){const h=byId.get(row.id),v=record.heroes[row.id];if(!h||!v)continue;let total=v.kills.reduce((a,b)=>a+b,0);
@@ -51,7 +51,8 @@ function advance(data,profile,now,active,ratePercent=50,report=null,onReward=nul
      let h=team[i];const s=C.recover(h,at,profile.dojo);
      if(s.value<1){const replacement=roster.find(x=>!team.includes(x)&&!(x.chakra?.lockUntil>at)&&C.recover(x,at,profile.dojo).value>=R.maxChakra(x)*profile.senseiReturnPercent/100);if(replacement){C.setResting(h,true,at,profile.dojo);h=team[i]=replacement;C.setResting(h,false,at,profile.dojo);d.teamSince[h.tokenId]=at;}}
      const n=C.spend(h,Math.ceil((to-at)/1000/R.cooldown(h))+1,to,{dojo:profile.dojo,activeSince:at});
-     for(let a=0;a<n;a++){d.hp-=R.damage(h);if(d.hp<=0){pay(d.target,h,to);d.target=d.kills%4;d.hp=HP[d.target];if(d.kills%20===0)d.map++;}}
+     if(n&&onActivity)onActivity({kind:'attacks',quantity:n,heroId:h.tokenId,at:to});
+     for(let a=0;a<n;a++){d.hp-=R.damage(h);if(d.hp<=0){pay(d.target,h,to);d.target=d.kills%4;d.hp=HP[d.target];if(d.kills%20===0){d.map++;if(onActivity)onActivity({kind:'stages',quantity:1,at:to});}}}
     }
    }
   }

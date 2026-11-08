@@ -768,7 +768,7 @@
         const stat = (k, v) => `<div class="sbw-st"><span>${k}</span><b>${esc(v || '—')}</b></div>`;
         b.det.innerHTML = `<div class="sbw-h2" style="--rc:${RCOL[r]}">
           <div class="sbw-h2-top"><div><h3 data-fs="23">${esc(c.name)}</h3><p>Lv. ${esc(lv)} / ${esc(lvMax || '5')}<em>${esc(c.status)}</em></p></div><i class="sbw-h2-rank">${esc(RNAME[r].toUpperCase())}</i></div>
-          ${r === 5 ? mythicBlock(h) : `<div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>`}${h.referralBound ? BOUND_NOTE : ''}
+          ${r === 5 ? mythicBlock(h) : `<div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>`}${h.legacyPassReward ? PREMIUM_BOUND_NOTE : h.referralBound ? BOUND_NOTE : ''}
           <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + CombatRules.perkCount(r))}</div>
             <div class="sbw-h2-port"><canvas width="292" height="344"></canvas></div></div>
           <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
@@ -1065,11 +1065,13 @@
     });
   }
   const BOUND_NOTE = '<p class="sbw-bound-note"><b>🔒 REFERRAL-BOUND HERO</b><span>Usable in battles, teams and training. Cannot be listed, sold or transferred.</span></p>';
+  const PREMIUM_BOUND_NOTE = '<p class="sbw-bound-note"><b>🔒 PREMIUM REWARD HERO</b><span>Permanently account-bound. Usable in battles, training and fusion. Cannot be sold or salvaged; fusion keeps this restriction.</span></p>';
   const BOUND_TEXT = 'This hero was obtained through the Shinobi Bombers Referral Program. It can be used for gameplay and progression but cannot be listed, sold, or transferred through the marketplace.';
   // "Sell · List on Market" (Heroes) opens this dialog for a token hero.
   function sellDialog(h) {
     const a = account(); if (!h) return;
     if (!a || !h.tokenId || h.tokenOwner !== a) return notice('Market', 'Only heroes from your signed-in token collection can be listed. Practice heroes cannot be sold.');
+    if (h.legacyPassReward) return notice('🔒 Premium reward hero', 'Premium reward heroes are permanently account-bound. They cannot be listed, sold, transferred or salvaged. Fusion retains the restriction.');
     if (h.referralBound) return notice('🔒 Referral-bound hero', BOUND_TEXT);
     const min = (MK.data?.rules?.minPrice || MARKET_MIN)[h.r] || MARKET_MIN[0];
     const d = confirmDialog('List ' + h.name, `<p class="sbw-mdl-hero" style="--rc:${RCOL[h.r]}"><b>${RNAME[h.r]}</b> · Lv. ${h.lv} · ${(h.pk || []).map(k => esc(perkName(k))).join(', ')}</p>

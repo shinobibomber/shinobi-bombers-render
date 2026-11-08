@@ -29,6 +29,9 @@ async function report(store,wallet,body){
   if(body.finish===true)combat.ends=Math.min(combat.ends,now);
   const actual=combat.team.reduce((n,u)=>n+attacks(u,now,combat.ends)*u.power,0);
   for(const h of p.heroes){if(h.chakra?.hunt?.entryId===e.id)h.chakra.hunt.ends=Math.min(h.chakra.hunt.ends,combat.ends);C.recover(h,now,p.dojo);}
+  const legacy=require('./legacy-pass.cjs');
+  if(now>=combat.started+60000&&combat.ends>=combat.started+60000&&actual>0)await legacy.recordLocked(store,c,wallet,[{id:'hunt:'+e.id,kind:'hunts',quantity:1,at:combat.started+60000}]);
+  await legacy.flushLocked(store,c,wallet,p);
   const kept=Math.max(Number(e.damage),actual);await save(c,store,wallet,p);
   await c.query('UPDATE ryo_hunt_entries SET damage=$3,reported=$4,combat=$5 WHERE scope=$1 AND id=$2',[store.scope,e.id,kept,now,JSON.stringify(combat)]);
   return {damage:kept,capped:Number(body.damage)>kept,closed:now>=combat.ends,chakra:C.snapshot(p,now)};

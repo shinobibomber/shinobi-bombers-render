@@ -1,0 +1,11 @@
+-- Account-bound, scoped game items only. No Ryo/SOL/revenue pool tables are modified.
+CREATE TABLE IF NOT EXISTS ryo_legacy_wallets(scope TEXT NOT NULL,wallet TEXT NOT NULL,week TEXT NOT NULL,serial INTEGER,voucher TEXT,PRIMARY KEY(scope,wallet));
+CREATE TABLE IF NOT EXISTS ryo_legacy_passes(scope TEXT NOT NULL,week TEXT NOT NULL,serial INTEGER NOT NULL CHECK(serial BETWEEN 1 AND 20),mint TEXT NOT NULL,progress JSONB NOT NULL DEFAULT '{}',created BIGINT NOT NULL,PRIMARY KEY(scope,week,serial),UNIQUE(scope,week,mint));
+CREATE TABLE IF NOT EXISTS ryo_legacy_events(scope TEXT NOT NULL,wallet TEXT NOT NULL,event_id TEXT NOT NULL,week TEXT NOT NULL,serial INTEGER NOT NULL,kind TEXT NOT NULL,quantity DOUBLE PRECISION NOT NULL,hero_id TEXT,created BIGINT NOT NULL,PRIMARY KEY(scope,wallet,event_id));
+CREATE TABLE IF NOT EXISTS ryo_legacy_claims(scope TEXT NOT NULL,week TEXT NOT NULL,serial INTEGER NOT NULL,milestone INTEGER NOT NULL CHECK(milestone IN (20,40,60,80,100)),wallet TEXT NOT NULL,result JSONB NOT NULL,created BIGINT NOT NULL,PRIMARY KEY(scope,week,serial,milestone));
+CREATE TABLE IF NOT EXISTS ryo_legacy_fragments(scope TEXT NOT NULL,wallet TEXT NOT NULL,event_id TEXT NOT NULL,delta INTEGER NOT NULL CHECK(delta IN (1,-2)),created BIGINT NOT NULL,PRIMARY KEY(scope,event_id));
+CREATE INDEX IF NOT EXISTS ryo_legacy_fragment_wallet ON ryo_legacy_fragments(scope,wallet);
+CREATE TABLE IF NOT EXISTS ryo_legacy_items(scope TEXT NOT NULL,id TEXT NOT NULL,wallet TEXT NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('ticket','voucher')),status TEXT NOT NULL CHECK(status IN ('available','reserved','used')),expires BIGINT NOT NULL,reserved_by TEXT,used BIGINT,created BIGINT NOT NULL,PRIMARY KEY(scope,id));
+CREATE INDEX IF NOT EXISTS ryo_legacy_item_wallet ON ryo_legacy_items(scope,wallet,status,kind);
+CREATE TABLE IF NOT EXISTS ryo_legacy_redemptions(scope TEXT NOT NULL,wallet TEXT NOT NULL,request_id TEXT NOT NULL,hero JSONB NOT NULL,status TEXT NOT NULL CHECK(status IN ('queued','delivered')),created BIGINT NOT NULL,delivered BIGINT,PRIMARY KEY(scope,wallet,request_id));
+CREATE TABLE IF NOT EXISTS ryo_legacy_recovery(scope TEXT NOT NULL,wallet TEXT NOT NULL,hero_id TEXT NOT NULL,total DOUBLE PRECISION NOT NULL,PRIMARY KEY(scope,wallet,hero_id));
