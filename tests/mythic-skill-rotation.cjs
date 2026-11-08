@@ -33,7 +33,7 @@ const descriptor=id=>({tokenId:id,name:'Tsukiyomi',rank:5,level:1,mythic:'tsukiy
    const cosmetic=before===JSON.stringify({heroes:S.h,grid:G,ryo:S.ryo,bombs});
    return {chosen,energy,damage,power:h.pw,draws,otherState,zero,wall,cosmetic,version:m.skillRotationVersion};
   });
-  assert.equal(result.version,3);assert.deepEqual(result.chosen,order.concat(Array(8).fill(null)));assert(result.energy.every(n=>n===1));assert.equal(result.damage,result.power*16);assert(result.draws.every(Boolean));assert.equal(result.otherState,'ATTACK');assert(result.zero&&result.wall&&result.cosmetic);assert.deepEqual(errors,[]);
+  assert.equal(result.version,4);assert.deepEqual(result.chosen,order.concat(Array(8).fill(null)));assert(result.energy.every(n=>n===1));assert.equal(result.damage,result.power*16);assert(result.draws.every(Boolean));assert.equal(result.otherState,'ATTACK');assert(result.zero&&result.wall&&result.cosmetic);assert.deepEqual(errors,[]);
   const limits=await p.evaluate(()=>{
    const m=MythicHero,heroes=S.h.filter(h=>h.r===5),time=performance.now(),c=document.createElement('canvas');c.width=800;c.height=600;const q=c.getContext('2d'),paint=m.paintSkill,quality=Arena3D.cfg.fx,rows=[];
    m.resetAnimations();for(const h of heroes){h.on=true;h.x=h.y=4;m.play(h,'ULTIMATE_DRAGON_ASCENSION',{force:true,now:time})}
@@ -50,7 +50,7 @@ const descriptor=id=>({tokenId:id,name:'Tsukiyomi',rank:5,level:1,mythic:'tsukiy
  await withGame(async({p,f,errors})=>{
   f.holdAdventure=false;const hero=descriptor('auto-hunt');f.profile=economy.normalizeProfile({...f.profile,heroes:[hero],battleReady:[hero.tokenId]});f.hunt={others:[]};
   await p.locator('#loginPhantom').click();await p.waitForFunction(()=>RyoPayments.state.authenticated&&!LoginScreen.active&&window.WebsiteDesign?.ready);
-  await p.evaluate(async()=>{await MythicHero.runtimeReady;await MythicHero.preload();go(8);window.autoHunt=[];const old=MythicHero.attackSkill;MythicHero.attackSkill=function(h,n,run,context){const skill=old(h,n,run,context);const row=autoHunt.find(r=>r.n===n&&r.id===h.id);if(row)row.copies.push(skill);else autoHunt.push({n,id:h.id,skill,copies:[skill]});return skill}});
+  await p.evaluate(async()=>{await MythicHero.runtimeReady;await MythicHero.preload();go(8);window.autoHunt=[];window.autoPaint={};const oldPaint=MythicHero.paintSkill;MythicHero.paintSkill=function(c,id,progress,layer,...a){if(layer==='front')autoPaint[id]=Math.max(autoPaint[id]||0,progress);return oldPaint(c,id,progress,layer,...a)};const old=MythicHero.attackSkill;MythicHero.attackSkill=function(h,n,run,context){const skill=old(h,n,run,context);const row=autoHunt.find(r=>r.n===n&&r.id===h.id);if(row)row.copies.push(skill);else autoHunt.push({n,id:h.id,skill,copies:[skill]});return skill}});
   await p.locator('.sbw-scr.on .bh-go').click();await p.locator('.sbw-hunt[open] [data-k="go"]').click();await p.waitForFunction(()=>V2.isBossActive());
   await p.waitForFunction(()=>autoHunt.length>=8,null,{timeout:20000});
   const result=await p.evaluate(()=>{
@@ -61,7 +61,9 @@ const descriptor=id=>({tokenId:id,name:'Tsukiyomi',rank:5,level:1,mythic:'tsukiy
   assert.deepEqual(result.rows.map(r=>r.skill),order);for(const r of result.rows)assert(r.copies.every(s=>s===r.skill),'decorative copies share action choice');assert(result.shots.filter(s=>s.cosmetic).every(s=>s.damage===0));
   assert.equal(result.direction,'right','Hunt hero faces the guardian');assert.equal(result.outside.state,'WALK_FRONT','Hunt does not override another actor movement');assert.equal(result.outside.frame,3);
   await p.waitForFunction(()=>V2.bossState()?.hits.some(hit=>hit.mythicSkill==='mythic_dragon_ascension'&&hit.life>.12&&hit.life<.24),null,{timeout:10000});
-  await p.screenshot({path:path.join(__dirname,'out/mythic-auto-hunt.png')});await p.evaluate(()=>V2.retreat());
+  await p.screenshot({path:path.join(__dirname,'out/mythic-auto-hunt.png')});
+  await p.waitForFunction(()=>Object.keys(autoPaint).length===4&&Object.values(autoPaint).every(p=>p>.8),null,{timeout:10000});
+  await p.evaluate(()=>V2.retreat());
   await p.evaluate(()=>{go(0);Experience.workAll()});await p.waitForFunction(()=>S.h.some(h=>h.r===5&&h.on&&h.x>=0));await p.waitForTimeout(500);await p.screenshot({path:path.join(__dirname,'out/mythic-auto-adventure.png')});assert.deepEqual(errors,[]);
   console.log('PASS: actual paid-fixture Boss Hunt contract drives basic/three signature/ultimate rotation across 8 attacks; decorative shots retain zero damage. Adventure loads after retreat.');
  });

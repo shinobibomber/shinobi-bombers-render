@@ -20,6 +20,27 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+SHINOBI BOMBERS - BETA PATCH NOTES (Nov 9, 2026 | Mythic Poster Effects)
+
+- Tsukiyomi now uses four new skill effects: Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion.
+- Effects play in full in Adventure and Boss Hunt, even during quick attacks.
+- Character art, Mythic Aura, damage, chakra and rewards are unchanged.
+- Faithful recreation of the supplied poster; fine details differ from original production sprite art.
+
+---
+
+SHINOBI BOMBERS - LOCAL REVIEW NOTES (Nov 9, 2026 | Mythic Skill Variety)
+
+- All four Mythic skill visuals can rotate during melee or ranged combat, including Boss Hunt.
+- Added crescent blades, eclipse shuriken, a lightning-chain vortex and a violet dragon with gold orbits based on the new VFX motion study.
+- Basic melee attacks have their own restrained slash, so they no longer look like repeated Dragon Slash casts.
+- Skill effects finish their animation independently of basic attacks and short impact flashes. Decorative volleys cannot create duplicate casts.
+- Independent 12s / 18s / 24s / 30s testing cooldowns remain in place. Skills on cooldown fall back to normal attacks.
+- Tsukiyomi's model, original aura, stats and NFT ownership are preserved. One attack still deals Hero Power damage and costs one chakra; skill visuals add no damage, chakra cost or rewards.
+
+Local review only; not pushed or deployed.
+
+---
 
 SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 9, 2026 | Mythic Animations)
 

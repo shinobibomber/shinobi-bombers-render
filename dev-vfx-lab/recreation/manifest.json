@@ -1,0 +1,793 @@
+{
+  "version": 11,
+  "status": "preview-only-awaiting-art-review",
+  "source": {
+    "path": "mythic-hero/reference/mythic-skill-v6.png",
+    "sha256": "5176a1625f97edcb50b26d0a043d71b4afab0af4e6a13eda37f231ad5866c414"
+  },
+  "method": "Four imagegen RGBA master effects, recovered original reusable elements, deterministic Canvas transformation/deformation and keyframe interpolation. Not independently hand-drawn frames.",
+  "generatorSha256": "80d11553921267195ab2be2eeaab13fec3238a929772843a30f10bd58d865fb8",
+  "cell": {
+    "width": 512,
+    "height": 512,
+    "columns": 4,
+    "spacing": 0,
+    "anchor": [
+      256,
+      420
+    ],
+    "transparentMargin": 16
+  },
+  "palette": [
+    "violet",
+    "purple",
+    "near-black",
+    "gold",
+    "white-purple highlights"
+  ],
+  "integration": {
+    "adventure": false,
+    "hunt": false,
+    "economy": false,
+    "characterChanged": false,
+    "auraChanged": false,
+    "rarityChanged": false
+  },
+  "masters": {
+    "dragon_slash": {
+      "path": "masters/dragon_slash.png",
+      "sha256": "c2fb79d0b132f555f13b56b60caf311f93db6d4f1eb35251c9cb9d87c00dd8a6"
+    },
+    "void_shuriken": {
+      "path": "masters/void_shuriken.png",
+      "sha256": "4581b5b617e744ade6259abcf5e55aa267f1cc4a3435fc75dbb40fe2ff224a92"
+    },
+    "raijin_field": {
+      "path": "masters/raijin_field.png",
+      "sha256": "3c920b6ae4bde2003844375800ab40a89bb9212a9c387cb18a4b92a679748a91"
+    },
+    "mythic_dragon_ascension": {
+      "path": "masters/mythic_dragon_ascension.png",
+      "sha256": "46fca449daa1525644cfc2dcb587d7876d0fab293444f489033126ad71206863"
+    }
+  },
+  "reused": {
+    "path": "mythic-hero/assets/skills/reference-v6.png",
+    "sha256": "d182f58d082daee456477eb4189bcb315915ca925d99721e7db00dd3b98966b2",
+    "elements": [
+      "crescent",
+      "void_shuriken_3",
+      "void_shuriken_4",
+      "sigil",
+      "gold_circle",
+      "pillar",
+      "impact",
+      "flash",
+      "vortex"
+    ]
+  },
+  "clips": {
+    "dragon_slash": {
+      "name": "Dragon Crescent Gale",
+      "keyStages": 8,
+      "frameCount": 8,
+      "durationMs": 1000,
+      "fps": 8,
+      "loop": false,
+      "anchor": [
+        256,
+        420
+      ],
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "layers": {
+        "ground": {
+          "path": "assets/dragon_slash_ground.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "919113ee0311d8ae621c5dc53dd6a6d74a834027d346747fd6517d15dc500fe0"
+        },
+        "front": {
+          "path": "assets/dragon_slash_front.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "9998591494aeb32e2874afd1899e4c3f9a08367b6eb33bf3999712b61501b54f"
+        },
+        "combined": {
+          "path": "assets/dragon_slash_combined.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "553a84a4523f87172a53e617207314438d063bc0594306ab682e48b8ee4d1670"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "rect": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 125,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "spark"
+        },
+        {
+          "index": 1,
+          "rect": [
+            512,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 125,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "crescent"
+        },
+        {
+          "index": 2,
+          "rect": [
+            1024,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 125,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "expansion"
+        },
+        {
+          "index": 3,
+          "rect": [
+            1536,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 125,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "dragon formation"
+        },
+        {
+          "index": 4,
+          "rect": [
+            0,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 125,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "sweep"
+        },
+        {
+          "index": 5,
+          "rect": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 125,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "full crescent"
+        },
+        {
+          "index": 6,
+          "rect": [
+            1024,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 125,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "energy trail"
+        },
+        {
+          "index": 7,
+          "rect": [
+            1536,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 125,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "dissipation"
+        }
+      ],
+      "damage": false,
+      "chakraCost": 0
+    },
+    "void_shuriken": {
+      "name": "Void Eclipse Shuriken",
+      "keyStages": 8,
+      "frameCount": 8,
+      "durationMs": 1200,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "anchor": [
+        256,
+        420
+      ],
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "layers": {
+        "ground": {
+          "path": "assets/void_shuriken_ground.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "ade03372ac0e52bacd1b6a732febcda9a221f3995afcbc1fed9107bd07ee8b3c"
+        },
+        "front": {
+          "path": "assets/void_shuriken_front.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "25999f6fd757e677f93889240183d3a492cf6c1b66a53f5c96b3d108048cbe46"
+        },
+        "combined": {
+          "path": "assets/void_shuriken_combined.png",
+          "width": 2048,
+          "height": 1024,
+          "sha256": "363c73c8e810f9fb0ce982bdf00925103f2bad9366252f44da1724ffe27a180b"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "rect": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "spark"
+        },
+        {
+          "index": 1,
+          "rect": [
+            512,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "shuriken"
+        },
+        {
+          "index": 2,
+          "rect": [
+            1024,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "rotation"
+        },
+        {
+          "index": 3,
+          "rect": [
+            1536,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "orbit"
+        },
+        {
+          "index": 4,
+          "rect": [
+            0,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "eclipse formation"
+        },
+        {
+          "index": 5,
+          "rect": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "full eclipse"
+        },
+        {
+          "index": 6,
+          "rect": [
+            1024,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "collapse"
+        },
+        {
+          "index": 7,
+          "rect": [
+            1536,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "energy explosion"
+        }
+      ],
+      "damage": false,
+      "chakraCost": 0
+    },
+    "raijin_field": {
+      "name": "Thunder Chain Vortex",
+      "keyStages": 10,
+      "frameCount": 10,
+      "durationMs": 1500,
+      "fps": 6.666666666666667,
+      "loop": false,
+      "anchor": [
+        256,
+        420
+      ],
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "layers": {
+        "ground": {
+          "path": "assets/raijin_field_ground.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "da1b88bfc564db33d1304bbc911a8adc8df165bfe83272531ff800e86c601ca3"
+        },
+        "front": {
+          "path": "assets/raijin_field_front.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "4bdbe3608b64ec4075fc75eaa5e7ab1007b86d029495c59a4c9ebd2f6d1a1b3f"
+        },
+        "combined": {
+          "path": "assets/raijin_field_combined.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "75d8532e1c6e5c6e159724e31d54590e654c71bd327ef90df97117ca95464933"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "rect": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "ground charge"
+        },
+        {
+          "index": 1,
+          "rect": [
+            512,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "lightning seed"
+        },
+        {
+          "index": 2,
+          "rect": [
+            1024,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "pillars"
+        },
+        {
+          "index": 3,
+          "rect": [
+            1536,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "rising bolts"
+        },
+        {
+          "index": 4,
+          "rect": [
+            0,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "spiral formation"
+        },
+        {
+          "index": 5,
+          "rect": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "chains"
+        },
+        {
+          "index": 6,
+          "rect": [
+            1024,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "swirling vortex"
+        },
+        {
+          "index": 7,
+          "rect": [
+            1536,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "full vortex"
+        },
+        {
+          "index": 8,
+          "rect": [
+            0,
+            1024,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "discharge"
+        },
+        {
+          "index": 9,
+          "rect": [
+            512,
+            1024,
+            512,
+            512
+          ],
+          "durationMs": 150,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "ground burst"
+        }
+      ],
+      "damage": false,
+      "chakraCost": 0
+    },
+    "mythic_dragon_ascension": {
+      "name": "Mythic Dragon Dominion",
+      "keyStages": 12,
+      "frameCount": 12,
+      "durationMs": 2000,
+      "fps": 6,
+      "loop": false,
+      "anchor": [
+        256,
+        420
+      ],
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "layers": {
+        "ground": {
+          "path": "assets/mythic_dragon_ascension_ground.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "5327850edfaa41162a5bdb5644a2805df806225c3a483645ea18ebb9fe7c7b92"
+        },
+        "front": {
+          "path": "assets/mythic_dragon_ascension_front.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "e26753bda9c2d3892e980e62ec1b65ce6c11c5178f8684547642178d59222792"
+        },
+        "combined": {
+          "path": "assets/mythic_dragon_ascension_combined.png",
+          "width": 2048,
+          "height": 1536,
+          "sha256": "b5e7b4a49d16c9aef6e05fb4026280ea0f7422f8f8f8b678d29604df2cbe2d8a"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "rect": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "sigil charge"
+        },
+        {
+          "index": 1,
+          "rect": [
+            512,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "energy seed"
+        },
+        {
+          "index": 2,
+          "rect": [
+            1024,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "pillars"
+        },
+        {
+          "index": 3,
+          "rect": [
+            1536,
+            0,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "formation"
+        },
+        {
+          "index": 4,
+          "rect": [
+            0,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "dragon emergence"
+        },
+        {
+          "index": 5,
+          "rect": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "coiling dragon"
+        },
+        {
+          "index": 6,
+          "rect": [
+            1024,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "ascension"
+        },
+        {
+          "index": 7,
+          "rect": [
+            1536,
+            512,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "full dragon"
+        },
+        {
+          "index": 8,
+          "rect": [
+            0,
+            1024,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "celestial crest"
+        },
+        {
+          "index": 9,
+          "rect": [
+            512,
+            1024,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "descent energy"
+        },
+        {
+          "index": 10,
+          "rect": [
+            1024,
+            1024,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "impact"
+        },
+        {
+          "index": 11,
+          "rect": [
+            1536,
+            1024,
+            512,
+            512
+          ],
+          "durationMs": 166.66666666666666,
+          "anchor": [
+            256,
+            420
+          ],
+          "phase": "energy burst"
+        }
+      ],
+      "damage": false,
+      "chakraCost": 0
+    }
+  }
+}

@@ -7,7 +7,7 @@
   const root=new URL('.',document.currentScript.src), motion=matchMedia('(prefers-reduced-motion: reduce)');
   const textures=new Map(), bodies=new Map(), authored=new Map(), slots=Array.from({length:48},()=>({active:false}));
   let manifest, controller, sequence=0, sweepAt=0, observedStage;
-  let shots=new WeakMap(), completed=new WeakSet();
+  let shots=new WeakMap();
   const selected=new WeakMap(); // Immutable action choice survives transient visual cleanup.
   const skillOrder=Object.keys(MythicAutomaticSkills.definitions);
   const skillStates=skillOrder.map(id=>MythicAutomaticSkills.definitions[id].state);
@@ -35,13 +35,14 @@
     const chosen=skill?MythicAutomaticSkills.definitions[skill].state:'RANGED_ATTACK';
     // Native Hunt formation stands to the left of its guardian; use the approved RIGHT view.
     play(h,chosen,{eventId:'hunt:'+run+':'+attack,direction:'right'});
+    if(skill)spawn(skill,h,0,0,0,{mode:'hunt',anchor:['dragon_slash','mythic_dragon_ascension'].includes(skill)?'caster':'target',direction:'right',eventId:'hunt:'+run+':'+attack});
     return skill;
   }
   const now=()=>performance.now(), owner=id=>S.h.find(h=>h.id===id && api.isMythic(h));
   const reduced=()=>motion.matches || !!window.DisplaySettings?.v.reduceMotion;
   const level=()=>window.Arena3D?.cfg?.fx ?? 2;
   const allowFX=()=>!document.hidden && level()>0 && window.DisplaySettings?.v.explosions!=='off';
-  function reset() { controller?.clear(); for(const s of slots)s.active=false; shots=new WeakMap();completed=new WeakSet(); }
+  function reset() { controller?.clear(); for(const s of slots)s.active=false; shots=new WeakMap(); }
   const ready=api.ready;
   api.runtimeReady=sprites.ready=Promise.all([ready,fetch(new URL('metadata/animations.json',root)).then(r=>{if(!r.ok)throw Error('Missing Mythic runtime manifest');return r.json()})]).then(([,data])=>{
     if(data.version!==2 || data.hero.rarity!=='Mythic' || data.hero.rank!==5)throw Error('Invalid Mythic registration');
@@ -61,8 +62,9 @@
     })))).then(()=>{bodies.clear();textures.clear();sprites.clearCache?.();return true}).catch(error=>{loadAuthored=null;throw error}));
     controller=api.controller=MythicAnimation.create(data,event=>dispatchEvent(new CustomEvent('shinobi-mythic-animation',{detail:event})));
     api.play=play; api.resetAnimations=reset; api.renderFrame=renderFrame; api.skillFrame=skillFrame;
-    api.attackSkill=huntSkill; api.skillRotationVersion=3;
-    api.paintSkill=(c,name,progress,layer='all',quality=2)=>api.assetsReady&&TsukiyomiCleanEffects.paint(c,name,progress,layer,authored,data,quality);
+    api.attackSkill=huntSkill; api.skillRotationVersion=4;
+    api.drawHuntSkills=drawHuntSkills;
+    api.paintSkill=(c,name,progress,layer='all',quality=2,frame=null)=>api.assetsReady&&TsukiyomiCleanEffects.paint(c,name,progress,layer,authored,data,quality,frame);
     api.stats=()=>({actors:controller.size,effects:slots.filter(s=>s.active).length,bodyTextures:bodies.size,effectTextures:textures.size,capacity:slots.length});
     api.frameInfo=frameInfo; api.emote=(kind,index=0)=>renderFrame({id:'emote-preview',r:5},'EMOTE_'+kind.toUpperCase(),index,'front');
     const oldFrame=sprites.heroFrame, oldPose=ca.poseFor, oldPlay=ca.play;
@@ -104,12 +106,15 @@
       if(!api.isMythic(h))return oldActor.apply(this,arguments);
       if(!allowFX() || !api.assetsReady)return;
       const r=controller.get(h);if(!r)return;
-      if(['ATTACK','SKILL_DRAGON_SLASH'].includes(r.state)){
+      if(r.state==='ATTACK'||r.state==='SKILL_DRAGON_SLASH'&&!hasCast(h,'dragon_slash',time)){
         const progress=Math.max(0,(time-r.started)/manifest.states[r.state].durationMs);
         const angle=r.direction==='back'?-Math.PI/2:r.direction==='front'?Math.PI/2:p.flip?Math.PI:0;
-        if(progress>.2 && progress<.9)drawSkill(c,'dragon_slash',r.state==='ATTACK'?progress*.25:reduced()?.5:progress,p.x+Math.cos(angle)*10*p.scale,p.y-14*p.scale+Math.sin(angle)*8*p.scale,66*p.scale,angle,reduced()?.5:.88);
+        if(progress>.2 && progress<.9){const x=p.x+Math.cos(angle)*10*p.scale,y=p.y-14*p.scale+Math.sin(angle)*8*p.scale;
+          if(r.state==='ATTACK')draw(c,basicSlash(),x,y,30*p.scale,angle,reduced()?.45:.75);
+          else drawSkill(c,'dragon_slash',reduced()?.5:progress,x,y,90*p.scale,angle,reduced()?.5:.92);
+        }
       }
-      if(r.state==='ULTIMATE_DRAGON_ASCENSION'&&ultimateVisible(h)){
+      if(r.state==='ULTIMATE_DRAGON_ASCENSION'&&!hasCast(h,'mythic_dragon_ascension',time)&&ultimateVisible(h)){
         const s=manifest.skills.mythic_dragon_ascension;
         // The body stays visible below the rising dragon; no screen flash or camera shake.
         drawSkill(c,'mythic_dragon_ascension',reduced()?.6:(time-r.started)/s.durationMs,p.x,p.y-3*p.scale,(level()===1?104:150)*p.scale,0,reduced()?.45:.95,'front');
@@ -135,17 +140,15 @@
         const target=G[b.ty]?.[b.tx],distance=Math.abs(b.tx-b.x)+Math.abs(b.ty-b.y);
         const skill=selectSkill(h,{mode:'adventure',stream,ordinal:++ordinal,eligible,
           targetValid:!!target&&target.k>1&&distance<=CombatRules.range(h),chakraSpent:(energy-h.en)===1,staminaEligible:energy>=1,
-          melee:distance<=1,ranged:true,areaEligible:!!target&&target.k!==1,ultimateEligible:true});
+          melee:distance<=1,ranged:distance>1,areaEligible:!!target&&target.k!==1,ultimateEligible:true});
         const choice=Object.freeze({skill});shots.set(b,choice);selected.set(b,choice);
         const direction=b.ty<b.y?'back':b.ty>b.y?'front':b.tx<b.x?'left':'right';
         play(h,skill?MythicAutomaticSkills.definitions[skill].state:distance<=1?'ATTACK':'RANGED_ATTACK',{eventId:'adventure:'+stream+':'+ordinal,direction});
+        if(skill)spawn(skill,h,b.tx,b.ty,0,{mode:'adventure',anchor:['dragon_slash','mythic_dragon_ascension'].includes(skill)?'caster':'target',direction,eventId:'adventure:'+stream+':'+ordinal});
       }return result;
     };
-    const boom0=boom;boom=function(b){
-      const h=owner(b.o),valid=bombs.includes(b)&&!completed.has(b),x=Number.isFinite(b.tx)?b.tx:b.x,y=Number.isFinite(b.ty)?b.ty:b.y;
-      const shot=shotFor(h,b),result=boom0.apply(this,arguments);
-      if(valid&&h){completed.add(b);if(shot?.skill==='raijin_field')spawn('raijin_field',h,x,y);else if(shot?.skill==='void_shuriken')spawn('void_shuriken',h,x,y,6)}return result;
-    };
+    // Full skill timelines start once on the native attack, never on decorative hits.
+    // Native boom/collision code remains the only damage authority.
     const map0=newMap;newMap=function(){const result=map0.apply(this,arguments);reset();if(S.map>observedStage)for(const h of S.h)if(api.isMythic(h)&&h.on)play(h,'VICTORY');observedStage=S.map;return result};
     const go0=go;go=function(screen){const result=go0.apply(this,arguments);if(screen!==0)reset();return result};
     addEventListener('visibilitychange',()=>{if(document.hidden)reset()});
@@ -171,14 +174,17 @@
       if(!owner(id))return hunt0.apply(this,arguments);
       if(!allowFX())return true;
       if(!hit.mythicSkill){draw(c,basicProjectile(),p.x,p.y,25,0,Math.min(1,hit.life/.2));return true;}
-      const name=skillOrder.includes(hit.mythicSkill)?hit.mythicSkill:(hit.ultimate?'mythic_dragon_ascension':'dragon_slash'),s=manifest.skills[name],age=Math.max(0,.8-hit.life);
-      draw(c,skillFrame(name,reduced()?5:Math.min(s.requiredFrames-1,Math.floor(age/.8*s.requiredFrames))),p.x,p.y,hit.ultimate?160:90,0,Math.min(1,hit.life/.2)*(reduced()?.55:.9));return true;
+      // The pooled cast renders the complete skill once, independent of the .8s hit.
+      return true;
     };
     api.spawnSkill=(skill,h,tile)=>spawn(skill,h,tile?.x,tile?.y);
     sprites.clearCache?.();return true;
   });
   api.runtimeReady.catch(e=>console.error('Mythic animation runtime:',e));
-  let basicTexture;
+  let basicTexture,basicBlade;
+  function basicSlash(){
+    if(basicBlade)return basicBlade;const c=basicBlade=document.createElement('canvas');c.width=c.height=96;const q=c.getContext('2d');q.strokeStyle='#d6a1ff';q.lineWidth=4;q.shadowColor='#a540ef';q.shadowBlur=7;q.beginPath();q.arc(40,48,27,-1.05,1.05);q.stroke();return c;
+  }
   function basicProjectile(){
     if(basicTexture)return basicTexture;
     const c=basicTexture=document.createElement('canvas');c.width=c.height=96;const q=c.getContext('2d');
@@ -226,9 +232,9 @@
     if(!api.assetsReady||!manifest?.skills[name])return null;
     const s=manifest.skills[name],step=Math.max(0,Math.min(s.requiredFrames-1,index|0)),frame=s.frames[step],key=name+':'+frame+':'+layer;
     if(textures.has(key))return textures.get(key);
-    if(s.renderer==='reference-v6'||s.renderer==='baked-v9'){
+    if(s.renderer==='reference-v6'||s.renderer==='baked-v9'||s.renderer==='baked-v10'||s.renderer==='baked-v11'){
       const c=document.createElement('canvas');c.width=320;c.height=320;
-      api.paintSkill(c.getContext('2d'),name,(step+.5)/s.requiredFrames,layer);
+      api.paintSkill(c.getContext('2d'),name,(step+.5)/s.requiredFrames,layer,2,s.renderer==='baked-v11'?step:null);
       c.mythicEffect={skill:name,frame,step,layer,assetStatus:s.assetStatus};textures.set(key,c);
       if(textures.size>120)textures.delete(textures.keys().next().value);return c;
     }
@@ -247,18 +253,20 @@
   }
   function draw(c,img,x,y,width,angle=0,alpha=1){
     if(!img||x<-width||y<-width||x>c.canvas.width+width||y>c.canvas.height+width)return;
-    c.save();c.translate(x,y);c.rotate(angle);c.globalAlpha*=alpha;c.globalCompositeOperation='screen';c.drawImage(img,-width/2,-width*img.height/img.width/2,width,width*img.height/img.width);c.restore();
+    c.save();c.translate(x,y);c.rotate(angle);c.globalAlpha*=alpha;c.globalCompositeOperation=img.mythicEffect?'source-over':'screen';c.drawImage(img,-width/2,-width*img.height/img.width/2,width,width*img.height/img.width);c.restore();
   }
-  function spawn(name,h,x,y,startFrame=0){
-    if(!api.isMythic(h)||!manifest?.skills[name]||!allowFX()||!Number.isInteger(x)||!Number.isInteger(y)||!G[y]?.[x]||G[y][x].k===1)return false;
+  function spawn(name,h,x,y,startFrame=0,options={}){
+    if(!api.isMythic(h)||!manifest?.skills[name]||!allowFX()||options.mode!=='hunt'&&(!Number.isInteger(x)||!Number.isInteger(y)||!G[y]?.[x]||G[y][x].k===1))return false;
+    if(options.eventId&&slots.some(s=>s.active&&s.owner===h.id&&s.eventId===options.eventId))return true;
     const cap=level()===1?12:48;let slot=null;
     for(let i=0;i<cap;i++)if(!slots[i].active){slot=slots[i];break}
     if(!slot)return false;
-    Object.assign(slot,{active:true,name,owner:h.id,x,y,started:now(),startFrame});return true;
+    Object.assign(slot,{active:true,name,owner:h.id,x,y,started:now(),startFrame,mode:'adventure',anchor:'target',direction:'right',eventId:null,...options});return true;
   }
+  function hasCast(h,name,time){return slots.some(s=>s.active&&s.owner===h.id&&s.name===name&&time-s.started<manifest.skills[name].durationMs)}
   function drawSkill(c,name,progress,x,y,width,angle=0,alpha=1,layer='all'){
     if(x<-width||y<-width||x>c.canvas.width+width||y>c.canvas.height+width)return;
-    c.save();c.translate(x,y);c.rotate(angle);c.scale(width/320,width/320);c.translate(-160,-160);c.globalAlpha*=alpha;c.globalCompositeOperation='screen';
+    c.save();c.translate(x,y);c.rotate(angle);c.scale(width/320,width/320);c.translate(-160,name==='dragon_slash'?-160:-manifest.skills[name].anchor[1]*320/manifest.skills[name].frameHeight);c.globalAlpha*=alpha;c.globalCompositeOperation='source-over';
     api.paintSkill(c,name,Math.max(0,Math.min(1,progress)),layer,level()===1||reduced()?1:2);c.restore();
   }
   function ultimateVisible(h){const cap=level()<2?1:2;let n=0;for(const hero of S.h){if(controller.get(hero)?.state==='ULTIMATE_DRAGON_ASCENSION'){if(hero===h)return n<cap;n++}}return false}
@@ -266,7 +274,7 @@
     if(!allowFX()||!api.assetsReady)return;
     for(const h of S.h){
       if(!api.isMythic(h)||!h.on||h.x<0||h.y<0)continue;
-      const r=controller.get(h);if(r?.state!=='ULTIMATE_DRAGON_ASCENSION'||!ultimateVisible(h))continue;
+      const r=controller.get(h);if(r?.state!=='ULTIMATE_DRAGON_ASCENSION'||hasCast(h,'mythic_dragon_ascension',time)||!ultimateVisible(h))continue;
       const duration=manifest.skills.mythic_dragon_ascension.durationMs,progress=(time-r.started)/duration;
       if(progress<0||progress>=1)continue;
       const gy=h.y+.62,p=geo.proj(h.x+.5,gy),scale=geo.Sg(gy)*1.60;
@@ -275,13 +283,30 @@
   }
   function drawPool(c,time,geo,layer){
     if(!allowFX()){for(const s of slots)s.active=false;return}
-    for(const slot of slots){if(!slot.active)continue;
+    let ultimates=0;
+    for(const slot of slots){if(!slot.active||slot.mode==='hunt')continue;
       const s=manifest.skills[slot.name],age=time-slot.started,duration=(s.requiredFrames-slot.startFrame)*1000/s.fps;
-      if(age>=duration||!owner(slot.owner)||!G[slot.y]?.[slot.x]){slot.active=false;continue}
-      if(layer==='ground'&&slot.name!=='raijin_field')continue;
-      const p=geo.proj(slot.x+.5,slot.y+.5,0),scale=geo.Sg(slot.y+.5);
+      const hero=owner(slot.owner);if(age>=duration||!hero||!hero.on||hero.x<0||!G[slot.y]?.[slot.x]){slot.active=false;continue}
+      if(slot.name==='mythic_dragon_ascension'&&ultimates++>=(level()<2?1:2))continue;
+      if(layer==='ground'&&!['void_shuriken','raijin_field','mythic_dragon_ascension'].includes(slot.name))continue;
+      const caster=slot.anchor==='caster',x=caster?hero.x+.5:slot.x+.5,y=caster?hero.y+.62:slot.y+.5,p=geo.proj(x,y,0),scale=geo.Sg(y)*(caster?1.6:1);
       const progress=reduced()?(slot.startFrame+2)/s.requiredFrames:(slot.startFrame+Math.max(0,age)*s.fps/1000)/s.requiredFrames;
-      drawSkill(c,slot.name,progress,p[0],p[1],(level()===1?76:104)*scale,0,Math.min(1,(duration-age)/150)*(reduced()?.5:.9),layer);
+      const angle=slot.name==='dragon_slash'?({right:0,left:Math.PI,front:Math.PI/2,back:-Math.PI/2})[slot.direction]:0;
+      const width=slot.name==='mythic_dragon_ascension'?150:slot.name==='raijin_field'?124:104;
+      drawSkill(c,slot.name,progress,p[0],p[1]-(slot.name==='dragon_slash'?(caster?34:26)*scale:0),width*(level()===1?.75:1)*scale,angle,Math.min(1,(duration-age)/150)*(reduced()?.5:.94),layer);
+    }
+  }
+  function drawHuntSkills(c,time,geo,layer='front'){
+    if(!allowFX()){for(const slot of slots)if(slot.mode==='hunt')slot.active=false;return}
+    if(!api.assetsReady)return;let ultimates=0;
+    for(const slot of slots){if(!slot.active||slot.mode!=='hunt')continue;
+      const s=manifest.skills[slot.name],age=time-slot.started,hero=owner(slot.owner),unit=window.V2?.bossState?.()?.team?.find(u=>u.id===slot.owner);
+      if(age>=s.durationMs||!hero||!unit||!V2.isBossActive()){slot.active=false;continue}
+      if(slot.name==='mythic_dragon_ascension'&&ultimates++>=(level()<2?1:2))continue;
+      if(layer==='ground'&&!['void_shuriken','raijin_field','mythic_dragon_ascension'].includes(slot.name))continue;
+      const origin=geo.position(unit.slot),p=slot.anchor==='caster'?origin:geo.target,width=slot.name==='mythic_dragon_ascension'?210:slot.name==='raijin_field'?155:130;
+      const progress=reduced()?.58:Math.max(0,age)/s.durationMs;
+      drawSkill(c,slot.name,progress,p.x+(slot.name==='dragon_slash'?35:0),p.y-(slot.name==='dragon_slash'?35:0),width*(level()===1?.75:1),0,reduced()?.5:.94,layer);
     }
   }
 })();

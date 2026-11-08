@@ -1,5 +1,15 @@
 # Shinobi Bombers — Project Status
 
+## 2026-11-09 — Mythic poster VFX Beta release
+
+User authorized test-server deployment after reviewing the four recreated skills.
+The reviewed RGBA atlases are integrated as presentation v11, with premultiplied
+frame blending and authored ground anchors. Earlier automatic-rotation and full
+effect-lifetime fixes are included. Character/aura/rarity and combat/economy files
+are preserved. Target: `shinobi-bombers-beta` / `main`; production `live` excluded.
+See `docs/MYTHIC_VFX_V11_RELEASE.md`. Deployment completion is recorded separately
+after Render reaches live and the served metadata/assets are verified.
+
 _Development copy created 2026-11-01 (Asia/Singapore)._
 
 | | |
@@ -107,6 +117,15 @@ that they are unavailable.
    run `npm test` before pushing, commit + push to `main`, then Render → Manual Deploy.
 
 ## Handoff notes (Claude ↔ Codex)
+
+### Nov 9, 2026 - Faithful Mythic poster recreation (PREVIEW ONLY)
+
+Owner requested a faithful recreation from Mythic-Skill.png, with explicit art review before gameplay integration. New `dev-vfx-lab/recreation/` contains four built-in imagegen RGBA masters, exact prompts, deterministic authoring/baker, 38 frames (8/8/10/12) in twelve transparent 512px ground/front/combined sheets, JSON timing/anchor/provenance metadata and a separate interactive reference-comparison page at `/vfx-lab/recreation`. Existing source elements are reused only where their earlier transparent extraction is usable. Generated master shapes and interpolated/deformed frames are documented as recreation, not exact poster extraction or independently drawn frames. Five actual 720p H.264 MP4s (four ~6s and one ~24s), decoded frames and screenshots are in ignored `previews/mythic-recreation/`. The existing `/vfx-lab/tsukiyomi` and active v10 gameplay renderer are preserved. The preview page does not replace Adventure/Hunt effects. The new test checks 38 unique frames, RGBA/margins/provenance, controls/downloads, desktop/mobile layouts, route restrictions, unchanged renderer/state and 597 local source/build hashes; 178 protected source hashes are also saved with the preview for reproducibility. See `dev-vfx-lab/recreation/README.md` for differences and commands. No character, aura, rarity, NFT, combat or economics edits. The inherited branch already suppresses the star display; this task does not alter it. No push or deployment; gameplay integration awaits owner art review.
+
+### Nov 9, 2026 - Mythic VFX motion study / all-mode rotation (LOCAL REVIEW ONLY)
+
+Branch review/mythic-vfx-rotation-local-2026-11-09, based on deployed Beta 5cb01b3; no push/deploy authorization for this update. Preserves the clean Beta baseline without Legacy Pass. See docs/MYTHIC_VFX_V10.md. New engine-baked transparent effect atlases use reference/skill-motion-v10.png as a static geometry/style guide; no poster crops or placeholder hero. All four cosmetic skills accept melee or ranged native attacks, retain 12/18/24/30-second cooldowns and use a persistent fair cursor. Version 2 cosmetic receipts migrate to version 3 without clearing clocks or replay history. Basic melee uses its own small crescent. Full pooled skill timelines run separately from basic attacks and .8-second Hunt hit labels; Hunt has separate ground/front render hooks. No backend, reward, NFT, character art or aura changes. Focused tests passed 64 native attacks across both distances/four directions plus actual paid-fixture Hunt and complete late-stage effects. Validation complete: production build with isolated PGlite schema initialization, lint, typecheck and the 48-team guard passed; the complete serial npm test passed all 69 game suites and 20 website checks on Node 26.13.0. Seven changed-scope suites also passed on the project's Node 22.23.4. An initial parallel Chest confirmation timeout did not recur in the full serial run; no Chest code/assertions changed. Local HTTP version/assets verified and showcase, Hunt and phone previews inspected. No real transactions, push or deployment. Exact separately drawn character poses remain unavailable; the approved rig is preserved. Do not push or deploy without owner approval.
+
 
 ### Beta release validation - Nov 9, 2026
 

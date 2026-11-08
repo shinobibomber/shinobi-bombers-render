@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),sharp=require('sharp');
-const {validate}=require('../mythic-hero/tools/validate-atlas.cjs'),R=require('../mythic-hero/automatic-skills.js'),meta=require('../mythic-hero/assets/metadata/production-v9.json');
+const {validate}=require('../mythic-hero/tools/validate-atlas.cjs'),R=require('../mythic-hero/automatic-skills.js'),meta=require('../mythic-hero/assets/metadata/production-v9.json'),vfx=require('../mythic-hero/assets/metadata/production-v11.json');
 const root=path.resolve(__dirname,'..'),digest=b=>crypto.createHash('sha256').update(b).digest('hex');
 (async()=>{
  let characters=0,stages=0;
@@ -8,13 +8,13 @@ const root=path.resolve(__dirname,'..'),digest=b=>crypto.createHash('sha256').up
   const file=path.join(root,'mythic-hero/assets',clip.path);assert.equal(digest(fs.readFileSync(file)),clip.sha256);await validate(file,clip.frames);characters+=clip.frames;
  }
  assert.equal(Object.keys(meta.character).length,36);assert.equal(characters,216);
- for(const [id,clip]of Object.entries(meta.skills)){
+ for(const [id,clip]of Object.entries(vfx.skills)){
   const sums=Array(clip.frames).fill(0),unique=Array(clip.frames).fill('');
   for(const [layer,a]of Object.entries(clip.layers)){
-   const file=path.join(root,'mythic-hero/assets',a.path),m=await sharp(file).metadata();assert.equal(digest(fs.readFileSync(file)),a.sha256);assert.deepEqual([m.width,m.height,m.channels],[clip.frames*320,320,4]);
+   const file=path.join(root,'mythic-hero/assets',a.path),m=await sharp(file).metadata();assert.equal(digest(fs.readFileSync(file)),a.sha256);assert.deepEqual([m.width,m.height,m.channels],[clip.columns*clip.frameWidth,Math.ceil(clip.frames/clip.columns)*clip.frameHeight,4]);
    for(let n=0;n<clip.frames;n++){
-    const bytes=await sharp(file).extract({left:n*320,top:0,width:320,height:320}).raw().toBuffer();let pixels=0,edge=0;
-    for(let y=0;y<320;y++)for(let x=0;x<320;x++){const alpha=bytes[(y*320+x)*4+3];if(alpha>10)pixels++;if(x===0||y===0||x===319||y===319)edge=Math.max(edge,alpha)}
+    const bytes=await sharp(file).extract({left:n%clip.columns*clip.frameWidth,top:Math.floor(n/clip.columns)*clip.frameHeight,width:clip.frameWidth,height:clip.frameHeight}).raw().toBuffer();let pixels=0,edge=0;
+    for(let y=0;y<clip.frameHeight;y++)for(let x=0;x<clip.frameWidth;x++){const alpha=bytes[(y*clip.frameWidth+x)*4+3];if(alpha>10)pixels++;if(x===0||y===0||x===clip.frameWidth-1||y===clip.frameHeight-1)edge=Math.max(edge,alpha)}
     assert.equal(edge,0,id+'/'+layer+' transparent margins');sums[n]+=pixels;unique[n]+=digest(bytes);
    }
   }

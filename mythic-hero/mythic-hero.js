@@ -15,7 +15,7 @@
     isMythic, heroFrame, drawPortrait, portraitFrame, effectFrame, frameInfo, emote,
     get auraEnabled() { try { return localStorage.getItem(AURA_KEY) !== 'off'; } catch { return true; } },
     setAura(on) { try { localStorage.setItem(AURA_KEY, on ? 'on' : 'off'); } catch {} auraCache.clear(); dispatchEvent(new CustomEvent('mythic-aura-changed', { detail: { on: !!on } })); },
-    skills: Object.entries(MythicAutomaticSkills.definitions).map(([key,d])=>({key,name:d.name,icon:d.icon,cooldownMs:d.cooldownMs,ultimate:!!d.ultimate,text:({dragon_slash:'Violet crescent sword energy with a spectral dragon trail.',void_shuriken:'Rotating celestial shuriken travel with the native projectile.',raijin_field:'A tile-aligned celestial sigil and violet lightning pillars.',mythic_dragon_ascension:'A spectral violet dragon rises through a celestial vortex.'})[key]+' Automatic cosmetic effect: no additional damage, chakra or rewards.'}))
+    skills: Object.entries(MythicAutomaticSkills.definitions).map(([key,d])=>({key,name:d.name,icon:d.icon,cooldownMs:d.cooldownMs,ultimate:!!d.ultimate,text:d.vfxName+'. '+({dragon_slash:'Violet crescent sword energy with a spectral dragon trail.',void_shuriken:'Rotating celestial shuriken travel with the native projectile.',raijin_field:'A tile-aligned celestial sigil and violet lightning pillars.',mythic_dragon_ascension:'A spectral violet dragon rises through a celestial vortex.'})[key]+' Automatic on melee or ranged attacks; cosmetic only, no additional damage, chakra or rewards.'}))
   };
 
   function isMythic(hero) { return Number(hero?.r ?? hero?.rank) === MYTHIC; }

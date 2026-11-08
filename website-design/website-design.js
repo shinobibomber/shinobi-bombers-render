@@ -710,7 +710,7 @@
     return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC </b><span>FIRST GENERATION NFT</span></div>
       <div class="sbw-myth-nft"><span>${h.starter && !h.nft ? 'Starter Mythic · test server' : h.nft?.mint ? '✔ NFT verified · ' + esc(shortMint(h.nft.mint)) : 'NFT hero'}</span><button type="button" data-k="mcheck">Check NFT</button><button type="button" data-k="maura" aria-pressed="${aura}">Aura: ${aura ? 'On' : 'Off'}</button></div>
       <div class="sbw-myth-generation">TSUKIYOMI<small>Lunar / Celestial / Void</small></div>
-      <ul class="sbw-myth-skills" aria-label="Automatic abilities">${[{name:'Melee Attack',icon:'⚔',text:'Basic purple crescent attack.'},{name:'Ranged Attack',icon:'✧',text:'Basic celestial projectile.'},...skills].map((k,i) => `<li class="${k.ultimate ? 'ult' : ''}"><button type="button" data-k="mability${i}" title="${esc(k.text)}"><span aria-hidden="true">${esc(k.icon)}</span> ${esc(k.name)}${k.cooldownMs!=null?'<small class="sbw-myth-cooldown">'+k.cooldownMs/1000+'s testing cooldown</small>':''}</button></li>`).join('')}</ul><small class="sbw-myth-auto">Automatic on eligible attacks · Skill VFX add no damage or chakra cost</small></div>`;
+      <ul class="sbw-myth-skills" aria-label="Automatic abilities">${[{name:'Melee Attack',icon:'⚔',text:'Basic purple crescent attack.'},{name:'Ranged Attack',icon:'✧',text:'Basic celestial projectile.'},...skills].map((k,i) => `<li class="${k.ultimate ? 'ult' : ''}"><button type="button" data-k="mability${i}" title="${esc(k.text)}"><span aria-hidden="true">${esc(k.icon)}</span> ${esc(k.name)}${k.cooldownMs!=null?'<small class="sbw-myth-cooldown">'+k.cooldownMs/1000+'s testing cooldown</small>':''}</button></li>`).join('')}</ul><small class="sbw-myth-auto">All four rotate on melee or ranged attacks · Skill VFX add no damage or chakra cost</small></div>`;
   }
   function mythicAbility(index) {
     const mh=window.MythicHero;if(!mh?.animationSource)return;
@@ -743,7 +743,7 @@
     return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
       <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
       <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}${h.referralBound ? '<b class="sbw-bound" title="Referral-bound hero: cannot be listed, sold or transferred">🔒</b>' : ''}</div>
-      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Slash' : c.attack || c.style)}</span></div>
+      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? '4 automatic skills' : c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
       <div class="sbw-hc-ch"><span>CHAKRA</span><span>${esc(c.ch.replace(/\s/g, ' '))}</span></div><div class="sbw-bar"><i style="width:${pct}%"></i></div>
       <div class="sbw-hc-btns">${btn('tog', c.tog ? c.tog.textContent.trim().replace(/^Reserve$/, 'In Reserve') : 'Deploy hero', c.status === 'DEPLOYED' ? 'rest' : 'deploy', !c.tog || c.tog.disabled)}${btn('mode', c.mode ? c.mode.textContent.trim() : '—', 'mode', !c.mode || c.mode.disabled)}</div></div>`;

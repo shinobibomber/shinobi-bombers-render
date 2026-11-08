@@ -28,7 +28,7 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     await p.evaluate(() => go(1)); await p.waitForFunction(() => WebsiteDesign.current() === 'heroes' && document.querySelector('.sbw-scr.on .sbw-hcard.mythic'));
     await p.waitForFunction(() => MythicHero.assetsReady, null, { timeout: 20000 });
     const card = await p.locator('.sbw-scr.on .sbw-hcard.mythic').textContent();
-    assert.match(card, /MYTHIC/); assert.equal((card.match(/★/g)||[]).length,0,'rarity name only'); assert.match(card, /NFT/); assert.match(card, /Tsukiyomi[\s\S]*Dragon Slash/);
+    assert.match(card, /MYTHIC/); assert.equal((card.match(/★/g)||[]).length,0,'rarity name only'); assert.match(card, /NFT/); assert.match(card, /Tsukiyomi[\s\S]*4 automatic skills/); assert(!card.includes('Dragon Slash'),'collection card must not imply only one skill');
     await p.locator('.sbw-scr.on .sbw-hcard.mythic .sbw-hc-name').click();
     await p.waitForSelector('.sbw-scr.on .sbw-myth');
     const det = await p.evaluate(() => { const d = document.querySelector('.sbw-scr.on .sbw-hd2');

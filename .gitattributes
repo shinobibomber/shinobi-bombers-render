@@ -19,3 +19,13 @@ tier-auras/manifest.json text eol=lf
 gameplay-options/options.js text eol=lf
 
 gameplay-options/server.cjs text eol=lf
+
+# Reviewed VFX provenance and release-preservation hashes use canonical LF bytes.
+mythic-hero/animation-runtime.js text eol=lf
+mythic-hero/clean-effects.js text eol=lf
+mythic-hero/tools/build-runtime.cjs text eol=lf
+mythic-hero/assets/metadata/animations.json text eol=lf
+tests/mythic-mode-rotation.cjs text eol=lf
+tests/mythic-animation-controller.cjs text eol=lf
+tests/mythic-completion.cjs text eol=lf
+dev-vfx-lab/recreation/authoring.js text eol=lf

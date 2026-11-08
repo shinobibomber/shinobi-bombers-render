@@ -27,7 +27,13 @@ assert.equal(cooldown.select(event(1)),null);assert.equal(cooldown.select(event(
 for(let n=3;n<=16;n++)assert.equal(cooldown.select(event(n)),null,'ineligible cooldown falls back to basic');
 assert.equal(cooldown.select(event(17)),null);assert.equal(cooldown.select(event(18,{now:25000})),'dragon_slash');
 assert.equal(cooldown.inspect(base.scope,base.heroId).used.dragon_slash,25000);assert.equal(cooldown.inspect(base.scope,base.heroId).used.void_shuriken,undefined);
-const range=create({config:{dragon_slash:{cosmeticOnRanged:false}}});range.select(event(1));assert.equal(range.select(event(2,{melee:false})),'void_shuriken','unavailable melee skips to eligible ranged');
+for(const mode of ['adventure','hunt'])for(const melee of [true,false]){
+ const rotation=create({config:zero});for(let n=1;n<=24;n++)assert.equal(rotation.select(event(n,{mode,melee,ranged:!melee,areaEligible:false})),order[(n-1)%8],mode+' all four skills on '+(melee?'melee':'ranged')+' without area damage');
+ const timed=create(),seen=new Set();for(let n=1;n<=240;n++){const id=timed.select(event(n,{mode,melee,ranged:!melee,now:n*1000}));if(id)seen.add(id)}assert.equal(seen.size,4,'all four eligible with real cooldowns');
+}
+// A cooldown wait preserves the next preference; reload preserves both cursor and clocks.
+const fairStore=new Map(),fair=create({read:k=>fairStore.get(k),write:(k,v)=>fairStore.set(k,structuredClone(v))});for(let n=1;n<=8;n++)fair.select(event(n));for(let n=9;n<=16;n++)fair.select(event(n));assert.equal(fair.inspect(base.scope,base.heroId).nextSkill,0);fair.select(event(17));assert.equal(fair.select(event(18,{now:50000})),'dragon_slash');const fairReload=create({read:k=>fairStore.get(k)});fairReload.select(event(19,{now:51000}));assert.equal(fairReload.select(event(20,{now:52000})),'void_shuriken');
+const legacy={version:2,total:8,lastTime:4800,used:{dragon_slash:1200,void_shuriken:2400,raijin_field:3600,mythic_dragon_ascension:4800},streams:{'adventure:page-one':{ordinal:8,choice:'mythic_dragon_ascension'}}};const migrated=create({read:()=>legacy});assert.equal(migrated.select(event(8)),'mythic_dragon_ascension');assert.deepEqual(migrated.inspect(base.scope,base.heroId).used,legacy.used);assert.equal(migrated.inspect(base.scope,base.heroId).nextSkill,0);
 const empty=create();for(const key of ['eligible','targetValid','chakraSpent','staminaEligible'])assert.equal(empty.select(event(1,{[key]:false})),null);assert.equal(empty.size,0,'ineligible events do not advance state');
 for(let n=0;n<1000;n++)empty.select(event(1,{heroId:'bounded-'+n}));assert.equal(empty.size,128);
 const unavailable=create({config:Object.fromEntries(Object.keys(definitions).map(id=>[id,{enabled:false}]))});for(let n=1;n<=16;n++)assert.equal(unavailable.select(event(n)),null);
