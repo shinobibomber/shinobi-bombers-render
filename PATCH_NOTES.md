@@ -20,6 +20,16 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS - LOCAL REVIEW NOTES (Nov 8, 2026 | Mythic Skills)**
+
+- Tsukiyomi previews Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion using the supplied reference artwork.
+- Added a private local VFX lab with playback, frame inspection, background, direction, character, aura and quality controls.
+- Added four short MP4 demonstrations and a combined skill showcase.
+- Effects remain cosmetic: Hero Power damage, one chakra per attack, zero additional skill chakra. The approved character and permanent Mythic Aura are preserved.
+
+Local review only; not deployed. Artwork remains reference-derived at its native resolution. Clean isolated HD exports are still required for final production quality.
+
+---
 **SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Clearer Adventure Heroes)**
 
 - Adventure heroes now match Mythic's body size, with more consistent sizing when they turn.

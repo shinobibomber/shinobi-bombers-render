@@ -1,3 +1,5 @@
+> V6 local review: see [MYTHIC_SKILLS_V6_LOCAL.md](../docs/MYTHIC_SKILLS_V6_LOCAL.md). New effects use the supplied Nov 8 skill poster with explicit native-resolution/provenance limits. The permanent character and aura are unchanged. No deployment authorized.
+
 > Historical v2 asset audit. Current beta rules and animation behavior are documented in [COMBAT_PERKS_BETA.md](../docs/COMBAT_PERKS_BETA.md); current prices, recovery and shards are in [TRAINING_SHARDS_BETA.md](../docs/TRAINING_SHARDS_BETA.md). Earlier star/perk/price statements below describe v2.
 
 # Tsukiyomi animation review and beta release — November 7, 2026

@@ -16,10 +16,10 @@
     get auraEnabled() { try { return localStorage.getItem(AURA_KEY) !== 'off'; } catch { return true; } },
     setAura(on) { try { localStorage.setItem(AURA_KEY, on ? 'on' : 'off'); } catch {} auraCache.clear(); dispatchEvent(new CustomEvent('mythic-aura-changed', { detail: { on: !!on } })); },
     skills: [
-      { key: 'dragon_slash', name: 'Dragon Slash', text: 'Seven violet trails decorate one attack: Hero Power damage, 1 chakra. VFX cost 0 additional chakra.' },
-      { key: 'void_shuriken', name: 'Void Shuriken', text: 'A celestial shuriken volley decorates one attack. No extra damage or chakra cost.' },
-      { key: 'raijin_field', name: 'Raijin Field', text: 'Violet lightning marks the native impact. Cosmetic only: no extra damage or chakra.' },
-      { key: 'mythic_dragon_ascension', name: 'Mythic Dragon Ascension', text: 'Every 8th attack: a spectral dragon rises. Cosmetic only: Hero Power damage, 1 attack chakra, 0 additional skill chakra.', ultimate: true }
+      { key: 'dragon_slash', name: 'Dragon Crescent Gale', text: 'Seven violet trails decorate one attack: Hero Power damage, 1 chakra. VFX cost 0 additional chakra.' },
+      { key: 'void_shuriken', name: 'Void Eclipse Shuriken', text: 'A celestial shuriken volley decorates one attack. No extra damage or chakra cost.' },
+      { key: 'raijin_field', name: 'Thunder Chain Vortex', text: 'Violet lightning marks the native impact. Cosmetic only: no extra damage or chakra.' },
+      { key: 'mythic_dragon_ascension', name: 'Mythic Dragon Dominion', text: 'Every 8th attack: a spectral dragon rises. Cosmetic only: Hero Power damage, 1 attack chakra, 0 additional skill chakra.', ultimate: true }
     ]
   };
 
@@ -244,7 +244,7 @@
     if (!need()) return null;
     const now = performance.now();
     if (type === 'projectile') {
-      // Alternate Dragon Slash and Void Shuriken per projectile, each played from its launch.
+      // Alternate Dragon Crescent Gale and Void Eclipse Shuriken per projectile, each played from its launch.
       const shot = hero.projectile, record = shot ? shots.get(shot) || { n: shotSerial++, born: now } : { n: 0, born: now - phase * 85 };
       if (shot && !shots.has(shot)) shots.set(shot, record);
       const name = record.n % 2 ? 'void_shuriken' : 'dragon_slash', s = meta.skills[name];

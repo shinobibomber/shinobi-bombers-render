@@ -17,13 +17,14 @@ function buildRuntime() {
     states['WALK_'+direction.toUpperCase()].texture='animations/rig-v3/walk_'+direction+'.png';
     for(const state of ['RUN','ATTACK','IDLE']){states[state].directionTextures||={};states[state].directionTextures[direction]='animations/rig-v3/'+state.toLowerCase()+'_'+direction+'.png'}
   }
-  const skills={};
+  const skills={},v6=JSON.parse(fs.readFileSync(path.join(dir,'skills-v6.json'),'utf8'));
+  for(const [key,s]of Object.entries(v6.clips))meta.skills[key].name=s.name;
   for(const [key,count]of Object.entries({dragon_slash:8,void_shuriken:8,raijin_field:10,mythic_dragon_ascension:12})) {
-    const s=meta.skills[key], durationMs=count*1000/s.fps, state=key==='mythic_dragon_ascension'?'ULTIMATE_DRAGON_ASCENSION':'SKILL_'+key.toUpperCase();
+    const s=meta.skills[key], durationMs=v6.clips[key].durationMs, state=key==='mythic_dragon_ascension'?'ULTIMATE_DRAGON_ASCENSION':'SKILL_'+key.toUpperCase();
     add(state,count,durationMs,false,3,{visualPeak:Math.floor(count*.65)});
-    skills[key]={name:s.name,path:null,frameWidth:320,frameHeight:320,frameCount:count,fps:s.fps,anchor:[160,160],requiredFrames:count,durationMs,frames:Array.from({length:count},(_,i)=>i),eventsMs:Object.fromEntries(Object.entries(s.events||{}).map(([k,v])=>[k,v*1000/s.fps])),renderer:'celestial-v3',assetStatus:'procedural-vfx-with-generated-dragon',legacySource:{path:s.path,frameCount:s.frameCount},damage:false};
+    skills[key]={name:s.name,path:null,frameWidth:320,frameHeight:320,frameCount:count,fps:count*1000/durationMs,anchor:[160,160],requiredFrames:count,durationMs,frames:Array.from({length:count},(_,i)=>i),eventsMs:Object.fromEntries(Object.entries(s.events||{}).map(([k,v])=>[k,v*1000/s.fps])),renderer:'reference-v6',assetStatus:v6.assetStatus,legacySource:{path:s.path,frameCount:s.frameCount},damage:false};
   }
-  const data={version:2,presentationVersion:5,hero:meta.hero,frame:meta.frame,states,skills,vfxSources:[{path:'skills/dragon-spirit-v3.png',width:1254,height:1254,kind:'generated-single-sprite'}],aura:{source:'metadata/tsukiyomi.json',unchanged:true,quality:'legacy-extracted-layers'},limits:{actors:128,effects:48,lowEffects:12,textureFrames:160},assetStatus:'articulated-views-and-celestial-vfx'};
+  const data={version:2,presentationVersion:6,skillSet:v6,hero:meta.hero,frame:meta.frame,states,skills,vfxSources:[{...v6.atlas,kind:'native-reference-atlas'}],aura:{source:'metadata/tsukiyomi.json',unchanged:true,quality:'legacy-extracted-layers'},limits:{actors:128,effects:48,lowEffects:12,textureFrames:160},assetStatus:'articulated-views-and-celestial-vfx'};
   fs.writeFileSync(path.join(dir,'tsukiyomi.json'),JSON.stringify(meta,null,2)+'\n');
   fs.writeFileSync(path.join(dir,'animations.json'),JSON.stringify(data,null,2)+'\n');
   return data;

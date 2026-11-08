@@ -108,6 +108,10 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+### Nov 8, 2026 - Mythic skills v6 (LOCAL REVIEW ONLY, no push/deploy)
+
+Work stays in `tmp/training-shards-beta` on `review/mythic-skills-v6-local-2026-11-08`, based on ca071cd. Four new skill names preserve permanent IDs. New transparent reference-derived atlas comes from owner-supplied `Mythic-Skill.png`, SHA-256 5176a1625f97edcb50b26d0a043d71b4afab0af4e6a13eda37f231ad5866c414; actual source drawings 7/8/9/11 interpolate to 8/8/10/12 logical stages. This is not HD production art. Aura/character/rig are unchanged; no new damage, costs, rewards or NFT operations. Local loopback-only `/vfx-lab/tsukiyomi` requires SHINOBI_VFX_LAB=on and refuses Render/Mainnet/prelaunch. Run `node dev-vfx-lab/preview.cjs` or `node dev-vfx-lab/export-videos.cjs`. Four actual H.264 720p ~6s videos plus a ~24s showcase are in ignored `previews/mythic-v6/`, each decoded and duration/dimension checked. See `docs/MYTHIC_SKILLS_V6_LOCAL.md` for limitations, files, tests and usage. Owner explicitly requires approval before any main push or Render deployment. Final validation passed: 65 isolated game suites, 20 website checks, lint and the 48-team rewards guard; final ground/front layer test and all five decoded MP4s verified.
+
 ### Nov 8, 2026 - consistent Adventure hero body size (beta only)
 
 Adventure bodies now use the Mythic reference height (292 canvas pixels / 36.5 logical sprite pixels), normalized once per model/direction from the already-cleaned native idle cell. `CharacterAnimations.drawAdventureHero` draws the cached native cell directly at the original foot pivot; pose frames share the reference, with no per-frame canvas allocation/readback. Back/sleep cells carry the same metadata from PlayerModels. Tier aura layers and Mythic renderer remain independent; menus keep their original portraits. See `docs/ADVENTURE_HERO_SIZE_BETA.md` and `tests/adventure-hero-size.cjs`. Only the two intentionally changed sprite source hash entries were updated; the exact Adventure hook is reversed in preservation tests.

@@ -730,7 +730,7 @@
     return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
       <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
       <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}${h.referralBound ? '<b class="sbw-bound" title="Referral-bound hero: cannot be listed, sold or transferred">🔒</b>' : ''}</div>
-      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Slash' : c.attack || c.style)}</span></div>
+      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Crescent Gale' : c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
       <div class="sbw-hc-ch"><span>CHAKRA</span><span>${esc(c.ch.replace(/\s/g, ' '))}</span></div><div class="sbw-bar"><i style="width:${pct}%"></i></div>
       <div class="sbw-hc-btns">${btn('tog', c.tog ? c.tog.textContent.trim().replace(/^Reserve$/, 'In Reserve') : 'Deploy hero', c.status === 'DEPLOYED' ? 'rest' : 'deploy', !c.tog || c.tog.disabled)}${btn('mode', c.mode ? c.mode.textContent.trim() : '—', 'mode', !c.mode || c.mode.disabled)}</div></div>`;

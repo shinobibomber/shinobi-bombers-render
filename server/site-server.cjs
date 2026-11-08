@@ -138,6 +138,7 @@ const server = http.createServer((req, res) => {
   let url; try { url = new URL(req.url, 'http://localhost'); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   // Read-only release policy: available during pre-launch without mounting any game or money API.
+  if (require('../dev-vfx-lab/handler.cjs').handle(req, res, name)) return;
   if(name==='/economy-policy.json'){
     if(!['GET','HEAD'].includes(req.method))return sendSite(req,res,405,'GET or HEAD required.');
     try { const policy=require(path.join(GAME_DIR,'server/sr-revenue.cjs')).publicPolicy();

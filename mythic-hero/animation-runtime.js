@@ -31,6 +31,7 @@
     })))).then(()=>{bodies.clear();textures.clear();sprites.clearCache?.();return true}).catch(error=>{loadAuthored=null;throw error}));
     controller=api.controller=MythicAnimation.create(data,event=>dispatchEvent(new CustomEvent('shinobi-mythic-animation',{detail:event})));
     api.play=play; api.resetAnimations=reset; api.renderFrame=renderFrame; api.skillFrame=skillFrame;
+    api.paintSkill=(c,name,progress,layer='all',quality=2)=>api.assetsReady&&TsukiyomiSkillV6.paint(c,name,progress,layer,authored.get(data.skillSet.atlas.path),data.skillSet,quality);
     api.stats=()=>({actors:controller.size,effects:slots.filter(s=>s.active).length,bodyTextures:bodies.size,effectTextures:textures.size,capacity:slots.length});
     api.frameInfo=frameInfo; api.emote=(kind,index=0)=>renderFrame({id:'emote-preview',r:5},'EMOTE_'+kind.toUpperCase(),index,'front');
     const oldFrame=sprites.heroFrame, oldPose=ca.poseFor, oldPlay=ca.play;
@@ -68,12 +69,12 @@
       if(['ATTACK','SKILL_DRAGON_SLASH'].includes(r.state)){
         const progress=Math.max(0,(time-r.started)/manifest.states[r.state].durationMs);
         const angle=r.direction==='back'?-Math.PI/2:r.direction==='front'?Math.PI/2:p.flip?Math.PI:0;
-        if(progress>.2 && progress<.9)draw(c,skillFrame('dragon_slash',Math.min(7,Math.floor(progress*8))),p.x+Math.cos(angle)*10*p.scale,p.y-14*p.scale+Math.sin(angle)*8*p.scale,66*p.scale,angle,reduced()?.5:.88);
+        if(progress>.2 && progress<.9)drawSkill(c,'dragon_slash',reduced()?.5:progress,p.x+Math.cos(angle)*10*p.scale,p.y-14*p.scale+Math.sin(angle)*8*p.scale,66*p.scale,angle,reduced()?.5:.88);
       }
       if(r.state==='ULTIMATE_DRAGON_ASCENSION'){
-        const s=manifest.skills.mythic_dragon_ascension,index=Math.min(11,Math.floor((time-r.started)/s.durationMs*12));
+        const s=manifest.skills.mythic_dragon_ascension;
         // The body stays visible below the rising dragon; no screen flash or camera shake.
-        draw(c,skillFrame('mythic_dragon_ascension',reduced()?7:index),p.x,p.y-3*p.scale,(level()===1?104:150)*p.scale,0,reduced()?.45:.95);
+        drawSkill(c,'mythic_dragon_ascension',reduced()?.6:(time-r.started)/s.durationMs,p.x,p.y-3*p.scale,(level()===1?104:150)*p.scale,0,reduced()?.45:.95,'front');
       }
       if(r.state==='VICTORY' && !reduced()){
         const progress=(time-r.started)/manifest.states.VICTORY.durationMs;
@@ -82,7 +83,7 @@
       }
     };
     ca.drawImpacts=function(c,time,geo){oldImpact.apply(this,arguments);drawPool(c,time,geo,'front')};
-    api.drawGround=(c,time,geo)=>drawPool(c,time,geo,'ground');
+    api.drawGround=(c,time,geo)=>{drawPool(c,time,geo,'ground');drawUltimateGround(c,time,geo)};
     // Legacy impact storage is kept for other heroes; Mythic uses the bounded split-layer pool.
     const oldEffect=api.effectFrame;
     ca.effectOverride=function(h,type,phase){
@@ -171,6 +172,12 @@
     if(!api.assetsReady||!manifest?.skills[name])return null;
     const s=manifest.skills[name],step=Math.max(0,Math.min(s.requiredFrames-1,index|0)),frame=s.frames[step],key=name+':'+frame+':'+layer;
     if(textures.has(key))return textures.get(key);
+    if(s.renderer==='reference-v6'){
+      const c=document.createElement('canvas');c.width=320;c.height=320;
+      api.paintSkill(c.getContext('2d'),name,(step+.5)/s.requiredFrames,layer);
+      c.mythicEffect={skill:name,frame,step,layer,assetStatus:s.assetStatus};textures.set(key,c);
+      if(textures.size>120)textures.delete(textures.keys().next().value);return c;
+    }
     if(s.renderer==='celestial-v3'){
       const c=document.createElement('canvas');c.width=320;c.height=320;
       TsukiyomiEffects.paint(c.getContext('2d'),name,step,s.requiredFrames,layer,authored.get('skills/dragon-spirit-v3.png'));
@@ -195,14 +202,31 @@
     if(!slot)return false;
     Object.assign(slot,{active:true,name,owner:h.id,x,y,started:now(),startFrame});return true;
   }
+  function drawSkill(c,name,progress,x,y,width,angle=0,alpha=1,layer='all'){
+    if(x<-width||y<-width||x>c.canvas.width+width||y>c.canvas.height+width)return;
+    c.save();c.translate(x,y);c.rotate(angle);c.scale(width/320,width/320);c.translate(-160,-160);c.globalAlpha*=alpha;c.globalCompositeOperation='screen';
+    api.paintSkill(c,name,Math.max(0,Math.min(1,progress)),layer,level()===1||reduced()?1:2);c.restore();
+  }
+  function drawUltimateGround(c,time,geo){
+    if(!allowFX()||!api.assetsReady)return;
+    for(const h of S.h){
+      if(!api.isMythic(h)||!h.on||h.x<0||h.y<0)continue;
+      const r=controller.get(h);if(r?.state!=='ULTIMATE_DRAGON_ASCENSION')continue;
+      const duration=manifest.skills.mythic_dragon_ascension.durationMs,progress=(time-r.started)/duration;
+      if(progress<0||progress>=1)continue;
+      const gy=h.y+.62,p=geo.proj(h.x+.5,gy),scale=geo.Sg(gy)*1.60;
+      drawSkill(c,'mythic_dragon_ascension',reduced()?.6:progress,p[0],p[1]-3*scale,(level()===1?104:150)*scale,0,reduced()?.45:.95,'ground');
+    }
+  }
   function drawPool(c,time,geo,layer){
     if(!allowFX()){for(const s of slots)s.active=false;return}
     for(const slot of slots){if(!slot.active)continue;
       const s=manifest.skills[slot.name],age=time-slot.started,duration=(s.requiredFrames-slot.startFrame)*1000/s.fps;
       if(age>=duration||!owner(slot.owner)||!G[slot.y]?.[slot.x]){slot.active=false;continue}
       if(layer==='ground'&&slot.name!=='raijin_field')continue;
-      const frame=reduced()?Math.min(s.requiredFrames-1,slot.startFrame+2):slot.startFrame+Math.floor(Math.max(0,age)*s.fps/1000),p=geo.proj(slot.x+.5,slot.y+.5,0),scale=geo.Sg(slot.y+.5);
-      draw(c,skillFrame(slot.name,frame,layer),p[0],p[1],(level()===1?76:104)*scale,0,Math.min(1,(duration-age)/150)*(reduced()?.5:.9));
+      const p=geo.proj(slot.x+.5,slot.y+.5,0),scale=geo.Sg(slot.y+.5);
+      const progress=reduced()?(slot.startFrame+2)/s.requiredFrames:(slot.startFrame+Math.max(0,age)*s.fps/1000)/s.requiredFrames;
+      drawSkill(c,slot.name,progress,p[0],p[1],(level()===1?76:104)*scale,0,Math.min(1,(duration-age)/150)*(reduced()?.5:.9),layer);
     }
   }
 })();

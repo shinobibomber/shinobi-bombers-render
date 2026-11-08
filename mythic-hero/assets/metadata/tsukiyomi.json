@@ -488,7 +488,8 @@
       "direction": "right",
       "events": {
         "impact": 6
-      }
+      },
+      "name": "Dragon Crescent Gale"
     },
     "void_shuriken": {
       "label": "Void Shuriken",
@@ -506,7 +507,8 @@
       "events": {
         "launch": 5,
         "impact": 6
-      }
+      },
+      "name": "Void Eclipse Shuriken"
     },
     "raijin_field": {
       "label": "Raijin Field",
@@ -524,7 +526,8 @@
       "events": {
         "strike": 6,
         "peak": 7
-      }
+      },
+      "name": "Thunder Chain Vortex"
     },
     "mythic_dragon_ascension": {
       "label": "Mythic Dragon Ascension",
@@ -568,7 +571,8 @@
       "events": {
         "burst": 10,
         "end": 11
-      }
+      },
+      "name": "Mythic Dragon Dominion"
     }
   },
   "aura": {
