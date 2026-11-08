@@ -1263,10 +1263,13 @@
   MODS['boss-hunt'] = { challenge: () => huntChallenge(), team: () => huntAuto(), ranking: () => huntRankings(), bossinfo: () => {}, locked: () => {} };
 
   /* ---------- Guild and Chat: previews (no backend yet) ---------- */
-  ['guild', 'chat'].forEach(k => {
-    INIT[k] = b => { const r = mk('div', 'sbw-preview', b.sec); r.innerHTML = k === 'guild' ? '<b>PREVIEW</b> Guilds are not available yet — this screen shows example artwork, not real players or data.' : '<b>PREVIEW</b> This screen shows example artwork. Live Global chat opens from the chat bar on Home.'; b.previewNotice = r; };
-    MODS[k] = new Proxy({}, { get: () => () => notice(k === 'guild' ? 'Guild' : 'Chat', k === 'guild' ? 'Guilds are not available yet. This screen is a preview of the design.' : 'This screen is a preview of the design. Open live Global chat from the chat bar on Home.') });
+  ['guild'].forEach(k => {
+    INIT[k] = b => { const r = mk('div', 'sbw-preview', b.sec); r.innerHTML = '<b>PREVIEW</b> Guilds are not available yet — this screen shows example artwork, not real players or data.'; b.previewNotice = r; };
+    MODS[k] = new Proxy({}, { get: () => () => notice('Guild', 'Guilds are not available yet. This screen is a preview of the design.') });
   });
+  // The Chat screen is real DOM (see "Chat screen" below), not artwork.
+  INIT.chat = b => initChatScreen(b);
+  MODS.chat = {};
 
   /* ---------- the shared header (identical on every menu; fixed at the top) ---------- */
   let HDR = null;
@@ -1391,7 +1394,7 @@
     const moreBtn = mk('button', 'sbw-ph-item sbw-ph-morebtn', nav); moreBtn.type = 'button'; moreBtn.setAttribute('aria-expanded', 'false'); moreBtn.innerHTML = '<i class="dots">•••</i><span>More</span>';
     const sheet = mk('div', 'sbw-ph-sheet', more); const head = mk('p', 'sbw-ph-sheethead', sheet); head.innerHTML = 'More <small>Players online: <b>—</b></small>';
     const grid = mk('div', 'sbw-ph-grid', sheet); for (const [k, id, label] of PHONE_MORE) items[k] = item(k, id, label, grid);
-    const chat = mk('button', 'sbw-ph-item', grid); chat.type = 'button'; chat.innerHTML = '<i class="dots">💬</i><span>Chat</span>'; chat.addEventListener('click', () => { more.hidden = true; goScreen('home'); setTimeout(() => toggleChat(true), 50); });
+    const chat = mk('button', 'sbw-ph-item', grid); chat.type = 'button'; chat.innerHTML = '<i class="dots">💬</i><span>Chat</span>'; chat.addEventListener('click', () => { more.hidden = true; goScreen('chat'); });
     const setMore = open => { more.hidden = !open; moreBtn.setAttribute('aria-expanded', String(open)); };
     moreBtn.addEventListener('click', () => setMore(more.hidden)); more.addEventListener('click', e => { if (e.target === more) setMore(false); });
     addEventListener('keydown', e => { if (e.key === 'Escape' && !more.hidden) setMore(false); });
@@ -1480,6 +1483,7 @@
   function fit() {
     geometryRevision++;
     const b = cur && built[cur]; if (!b) return;
+    if (b.chatRoot) { fitChatScreen(b); return; }
     if (isPhone()) {
       try { layoutPhone(b); placeTrigger(); placeChat(); return; }
       // Never leave a phone on raw full-size artwork: fall back to the fitted desktop layout.
@@ -1582,24 +1586,25 @@
     addMessages(chatMsgs, list); chatAfter = chatMsgs.at(-1)?.id || chatAfter;
     if (system) {
       // Announcements already present at first load are history, not new.
-      if (addMessages(sysMsgs, system) && sysPrimed && !(chatPop && !chatPop.hidden && chatTab === 'System')) sysUnread = true;
+      if (addMessages(sysMsgs, system) && sysPrimed && !(chatPop && !chatPop.hidden && chatTab === 'System') && !(cur === 'chat' && csTab === 'System')) sysUnread = true;
       sysAfter = sysMsgs.at(-1)?.id || sysAfter; sysPrimed = true;
     }
-    renderChat(); refresh();
+    renderChat(); renderChatScreen(); refresh();
   }
   async function pollChat() {
-    clearTimeout(chatTimer); const open = !!chatPop && !chatPop.hidden;
-    if (!chatFetching && chatReady() && !document.hidden && (open || cur === 'home')) {
+    clearTimeout(chatTimer); const open = !!chatPop && !chatPop.hidden, onScreen = cur === 'chat';
+    if (!chatFetching && chatReady() && !document.hidden && (open || onScreen || cur === 'home')) {
       chatFetching = true;
       try {
         if (RyoPayments.state.account !== chatOwner) mergeChat([]);
         const feed = await RyoPayments.chat('chat-list', { channel: 'global', after: chatAfter, systemAfter: sysAfter });
         mergeChat(feed.messages, feed.system);
         if (open && !chatSending && $('.sbw-cp-note', chatPop).classList.contains('sbw-cp-error')) chatNote('');
-      } catch { if (open) chatNote('Chat is temporarily unavailable. Retrying…', true); }
+        if (onScreen && !chatSending) csNote('');
+      } catch { if (open) chatNote('Chat is temporarily unavailable. Retrying…', true); if (onScreen) csNote('Chat is temporarily unavailable. Retrying…', true); }
       finally { chatFetching = false; }
     }
-    chatTimer = setTimeout(pollChat, chatPop && !chatPop.hidden ? 3000 : 20000);
+    chatTimer = setTimeout(pollChat, (chatPop && !chatPop.hidden) || cur === 'chat' ? 3000 : 20000);
   }
   async function sendChat(e) {
     e.preventDefault(); const input = $('input', chatPop), text = input.value.trim();
@@ -1615,12 +1620,13 @@
   function toggleChat(open) {
     if (!chatPop) {
       chatPop = mk('div', 'sbw-chatpop', layer); chatPop.hidden = true; chatPop.setAttribute('role', 'dialog'); chatPop.setAttribute('aria-label', 'Global chat');
-      chatPop.innerHTML = `<div class="sbw-cp-head"><b>💬 GLOBAL CHAT</b><div class="sbw-cp-tabs" role="tablist">${['Global', 'Guild', 'System'].map((t, i) => `<button type="button" role="tab" aria-selected="${!i}">${t}</button>`).join('')}</div><button type="button" class="sbw-cp-x" aria-label="Close chat">✕</button></div>
+      chatPop.innerHTML = `<div class="sbw-cp-head"><b>💬 GLOBAL CHAT</b><div class="sbw-cp-tabs" role="tablist">${['Global', 'Guild', 'System'].map((t, i) => `<button type="button" role="tab" aria-selected="${!i}">${t}</button>`).join('')}</div><button type="button" class="sbw-cp-full" aria-label="Open full chat screen" title="Open full chat">⤢</button><button type="button" class="sbw-cp-x" aria-label="Close chat">✕</button></div>
         <div class="sbw-cp-log" role="log" aria-live="polite"></div>
         <p class="sbw-cp-note" role="status"></p>
         <form class="sbw-cp-in"><input type="text" maxlength="200" autocomplete="off" aria-label="Message"><small class="sbw-cp-count">0 / 200</small><button type="submit">Send</button></form>
         <p class="sbw-cp-rules">Be kind. Links are blocked, and the team never messages you first about wallets or trades.</p>`;
       $('.sbw-cp-x', chatPop).onclick = () => toggleChat(false);
+      $('.sbw-cp-full', chatPop).onclick = () => { toggleChat(false); goScreen('chat'); };
       $('form', chatPop).onsubmit = sendChat;
       $('input', chatPop).addEventListener('input', updateCount);
       $$('[role="tab"]', chatPop).forEach(tab => tab.onclick = () => { chatTab = tab.textContent; $$('[role="tab"]', chatPop).forEach(t => t.setAttribute('aria-selected', String(t === tab))); renderChat(); });
@@ -1643,12 +1649,135 @@
     if (!r || above >= 260) { s.top = ''; s.bottom = (r ? innerHeight - r.top + 8 : 16) + 'px'; s.maxHeight = Math.min(420, above) + 'px'; }
     else { s.bottom = ''; s.top = (r.bottom + 8) + 'px'; s.maxHeight = Math.min(420, innerHeight - r.bottom - 24) + 'px'; }
   }
+  /* ---------- Chat screen (real DOM; Global + System are live, the rest is marked placeholder) ---------- */
+  // LIVE: Global send/receive and System announcements (shared data layer with the Home pop-up above).
+  // PLACEHOLDER: other channels, announcement cards, Online Ninjas, My Guild, Quick Actions, levels, avatars.
+  // TODO(backend): bind each placeholder block to real data when its endpoint exists (see plan notes).
+  const CS_CHANNELS = [['Global', '🌐'], ['Guild', '🔖'], ['Team', '👥'], ['Direct Messages', '✉️'], ['Trade', '⚖️'], ['System', '⚙️'], ['Event', '📅'], ['Help', '❓']];
+  const CS_SOON = { Guild: 'Guild chat opens when guilds launch.', Team: 'Team chat opens with parties.', 'Direct Messages': 'Direct messages are coming soon.', Trade: 'Trade chat is coming soon.', Event: 'Event chat is coming soon.' };
+  const CS_HELP = ['Be kind to fellow shinobi.', 'Links are blocked and messages are limited to 200 characters.', 'You can send one message every 2 seconds.', 'The team never messages you first about wallets or trades.'];
+  const CS_ANN = [['🎁', 'Weekend Boost Event!', 'Increased drop rates and rewards!', '3d 12h 45m', 'gold'], ['⚔️', 'Guild War Sign-Up!', 'Register your guild by Jan 28!', '1d 18h 30m', 'cyan'], ['⚙️', 'Maintenance Notice', 'Server maintenance on Jan 27, 03:00 – 05:00 (UTC).', '', 'purple']];
+  const CS_NINJAS = [['NinjaMaster', 68, '🏯 In Dojo', 'ok'], ['ShadowKage', 72, '⚔️ Boss Hunt', 'warn'], ['RyoSenpai', 70, '🏪 In Market', 'ok'], ['KuroFox', 75, '🌿 In Adventure', 'ok'], ['EmberLeaf', 65, '💤 Idle', 'idle']];
+  const CS_EMOJI = ['😀', '😂', '😎', '🔥', '⚔️', '💥', '🍃', '🌸', '👍', '🙏', '🎉', '💎'];
+  let csTab = 'Global';
+  const csHue = n => { let h = 0; for (const c of n) h = (h * 31 + c.codePointAt(0)) % 360; return h; };
+  function csAvatar(parent, name, cls) { const a = mk('span', 'sbw-cs-av' + (cls ? ' ' + cls : ''), parent); a.textContent = ([...name][0] || '?').toUpperCase(); a.style.setProperty('--h', csHue(name)); a.setAttribute('aria-hidden', 'true'); return a; }
+  function csNote(text, isError = false) { const b = built.chat, n = b && b.cs && b.cs.note; if (!n) return; n.textContent = text; n.classList.toggle('sbw-cs-error', isError); n.setAttribute('role', isError ? 'alert' : 'status'); }
+  function csCount() { const b = built.chat; b.cs.count.textContent = [...b.cs.input.value].length + ' / 200'; }
+  function csTime(parent, created) { const d = new Date(created), t = mk('time', '', parent); t.dateTime = d.toISOString(); t.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+  function initChatScreen(b) {
+    b.st.replaceChildren(); b.st.style.display = 'none';          // drop the artwork + stub hotspots
+    const r = mk('div', 'sbw-chat', b.sec); b.chatRoot = r;
+    r.innerHTML = `
+      <div class="sbw-cs-bg" aria-hidden="true"></div>
+      <div class="sbw-cs-top"><h2>CHAT</h2><p>Chat, coordinate, and connect with fellow shinobi.</p>
+        <button type="button" class="sbw-cs-social-btn" aria-expanded="false" aria-controls="sbwCsSide">👥 Social</button></div>
+      <nav class="sbw-cs-left sbw-cs-panel" aria-label="Chat channels"><h3>💬 CHAT CHANNELS</h3><div class="sbw-cs-tabs" role="tablist" aria-orientation="vertical"></div></nav>
+      <section class="sbw-cs-main sbw-cs-panel" aria-label="Chat">
+        <header class="sbw-cs-head"><h3><span class="sbw-cs-title">GLOBAL CHAT</span></h3><span class="sbw-cs-online">👥 <b>—</b> online</span>
+          <select class="sbw-cs-pick" aria-label="Channel">${CS_CHANNELS.map(([n]) => `<option>${n}</option>`).join('')}</select></header>
+        <div class="sbw-cs-ann">${CS_ANN.map(([i, t, d, c, k]) => `<article class="sbw-cs-card ${k}"><i aria-hidden="true">${i}</i><div><b></b><span></span>${c ? '<em>⏱ </em>' : ''}</div></article>`).join('')}</div>
+        <div class="sbw-cs-log" role="log" aria-live="polite" tabindex="0" aria-label="Messages"></div>
+        <p class="sbw-cs-note" role="status"></p>
+        <form class="sbw-cs-form">
+          <select class="sbw-cs-ch2" aria-label="Send to channel"><option>Global</option></select>
+          <span class="sbw-cs-emoji-wrap"><button type="button" class="sbw-cs-ico sbw-cs-emoji" aria-label="Emoji" aria-expanded="false">😊</button><span class="sbw-cs-emoji-pop" hidden></span></span>
+          <button type="button" class="sbw-cs-ico sbw-cs-sticker" aria-label="Stickers (coming soon)">🎭</button>
+          <button type="button" class="sbw-cs-ico" aria-label="Attach (coming soon)" disabled title="Attachments are not supported yet">📎</button>
+          <input type="text" maxlength="200" autocomplete="off" aria-label="Message"><small class="sbw-cs-count">0 / 200</small>
+          <button type="submit" class="sbw-cs-send">➤ Send</button></form>
+      </section>
+      <aside class="sbw-cs-side" id="sbwCsSide" aria-label="Social">
+        <section class="sbw-cs-panel"><h3>👥 ONLINE NINJAS <span class="sbw-cs-tag">Preview data</span><button type="button" class="sbw-cs-link" data-soon="Full online-player list">View All ›</button></h3><ul class="sbw-cs-ninjas"></ul></section>
+        <section class="sbw-cs-panel sbw-cs-guild"><h3>🔖 MY GUILD <span class="sbw-cs-tag">Preview</span></h3><div><span class="sbw-cs-crest" aria-hidden="true">忍</span><p><b>ShadowLegacy</b><small>Members: 48 / 50</small><small class="ok">● 12 online</small></p><button type="button" data-soon="Guild chat">💬 Guild Chat</button></div></section>
+        <section class="sbw-cs-panel"><h3>⚡ QUICK ACTIONS</h3><div class="sbw-cs-qa"><button type="button" data-soon="Create Party">➕ Create Party</button><button type="button" data-soon="Invite">✉️ Invite</button><button type="button" data-soon="Whisper">💬 Whisper</button><button type="button" data-soon="Report">⚠️ Report</button></div></section>
+      </aside>`;
+    // Announcement cards: text through textContent (static placeholder content).
+    $$('.sbw-cs-card', r).forEach((c, i) => { $('b', c).textContent = CS_ANN[i][1]; $('span', c).textContent = CS_ANN[i][2]; const em = $('em', c); if (em) em.append(CS_ANN[i][3]); });
+    const ul = $('.sbw-cs-ninjas', r);
+    for (const [n, lv, st, k] of CS_NINJAS) {
+      const li = mk('li', '', ul); csAvatar(li, n); const p = mk('p', '', li);
+      mk('b', '', p).textContent = n; mk('small', 'sbw-cs-lv', p).textContent = 'Lv. ' + lv; mk('small', 'sbw-cs-st ' + k, p).textContent = st;
+      const w = mk('button', 'sbw-cs-ico', li); w.type = 'button'; w.textContent = '💬'; w.setAttribute('aria-label', 'Whisper ' + n); w.dataset.soon = 'Whisper';
+    }
+    const tabs = $('.sbw-cs-tabs', r), pick = $('.sbw-cs-pick', r);
+    CS_CHANNELS.forEach(([n, ico]) => {
+      const t = mk('button', 'sbw-cs-tab', tabs); t.type = 'button'; t.setAttribute('role', 'tab'); t.dataset.ch = n;
+      mk('i', '', t).textContent = ico; mk('span', '', t).textContent = n; mk('em', 'sbw-cs-badge', t).hidden = true;
+    });
+    const setTab = n => { csTab = n; pick.value = n; if (n === 'System') sysUnread = false; renderChatScreen(); $('.sbw-cs-log', r).scrollTop = 1e9; };
+    tabs.addEventListener('click', e => { const t = e.target.closest('.sbw-cs-tab'); if (t) setTab(t.dataset.ch); });
+    tabs.addEventListener('keydown', e => {
+      const all = $$('.sbw-cs-tab', tabs), i = all.indexOf(document.activeElement); if (i < 0) return;
+      const d = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key]; if (!d) return;
+      e.preventDefault(); const n = all[(i + d + all.length) % all.length]; n.focus(); setTab(n.dataset.ch);
+    });
+    pick.onchange = () => setTab(pick.value);
+    const form = $('form', r), input = $('input', form), pop = $('.sbw-cs-emoji-pop', r), eb = $('.sbw-cs-emoji', r);
+    pop.replaceChildren(...CS_EMOJI.map(em => { const x = mk('button', '', null); x.type = 'button'; x.textContent = em; x.setAttribute('aria-label', 'Insert ' + em); x.onclick = () => { if (!input.disabled && [...input.value].length < 199) { input.value += em; csCount(); } input.focus(); }; return x; }));
+    eb.onclick = () => { pop.hidden = !pop.hidden; eb.setAttribute('aria-expanded', String(!pop.hidden)); };
+    r.addEventListener('keydown', e => { if (e.key === 'Escape' && !pop.hidden) { pop.hidden = true; eb.setAttribute('aria-expanded', 'false'); eb.focus(); } });
+    $('.sbw-cs-social-btn', r).onclick = e => { const o = r.classList.toggle('sbw-cs-social-open'); e.currentTarget.setAttribute('aria-expanded', String(o)); };
+    r.addEventListener('click', e => { const s = e.target.closest('[data-soon]'); if (s) notice(s.dataset.soon, 'This is a preview of the design. It opens when the feature launches.'); });
+    $('.sbw-cs-sticker', r).dataset.soon = 'Stickers';
+    input.addEventListener('input', csCount); form.onsubmit = csSend;
+    b.cs = { tabs, pick, log: $('.sbw-cs-log', r), note: $('.sbw-cs-note', r), input, send: $('.sbw-cs-send', r), count: $('.sbw-cs-count', r), title: $('.sbw-cs-title', r), online: $('.sbw-cs-online b', r), ch2: $('.sbw-cs-ch2', r) };
+    renderChatScreen();
+  }
+  function renderChatScreen() {
+    const b = built.chat, c = b && b.cs; if (!c || cur !== 'chat') return;
+    const log = c.log, stick = log.scrollHeight - log.scrollTop - log.clientHeight < 40, nodes = [];
+    const msg = (cls, who, text, created, from, mine) => {
+      const a = document.createElement('article'); a.className = 'sbw-cs-msg ' + cls + (mine ? ' mine' : '');
+      if (cls === 'sys') mk('span', 'sbw-cs-av sys', a).textContent = '⚙'; else csAvatar(a, who);
+      const h = mk('p', 'sbw-cs-mh', a); mk('b', '', h).textContent = who; if (from) mk('small', 'sbw-cs-lvb', h).textContent = from; if (created) csTime(h, created);
+      mk('p', 'sbw-cs-mt', a).textContent = text; return a;
+    };
+    if (csTab === 'Global') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of chatMsgs) nodes.push(msg('', m.name, m.text, m.created, m.from, m.mine)); }
+    else if (csTab === 'System') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of sysMsgs) { const n = msg('sys legend', '[System]', m.text, m.created); nodes.push(n); } }
+    else if (csTab === 'Help') for (const t of CS_HELP) nodes.push(msg('sys', '[Help]', t));
+    else { const p = document.createElement('p'); p.className = 'sbw-cs-empty'; p.textContent = CS_SOON[csTab]; nodes.push(p); }
+    log.replaceChildren(...nodes); if (stick) log.scrollTop = log.scrollHeight;
+    const ready = chatReady(), live = csTab === 'Global' && ready;
+    $$('.sbw-cs-tab', c.tabs).forEach(t => { const on = t.dataset.ch === csTab; t.classList.toggle('on', on); t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1;
+      const bd = $('.sbw-cs-badge', t); bd.hidden = !(t.dataset.ch === 'System' && sysUnread); bd.textContent = 'NEW'; });
+    c.title.textContent = csTab.toUpperCase() + ' CHAT'; c.pick.value = csTab; c.ch2.replaceChildren(new Option(csTab === 'Global' ? 'Global' : csTab));
+    c.input.disabled = !live; c.send.disabled = !live || chatSending;
+    c.input.placeholder = csTab !== 'Global' ? 'Switch to Global to chat' : ready ? 'Type your message…' : 'Sign in to chat';
+    const op = document.getElementById('onlinePlayers'); c.online.textContent = ((op && /\d[\d,]*/.exec(op.textContent)) || ['—'])[0];
+  }
+  async function csSend(e) {
+    e.preventDefault(); const c = built.chat.cs, text = c.input.value.trim();
+    if (!text || chatSending || !chatReady() || csTab !== 'Global') return;
+    chatSending = true; renderChatScreen();
+    try {
+      mergeChat((await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter })).messages);
+      c.input.value = ''; csNote(''); csCount();
+    } catch (err) { csNote(err.message || 'Message could not be sent.', true); }
+    finally { chatSending = false; renderChatScreen(); c.input.focus(); }
+  }
+  // Position the DOM screen under the shared header (desktop) or between the phone top bar and bottom nav.
+  function fitChatScreen(b) {
+    const r = b.chatRoot, vw = viewW(), vh = viewH();
+    b.sec.style.clipPath = 'none';
+    if (isPhone()) {
+      buildPhoneChrome(); layer.classList.add('sbw-phone'); document.body.classList.add('sbw-phone-ui'); markPhoneNav();
+      r.style.top = PH.top.offsetHeight + 'px'; r.style.bottom = PH.nav.offsetHeight + 'px';
+    } else {
+      try { leavePhone(); } catch (error) { console.error(error); }
+      const H = D.header, hs = HDR ? Math.min(vw / H.W, (vh * 0.14) / H.body) : 0;
+      if (HDR) { HDR.st.style.transform = `translate(${(vw - H.W * hs) / 2}px,0) scale(${hs})`; HDR.el.style.height = (107 * hs) + 'px'; }
+      r.style.top = (107 * hs) + 'px'; r.style.bottom = '0';
+    }
+    placeTrigger(); placeChat();
+  }
+
   function sync() {
     const k = screenForPage();
     if (k !== cur) {
       if (chatPop && !chatPop.hidden) toggleChat(false);
       if (cur && built[cur]) built[cur].sec.classList.remove('on');
-      cur = k; if (k === 'home') pollChat();
+      cur = k; if (k === 'home' || k === 'chat') pollChat();
       if (k) { const b = built[k] || build(k); b.sec.classList.add('on'); if (!RM) { b.sec.classList.remove('enter'); void b.sec.offsetWidth; b.sec.classList.add('enter'); } }
       layer.hidden = !k; markNav();
       document.body.classList.toggle('sbw-active', !!k);
@@ -1681,7 +1810,7 @@
     setInterval(() => { sync(); placeTrigger(); }, 700);
     let last = 0; const loop = now => { if (!document.hidden) { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     sync();
-    window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync };
+    window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync, open: goScreen };
   }
   init().catch(e => console.error('Website designs could not be applied:', e));
 })();
