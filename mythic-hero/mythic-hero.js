@@ -7,20 +7,15 @@
   const root = new URL('.', document.currentScript.src);
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const MYTHIC = 5, BODY_PX = 290, CANVAS = [320, 400], FOOT = [160, 352];
-  const images = new Map(), frames = new Map(), auraCache = new Map(), effects = new Map(), states = new Map(), shots = new WeakMap();
-  let meta = null, shotSerial = 0, baseBlit = null, previousHeroFrame = null;
+  const images = new Map(), frames = new Map(), auraCache = new Map(), effects = new Map(), states = new Map();
+  let meta = null, baseBlit = null, previousHeroFrame = null;
   const AURA_KEY = 'sb-mythic-aura';
   const api = window.MythicHero = {
     loaded: false, ready: null, source: null, RANK: MYTHIC, getTexture: file => images.get(file),
     isMythic, heroFrame, drawPortrait, portraitFrame, effectFrame, frameInfo, emote,
     get auraEnabled() { try { return localStorage.getItem(AURA_KEY) !== 'off'; } catch { return true; } },
     setAura(on) { try { localStorage.setItem(AURA_KEY, on ? 'on' : 'off'); } catch {} auraCache.clear(); dispatchEvent(new CustomEvent('mythic-aura-changed', { detail: { on: !!on } })); },
-    skills: [
-      { key: 'dragon_slash', name: 'Dragon Crescent Gale', text: 'Seven violet trails decorate one attack: Hero Power damage, 1 chakra. VFX cost 0 additional chakra.' },
-      { key: 'void_shuriken', name: 'Void Eclipse Shuriken', text: 'A celestial shuriken volley decorates one attack. No extra damage or chakra cost.' },
-      { key: 'raijin_field', name: 'Thunder Chain Vortex', text: 'Violet lightning marks the native impact. Cosmetic only: no extra damage or chakra.' },
-      { key: 'mythic_dragon_ascension', name: 'Mythic Dragon Dominion', text: 'Fourth skill in the repeating attack visual cycle. Cosmetic only: Hero Power damage, 1 attack chakra, 0 additional skill chakra.', ultimate: true }
-    ]
+    skills: Object.entries(MythicAutomaticSkills.definitions).map(([key,d])=>({key,name:d.name,icon:d.icon,cooldownMs:d.cooldownMs,ultimate:!!d.ultimate,text:({dragon_slash:'Violet crescent sword energy with a spectral dragon trail.',void_shuriken:'Rotating celestial shuriken travel with the native projectile.',raijin_field:'A tile-aligned celestial sigil and violet lightning pillars.',mythic_dragon_ascension:'A spectral violet dragon rises through a celestial vortex.'})[key]+' Automatic cosmetic effect: no additional damage, chakra or rewards.'}))
   };
 
   function isMythic(hero) { return Number(hero?.r ?? hero?.rank) === MYTHIC; }
@@ -242,15 +237,8 @@
   function effectFrame(hero, type, phase = 0) {
     if (!meta || !owner(hero)) return undefined;
     if (!need()) return null;
-    const now = performance.now();
-    if (type === 'projectile') {
-      // Alternate Dragon Crescent Gale and Void Eclipse Shuriken per projectile, each played from its launch.
-      const shot = hero.projectile, record = shot ? shots.get(shot) || { n: shotSerial++, born: now } : { n: 0, born: now - phase * 85 };
-      if (shot && !shots.has(shot)) shots.set(shot, record);
-      const name = record.n % 2 ? 'void_shuriken' : 'dragon_slash', s = meta.skills[name];
-      const index = name === 'void_shuriken' ? Math.floor((now - record.born) / (1000 / s.fps)) % s.frameCount : Math.min(s.frameCount - 1, Math.floor((now - record.born) / (1000 / s.fps)));
-      return effectCanvas(name, motion.matches ? s.frameCount - 1 : index);
-    }
+    // Texture access only; drawing never advances a separate/global rotation.
+    if(type==='projectile'){const s=meta.skills.void_shuriken;return effectCanvas('void_shuriken',Math.floor(Math.max(0,phase))%s.frameCount)}
     if (type === 'explosion') { const s = meta.skills.raijin_field; return effectCanvas('raijin_field', Math.min(s.frameCount - 1, Math.floor(phase * 110 / (1000 / s.fps)))); }
     if (type === 'skill') {
       const s = meta.skills.mythic_dragon_ascension, step = Math.min(s.timeline.length - 1, Math.floor(phase * 110 / (1000 / s.fps)));

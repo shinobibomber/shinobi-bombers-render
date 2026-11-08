@@ -707,9 +707,22 @@
   const shortMint = m => m ? m.slice(0, 4) + '…' + m.slice(-4) : '';
   function mythicBlock(h) {
     const MH = window.MythicHero, aura = MH ? MH.auraEnabled : true, skills = MH ? MH.skills : [];
-    return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC </b><span>Exclusive Mythic NFT</span></div>
+    return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC </b><span>FIRST GENERATION NFT</span></div>
       <div class="sbw-myth-nft"><span>${h.starter && !h.nft ? 'Starter Mythic · test server' : h.nft?.mint ? '✔ NFT verified · ' + esc(shortMint(h.nft.mint)) : 'NFT hero'}</span><button type="button" data-k="mcheck">Check NFT</button><button type="button" data-k="maura" aria-pressed="${aura}">Aura: ${aura ? 'On' : 'Off'}</button></div>
-      <ul class="sbw-myth-skills" aria-label="Skills">${skills.map(k => `<li class="${k.ultimate ? 'ult' : ''}" title="${esc(k.text)}"><b>${esc(k.ultimate ? '⚡ ' + k.name.replace('Mythic ', '') : k.name)}</b></li>`).join('')}</ul></div>`;
+      <div class="sbw-myth-generation">TSUKIYOMI<small>Lunar / Celestial / Void</small></div>
+      <ul class="sbw-myth-skills" aria-label="Automatic abilities">${[{name:'Melee Attack',icon:'⚔',text:'Basic purple crescent attack.'},{name:'Ranged Attack',icon:'✧',text:'Basic celestial projectile.'},...skills].map((k,i) => `<li class="${k.ultimate ? 'ult' : ''}"><button type="button" data-k="mability${i}" title="${esc(k.text)}"><span aria-hidden="true">${esc(k.icon)}</span> ${esc(k.name)}${k.cooldownMs!=null?'<small class="sbw-myth-cooldown">'+k.cooldownMs/1000+'s testing cooldown</small>':''}</button></li>`).join('')}</ul><small class="sbw-myth-auto">Automatic on eligible attacks · Skill VFX add no damage or chakra cost</small></div>`;
+  }
+  function mythicAbility(index) {
+    const mh=window.MythicHero;if(!mh?.animationSource)return;
+    const basic=[{name:'Melee Attack',state:'ATTACK',text:'Basic purple crescent slash.'},{name:'Ranged Attack',state:'RANGED_ATTACK',text:'Basic celestial projectile.'}],skill=mh.skills[index-2];
+    const item=basic[index]||skill,definition=skill&&window.MythicAutomaticSkills.definitions[skill.key],state=basic[index]?.state||definition?.state;
+    if(!item||!state)return;
+    if(!dlg)dlg=mk('dialog','sbw-dialog',document.body);dlg.onclick=null;dlg.classList.add('sbw-myth-preview');
+    const cd=definition&&mh.automaticSkills?.rules[skill.key]?.cooldownMs;
+    dlg.innerHTML=`<h2>${esc(item.name)}</h2><p>${definition?.ultimate?'Ultimate':definition?'Signature skill':'Basic attack'} · Automatic activation</p><canvas width="420" height="260" aria-label="Cosmetic animation preview"></canvas><p>${esc(item.text)}</p><p>${definition?cd==null?'Extra skill cooldown: pending balance approval. Native attack timing applies.':'Beta testing cooldown: '+cd/1000+'s. Native attacks continue while it recharges.':'Uses native attack timing.'}</p><p>1 Attack = Hero Power Damage = 1 Chakra<br>Skill VFX = 0 Additional Chakra</p><small>Cosmetic preview only. No attacks, chakra use or rewards.</small><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`;
+    const canvas=$('canvas',dlg),c=canvas.getContext('2d'),hero={id:'mythic-menu-preview',r:5},start=performance.now();let frame;
+    const paint=time=>{if(!dlg.open||!canvas.isConnected)return;const clip=mh.animationSource.states[state],elapsed=(time-start)%(clip.durationMs+500),t=Math.min(.999,elapsed/clip.durationMs);c.clearRect(0,0,420,260);c.fillStyle='#100923';c.fillRect(0,0,420,260);const body=mh.renderFrame(hero,state,Math.floor(t*clip.frames),'front');ShinobiSprites.blit(c,body,210,235,3.5,false,1);if(skill)c.drawImage(mh.skillFrame(skill.key,Math.floor(t*definition.frames)),95,0,230,230);frame=requestAnimationFrame(paint)};
+    const close=()=>{cancelAnimationFrame(frame);dlg.classList.remove('sbw-myth-preview')};dlg.onclose=close;$('.sbw-btn',dlg).onclick=()=>dlg.close();dlg.showModal();mh.preload().then(()=>{if(dlg.open)frame=requestAnimationFrame(paint)}).catch(()=>{});
   }
   function heroPageButton(previous) { return document.querySelector('#p1 .heroes-pagination button[aria-label="' + (previous ? 'Previous page' : 'Next page') + '"]'); }
   INIT.heroes = b => {
@@ -730,7 +743,7 @@
     return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
       <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
       <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}${h.referralBound ? '<b class="sbw-bound" title="Referral-bound hero: cannot be listed, sold or transferred">🔒</b>' : ''}</div>
-      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Crescent Gale' : c.attack || c.style)}</span></div>
+      <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Slash' : c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
       <div class="sbw-hc-ch"><span>CHAKRA</span><span>${esc(c.ch.replace(/\s/g, ' '))}</span></div><div class="sbw-bar"><i style="width:${pct}%"></i></div>
       <div class="sbw-hc-btns">${btn('tog', c.tog ? c.tog.textContent.trim().replace(/^Reserve$/, 'In Reserve') : 'Deploy hero', c.status === 'DEPLOYED' ? 'rest' : 'deploy', !c.tog || c.tog.disabled)}${btn('mode', c.mode ? c.mode.textContent.trim() : '—', 'mode', !c.mode || c.mode.disabled)}</div></div>`;
@@ -798,6 +811,7 @@
     drawCentered($('.sbw-h2-port canvas', b.det), c && c.h, now, 6);
   };
   MODS.heroes = {
+    mability0:()=>mythicAbility(0),mability1:()=>mythicAbility(1),mability2:()=>mythicAbility(2),mability3:()=>mythicAbility(3),mability4:()=>mythicAbility(4),mability5:()=>mythicAbility(5),
     tab: a => { const v = HF[+a]; if (v != null) window.HeroFilters && HeroFilters.choose(v); built.heroes.sel = 0; built.heroes.sig = ''; },
     search: () => { const inp = document.querySelector('#p1 .heroes-search'); if (!inp) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.onclick = null; dlg.innerHTML = '<h2>Search heroes</h2><form><input type="search" placeholder="Hero name"><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt">Clear</button><button class="sbw-btn">Search</button></div></form>'; const q = $('input', dlg); q.value = inp.value; const run = v => { inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); built.heroes.sig = ''; dlg.close(); }; $('.sbw-alt', dlg).onclick = () => run(''); $('form', dlg).onsubmit = e => { e.preventDefault(); run(q.value); }; dlg.showModal(); q.focus(); },
     sort: () => { const s = document.querySelector('#p1 .heroes-sort'); if (!s) return; s.selectedIndex = (s.selectedIndex + 1) % s.options.length; s.dispatchEvent(new Event('change', { bubbles: true })); toast('Sort: ' + s.options[s.selectedIndex].text); built.heroes.sig = ''; },
@@ -857,7 +871,7 @@
       if (e.dataset.k !== k) {
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
         e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
-        e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${esc(RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
+        e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${esc(h.r===5?'MYTHIC':RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
         if (keep && e.dataset.sbwHero === String(h.id)) e.querySelector('canvas').replaceWith(keep);
         e.dataset.sbwHero = String(h.id);
       }

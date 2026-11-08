@@ -19,6 +19,7 @@
       const swing=[0,-.26,-.62,.95,.38,0][Math.min(5,Math.round(t*5))];
       g.arms=[swing*.35,-swing];g.lean=swing*2.8;g.crouch=Math.sin(t*Math.PI)*1.5;
     }
+    if(state==='RANGED_ATTACK'){g.arms=[-.18*pulse,.8*pulse];g.lean=-1.5*pulse;g.nod=-.025*pulse;}
     if(state==='BOMB_PLACE'){g.crouch=pulse*9;g.lean=pulse*2;g.nod=pulse*.08;g.arms=[pulse*-.55,pulse*.55];}
     if(state==='HURT'){const recoil=[1,.65,.18,0][Math.min(3,frame)];g.lean=-4*recoil;g.crouch=2*recoil;g.nod=-.08*recoil;g.arms=[-.35*recoil,.4*recoil];}
     if(state==='DEFEAT'){const sink=smooth(0,.85,t);g.crouch=20*sink;g.lean=-4*sink;g.nod=.16*sink;g.arms=[.2*sink,-.25*sink];g.blink=sink;}

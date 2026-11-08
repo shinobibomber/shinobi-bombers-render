@@ -4,7 +4,7 @@
   else root.MythicAnimation = factory();
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
-  const aliases = { idle:'IDLE', walk:'WALK_FRONT', run:'RUN', melee:'ATTACK', ranged:'ATTACK', bomb:'BOMB_PLACE', hurt:'HURT', die:'DEFEAT', victory:'VICTORY', skill:'ULTIMATE_DRAGON_ASCENSION' };
+  const aliases = { idle:'IDLE', walk:'WALK_FRONT', run:'RUN', melee:'ATTACK', ranged:'RANGED_ATTACK', bomb:'BOMB_PLACE', hurt:'HURT', die:'DEFEAT', victory:'VICTORY', skill:'ULTIMATE_DRAGON_ASCENSION' };
   const facing = value => ['front','left','right','back'].includes(value) ? value : value === 'side' ? 'right' : 'front';
   function create(manifest, notify = () => {}) {
     const actors = new Map(), clips = manifest.states;

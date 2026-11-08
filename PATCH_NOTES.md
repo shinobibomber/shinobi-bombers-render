@@ -20,6 +20,32 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+
+SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 9, 2026 | Mythic Animations)
+
+- Tsukiyomi now displays MYTHIC and FIRST GENERATION NFT without a star rating.
+- Automatic signature visuals use independent Beta testing cooldowns: Dragon Slash 12s, Void Shuriken 18s, Raijin Field 24s and Mythic Dragon Ascension 30s. Normal attacks continue during cooldowns.
+- Added complete transparent rig-baked movement/action atlases in four directions and clean layered skill-effect atlases. The original hero model and Mythic Aura are preserved.
+- Heroes Collection shows each testing cooldown and cosmetic ability previews.
+- One attack still deals Hero Power damage and costs one chakra. Skill visuals add no damage, chakra cost or rewards.
+
+Beta test server only. Production is unchanged. Exact hand-drawn poster poses remain unavailable; working animations use the approved rig.
+
+---
+
+**SHINOBI BOMBERS - LOCAL REVIEW NOTES (Nov 9, 2026 | Mythic Automatic Skills V2)**
+
+- Tsukiyomi now alternates basic attacks with Dragon Slash, Void Shuriken, Raijin Field and Mythic Dragon Ascension automatically. No manual combat buttons are required.
+- Each skill has its own eligibility and configurable cosmetic cooldown. Unavailable skills fall back without stopping attacks; final additional cooldown values await balance approval.
+- Heroes Collection lists melee/ranged basics, three signature skills and the Ultimate, with read-only animation previews and clear activation information.
+- Restored the latest requested seven-star Mythic designation. Added a separate four-direction ranged-attack animation using the existing approved hero art.
+- Hunt animations face the guardian and stay scoped to Hunt team members, preserving other heroes' Adventure movement.
+- Preserved the permanent Mythic Aura, stats, NFT ownership, rewards and economy. One attack still deals Hero Power damage and costs one chakra; skill visuals add neither damage nor chakra cost.
+
+Local review only. Not pushed or deployed. Exact new character artwork still needs isolated transparent frames; current animation uses the approved-view rig and existing reference-resolution VFX.
+
+---
+
 **SHINOBI BOMBERS - TEST SERVER PATCH NOTES (Nov 8, 2026 | Mythic Skill Rotation)**
 
 - Each Mythic hero now cycles Dragon Crescent Gale, Void Eclipse Shuriken, Thunder Chain Vortex and Mythic Dragon Dominion, using a different skill visual on every attack.

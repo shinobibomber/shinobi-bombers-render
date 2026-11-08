@@ -895,3 +895,11 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-xbtn.train{gap:8px;padding:0 10px 0 8px}#sbwLayer .sbw-xbtn.train>i{width:30px;height:30px}#sbwLayer .sbw-xbtn.train>span{flex:1;white-space:normal}#sbwLayer .sbw-xbtn.train b{font-size:16px;letter-spacing:0}#sbwLayer .sbw-xbtn.train small{font-size:11px;line-height:1.1;letter-spacing:0}.hero-salvage-confirm{color:#fff!important}
 
 #sbwLayer .sbw-shard-balance{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 10px;margin-top:8px;background:#130d2d;border:1px solid #67419e;border-radius:7px;font-size:13px;color:#d5c7f4}#sbwLayer .sbw-shard-balance b{font-size:17px;color:#ffd781}
+/* Automatic Mythic abilities: retain the collection panel and open detail on demand. */
+#sbwLayer .sbw-myth-generation{font:800 13px Rajdhani,sans-serif;color:#f0d9ff}
+#sbwLayer .sbw-myth-cooldown{display:block;margin-top:2px;font:600 10px/1.2 system-ui;color:#c4aedb}
+#sbwLayer .sbw-myth-generation small{display:block;color:#c5b9db;font-weight:500}
+#sbwLayer .sbw-myth-skills button{width:100%;min-height:30px;padding:4px;border:0;background:transparent;color:inherit;font:700 12px Rajdhani,sans-serif;cursor:pointer;text-align:left;line-height:1.15}
+#sbwLayer .sbw-myth-skills button:focus-visible{outline:2px solid #ffe098;outline-offset:2px}
+#sbwLayer .sbw-myth-auto{font:600 11px/1.3 Rajdhani,sans-serif;color:#d8c5ed}
+.sbw-myth-preview{max-height:90dvh;overflow:auto}.sbw-myth-preview canvas{display:block;width:100%;max-width:420px;height:auto;margin:auto}.sbw-myth-preview small{display:block;line-height:1.5;color:#c4b8d9}

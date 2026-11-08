@@ -19,7 +19,8 @@
       "baseRange": 6,
       "effectiveRange": 7,
       "perks": 7
-    }
+    },
+    "generation": "First Generation"
   },
   "sources": {
     "model": {
@@ -489,7 +490,7 @@
       "events": {
         "impact": 6
       },
-      "name": "Dragon Crescent Gale"
+      "name": "Dragon Slash"
     },
     "void_shuriken": {
       "label": "Void Shuriken",
@@ -508,7 +509,7 @@
         "launch": 5,
         "impact": 6
       },
-      "name": "Void Eclipse Shuriken"
+      "name": "Void Shuriken"
     },
     "raijin_field": {
       "label": "Raijin Field",
@@ -527,7 +528,7 @@
         "strike": 6,
         "peak": 7
       },
-      "name": "Thunder Chain Vortex"
+      "name": "Raijin Field"
     },
     "mythic_dragon_ascension": {
       "label": "Mythic Dragon Ascension",
@@ -572,7 +573,7 @@
         "burst": 10,
         "end": 11
       },
-      "name": "Mythic Dragon Dominion"
+      "name": "Mythic Dragon Ascension"
     }
   },
   "aura": {

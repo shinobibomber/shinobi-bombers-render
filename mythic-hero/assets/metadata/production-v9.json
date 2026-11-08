@@ -1,0 +1,506 @@
+{
+  "version": 9,
+  "characterStatus": "approved-rig-baked-not-new-hand-drawn-reference-poses",
+  "effectStatus": "engine-baked-transparent-vfx",
+  "character": {
+    "idle_front": {
+      "path": "animations/approved-v9/idle_front.png",
+      "frames": 4,
+      "width": 512,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "c19b3f6d45d66df045caa95616ec07a24a539c2f7910626013b3e63f8acac5ad"
+    },
+    "walk_front": {
+      "path": "animations/approved-v9/walk_front.png",
+      "frames": 8,
+      "width": 1024,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "6e0a50c4e4cc5892bf59ebf912bfa33dec124aedac9e00cb5f49fa361258d991"
+    },
+    "run_front": {
+      "path": "animations/approved-v9/run_front.png",
+      "frames": 8,
+      "width": 1024,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "db763a7636b7c5bb9fed8f351b7a7de92712e198eee6e3c3c6afa280019683ae"
+    },
+    "attack_front": {
+      "path": "animations/approved-v9/attack_front.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "5b1e55076fdc35a7d3e873776736fc45d4a5432ff7c0ca29a0cf6f64dbe618cd"
+    },
+    "ranged_attack_front": {
+      "path": "animations/approved-v9/ranged_attack_front.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "4d2f03deed868b4ef6e0cb39058271c735c960e0d45335d5bb6733e517e828da"
+    },
+    "hurt_front": {
+      "path": "animations/approved-v9/hurt_front.png",
+      "frames": 4,
+      "width": 512,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "3192fcbf6a76e8fa6dd4ebc2683158ef61f659297ee564dc7476d311b448577d"
+    },
+    "defeat_front": {
+      "path": "animations/approved-v9/defeat_front.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "db9209475a28e2b650b6a58397806409c12f7989aa624b4adf0e1591a4945ed7"
+    },
+    "bomb_place_front": {
+      "path": "animations/approved-v9/bomb_place_front.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "cd8e63fbaa4ddd77f6aabc996b755cab15f71873a53cc7887450970aa963e8a8"
+    },
+    "victory_front": {
+      "path": "animations/approved-v9/victory_front.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "4a47f772e9ed97f2f47a861f5c6bb7f65ccd84177942d663978e3bf60b529dfa"
+    },
+    "idle_left": {
+      "path": "animations/approved-v9/idle_left.png",
+      "frames": 4,
+      "width": 512,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "a8fc7e71a200376f7335fa184c274fe5b06c85f1aa3cc60543002313f70b66cc"
+    },
+    "walk_left": {
+      "path": "animations/approved-v9/walk_left.png",
+      "frames": 8,
+      "width": 1024,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "9b3439f8d381247fe85c236eaf3498413e4a665a038640266ab5d8f3213ef8ab"
+    },
+    "run_left": {
+      "path": "animations/approved-v9/run_left.png",
+      "frames": 8,
+      "width": 1024,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "e3bd59c8a34bdfa360ea22364d725eef9cc6df9aa0fb5026a6d6be04f6a14d07"
+    },
+    "attack_left": {
+      "path": "animations/approved-v9/attack_left.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "1e9826cac7b37e7b016401bb9606059e629ba9005565836216bb4432143bf624"
+    },
+    "ranged_attack_left": {
+      "path": "animations/approved-v9/ranged_attack_left.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "3c29ebd02b8177a55d144b9a1feb67ccb6c82dac9c77e85e4e3aa4c861ae55c8"
+    },
+    "hurt_left": {
+      "path": "animations/approved-v9/hurt_left.png",
+      "frames": 4,
+      "width": 512,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "82cb70a3749fafd6a5d58f85459934cec97dc83da6b8d6dfdf1d2c1ac8c80866"
+    },
+    "defeat_left": {
+      "path": "animations/approved-v9/defeat_left.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "16d0658a4c9f8555e7bdd990328ca23460ec8d51e5371dd44f6d4970182175c9"
+    },
+    "bomb_place_left": {
+      "path": "animations/approved-v9/bomb_place_left.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "ad1d5830fc65f0c0f901fdcc6be502f9b897141104571b370c59237a162758ec"
+    },
+    "victory_left": {
+      "path": "animations/approved-v9/victory_left.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "1e64e28043fa84ab54b399f4ea298836a70eec687fd6686a8462509f19a7bb5c"
+    },
+    "idle_right": {
+      "path": "animations/approved-v9/idle_right.png",
+      "frames": 4,
+      "width": 512,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "ea682e09e5b76c0561b13f424c251a338e746b135e0ae83d0bfcc63514f60672"
+    },
+    "walk_right": {
+      "path": "animations/approved-v9/walk_right.png",
+      "frames": 8,
+      "width": 1024,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "5dfc4fa0fc9273be5436bc838a191ef2e6c75397628ddadc36a802a68291c0fb"
+    },
+    "run_right": {
+      "path": "animations/approved-v9/run_right.png",
+      "frames": 8,
+      "width": 1024,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "0057714c330aff4bbf3744c099a77ea658441c243937db950389f47217f120ec"
+    },
+    "attack_right": {
+      "path": "animations/approved-v9/attack_right.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "a60af21402ffd287c1823fe693b7176a6f0f598141472174f43e078671550ba3"
+    },
+    "ranged_attack_right": {
+      "path": "animations/approved-v9/ranged_attack_right.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "39710e2a07f0d0f80640e78b46982ed732cf5da0b5d1e7aeaf8d3559659d0b74"
+    },
+    "hurt_right": {
+      "path": "animations/approved-v9/hurt_right.png",
+      "frames": 4,
+      "width": 512,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "e05c5dc2db4de90842979acc1dc68f93e5bf8cc632f1a81cc559b7bc7e782cc1"
+    },
+    "defeat_right": {
+      "path": "animations/approved-v9/defeat_right.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "0a73bf8a128d3e9c24d5be7b496b4c50e7a129275d2ce5bef80b1209a42f9821"
+    },
+    "bomb_place_right": {
+      "path": "animations/approved-v9/bomb_place_right.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "ac352d48627191b7ab6fd3c4e93b6f1a84f53974426a0909e021ddf057077177"
+    },
+    "victory_right": {
+      "path": "animations/approved-v9/victory_right.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "81c0a82cc52e79750529058fcec9531fe7d0c9243733b005ac215c4d35f71c23"
+    },
+    "idle_back": {
+      "path": "animations/approved-v9/idle_back.png",
+      "frames": 4,
+      "width": 512,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "b683b801f9d0c4d26fc229dc20aba72a55ebe00f880bb5ae5a012e80851e7430"
+    },
+    "walk_back": {
+      "path": "animations/approved-v9/walk_back.png",
+      "frames": 8,
+      "width": 1024,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "2cdbba956b12ca37be44614b19631da79aad578a6187fd27747fd015515bc27d"
+    },
+    "run_back": {
+      "path": "animations/approved-v9/run_back.png",
+      "frames": 8,
+      "width": 1024,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "6214ff8c6ee0315e092ef02424fd4e08d1e5abc77f90317f83d6743982d9ea32"
+    },
+    "attack_back": {
+      "path": "animations/approved-v9/attack_back.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "2dd2a9c1f82f62ad0e686957366ce6164a84a666288c63bee710f949b2318351"
+    },
+    "ranged_attack_back": {
+      "path": "animations/approved-v9/ranged_attack_back.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "84cf31ced2ffdf95b63461ddb3db48da4006b818fa55078ed74052d82b12dbd6"
+    },
+    "hurt_back": {
+      "path": "animations/approved-v9/hurt_back.png",
+      "frames": 4,
+      "width": 512,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "f0233a0333eff90a2f5dcaba354df173a69562d01110f02df7e68996d781945e"
+    },
+    "defeat_back": {
+      "path": "animations/approved-v9/defeat_back.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "2eaba5d67b311aadff56ac3fa038e76aa1a00292b146081628b7b5dc54e3a50e"
+    },
+    "bomb_place_back": {
+      "path": "animations/approved-v9/bomb_place_back.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "3c6a11f00c8281a562b9f8e7ddb0c2dcc49b7ac77a03e505c665d44df3f33ec0"
+    },
+    "victory_back": {
+      "path": "animations/approved-v9/victory_back.png",
+      "frames": 6,
+      "width": 768,
+      "height": 128,
+      "anchor": [
+        64,
+        124
+      ],
+      "sha256": "3ecf4339e7d67fdb538ee9de22a48212a582a4fbc84ef3f5dead2fe137db3368"
+    }
+  },
+  "skills": {
+    "dragon_slash": {
+      "frames": 8,
+      "frameWidth": 320,
+      "frameHeight": 320,
+      "anchor": [
+        160,
+        160
+      ],
+      "layers": {
+        "ground": {
+          "path": "skills/clean-v9/dragon_slash_ground.png",
+          "width": 2560,
+          "height": 320,
+          "sha256": "0675cd73f0d617f46609b13c8edbf859680391ffc41be3a1122121d1d4a8a22f"
+        },
+        "front": {
+          "path": "skills/clean-v9/dragon_slash_front.png",
+          "width": 2560,
+          "height": 320,
+          "sha256": "d9aa4998f2056bc374e5ab77cc4d99964ac0c23d466463db41b63f8b34a61233"
+        }
+      }
+    },
+    "void_shuriken": {
+      "frames": 8,
+      "frameWidth": 320,
+      "frameHeight": 320,
+      "anchor": [
+        160,
+        160
+      ],
+      "layers": {
+        "ground": {
+          "path": "skills/clean-v9/void_shuriken_ground.png",
+          "width": 2560,
+          "height": 320,
+          "sha256": "0675cd73f0d617f46609b13c8edbf859680391ffc41be3a1122121d1d4a8a22f"
+        },
+        "front": {
+          "path": "skills/clean-v9/void_shuriken_front.png",
+          "width": 2560,
+          "height": 320,
+          "sha256": "68c1ff68f67f2b35ed131e1a2641d41d13ee9744ff5593182ab555193e94d0d5"
+        }
+      }
+    },
+    "raijin_field": {
+      "frames": 10,
+      "frameWidth": 320,
+      "frameHeight": 320,
+      "anchor": [
+        160,
+        160
+      ],
+      "layers": {
+        "ground": {
+          "path": "skills/clean-v9/raijin_field_ground.png",
+          "width": 3200,
+          "height": 320,
+          "sha256": "520d30e41fad6af85257b40ffae61cb50133d75394417ea04f5ab47796161bab"
+        },
+        "front": {
+          "path": "skills/clean-v9/raijin_field_front.png",
+          "width": 3200,
+          "height": 320,
+          "sha256": "7d9840f6b3b9f41d2e94537c4571211cebbb716db1cb203f33f2d3cfb0589fde"
+        }
+      }
+    },
+    "mythic_dragon_ascension": {
+      "frames": 12,
+      "frameWidth": 320,
+      "frameHeight": 320,
+      "anchor": [
+        160,
+        160
+      ],
+      "layers": {
+        "ground": {
+          "path": "skills/clean-v9/mythic_dragon_ascension_ground.png",
+          "width": 3840,
+          "height": 320,
+          "sha256": "a7fce5205218fa9ea4be5d482119c9f47456f9d7f5e33aedae141035ebf9ab5e"
+        },
+        "front": {
+          "path": "skills/clean-v9/mythic_dragon_ascension_front.png",
+          "width": 3840,
+          "height": 320,
+          "sha256": "4339673c9bc48d153f8797595ca03e0f0c325fd7d3d2e32e60e80372e1676d11"
+        }
+      }
+    }
+  },
+  "sources": {
+    "articulated-sprite.js": "7698ef53b3186bf0f966cc3bf25a6d1d9ca8b79c7194f04ca3ad245cf839bf5a",
+    "skill-effects.js": "c3d031578ce984a53c530249b290bbbd6f65f4128c47463f66035ef685ad623e",
+    "character/tsukiyomi_front.png": "f85306f7f58b929bd229416e26da348ee1274bb9b617290aa1ca1ffe912ac00d",
+    "character/tsukiyomi_left.png": "122a489bfa724b3b357dd653b904b4207490507b85c6367843f9d0f300c7157f",
+    "character/tsukiyomi_right.png": "d49b14a71ca7730306a975f7d697103089f44c20e60c48b72a3511532e633da7",
+    "character/tsukiyomi_back.png": "87a7744849062f1e10a99772caae619b886b5953b85add42912da1ca492a81e0",
+    "skills/dragon-spirit-v3.png": "c396b7d117d99680e7d0ec06dae142225c285f22dbb4c3885b1bd70e23c920d8"
+  }
+}

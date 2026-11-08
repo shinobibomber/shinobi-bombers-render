@@ -3,10 +3,10 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),sharp=require('sharp');
 const root=path.resolve(__dirname,'..'),file=path.join(root,'reference/mythic-skill-v6.png');
 const rows={
- dragon_slash:{name:'Dragon Crescent Gale',stages:8,y:151,h:94,x:[[316,55],[378,76],[454,80],[534,84],[618,84],[702,84],[786,104]]},
- void_shuriken:{name:'Void Eclipse Shuriken',stages:8,y:333,h:82,x:[[311,56],[378,64],[447,66],[517,68],[589,72],[663,73],[737,77],[816,84]]},
- raijin_field:{name:'Thunder Chain Vortex',stages:10,y:503,h:92,x:[[303,52],[357,60],[419,65],[486,65],[553,66],[621,65],[687,66],[753,70],[824,86]]},
- mythic_dragon_ascension:{name:'Mythic Dragon Dominion',stages:12,y:687,h:113,x:[[303,45],[349,45],[396,45],[443,46],[490,48],[539,51],[591,55],[647,57],[705,56],[762,62],[825,83]]}
+ dragon_slash:{name:'Dragon Slash',stages:8,y:151,h:94,x:[[316,55],[378,76],[454,80],[534,84],[618,84],[702,84],[786,104]]},
+ void_shuriken:{name:'Void Shuriken',stages:8,y:333,h:82,x:[[311,56],[378,64],[447,66],[517,68],[589,72],[663,73],[737,77],[816,84]]},
+ raijin_field:{name:'Raijin Field',stages:10,y:503,h:92,x:[[303,52],[357,60],[419,65],[486,65],[553,66],[621,65],[687,66],[753,70],[824,86]]},
+ mythic_dragon_ascension:{name:'Mythic Dragon Ascension',stages:12,y:687,h:113,x:[[303,45],[349,45],[396,45],[443,46],[490,48],[539,51],[591,55],[647,57],[705,56],[762,62],[825,83]]}
 };
 const elements={sigil:[27,918,130,79],gold_circle:[171,921,127,73],crescent:[310,918,130,81],vortex:[445,919,104,80],flash:[554,918,88,80],crystals:[649,917,125,82],pillar:[781,918,90,80],impact:[877,916,106,82],flame:[993,918,122,80],trail:[1122,928,122,62]};
 async function build(){

@@ -5,7 +5,7 @@
  * each hero and the "Check NFT" action. Exact-string hooks; tests/preservation.cjs reverses mythicPatches. */
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
-const marker = '<!-- mythic-hero -->', script = '<script defer src="assets/mythic-hero/animation-controller.js"></script>\n<script defer src="assets/mythic-hero/articulated-sprite.js"></script>\n<script defer src="assets/mythic-hero/skill-effects.js"></script>\n<script defer src="assets/mythic-hero/new-skills.js"></script>\n<script defer src="assets/mythic-hero/mythic-hero.js"></script>\n<script defer src="assets/mythic-hero/animation-runtime.js"></script>';
+const marker = '<!-- mythic-hero -->', script = '<script defer src="assets/mythic-hero/animation-controller.js"></script>\n<script defer src="assets/mythic-hero/articulated-sprite.js"></script>\n<script defer src="assets/mythic-hero/skill-effects.js"></script>\n<script defer src="assets/mythic-hero/new-skills.js"></script>\n<script defer src="assets/mythic-hero/clean-effects.js"></script>\n<script defer src="assets/mythic-hero/automatic-skills.js"></script>\n<script defer src="assets/mythic-hero/mythic-hero.js"></script>\n<script defer src="assets/mythic-hero/animation-runtime.js"></script>';
 const V = "'#c98bff'"; // Mythic violet
 // Game client. [before, after, count]
 const mythicPatches = [
@@ -65,7 +65,7 @@ function applyMythicHero(appDir = path.join(__dirname, 'app')) {
   fs.rmSync(dest, { recursive: true, force: true });
   copyDir(path.join(src, 'assets'), dest);
   fs.copyFileSync(path.join(src, 'mythic-hero.js'), path.join(dest, 'mythic-hero.js'));
-  for (const file of ['animation-controller.js','animation-runtime.js','articulated-sprite.js','skill-effects.js','new-skills.js']) fs.copyFileSync(path.join(src,file),path.join(dest,file));
+  for (const file of ['animation-controller.js','animation-runtime.js','articulated-sprite.js','skill-effects.js','new-skills.js','automatic-skills.js','clean-effects.js']) fs.copyFileSync(path.join(src,file),path.join(dest,file));
   const server = path.join(appDir, 'server');
   fs.copyFileSync(path.join(src, 'server.cjs'), path.join(server, 'mythic-hero.cjs'));
   const schema = path.join(server, 'schema.sql');

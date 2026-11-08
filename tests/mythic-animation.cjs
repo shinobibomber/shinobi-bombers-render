@@ -6,7 +6,7 @@ const out=path.join(__dirname,'out');
   f.holdAdventure=false;
   const heroes=Array.from({length:10},(_,i)=>({tokenId:'animation-fixture-'+i,name:i<3?'Tsukiyomi':'Legend',rank:i<3?5:4,level:1,mythic:i<3?'tsukiyomi':undefined,nft:i<3?{mint:'fixture-'+i}:undefined,baseStats:{pw:16,sp:15,st:17}}));
   f.profile=economy.normalizeProfile({...f.profile,heroes,battleReady:heroes.map(h=>h.tokenId)});
-  const downloaded=[];p.on('request',r=>{if(r.url().includes('/mythic-hero/animations/')&&!r.url().includes('/rig-v3/'))downloaded.push(r.url())});
+  const downloaded=[];p.on('request',r=>{if(r.url().includes('/mythic-hero/animations/')&&!r.url().includes('/rig-v3/')&&!r.url().includes('/approved-v9/'))downloaded.push(r.url())});
   await p.locator('#loginPhantom').click();await p.waitForFunction(()=>RyoPayments.state.authenticated&&!LoginScreen.active);
   await p.evaluate(async()=>{await MythicHero.runtimeReady;await MythicHero.preload();go(1)});
   const details=await p.evaluate(()=>{
@@ -22,7 +22,7 @@ const out=path.join(__dirname,'out');
     const count=gallery.getContext('2d').getImageData(0,0,1040,gallery.height).data.filter((v,i)=>i%4===3&&v>0).length;
     return {unchanged:before===after,count,size:m.stats(),states:Object.keys(manifest.states).length,stars:manifest.hero.stars};
   });
-  assert(details.unchanged);assert.equal(details.states,19);assert.equal(details.stars,undefined);assert(details.count>10000);assert.equal(downloaded.length,0,'borrowed Fire bodies are not requested');
+  assert(details.unchanged);assert.equal(details.states,20);assert.equal(details.stars,undefined);assert(details.count>10000);assert.equal(downloaded.length,0,'borrowed Fire bodies are not requested');
   // Export the actual runtime-rendered atlas, including offscreen rows, without screenshot cropping.
   fs.writeFileSync(path.join(out,'mythic-animation-states.png'),Buffer.from(await p.locator('#mythic-animation-gallery').evaluate(c=>c.toDataURL().split(',')[1]),'base64'));
   const effects=await p.evaluate(()=>{
@@ -59,15 +59,15 @@ const out=path.join(__dirname,'out');
   assert.equal(cleanup.effects,0);assert.equal(cleanup.after.effects,0);assert.equal(cleanup.after.actors,0);
   // Exercise the real authored-atlas import path with synthetic test pixels, not production art.
   const sharp=require('sharp'),runtime=structuredClone(require('../mythic-hero/assets/metadata/animations.json'));
-  runtime.states.IDLE.texture='animations/test-idle.png';runtime.states.IDLE.columns=4;runtime.states.IDLE.assetStatus='test-fixture';
+  runtime.states.IDLE.texture='animations/test-idle.png';runtime.states.IDLE.columns=4;delete runtime.states.IDLE.sourceFrames;delete runtime.states.IDLE.sourceIndices;runtime.states.IDLE.assetStatus='test-fixture';
   delete runtime.states.IDLE.directionTextures;
-  const atlas=await sharp({create:{width:512,height:256,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite(Array.from({length:8},(_,i)=>({input:{create:{width:80,height:100,channels:4,background:{r:i===0?255:0,g:0,b:i===0?0:255,alpha:1}}},left:(i%4)*128+24,top:Math.floor(i/4)*128+24}))).png().toBuffer();
+  const atlas=await sharp({create:{width:512,height:128,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite(Array.from({length:4},(_,i)=>({input:{create:{width:80,height:100,channels:4,background:{r:i===0?255:0,g:0,b:i===0?0:255,alpha:1}}},left:(i%4)*128+24,top:Math.floor(i/4)*128+24}))).png().toBuffer();
   await p.route('**/mythic-hero/metadata/animations.json',r=>r.fulfill({contentType:'application/json',body:JSON.stringify(runtime)}));
   await p.route('**/mythic-hero/animations/test-idle.png',r=>r.fulfill({contentType:'image/png',body:atlas}));
   await p.reload();
-  const imported=await p.evaluate(async()=>{await MythicHero.runtimeReady;await MythicHero.preload();return [0,7].map(i=>{const c=MythicHero.renderFrame({id:999,r:5},'IDLE',i,'front');return [...c.getContext('2d').getImageData(160,200,1,1).data]})});
+  const imported=await p.evaluate(async()=>{await MythicHero.runtimeReady;await MythicHero.preload();return [0,3].map(i=>{const c=MythicHero.renderFrame({id:999,r:5},'IDLE',i,'front');return [...c.getContext('2d').getImageData(160,200,1,1).data]})});
   assert.deepEqual(imported,[[255,0,0,255],[0,0,255,255]],'authored atlas rows/columns override fallback at the fixed pivot');
   assert.deepEqual(errors,[]);
  });
- console.log('PASS: all 19 states rendered, 4 VFX timelines rendered, no borrowed-body download, capped pools/caches, effect-off and invalid-tile guards, 10 deployed heroes, native shots, map/menu cleanup, no combat/reward mutation.');
+ console.log('PASS: all 20 states rendered, 4 VFX timelines rendered, no borrowed-body download, capped pools/caches, effect-off and invalid-tile guards, 10 deployed heroes, native shots, map/menu cleanup, no combat/reward mutation.');
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,0 +1,35 @@
+'use strict';
+const assert=require('node:assert/strict'),{create,definitions,order}=require('../mythic-hero/automatic-skills.js');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),preserved=require('../mythic-hero/preservation-v2.json');
+for(const file of [...preserved.assets,preserved.latestReference])assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname,'..',file.path))).digest('hex'),file.sha256,'approved identity/aura/reference unchanged: '+file.path);
+const zero=Object.fromEntries(Object.keys(definitions).map(id=>[id,{cooldownMs:0}]));
+const store=new Map(),c=create({config:zero,read:k=>store.get(k),write:(k,v)=>store.set(k,structuredClone(v))});
+const base={scope:'devnet:wallet-a',heroId:'nft-1',mode:'adventure',stream:'page-one',eligible:true,targetValid:true,chakraSpent:true,staminaEligible:true,melee:true,ranged:true,areaEligible:true,ultimateEligible:true};
+const event=(n,extra={})=>({...base,ordinal:n,now:n*600,...extra});
+assert.equal(Object.keys(definitions).length,4);assert(Object.values(definitions).every(d=>d.gameplayEffect===false));assert.deepEqual(Object.values(definitions).map(d=>d.cooldownMs),[12000,18000,24000,30000]);
+for(let n=1;n<=24;n++){
+ const choice=c.select(event(n));assert.equal(choice,order[(n-1)%8]);
+ for(let copy=0;copy<7;copy++)assert.equal(c.select(event(n)),choice);
+}
+assert.equal(c.inspect(base.scope,base.heroId).total,24);assert.equal(c.select(event(1)),null,'old replay rejected');
+const independent=create({config:Object.fromEntries(Object.keys(definitions).map(id=>[id,{cooldownMs:10000}]))});
+for(let n=1;n<=8;n++)assert.equal(independent.select(event(n)),order[n-1]);
+const clocks=independent.inspect(base.scope,base.heroId).used;assert.equal(new Set(Object.values(clocks)).size,4);
+independent.select(event(9));assert.equal(independent.select(event(10)),null,'all independent cooldowns block this skill slot');assert.deepEqual(independent.inspect(base.scope,base.heroId).used,clocks);
+independent.select(event(11));assert.equal(independent.select(event(12,{now:12000})),'dragon_slash');assert.deepEqual(independent.inspect(base.scope,base.heroId).used,{...clocks,dragon_slash:12000},'fallback updates only the selected skill cooldown');
+const restored=create({config:zero,read:k=>store.get(k),write:(k,v)=>store.set(k,structuredClone(v))});
+assert.equal(restored.select(event(24)),order[7],'reconnect returns original choice');assert.equal(restored.inspect(base.scope,base.heroId).total,24);
+assert.equal(restored.select(event(25,{stream:'page-two'})),null,'new page keeps hero rotation');
+assert.equal(restored.select(event(1,{heroId:'nft-2'})),null,'independent hero starts at basic');
+assert.equal(restored.select(event(1,{scope:'devnet:wallet-b'})),null,'wallet state isolated');
+const cooldown=create({config:{dragon_slash:{cooldownMs:20000},void_shuriken:{enabled:false},raijin_field:{enabled:false},mythic_dragon_ascension:{enabled:false}}});
+assert.equal(cooldown.select(event(1)),null);assert.equal(cooldown.select(event(2)),'dragon_slash');
+for(let n=3;n<=16;n++)assert.equal(cooldown.select(event(n)),null,'ineligible cooldown falls back to basic');
+assert.equal(cooldown.select(event(17)),null);assert.equal(cooldown.select(event(18,{now:25000})),'dragon_slash');
+assert.equal(cooldown.inspect(base.scope,base.heroId).used.dragon_slash,25000);assert.equal(cooldown.inspect(base.scope,base.heroId).used.void_shuriken,undefined);
+const range=create({config:{dragon_slash:{cosmeticOnRanged:false}}});range.select(event(1));assert.equal(range.select(event(2,{melee:false})),'void_shuriken','unavailable melee skips to eligible ranged');
+const empty=create();for(const key of ['eligible','targetValid','chakraSpent','staminaEligible'])assert.equal(empty.select(event(1,{[key]:false})),null);assert.equal(empty.size,0,'ineligible events do not advance state');
+for(let n=0;n<1000;n++)empty.select(event(1,{heroId:'bounded-'+n}));assert.equal(empty.size,128);
+const unavailable=create({config:Object.fromEntries(Object.keys(definitions).map(id=>[id,{enabled:false}]))});for(let n=1;n<=16;n++)assert.equal(unavailable.select(event(n)),null);
+assert.throws(()=>create({config:{dragon_slash:{cooldownMs:-1}}}));
+console.log('PASS: independent skills, preferred 8-action rotation, eligibility/fallback, independent cooldowns, immutable defaults, wallet/hero scope, replay/draw deduplication, reconnect restoration and bounded presentation state.');

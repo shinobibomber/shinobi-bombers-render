@@ -3,8 +3,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {create}=require('../mythic-hero/animation-controller.js'),data=require('../mythic-hero/assets/metadata/animations.json');
 const events=[],c=create(data,e=>events.push(e)),hero={id:7},h2={id:8};
 assert.equal(data.hero.stars,undefined);assert.equal(data.hero.rank,5);
-assert.equal(data.presentationVersion,6);assert.equal(data.assetStatus,'articulated-views-and-celestial-vfx');
-const required={IDLE:8,WALK_FRONT:8,WALK_LEFT:8,WALK_RIGHT:8,WALK_BACK:8,RUN:8,ATTACK:6,BOMB_PLACE:6,HURT:4,DEFEAT:8,VICTORY:8,EMOTE_ALERT:4,EMOTE_QUESTION:4,EMOTE_LIKE:4,EMOTE_CELEBRATE:4,SKILL_DRAGON_SLASH:8,SKILL_VOID_SHURIKEN:8,SKILL_RAIJIN_FIELD:10,ULTIMATE_DRAGON_ASCENSION:12};
+assert.equal(data.presentationVersion,9);assert.equal(data.assetStatus,'approved-rig-atlases-and-clean-vfx');
+const required={IDLE:4,WALK_FRONT:8,WALK_LEFT:8,WALK_RIGHT:8,WALK_BACK:8,RUN:8,ATTACK:6,RANGED_ATTACK:6,BOMB_PLACE:6,HURT:4,DEFEAT:6,VICTORY:6,EMOTE_ALERT:4,EMOTE_QUESTION:4,EMOTE_LIKE:4,EMOTE_CELEBRATE:4,SKILL_DRAGON_SLASH:8,SKILL_VOID_SHURIKEN:8,SKILL_RAIJIN_FIELD:10,ULTIMATE_DRAGON_ASCENSION:12};
 for(const [name,count]of Object.entries(required)){
   const s=data.states[name];assert.equal(s.frames,count);assert.deepEqual(s.anchor,[64,124]);assert.equal(s.frameWidth,128);assert.equal(s.frameHeight,128);
   c.clear();events.length=0;c.play(hero,name,{now:0,force:true});
@@ -33,4 +33,4 @@ c.play(hero,'ULTIMATE_DRAGON_ASCENSION',{now:110});c.sample(hero,200,{moving:tru
 assert.equal(c.get(hero).moveFrame,4,'gait survives a skill and facing transition');
 const runtime=fs.readFileSync(path.join(__dirname,'../mythic-hero/animation-runtime.js'),'utf8');
 assert(!/\.hp\s*[-+]?=|\.ryo\s*[-+]?=|\.en\s*[-+]?=|signTransaction|sendTransaction/.test(runtime),'cosmetics cannot mutate economy or combat');
-console.log('PASS: 19 animation states, exact logical frame counts, movement phase sync, events once, repeated attacks, priority/interruptions, per-hero cleanup and explicit art gaps.');
+console.log('PASS: 20 animation states, exact logical frame counts, movement phase sync, events once, repeated attacks, priority/interruptions, per-hero cleanup and explicit art gaps.');

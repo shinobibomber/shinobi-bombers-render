@@ -9,7 +9,7 @@ const digest=b=>crypto.createHash('sha256').update(b).digest('hex');
  const rig=JSON.parse(fs.readFileSync(path.join(root,'assets/metadata/rig-v3.json'),'utf8'));
  assert.equal(rig.generatorSha256,digest(fs.readFileSync(path.join(root,'articulated-sprite.js'),'utf8').replace(/\r\n/g,'\n')));
  for(const [name,clip]of Object.entries(rig.clips)){
-  const file=path.join(root,'assets',clip.path),direction=name.split('_')[1];
+  const file=path.join(root,'assets',clip.path),direction=name.split('_').at(-1);
   await validate(file,clip.frames);
   assert.equal(clip.sourceSha256,digest(fs.readFileSync(path.join(root,'assets/character/tsukiyomi_'+direction+'.png'))));
   const meta=await sharp(file).metadata();assert.deepEqual([meta.width,meta.height,meta.channels],[clip.frames*128,128,4]);
@@ -53,5 +53,5 @@ const digest=b=>crypto.createHash('sha256').update(b).digest('hex');
   await p.waitForTimeout(1000);await p.screenshot({path:path.join(out,'mythic-v3-ten-heroes.png')});
   assert.deepEqual(errors,[]);console.log(JSON.stringify(result));
  });
- console.log('PASS: approved-source hashes, 120 distinct motion frames, moving feet/arms in four directions, gait during attacks/ultimate, transparent VFX margins, zero warm-frame allocations, 10 Mythics and preserved game state.');
+ console.log('PASS: approved-source hashes, 144 distinct motion frames, moving feet/arms in four directions, gait during attacks/ultimate, transparent VFX margins, zero warm-frame allocations, 10 Mythics and preserved game state.');
 })().catch(e=>{console.error(e);process.exitCode=1});

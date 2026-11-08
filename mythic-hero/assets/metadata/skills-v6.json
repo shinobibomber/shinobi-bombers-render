@@ -16,7 +16,7 @@
   },
   "clips": {
     "dragon_slash": {
-      "name": "Dragon Crescent Gale",
+      "name": "Dragon Slash",
       "keyStages": 8,
       "sourceFrames": [
         "dragon_slash_0",
@@ -43,7 +43,7 @@
       "chakraCost": 0
     },
     "void_shuriken": {
-      "name": "Void Eclipse Shuriken",
+      "name": "Void Shuriken",
       "keyStages": 8,
       "sourceFrames": [
         "void_shuriken_0",
@@ -71,7 +71,7 @@
       "chakraCost": 0
     },
     "raijin_field": {
-      "name": "Thunder Chain Vortex",
+      "name": "Raijin Field",
       "keyStages": 10,
       "sourceFrames": [
         "raijin_field_0",
@@ -100,7 +100,7 @@
       "chakraCost": 0
     },
     "mythic_dragon_ascension": {
-      "name": "Mythic Dragon Dominion",
+      "name": "Mythic Dragon Ascension",
       "keyStages": 12,
       "sourceFrames": [
         "mythic_dragon_ascension_0",
