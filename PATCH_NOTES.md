@@ -20,6 +20,21 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Mythic & Combat Perks)**
+
+• Tsukiyomi has stronger arm and foot movement in all four directions, with brighter Dragon Slash, Void Shuriken, Raijin Field and Dragon Ascension effects.
+• Rarity labels now show names without stars. Mythic base Power, Speed and Stamina roll 17–20, with seven visual projectiles, 6 base range (7 with Piercing), and all seven unique perks.
+• Every actual attack deals trained Power damage and spends exactly 1 chakra. Decorative volleys, elemental effects and ultimates add no damage or chakra cost.
+• Updated all seven perks: Bounty +3% Adventure Ryo, Armor Breaker target priority, Wind Step +12% movement, Fast Charge +15% resting recovery, Chakra Saver +10% capacity, Piercing +1 range, and Swift Hands 8% shorter cooldown.
+• Boss Hunt now uses chakra and server-validated attacks. Pending entries can be resumed without a second fee.
+• Preserved hero identities and training, repaired Mythic perk counts, and protected chakra across purchases, reconnects and NFT transfers.
+• Referral qualification observes verified defeats without spending chakra twice. Mobile hero controls stay stable as chakra changes.
+• Going offline safely saves in-flight defeats before disconnecting, and delayed requests cannot restart Adventure.
+
+Test server only. Existing reward funding, fees and the approved Mythic Aura are preserved.
+
+---
+
 **SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 8, 2026 · Tsukiyomi Expressions)**
 
 • Added gentle breathing and blinking to Tsukiyomi's idle animation in his approved character design.

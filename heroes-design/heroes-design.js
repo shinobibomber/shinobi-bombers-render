@@ -79,7 +79,7 @@
         const styleText = styleLine?.dataset.baseStyle || styleLine?.childNodes[0]?.textContent.trim() || R[hero.r][0] + ' style';
         if (styleLine) { styleLine.classList.add('hero-style-line'); styleLine.dataset.baseStyle = styleText; styleLine.replaceChildren(); for (const text of ['Lv. ' + hero.lv, styleText, ['Shuriken', 'Twin shuriken', 'Fire shuriken', 'Lightning blade', 'Rasengan / Chidori'][hero.r]]) { const span = document.createElement('span'); span.textContent = text; styleLine.append(span); } }
         let damage = card.querySelector('.heroes-live-damage'); if (!damage) { damage = document.createElement('p'); damage.className = 'heroes-live-damage'; card.append(damage); }
-        damage.textContent = Number(GameBalance.damage(hero)).toLocaleString(undefined,{maximumFractionDigits:2}) + ' damage / hit · ' + hero.bm + ' projectiles · ' + hero.rg + ' range';
+        damage.textContent = Number(GameBalance.damage(hero)).toLocaleString(undefined,{maximumFractionDigits:2}) + ' damage / hit · ' + hero.bm + ' visual projectiles · ' + hero.rg + ' range';
         card.querySelectorAll('.hero-stats > div').forEach((stat, i) => stat.style.setProperty('--stat-icon', icons[i]));
         const actions = card.querySelector('.hero-actions');
         const perks = card.querySelector('.hero-jutsu');
@@ -180,8 +180,8 @@
           const density = Number(canvas.dataset.portraitDensity) || 1;
           PlayerModels.drawPortrait(context, hero, canvas.width / 2, canvas.height - 13 * density, 4.0 * density, now);
         }
-        const value = card.querySelector('.hero-energy b'); if (value) value.textContent = Math.floor(hero.en) + ' / ' + Math.floor(hero.st * 50);
-        const fill = card.querySelector('.hero-energy .bar i'); if (fill) fill.style.width = Math.min(100, hero.en / (hero.st * 50) * 100) + '%';
+        const value = card.querySelector('.hero-energy b'); if (value) value.textContent = Math.floor(hero.en) + ' / ' + Math.floor(CombatRules.maxChakra(hero));
+        const fill = card.querySelector('.hero-energy .bar i'); if (fill) fill.style.width = Math.min(100, hero.en / (CombatRules.maxChakra(hero)) * 100) + '%';
         if (!card.classList.contains('hero-reserve')) card.querySelector('.hero-status').textContent = hero.on ? 'DEPLOYED' : 'RESTING';
       }
       updateQuickActions();
@@ -212,12 +212,12 @@
       const signature = [hero.id, hero.r, hero.lv, hero.on, ready, hero.en < 1, deployed, hero.pw, hero.sp, hero.st, S.ryo].join(':');
       detail.style.setProperty('--tier-color', rankColors[hero.r]); detail.style.setProperty('--hero-backdrop', backdrop); detail.dataset.rank = hero.r;
       detail.querySelector('.hero-detail-status').textContent = hero.on ? 'DEPLOYED' : ready ? 'BATTLE-READY · RESTING' : 'RESERVE';
-      detail.querySelector('.hero-detail-chakra b').textContent = Math.floor(hero.en) + ' / ' + Math.floor(hero.st * 50);
-      detail.querySelector('.hero-detail-chakra i').style.width = Math.max(0, Math.min(100, hero.en / (hero.st * 50) * 100)) + '%';
+      detail.querySelector('.hero-detail-chakra b').textContent = Math.floor(hero.en) + ' / ' + Math.floor(CombatRules.maxChakra(hero));
+      detail.querySelector('.hero-detail-chakra i').style.width = Math.max(0, Math.min(100, hero.en / (CombatRules.maxChakra(hero)) * 100)) + '%';
       if (!force && signature === detailSignature) return; detailSignature = signature;
       detail.querySelector('.hero-detail-kicker').textContent = badgeNames[hero.r] + ' · ' + PlayerModels.modelFor(hero).label;
       detail.querySelector('.hero-detail-title').textContent = hero.name;
-      detail.querySelector('.hero-detail-copy').textContent = 'Level ' + hero.lv + ' · ' + Number(GameBalance.damage(hero)).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' damage / hit · ' + hero.bm + ' projectiles · ' + hero.rg + ' range';
+      detail.querySelector('.hero-detail-copy').textContent = 'Level ' + hero.lv + ' · ' + Number(GameBalance.damage(hero)).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' damage / hit · ' + hero.bm + ' visual projectiles · ' + hero.rg + ' range';
       const stats = detail.querySelector('.hero-detail-stats'); stats.replaceChildren();
       for (const [label, value] of [['Power', hero.pw.toFixed(1)], ['Speed', hero.sp.toFixed(1)], ['Stamina', hero.st.toFixed(1)], ['Volley', hero.bm], ['Range', hero.rg], ['Level', hero.lv + '/5']]) { const block = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label; dd.textContent = value; block.append(dt, dd); stats.append(block); }
       const perks = detail.querySelector('.hero-detail-perks'); perks.replaceChildren();

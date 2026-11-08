@@ -7,7 +7,7 @@ const sharp = require('sharp');
 const root = path.resolve(__dirname, '..'), dir = path.join(root, 'mythic-hero/assets'), meta = require(path.join(dir, 'metadata/tsukiyomi.json'));
 
 (async () => {
-  assert.deepEqual([meta.hero.name, meta.hero.rarity, meta.hero.rank, meta.hero.id, meta.hero.stars], ['Tsukiyomi', 'Mythic', 5, 13, 7]);
+  assert.deepEqual([meta.hero.name, meta.hero.rarity, meta.hero.rank, meta.hero.id, meta.hero.stars], ['Tsukiyomi', 'Mythic', 5, 13, undefined]);
   for (const source of Object.values(meta.sources)) assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'mythic-hero', source.file))).digest('hex'), source.sha256, 'reference unchanged: ' + source.file);
   assert.deepEqual([meta.frame.width, meta.frame.height, meta.frame.anchor], [128, 128, [64, 124]]);
   // Legacy files remain archived for provenance; the v2 runtime never loads these borrowed bodies.

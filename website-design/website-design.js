@@ -64,12 +64,14 @@
       const buttons = $$('.sbw-acts button', dlg), msg = $('.sbw-off-msg', dlg);
       buttons.forEach(b => b.disabled = true); e.target.textContent = 'Saving…';
       try {
+        await window.CombatClient?.beginOffline?.();
         if (k === 'on') await RyoPayments.senseiSettings(d.pct, true);
         const owner = account(), chest = await RyoPayments.adventure(false, false);
         try { localStorage.setItem(OFFLINE_KEY, JSON.stringify({ account: owner, lifetime: Number(chest.pending || 0) + Number(chest.claimed || 0), at: Date.now() })); } catch {}
         dlg.close();
         const native = document.getElementById('betaDisconnect'); if (native && !native.disabled) native.click();
       } catch (err) {
+        window.CombatClient?.cancelOffline?.();
         // Stay signed in so nothing is lost; the player can retry.
         msg.hidden = false; msg.textContent = (err && err.message) || 'Could not save your progress. Check your connection and try again.';
         buttons.forEach(b => b.disabled = false); e.target.textContent = 'Try again';
@@ -287,7 +289,7 @@
     b.tiles.forEach((t, i) => {
       // Own empty-state class: the shared .sbw-empty message styles widened these tiles.
       const h = dep[i]; t.classList.toggle('sbw-tile-empty', !h); t.style.setProperty('--rc', h ? RCOL[h.r] : '#3a4a7a');
-      const label = h ? `★ Lv. ${h.lv}` : 'Deploy', title = h ? `${h.name} · ${RNAME[h.r]} · Lv. ${h.lv}` : 'Deploy a hero from Heroes';
+      const label = h ? `Lv. ${h.lv}` : 'Deploy', title = h ? `${h.name} · ${RNAME[h.r]} · Lv. ${h.lv}` : 'Deploy a hero from Heroes';
       if (t.lastChild.textContent !== label) t.lastChild.textContent = label;
       if (t.title !== title) t.title = title;
       draw(t.firstChild, h, 66, 146, 2.7);
@@ -298,10 +300,11 @@
   const gal = (arr, cap) => `<div class="gal">${arr.map(x => `<button class="gt" type="button" data-src="${BASE + x.src}" data-t="${esc(cap(x))}"><img src="${BASE + x.src}" alt="" loading="lazy"><span>${esc(cap(x))}</span></button>`).join('')}</div>`;
   function cxHtml(i) {
     const R2 = D.ref; switch (i) {
-      case 0: return `<p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Heroes nap and recover – faster in the Dojo.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
+      case 0: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Heroes nap and recover – faster in the Dojo.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
+      case 1: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Genin 1/1 · Chunin 2/2 · Jonin 3/3 · Elite 4/4 · Legend 5/5 · Mythic 7/7</p>${CombatRules.PERKS.map(p=>'<h4>'+esc(p.name)+'</h4><p>'+esc(p.description)+'</p>').join('')}`;
       case 2: return `<p>Element and rarity are independent: an element changes a hero's jutsu and aura colour, never their rank.</p><h4>Hero models · four directions</h4>${gal([R2.models], () => 'All 12 hero models')}`;
-      case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin ★</b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin ★★</b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin ★★★</b><span>3 perks</span></div><div><b style="color:#b45cff">Elite ★★★★</b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend ★★★★★</b><span>Top summon rank · 5 perks</span></div><div><b style="color:#c98bff">Mythic</b><span>Tsukiyomi · NFT only · 6 perks</span></div></div><p>Fusion combines three heroes of the same rank. Legend is the highest rank you can summon or fuse and stays tradable. Mythic Tsukiyomi comes only with the Limited NFT Box and moves with that NFT.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
-      case 4: return `<div class="cxg"><div><b>Save burst</b><span>Hold jutsu bursts for boss phases.</span></div><div><b>Balance</b><span>Mix damage dealers with chakra support.</span></div><div><b>Read the board</b><span>Blasts stop at stone – line up crates.</span></div><div><b>Rotate</b><span>A Sensei swaps in rested heroes automatically.</span></div></div><h4>Hero animation reference</h4>${gal([R2.hayate], () => 'Hayate – animation & VFX reference')}`;
+      case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin </b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin </b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin </b><span>3 perks</span></div><div><b style="color:#b45cff">Elite </b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend </b><span>Top summon rank · 5 perks</span></div><div><b style="color:#c98bff">Mythic</b><span>Tsukiyomi · NFT only · 7 perks</span></div></div><p>Genin 1/1 · Chunin 2/2 · Jonin 3/3 · Elite 4/4 · Legend 5/5 · Mythic 7/7</p><p>Fusion combines three heroes of the same rank. Legend is the highest rank you can summon or fuse and stays tradable. Mythic Tsukiyomi comes only with the Limited NFT Box and moves with that NFT.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
+      case 4: return `<div class="cxg"><div><b>Save burst</b><span>Skill animations are cosmetic and spend no additional chakra.</span></div><div><b>Balance</b><span>Mix damage dealers with chakra support.</span></div><div><b>Read the board</b><span>Blasts stop at stone – line up crates.</span></div><div><b>Rotate</b><span>A Sensei swaps in rested heroes automatically.</span></div></div><h4>Hero animation reference</h4>${gal([R2.hayate], () => 'Hayate – animation & VFX reference')}`;
       case 5: return `<p>Each boss has idle, walk, hurt and death animations plus signature attacks, ending in a rage mode at low HP.</p><h4>Boss concept sheets</h4>${gal(R2.bosses, x => `${x.n} · ${x.t}`)}<h4>Akuma animation sheets</h4>${gal(R2.akuma, x => 'Akuma sprite sheet ' + (R2.akuma.indexOf(x) + 1))}`;
       case 6: return `<div class="cxg"><div><b>Adventure Ryo</b><span>Earned while your team works stages. It collects in your Chest.</span></div><div><b>Claim</b><span>Moves verified Chest Ryo into your game balance – not an on-chain withdrawal.</span></div><div><b>Withdraw / Deposit</b><span>Use the Chest's own limits, fees, cooldown and wallet steps.</span></div></div><p><button class="gb" type="button" data-cx="chest">Open Chest</button></p>`;
       case 7: return `<div class="faq"><details open><summary>How many heroes can I deploy?</summary><p>Up to 10 at once, from up to 50 battle-ready heroes.</p></details><details><summary>Can Legend heroes be fused further?</summary><p>No – Legend is the top rank.</p></details><details><summary>Where do Adventure rewards go?</summary><p>Into your Chest. Claim them to make them spendable.</p></details><details><summary>Are Guild and Chat available?</summary><p>Not yet – they are coming soon.</p></details></div>`;
@@ -309,12 +312,19 @@
     }
   }
   INIT.codex = b => {
-    b.cx = place(mk('div', 'cxp', b.st), 306, 212, 896, 698); b.cx.hidden = true;
+    // Opaque panel interiors replace outdated star ratings and combat claims in the artwork.
+    const panel=(cls,x,y,w,h,html)=>{const e=place(mk('div',cls,b.st,html),x,y,w,h);Object.assign(e.style,{position:'absolute',zIndex:'15',background:'linear-gradient(135deg,#111329,#030916)',color:'#dde5f7',borderRadius:'8px',boxShadow:'inset 0 0 12px #020610',padding:'9px 12px',boxSizing:'border-box',fontSize:'17px',lineHeight:'1.4'});return e;};
+    panel('sbw-codex-ranks',1247,478,397,187,RNAME.map((name,i)=>'<div style="display:flex;justify-content:space-between;line-height:28px"><b style="color:'+RCOL[i]+'">'+name+'</b><span>'+[1,2,3,4,5,7][i]+' unique perk'+(i?'s':'')+'</span></div>').join(''));
+    panel('sbw-codex-elements',1247,373,397,44,'Elements change cosmetic effects.').style.padding='3px 12px';
+    panel('sbw-codex-tips',1247,727,397,177,'<p style="margin:0 0 12px">One attack spends one chakra.</p><p style="margin:0 0 12px">Skill effects add no damage or cost.</p><p style="margin:0">Rest or rotate to recover chakra.</p>');
+
+    b.cx = place(mk('div', 'cxp', b.st), 306, 212, 896, 698); b.cx.hidden = false; b.cx.style.animation='none';
     b.cx.addEventListener('click', e => { if (e.target.closest('[data-cx=chest]')) openChest(); });
+    MODS.codex.sec(1);
   };
   MODS.codex = {
-    sec: a => { const i = +a, b = built.codex; for (let n = 0; n < 8; n++) { const e = $(`.hs[data-sbwid="cs${n}"]`, b.st); if (e) { e.classList.toggle('on2', n === i && n !== 1); e.classList.toggle('dimact', n === 1 && i !== 1); } } b.cx.hidden = i === 1; if (i !== 1) { b.cx.innerHTML = `<h2>${CXT[i]}</h2><div class="cxb">${cxHtml(i)}</div>`; b.cx.scrollTop = 0; } },
-    elem: a => toast(['Fire – burns enemies over time', 'Water – flowing sustained damage', 'Wind – speed and mobility', 'Shadow – ambush and burst damage', 'Lightning – chains between foes and stuns'][+a])
+    sec: a => { const i = +a, b = built.codex; for (let n = 0; n < 8; n++) { const e = $(`.hs[data-sbwid="cs${n}"]`, b.st); if (e) { e.classList.toggle('on2', n === i); e.classList.toggle('dimact', n === 1 && i !== 1); } } b.cx.hidden = false; b.cx.innerHTML = `<h2>${CXT[i]}</h2><div class="cxb">${cxHtml(i)}</div>`; b.cx.scrollTop = 0; },
+    elem: a => toast(['Fire – cosmetic flame effects', 'Water – cosmetic flowing effects', 'Wind – cosmetic wind effects', 'Shadow – cosmetic shadow effects', 'Lightning – cosmetic lightning effects'][+a])
   };
 
   /* ---------- Summon (website screen ↔ Combat.quantity / Combat.summonBatch) ---------- */
@@ -497,7 +507,7 @@
     b.rate.innerHTML = `<b>${rec[tier] || 1}/min</b>`; b.lvl.innerHTML = `<b>${tier}/6</b>`;
     b.rowhl.style.top = (DROWY[tier] - 41) + 'px';
     b.stat.forEach((e, i) => { const [t, c] = i < tier ? ['Unlocked', 'own'] : i === tier ? ['Active', 'act'] : i === next ? ['Next', 'nxt'] : ['—', 'lck']; if (e.textContent !== t) e.textContent = t; e.className = 'sbw-dstat ' + c; });
-    const k = next <= 6 ? `<i>⌂</i><span>UPGRADE - ${fmt(prices[next])} Ryo</span>` : '<i>★</i><span>MAX TIER REACHED</span>'; if (b.up.dataset.k !== k) { b.up.dataset.k = k; b.up.innerHTML = k; } b.up.disabled = next > 6;
+    const k = next <= 6 ? `<i>⌂</i><span>UPGRADE - ${fmt(prices[next])} Ryo</span>` : '<i></i><span>MAX TIER REACHED</span>'; if (b.up.dataset.k !== k) { b.up.dataset.k = k; b.up.innerHTML = k; } b.up.disabled = next > 6;
   };
   INIT['dojo-sen'] = b => {
     dojoBack(b, 'SENSEI');
@@ -697,7 +707,7 @@
   const shortMint = m => m ? m.slice(0, 4) + '…' + m.slice(-4) : '';
   function mythicBlock(h) {
     const MH = window.MythicHero, aura = MH ? MH.auraEnabled : true, skills = MH ? MH.skills : [];
-    return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC <span class="sbw-myth-stars" aria-label="7 stars">★★★★★★★</span></b><span>Exclusive Mythic NFT</span></div>
+    return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC </b><span>Exclusive Mythic NFT</span></div>
       <div class="sbw-myth-nft"><span>${h.starter && !h.nft ? 'Starter Mythic · test server' : h.nft?.mint ? '✔ NFT verified · ' + esc(shortMint(h.nft.mint)) : 'NFT hero'}</span><button type="button" data-k="mcheck">Check NFT</button><button type="button" data-k="maura" aria-pressed="${aura}">Aura: ${aura ? 'On' : 'Off'}</button></div>
       <ul class="sbw-myth-skills" aria-label="Skills">${skills.map(k => `<li class="${k.ultimate ? 'ult' : ''}" title="${esc(k.text)}"><b>${esc(k.ultimate ? '⚡ ' + k.name.replace('Mythic ', '') : k.name)}</b></li>`).join('')}</ul></div>`;
   }
@@ -718,7 +728,7 @@
     const h = c.h || {}, r = h.r || 0, col = RCOL[r] || RCOL[0], [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0), pct = cm ? Math.round(100 * cc / cm) : 0;
     const btn = (k, label, cls = '', dis) => `<button type="button" class="sbw-hb ${cls}" data-k="${k}" data-i="${i}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
     return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
-      <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}${r === 5 ? '<span class="sbw-myth-stars" aria-label="7 stars">★★★★★★★</span>' : ''}</b><i>${esc(c.status || '')}</i></div>
+      <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
       <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}${h.referralBound ? '<b class="sbw-bound" title="Referral-bound hero: cannot be listed, sold or transferred">🔒</b>' : ''}</div>
       <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? 'Dragon Slash' : c.attack || c.style)}</span></div>
       <div class="sbw-hc-stats"><span>POWER<b>${esc(c.pw)}</b></span><span>SPEED<b>${esc(c.sp)}</b></span><span>STAMINA<b>${esc(c.stam)}</b></span></div>
@@ -734,7 +744,7 @@
     const pageSelect = root.querySelector('.heroes-page-select'); setText(b.page, pageSelect?.selectedOptions[0]?.textContent || '1 / 1');
     for (const id of ['pp', 'pn']) { const e = $(`.hs[data-sbwid="${id}"]`, b.st), button = heroPageButton(id === 'pp'); if (e) { const disabled = !button || button.disabled; e.setAttribute('aria-disabled', String(disabled)); e.classList.toggle('dim', disabled); } }
     if (b.sel >= cards.length) b.sel = 0;
-    const sig = cards.map(c => [c.idx, c.status, c.lvl, c.ch, c.pw, c.tog && c.tog.textContent, c.up && c.up.textContent, c.mode && c.mode.textContent].join(',')).join('|') + '#' + b.sel;
+    const sig = cards.map(c => [c.idx, c.status, c.lvl, c.pw, c.tog && c.tog.textContent, c.up && c.up.textContent, c.mode && c.mode.textContent].join(',')).join('|') + '#' + b.sel;
     if (sig !== b.sig) {
       b.sig = sig;
       // Chakra/status updates replace text and controls, but an unchanged model
@@ -746,7 +756,7 @@
     }
     $$('.sbw-hcard canvas', b.grid).forEach(c => { const card = cards[+c.dataset.i]; drawHero(c, card && card.h, 2.7, now, 2); });
     const c = cards[b.sel];
-    const dsig = c ? [c.idx, c.lvl, c.ch, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint].join(',') : 'none';
+    const dsig = c ? [c.idx, c.lvl, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint].join(',') : 'none';
     if (dsig !== b.dsig) {
       b.dsig = dsig;
       const portrait = $('.sbw-h2-port canvas', b.det);
@@ -759,7 +769,7 @@
         b.det.innerHTML = `<div class="sbw-h2" style="--rc:${RCOL[r]}">
           <div class="sbw-h2-top"><div><h3 data-fs="23">${esc(c.name)}</h3><p>Lv. ${esc(lv)} / ${esc(lvMax || '5')}<em>${esc(c.status)}</em></p></div><i class="sbw-h2-rank">${esc(RNAME[r].toUpperCase())}</i></div>
           ${r === 5 ? mythicBlock(h) : `<div class="sbw-h2-tags"><span>${esc(c.attack || '—')}</span><span>${esc(c.style || RNAME[r] + ' style')}</span></div>`}${h.referralBound ? BOUND_NOTE : ''}
-          <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + (r + 1))}</div>
+          <div class="sbw-h2-mid"><div class="sbw-h2-stats">${stat('POWER', c.pw)}${stat('SPEED', c.sp)}${stat('STAMINA', c.stam)}${stat('VOLLEY', c.vol)}${stat('RANGE', c.rng)}${stat('PERKS', pl.length + ' / ' + CombatRules.perkCount(r))}</div>
             <div class="sbw-h2-port"><canvas width="292" height="344"></canvas></div></div>
           <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
           <h4>PERKS</h4>
@@ -774,6 +784,16 @@
         else fresh.dataset.sbwHero = String(h.id);
       }
     }
+    // Energy changes in place so active combat cannot detach focused controls or reset phone scroll.
+    const energy = (el, row, selector) => {
+      if (!el || !row) return;
+      const [value, max] = (row.ch || '0/1').split('/').map(x => +x.trim() || 0);
+      const label = $(selector, el), fill = $('.sbw-bar i', el);
+      if (label) setText(label, value + ' / ' + max);
+      if (fill) fill.style.width = Math.max(0, Math.min(100, max ? value / max * 100 : 0)) + '%';
+    };
+    $$('.sbw-hcard', b.grid).forEach(el => energy(el, cards[+el.dataset.i], '.sbw-hc-ch span:last-child'));
+    energy(b.det, c, '.sbw-h2-ch span:last-child');
     drawCentered($('.sbw-h2-port canvas', b.det), c && c.h, now, 6);
   };
   MODS.heroes = {
@@ -836,7 +856,7 @@
       if (e.dataset.k !== k) {
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
         e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
-        e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${h.r === 5 ? '<span aria-label="7 stars">★★★★★★★</span> ' : '✦ '}${esc(RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
+        e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${esc(RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
         if (keep && e.dataset.sbwHero === String(h.id)) e.querySelector('canvas').replaceWith(keep);
         e.dataset.sbwHero = String(h.id);
       }
@@ -1083,25 +1103,25 @@
 
   /* ---------- Boss Hunt (game page 8): paid daily damage rankings ---------- */
   // Each hunt costs 10,000 Ryo (80% to today's prize pool, 10% treasury, 10% burned) and is a 60-second damage run
-  // by the 5 strongest battle-ready heroes; no chakra is used. Total damage per UTC day ranks the
+  // by up to 5 battle-ready heroes with chakra. Total damage per UTC day ranks the
   // players, and the top 10 share the pool when the day ends (boss-hunt.cjs on the server). Daily places
   // also earn weekly points (1st 10 … 10th 1): the week's top 3 win a Legend hero and 4th–10th an Elite. The
   // artwork keeps its title and frames; every panel inside them is live HTML.
   const GUARD = ['Akuma · Fallen Shinobi', 'Yuki Onna · Frozen Moon', 'Raijin · Thunder Lord', 'Daichi · Ancient Golem', 'Orochi · Serpent King'];
   const BH = { board: null, at: 0, busy: false, error: '', pending: null, active: null, last: null, timer: 0 };
   const ORD = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
-  const huntTeam = () => { try { return BattleRoster.list().slice().sort((a, c) => c.pw - a.pw).slice(0, 5); } catch { return []; } };
+  const huntTeam = () => { try { return BattleRoster.list().filter(h => h.en >= 1).sort((a, c) => c.pw - a.pw).slice(0, 5); } catch { return []; } };
   const dur = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm'; };
   async function huntLoad() {
     if (!account() || !window.RyoPayments?.hunt || BH.busy) return;
     BH.busy = true;
-    try { BH.board = (await RyoPayments.hunt('hunt-board')).hunt; BH.error = ''; BH.at = Date.now(); }
+    try { BH.board = (await RyoPayments.hunt('hunt-board')).hunt; if (BH.board?.open && !BH.active) BH.pending = { id: BH.board.open.id, pending: true }; BH.error = ''; BH.at = Date.now(); }
     catch (e) { BH.error = e.message || 'Boss Hunt is unavailable right now.'; BH.at = Date.now(); }
     finally { BH.busy = false; if (built['boss-hunt']) built['boss-hunt'].sig = ''; }
   }
   function huntReport(final) {
     const a = BH.active, s = window.V2?.bossState?.(); if (!a || !s) return Promise.resolve();
-    return RyoPayments.hunt('hunt-report', { entryId: a.id, damage: Math.round(s.damage || 0) }).catch(() => {}).then(r => { if (final) { BH.active = null; huntLoad(); } return r; });
+    return RyoPayments.hunt('hunt-report', { entryId: a.id, damage: Math.round(s.damage || 0), finish: !!final }).then(r => { if (final) { if (BH.last) BH.last.damage = r.damage; window.CombatClient?.reconcile(r); BH.active = null; huntLoad(); } return r; }).catch(e => { BH.error = e.message || 'The hunt report is waiting for a connection.'; });
   }
   // Bridge used by the game's startBoss/endHunt hooks (apply-boss-hunt.cjs).
   window.BossHunt = {
@@ -1121,12 +1141,12 @@
     b.ranks = cv(b, 30, 892, 966, 110, 'sbw-bh-ranks');
     b.team = cv(b, 1020, 200, 488, 678, 'sbw-bh-team');
     b.mine = cv(b, 1020, 890, 488, 110, 'sbw-bh-mine');
-    b.team.innerHTML = `<h3>⚔ PREPARE YOUR TEAM</h3><p class="bh-note">Your 5 strongest battle-ready heroes fight. No chakra is used.</p>
+    b.team.innerHTML = `<h3>⚔ PREPARE YOUR TEAM</h3><p class="bh-note">Up to 5 rested battle-ready heroes fight. Each attack deals Power damage and costs 1 chakra.</p>
       <div class="bh-fee"><span>ENTRANCE FEE</span><b><i class="coin"></i>10,000 Ryo</b><small>8,000 prize pool · 1,000 treasury · 1,000 burned</small></div>
       <div class="bh-label"><b>Hunt team</b><span class="bh-count"></span></div><div class="bh-tiles"></div>
       <button type="button" class="sbw-mbtn bh-auto" data-act="auto">⟳ Auto-select strongest 5</button>
       <button type="button" class="sbw-mbtn buy bh-go" data-act="go">CHALLENGE · 10,000 Ryo</button><button type="button" class="sbw-mbtn ghost bh-stop" data-act="stop" hidden>End hunt now</button>
-      <ul class="bh-rules"><li>⏱ 60-second damage run · Adventure keeps going</li><li>✦ No chakra needed · every volley fires</li><li>🏆 Top 10 by total damage today share the prize pool</li><li>👑 Weekly top 3 win a Legend hero · 4th–10th an Elite</li><li>🕛 Prizes are paid at 00:00 UTC to your Ryo balance</li></ul>`;
+      <ul class="bh-rules"><li>⏱ 60-second run · other heroes can continue Adventure</li><li>1 Attack = Hero Power Damage = 1 Chakra</li><li>Skill VFX = 0 Additional Chakra</li><li>🏆 Top 10 by total damage today share the prize pool</li><li>👑 Weekly top 3 win a Legend hero · 4th–10th an Elite</li><li>🕛 Prizes are paid at 00:00 UTC to your Ryo balance</li></ul>`;
     b.tiles = Array.from({ length: 5 }, () => mk('div', 'bh-tile', $('.bh-tiles', b.team)));
     b.team.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (!a || a.disabled) return; ({ auto: huntAuto, go: huntChallenge, stop: () => window.V2?.retreat?.() })[a.dataset.act]?.(); });
     b.ranks.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && !a.disabled) huntRankings(a.dataset.act); });
@@ -1139,18 +1159,26 @@
     if (!account()) return notice('Boss Hunt', 'Sign in with your wallet to enter the Boss Hunt.');
     if (window.V2?.isBossActive?.()) return toast('A hunt is already running.');
     if (S?.v2?.revealBatch?.length) return toast('Finish your card reveal first.');
-    const team = huntTeam(); if (!team.length) return notice('Boss Hunt', 'Make at least one hero battle-ready in Heroes first.');
+    if (BH.pending?.id) return resumeHunt(BH.pending.id).catch(e => notice('Boss Hunt', e.message));
+    const team = huntTeam(); if (!team.length) return notice('Boss Hunt', 'Rest at least one battle-ready hero until it has 1 chakra.');
     const bal = spendable(), g = BH.board ? BH.board.guardianName : GUARD[0];
     const d = confirmDialog('Enter today\'s Boss Hunt?', `<p>Fight <b>${esc(g)}</b> for 60 seconds with ${team.map(h => esc(h.name.split(' ')[0])).join(', ')}.</p>
       <p class="sbw-mbuyline">Entrance fee <b>10,000 Ryo</b><br><span class="sbw-small">8,000 prize pool · 1,000 treasury · 1,000 burned · your balance after: ${fmt(bal - 10000)} Ryo</span></p>
       ${bal < 10000 ? '<p class="sbw-small sbw-warn">Not enough Ryo. Deposit Ryo from your Chest first.</p>' : ''}`, 'Pay 10,000 Ryo & start', async () => {
       const data = await RyoPayments.hunt('hunt-enter', { requestId: crypto.randomUUID(), name: (gs() && gs().nick) || '' });
       if (data.hunt) BH.board = data.hunt;
-      BH.pending = data.entry; go(8); V2.startBoss();
-      if (!V2.isBossActive()) { BH.pending = null; throw Error('The hunt could not start. Your entry still counts for today; contact support if this repeats.'); }
-      clearInterval(BH.timer); BH.timer = setInterval(() => { if (V2.isBossActive()) huntReport(false); else clearInterval(BH.timer); }, 10000);
+      BH.pending = data.entry; await resumeHunt(data.entry.id, data.entry);
     }, 'sbw-hunt');
     if (bal < 10000) $('[data-k="go"]', d).disabled = true;
+  }
+  async function resumeHunt(id, entry) {
+    entry = entry && !entry.pending ? entry : (await RyoPayments.hunt('hunt-ready', { entryId: id })).entry;
+    if (entry.refunded) { BH.pending = null; throw Error('The entry payment was refunded.'); }
+    BH.pending = entry;
+    if (entry.pending) { toast('Entry payment is pending. Press Challenge to check the same entry; no second fee is charged.'); return; }
+    go(8); V2.startBoss();
+    if (!V2.isBossActive()) throw Error('Your paid entry is ready. Press Challenge to resume.');
+    clearInterval(BH.timer); BH.timer = setInterval(() => { if (V2.isBossActive()) huntReport(false); else clearInterval(BH.timer); }, 10000);
   }
   // Rankings pop-ups: Daily (today's damage standings + the previous day's winners) and Weekly
   // (this week's points standings + last week's winners).
@@ -1323,8 +1351,7 @@
       { parts: [[862, 462, 1110, 650], [1300, 462, 1592, 650]] }, [842, 662, 1600, 830, { fit: 1 }], [72, 138, 806, 842, { fit: 1 }]],
     market: [[60, 120, 500, 235, { fit: 1 }], { flow: '.sbw-mbar' }, { flow: '.sbw-mgrid', zoom: 0.85, cols: 2 }, { flow: '.sbw-mpages' }, { flow: '.sbw-mdet' }],
     'boss-hunt': [[20, 108, 660, 192, { fit: 1 }], { flow: '.sbw-bh-head' }, { flow: '.sbw-bh-arena' }, { flow: '.sbw-bh-team' }, { flow: '.sbw-bh-prize' }, { flow: '.sbw-bh-ranks' }, { flow: '.sbw-bh-mine' }, { flow: '.sbw-bh-sched' }],
-    codex: [[20, 108, 960, 200, { fit: 1 }], [20, 208, 292, 726], [305, 210, 1205, 724, { pan: 0.7 }], [1215, 210, 1652, 420], [1215, 425, 1652, 666], [1215, 672, 1652, 906],
-      [305, 728, 1205, 906, { pan: 0.7 }]],
+    codex: [[20, 108, 960, 200, { fit: 1 }], [20, 208, 292, 726], { flow: '.cxp' }, [1215, 210, 1652, 420], [1215, 425, 1652, 666], [1215, 672, 1652, 906]],
     guild: [[208, 205, 978, 524, { pan: 0.7 }], [988, 205, 1515, 524], [208, 530, 978, 706, { pan: 0.7 }], [988, 530, 1515, 706], [25, 712, 506, 1002], [515, 712, 1026, 1002, { pan: 0.7 }],
       [1035, 712, 1513, 1002], [25, 160, 200, 652]],
   };

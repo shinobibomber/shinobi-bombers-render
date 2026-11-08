@@ -129,8 +129,10 @@ function paidSummonQuantity(row) {
   if (![1, 5, 10, 15].includes(quantity) || outputs.length !== quantity || new Set(outputs.map(h => h.tokenId)).size !== quantity || outputs.some(h => !h.tokenId || h.starter || h.creatorReward || h.referralReward)) fail('Settled summon output evidence is inconsistent.', 503);
   return quantity;
 }
-function advanceProof(store, profile, proof, active, report) {
-  return require('./adventure.cjs').advance(Object.keys(proof || {}).length ? proof : undefined, profile, store.now(), active || !!require('./gameplay-options.cjs').killReport(report), 50, null);
+function advanceProof(store, profile, proof, active, report, verified) {
+  // Qualification observes the settled combat ledger; a second simulation would spend chakra twice.
+  const kills=Math.max(number(proof?.kills),number(verified?.kills));
+  return {kills,map:Math.floor(kills/20)+1,last:store.now(),verifier:'settled-combat-v1'};
 }
 async function attribute(store, wallet, body) {
   const code = text(body.code, 32).toUpperCase();
@@ -181,17 +183,17 @@ async function commission(store, c, r, source, kind, srMilli) {
   if (created.length) await ledger(store, c, r.creator_id, 'commission:' + source, kind + '-commission', cp, BigInt(srMilli), { referral: privateId(r.wallet), percent: 5 });
 }
 
-// A server-only verifier runs the game's existing authoritative auto-combat, with no client kill
-// totals or stage input, only for attributed players until five 20-defeat stages are cleared.
-// This does not change Adventure rewards, combat, map selection, timing or the real-time guard.
+// Qualification observes settled server-validated Adventure defeats. It cannot execute attacks,
+// consume chakra, accept client stage claims or create a second reward simulation.
 async function beginAdventure(store, c, wallet, profile, old, active, report) {
   const r = await referral(store, c, wallet); if (!r) { await require('./player-referrals.cjs').beginAdventure(store, c, wallet, profile, active, report); return null; }
   if (!r.stage5) {
-    const d = advanceProof(store, profile, r.proof, active, report);
+    const verified=(await query(c,'SELECT data FROM ryo_adventures WHERE scope=$1 AND wallet=$2',[store.scope,wallet]))[0]?.data;
+    const d = advanceProof(store, profile, r.proof, active, report, verified);
     // A map value of 5 means entered; 100 verified defeats means stage 5 actually cleared.
     if (number(d.kills) >= 100) {
       r.stage5 = store.now();
-      await recordEvent(store, c, 'stage5:' + wallet, wallet, 'server-stage-clear', { clearedStage: 5, kills: d.kills, verifier: 'authoritative-auto-combat-v1' });
+      await recordEvent(store, c, 'stage5:' + wallet, wallet, 'server-stage-clear', { clearedStage: 5, kills: d.kills, verifier: 'settled-combat-v1' });
     }
     await c.query('UPDATE ryo_creator_referrals SET proof=$3,stage5=$4 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, JSON.stringify(d), r.stage5 || null]);
     await qualify(store, c, r, old?.pending || 0);

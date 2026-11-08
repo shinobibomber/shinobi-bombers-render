@@ -24,7 +24,7 @@ const ON = { STARTER_PACK: 'on' }, never = async () => { throw Error('A starter-
   let p = await store.profile('newbie');
   assert.deepEqual(ranks(p), [5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   const tsu = p.heroes.find(h => h.rank === 5);
-  assert.deepEqual([tsu.name, tsu.mythic, tsu.starter, 'nft' in tsu, tsu.perks.length], ['Tsukiyomi', 'tsukiyomi', true, false, 6], 'a non-NFT starter Tsukiyomi');
+  assert.deepEqual([tsu.name, tsu.mythic, tsu.starter, 'nft' in tsu, tsu.perks.length], ['Tsukiyomi', 'tsukiyomi', true, false, 7], 'a non-NFT starter Tsukiyomi');
   assert.equal(p.battleReady.length, 15); assert.equal(p.mythicPerk, undefined, 'no holder discount');
   assert.deepEqual(await acct('newbie'), { balance: '0', bonus: '10000000' });
   assert.equal(await starter.grant(store, 'newbie', ON), null, 'only once');

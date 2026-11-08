@@ -22,7 +22,7 @@ const out=path.join(__dirname,'out');
     const count=gallery.getContext('2d').getImageData(0,0,1040,gallery.height).data.filter((v,i)=>i%4===3&&v>0).length;
     return {unchanged:before===after,count,size:m.stats(),states:Object.keys(manifest.states).length,stars:manifest.hero.stars};
   });
-  assert(details.unchanged);assert.equal(details.states,19);assert.equal(details.stars,7);assert(details.count>10000);assert.equal(downloaded.length,0,'borrowed Fire bodies are not requested');
+  assert(details.unchanged);assert.equal(details.states,19);assert.equal(details.stars,undefined);assert(details.count>10000);assert.equal(downloaded.length,0,'borrowed Fire bodies are not requested');
   // Export the actual runtime-rendered atlas, including offscreen rows, without screenshot cropping.
   fs.writeFileSync(path.join(out,'mythic-animation-states.png'),Buffer.from(await p.locator('#mythic-animation-gallery').evaluate(c=>c.toDataURL().split(',')[1]),'base64'));
   const effects=await p.evaluate(()=>{

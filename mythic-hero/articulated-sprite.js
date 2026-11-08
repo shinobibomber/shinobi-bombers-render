@@ -1,4 +1,4 @@
-/* Tsukiyomi v4: continuous texture skinning of the approved four views.
+/* Tsukiyomi v5: reference-paced directional stride using the approved four views.
  * Mesh construction happens only on a body-cache miss, never in the warm draw pass.
  * No body substitution, cut-out seams, movement changes or gameplay dependencies. */
 (() => {
@@ -37,13 +37,13 @@
     // Two opposing hip/knee/ankle chains. The planted foot stays at y=124.
     const leg=smooth(rig.hipY-3,rig.hipY+9,y),right=side?0:smooth(61,68,x);
     const legPhase=stride*(1-right)+opposite*right;
-    dx+=leg*legPhase*(side?(run?7:5):(run?3.8:2.8));
-    dy-=leg*(Math.max(0,stride)*(1-right)+Math.max(0,opposite)*right)*(run?7:5);
+    dx+=leg*legPhase*(side?(run?8.5:6):(run?4.8:3.5));
+    dy-=leg*(Math.max(0,stride)*(1-right)+Math.max(0,opposite)*right)*(run?8.5:6);
     // Shoulder -> elbow -> wrist, counter-swinging to the opposite leg.
     for(let i=0;i<2;i++){
       const sx=rig.shoulders[i],sy=rig.shoulderY,armSide=i?1:-1;
       const region=smooth(sy-2,sy+8,y)*(1-smooth(94,102,y))*(1-smooth(side?6:8,side?13:17,Math.abs(x-(sx+armSide*4))));
-      let angle=(i?stride:opposite)*(run?.46:.32);
+      let angle=(i?stride:opposite)*(run?.6:.42);
       angle+=g.arms[i]*(side?face:1);
       const ax=x-sx,ay=y-sy;
       dx+=region*(Math.cos(angle)*ax-Math.sin(angle)*ay-ax);
@@ -87,7 +87,7 @@
     // the visible boot rigid instead of splitting/stretching it into opposing halves.
     if((direction==='left'||direction==='right')&&(state==='RUN'||state.startsWith('WALK'))){
       const stride=Math.sin(frame/frames*Math.PI*2),x=direction==='left'?54:55,hip=direction==='left'?65:63;
-      c.save();c.translate(hip-stride*(state==='RUN'?6:4),101-Math.max(0,-stride)*5);c.rotate(stride*.15);
+      c.save();c.translate(hip-stride*(state==='RUN'?8:5.5),101-Math.max(0,-stride)*6);c.rotate(stride*.2);
       c.globalAlpha=.88;c.drawImage(img,x,102,20,23,x-hip,1,20,23);c.restore();
     }
     // Sparse top rows preserve the face; finer rows resolve arms, knees and boots.
@@ -112,5 +112,5 @@
     if(state==='EMOTE_CELEBRATE'){for(let i=0;i<8;i++){const a=i*Math.PI/4-Math.PI/2,r=i%2?4:14;const x=Math.cos(a)*r,y=Math.sin(a)*r;i?c.lineTo(x,y):c.moveTo(x,y)}c.closePath();c.fillStyle='#ffe59f';c.fill();}
     c.restore();
   }
-  window.TsukiyomiRig={paint,point,gesture,expression,version:4};
+  window.TsukiyomiRig={paint,point,gesture,expression,version:5};
 })();

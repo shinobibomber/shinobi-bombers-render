@@ -1,0 +1,212 @@
+[
+  [
+    "const PK=[['Bounty Hunter','+15% Ryo from defeated ninja'],['Armor Breaker','+1 damage to elite enemies and bosses'],['Wind Step','+15% movement speed'],['Fast Charge','+50% chakra recovery'],['Chakra Saver','20% chance an attack costs no chakra'],['Piercing Shuriken','Attacks pass through one stone wall'],['Swift Hands','15% shorter attack cooldown']];",
+    "const PK=CombatRules.PERKS.map(p=>[p.name,p.description]);",
+    1
+  ],
+  [
+    "function perks(r){const pool=[0,1,2,3,4,6];if(r>0)pool.push(5);const out=[];for(let n=0;n<r+1;n++)out.push(pool.splice(Math.random()*pool.length|0,1)[0]);return out}",
+    "function perks(r){return CombatRules.normalizePerks(r,[],n=>Math.floor(Math.random()*n))}",
+    1
+  ],
+  [
+    "[15,18]",
+    "[17,20]",
+    2
+  ],
+  [
+    "damage(h){return Math.max(1,Math.round(h.pw*1000)/1000)}",
+    "damage(h){return CombatRules.damage(h)}",
+    1
+  ],
+  [
+    "cooldown(h){return Math.max(.6,1.6-h.sp*.05)*(has(h,6)?.85:1)}",
+    "cooldown(h){return CombatRules.cooldown(h)}",
+    1
+  ],
+  [
+    "h.bm=h.r+1;h.rg=h.r+1;if(h.r===5){h.bm=5;h.rg=5}",
+    "h.bm=CombatRules.volley(h);h.rg=CombatRules.range(h);",
+    1
+  ],
+  [
+    "bm:Math.min(r,4)+1,rg:Math.min(r,4)+1",
+    "bm:r===5?7:r+1,rg:r===5?6:r+1",
+    1
+  ],
+  [
+    "h.st*50",
+    "CombatRules.maxChakra(h)",
+    20
+  ],
+  [
+    "(has(h,3)?1.5:1)",
+    "(has(h,3)?1.15:1)",
+    3
+  ],
+  [
+    "(has(h,2)?1.15:1)",
+    "CombatRules.movementMultiplier(h)",
+    1
+  ],
+  [
+    "(bonus?1.15:1)",
+    "(bonus?1.03:1)",
+    1
+  ],
+  [
+    " function target(x,y,range,pierce=false){for(const [dx,dy] of D){let walls=0;for(let n=1;n<=range;n++){const a=x+dx*n,b=y+dy*n;if(a<0||b<0||a>=W||b>=H)break;if(G[b][a].k===1){if(!pierce||++walls>1)break;continue}if(G[b][a].k>1)return {x:a,y:b}}}return null}",
+    " function target(x,y,range,priority=false){const choices=[];for(const [dx,dy]of D)for(let n=1;n<=range;n++){const a=x+dx*n,b=y+dy*n;if(a<0||b<0||a>=W||b>=H||G[b][a].k===1)break;if(G[b][a].k>1){choices.push({x:a,y:b,hp:G[b][a].hp,boss:!!G[b][a].boss,kind:G[b][a].k});break}}if(priority)choices.sort((a,b)=>Number(b.boss)-Number(a.boss)||b.kind-a.kind||b.hp-a.hp);return choices[0]||null}",
+    1
+  ],
+  [
+    " think=function(h){const x=Math.round(h.x),y=Math.round(h.y);h.x=x;h.y=y;const range=h.rg,t=target(x,y,range,has(h,5));if(t){const kind=h.r>=4?(h.id%2?'rasengan':'chidori'):['shuriken','twin','fire','lightning'][h.r],available=Math.max(0,h.bm-bombs.filter(b=>b.o===h.id).length),count=Math.min(available,Math.floor(h.en));for(let i=0;i<count;i++){bombs.push({x,y,tx:t.x,ty:t.y,t:.35,life:.35,d:GameBalance.damage(h),o:h.id,kind,volleyIndex:i});h.en=Math.max(0,h.en-(has(h,4)&&Math.random()<.2?0:1))}h.cd=GameBalance.cooldown(h);h.p=[]}else{h.p=bfs(x,y,(a,b)=>!!target(a,b,range,has(h,5)))||[];h.cd=.35}};",
+    " think=function(h){if(h.en<1||h.cd>0)return;const x=Math.round(h.x),y=Math.round(h.y);h.x=x;h.y=y;const range=CombatRules.range(h),t=target(x,y,range,has(h,1));if(t){if(!CombatRules.consume(h))return;const kind=h.r>=4?(h.id%2?'rasengan':'chidori'):['shuriken','twin','fire','lightning'][h.r];bombs.push({x,y,tx:t.x,ty:t.y,t:.35,life:.35,d:GameBalance.damage(h),o:h.id,kind,volleyIndex:0,visualVolley:CombatRules.volley(h)});window.CombatClient?.attack(h);h.cd=GameBalance.cooldown(h);h.p=[]}else{h.p=bfs(x,y,(a,b)=>!!target(a,b,range,has(h,1)))||[];h.cd=.35}};",
+    1
+  ],
+  [
+    "const index=bombs.indexOf(b);if(index>=0)bombs.splice(index,1);",
+    "const index=bombs.indexOf(b);if(index<0)return;bombs.splice(index,1);",
+    1
+  ],
+  [
+    "c.hp=GameBalance.money(c.hp-b.d-(h&&has(h,1)&&c.k>=4?1:0))",
+    "c.hp=GameBalance.money(c.hp-b.d)",
+    1
+  ],
+  [
+    "detail:{kind,reward,bonus:!!(h&&has(h,0))}",
+    "detail:{kind,reward,bonus:!!(h&&has(h,0)),heroId:h?.tokenId}",
+    1
+  ],
+  [
+    "unit.cd-=dt;if(!h||unit.cd>0)continue;",
+    "unit.cd-=dt;if(!h||h.en<1||unit.cd>0)continue;",
+    1
+  ],
+  [
+    "const damage=GameBalance.money(GameBalance.damage(h)+(has(h,1)?1:0));",
+    "const damage=GameBalance.damage(h);",
+    1
+  ],
+  [
+    "const count=h.bm;for(let i=0;i<count;i++)state.projectiles.push({heroId:h.id,slot:unit.slot,rank:h.r,damage,ultimate,index:i,remaining:.45,lifetime:.45});",
+    "const count=CombatRules.volley(h);if(!CombatRules.consume(h))continue;window.CombatClient?.huntAttack(h,state.entry?.id);for(let i=0;i<count;i++)state.projectiles.push({heroId:h.id,slot:unit.slot,rank:h.r,damage:i===0?damage:0,cosmetic:i!==0,ultimate,index:i,remaining:.45,lifetime:.45});",
+    1
+  ],
+  [
+    "if(state.hp<=0)break;const applied=",
+    "if(shot.cosmetic)continue;if(state.hp<=0)break;const applied=",
+    1
+  ],
+  [
+    "c.globalAlpha=1/* hunt heroes never tire */;",
+    "c.globalAlpha=h.en<1?.45:1;",
+    1
+  ],
+  [
+    "firing?'a1':SS.idleName(now,h.id)",
+    "firing?'a1':h.en<1?'s0':SS.idleName(now,h.id)",
+    1
+  ],
+  [
+    "/* no chakra bar */}",
+    ";c.fillStyle='#14212a';c.fillRect(p.x-35,p.y+34,70,4);c.fillStyle=colors[h.r];c.fillRect(p.x-35,p.y+34,70*Math.min(1,h.en/CombatRules.maxChakra(h)),4)}",
+    1
+  ],
+  [
+    "h.en=Math.min(CombatRules.maxChakra(h),CombatRules.maxChakra(h)*ratio)",
+    "h.en=Number.isFinite(descriptor.chakra?.value)?Math.min(CombatRules.maxChakra(h),descriptor.chakra.value):Math.min(CombatRules.maxChakra(h),CombatRules.maxChakra(h)*ratio)",
+    1
+  ],
+  [
+    "if(claim)accept(data);return data.chest",
+    "if(claim)accept(data);window.CombatClient?.reconcile(data.chest);return data.chest",
+    1
+  ],
+  [
+    "1 chakra per projectile",
+    "1 chakra per attack",
+    2
+  ],
+  [
+    "Chunin and above carry perks (jutsu) such as bonus Ryo, extra damage, speed or faster recovery.",
+    "Every hero has permanent passive perks. 1 Attack = Hero Power Damage = 1 Chakra. Skill VFX = 0 Additional Chakra.",
+    1
+  ],
+  [
+    "Genin: 1 perk · Chunin: 2 · Jonin: 3 · Elite: 4 · Legend: 5 · Mythic (NFT): 6.",
+    "Genin 1/1 · Chunin 2/2 · Jonin 3/3 · Elite 4/4 · Legend 5/5 · Mythic 7/7.",
+    1
+  ],
+  [
+    "if(h.en<1||h.cd>0)return;const x=",
+    "if(h.en<1||h.cd>0||window.CombatClient&&!CombatClient.canAttack(h))return;const x=",
+    1
+  ],
+  [
+    "['hunt-board','hunt-enter','hunt-report']",
+    "['hunt-board','hunt-enter','hunt-ready','hunt-report']",
+    1
+  ],
+  [
+    "const team=BattleRoster.list().slice().sort((a,c)=>c.pw-a.pw).slice(0,5);",
+    "let team=BattleRoster.list().filter(h=>h.en>=1).sort((a,c)=>c.pw-a.pw).slice(0,5);",
+    1
+  ],
+  [
+    "const stage=entry.guardian+1,max=1e12;",
+    "if(entry.pending)return toast('Waiting for the entry payment to finalize.');if(entry.team)team=entry.team.map(id=>S.h.find(h=>h.tokenId===id)).filter(Boolean);for(const h of team){const u=entry.combat?.team.find(u=>u.id===h.tokenId);if(u)h.en=u.energy}const stage=entry.guardian+1,max=1e12;",
+    1
+  ],
+  [
+    "team:team.map((h,slot)=>({id:h.id,slot,cd:slot*.06,shots:0}))",
+    "team:team.map((h,slot)=>({id:h.id,slot,cd:slot*.06,shots:0,contract:entry.combat?.team.find(u=>u.id===h.tokenId)}))",
+    1
+  ],
+  [
+    "away.forEach((h,i)=>{h.en=chakra[i]<1?Math.min(CombatRules.maxChakra(h),chakra[i]+dt/60*(has(h,3)?1.15:1)):chakra[i]})",
+    "away.forEach((h,i)=>{h.en=chakra[i]})",
+    1
+  ],
+  [
+    "const h=S.h.find(h=>h.id===unit.id);unit.cd-=dt;if(!h||h.en<1||unit.cd>0)continue;",
+    "const h=S.h.find(h=>h.id===unit.id);unit.cd-=dt;if(!h)continue;const u=unit.contract,scheduled=u?Math.min(u.energy,Math.max(0,Math.floor((Date.now()-u.started)/u.cooldown)+1)):unit.shots+1;if(u){h.en=Math.max(0,u.energy-unit.shots);if(unit.shots>=scheduled)continue}else if(h.en<1||unit.cd>0)continue;",
+    1
+  ],
+  [
+    "Every 8 attacks · ${h.r>=4?'2.2×':'1.8×'} damage + nearby splash</span>${h.r===5?'<small> · Mythic: visual only, normal damage</small>':''}",
+    "Every 8 attacks · visual flourish only · 0 additional chakra</span>",
+    1
+  ],
+  [
+    "  if(S.v2.skillVersion!==2){S.h.forEach(h=>{const allowed=perks(h.r);h.pk=[...new Set((h.pk||[]).filter(k=>Number.isInteger(k)&&k>=0&&k<7&&(h.r>0||k!==5)))].slice(0,h.r+1);for(const k of [...allowed,0,1,2,3,4,6,5])if(h.pk.length<h.r+1&&!h.pk.includes(k)&&(h.r>0||k!==5))h.pk.push(k)});S.v2.skillVersion=2}",
+    "  if(S.v2.skillVersion!==3){S.h.forEach(h=>{h.pk=CombatRules.normalizePerks(h.r,h.pk,n=>Math.floor(Math.random()*n))});S.v2.skillVersion=3}",
+    1
+  ],
+  [
+    "h.pk.length+' / '+(h.r+1)",
+    "h.pk.length+' / '+CombatRules.perkCount(h.r)",
+    1
+  ],
+  [
+    "time:60,elapsed:0,team:team.map",
+    "time:Math.max(0,Math.min(60,(entry.started+60000-Date.now())/1000)),elapsed:0,team:team.map",
+    1
+  ],
+  [
+    "baseStats={pw:roll(),sp:roll(),st:roll()};return{id:",
+    "baseStats={pw:roll(),sp:roll(),st:roll()};const h={id:",
+    1
+  ],
+  [
+    "z:0,pk:perks(r)}}",
+    "z:0,pk:perks(r)};h.en=CombatRules.maxChakra(h);h.rg=CombatRules.range(h);return h}",
+    1
+  ],
+  [
+    " projectiles · ",
+    " visual projectiles · ",
+    5
+  ]
+]

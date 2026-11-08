@@ -1,4 +1,4 @@
-/* Tsukiyomi animation adapter v4: expressive gestures and readable reactions.
+/* Tsukiyomi animation adapter v5: brighter seven-trail visuals and rarity names only.
  * Observes authoritative gameplay events; never applies damage. Approved views are skinned,
  * not replaced with another hero. See metadata/animations.json and ASSET_AUDIT.md. */
 (() => {
@@ -15,7 +15,7 @@
   function reset() { controller?.clear(); for(const s of slots)s.active=false; shots=new WeakMap();completed=new WeakSet(); }
   const ready=api.ready;
   api.runtimeReady=sprites.ready=Promise.all([ready,fetch(new URL('metadata/animations.json',root)).then(r=>{if(!r.ok)throw Error('Missing Mythic runtime manifest');return r.json()})]).then(([,data])=>{
-    if(data.version!==2 || data.hero.stars!==7 || data.hero.rank!==5)throw Error('Invalid Mythic registration');
+    if(data.version!==2 || data.hero.rarity!=='Mythic' || data.hero.rank!==5)throw Error('Invalid Mythic registration');
     manifest=api.animationSource=data;
     observedStage=S.map;
     const preload0=api.preload;let loadAuthored;
@@ -57,8 +57,9 @@
       const progress=Number.isFinite(b.life)&&b.life>0?Math.max(0,Math.min(1,1-b.t/b.life)):0;
       const frame=shot.skill==='void_shuriken'?2+Math.floor(progress*4)%4:Math.min(7,Math.floor(progress*8));
       const width=(level()===1?48:62)*p.scale;
-      if(!reduced()&&level()>1){const dx=Math.cos(p.angle)*10*p.scale,dy=Math.sin(p.angle)*10*p.scale;draw(c,skillFrame(shot.skill,frame),p.x-dx,p.y-dy,width*.8,p.angle,.16)}
-      draw(c,skillFrame(shot.skill,reduced()?4:frame),p.x,p.y,width,p.angle,.85);return true;
+      // combat-rules/client.js draws the seven decorative copies around this ONE native
+      // projectile. This renderer supplies one brighter cached core, never another fan.
+      draw(c,skillFrame(shot.skill,reduced()?4:frame),p.x,p.y,width,p.angle,reduced()?.72:.98);return true;
     };
     ca.drawActorEffects=function(c,h,time,p){
       if(!api.isMythic(h))return oldActor.apply(this,arguments);
@@ -67,12 +68,12 @@
       if(['ATTACK','SKILL_DRAGON_SLASH'].includes(r.state)){
         const progress=Math.max(0,(time-r.started)/manifest.states[r.state].durationMs);
         const angle=r.direction==='back'?-Math.PI/2:r.direction==='front'?Math.PI/2:p.flip?Math.PI:0;
-        if(progress>.2 && progress<.9)draw(c,skillFrame('dragon_slash',Math.min(7,Math.floor(progress*8))),p.x+Math.cos(angle)*10*p.scale,p.y-14*p.scale+Math.sin(angle)*8*p.scale,66*p.scale,angle,.62);
+        if(progress>.2 && progress<.9)draw(c,skillFrame('dragon_slash',Math.min(7,Math.floor(progress*8))),p.x+Math.cos(angle)*10*p.scale,p.y-14*p.scale+Math.sin(angle)*8*p.scale,66*p.scale,angle,reduced()?.5:.88);
       }
       if(r.state==='ULTIMATE_DRAGON_ASCENSION'){
         const s=manifest.skills.mythic_dragon_ascension,index=Math.min(11,Math.floor((time-r.started)/s.durationMs*12));
         // The body stays visible below the rising dragon; no screen flash or camera shake.
-        draw(c,skillFrame('mythic_dragon_ascension',reduced()?7:index),p.x,p.y-3*p.scale,(level()===1?104:150)*p.scale,0,reduced()?.45:.82);
+        draw(c,skillFrame('mythic_dragon_ascension',reduced()?7:index),p.x,p.y-3*p.scale,(level()===1?104:150)*p.scale,0,reduced()?.45:.95);
       }
       if(r.state==='VICTORY' && !reduced()){
         const progress=(time-r.started)/manifest.states.VICTORY.durationMs;
@@ -118,13 +119,13 @@
       if(!allowFX())return true;
       let record=shots.get(shot);if(!record){record={born:time,skill:shotSequence++%2?'void_shuriken':'dragon_slash'};shots.set(shot,record)}
       const step=reduced()?4:Math.floor((time-record.born)/85)%6;
-      draw(c,skillFrame(record.skill,step),x,y,shot.ultimate?90:66,angle,.8);return true;
+      draw(c,skillFrame(record.skill,step),x,y,shot.ultimate?90:66,angle,reduced()?.6:.95);return true;
     };
     ca.drawHuntImpact=function(c,hit,p,id){
       if(!owner(id))return hunt0.apply(this,arguments);
       if(!allowFX())return true;
       const name=hit.ultimate?'mythic_dragon_ascension':'raijin_field',s=manifest.skills[name],age=Math.max(0,.8-hit.life);
-      draw(c,skillFrame(name,reduced()?5:Math.min(s.requiredFrames-1,Math.floor(age/.8*s.requiredFrames))),p.x,p.y,hit.ultimate?160:90,0,Math.min(1,hit.life/.2)*.75);return true;
+      draw(c,skillFrame(name,reduced()?5:Math.min(s.requiredFrames-1,Math.floor(age/.8*s.requiredFrames))),p.x,p.y,hit.ultimate?160:90,0,Math.min(1,hit.life/.2)*(reduced()?.55:.9));return true;
     };
     api.spawnSkill=(skill,h,tile)=>spawn(skill,h,tile?.x,tile?.y);
     sprites.clearCache?.();return true;
@@ -201,7 +202,7 @@
       if(age>=duration||!owner(slot.owner)||!G[slot.y]?.[slot.x]){slot.active=false;continue}
       if(layer==='ground'&&slot.name!=='raijin_field')continue;
       const frame=reduced()?Math.min(s.requiredFrames-1,slot.startFrame+2):slot.startFrame+Math.floor(Math.max(0,age)*s.fps/1000),p=geo.proj(slot.x+.5,slot.y+.5,0),scale=geo.Sg(slot.y+.5);
-      draw(c,skillFrame(slot.name,frame,layer),p[0],p[1],(level()===1?76:104)*scale,0,Math.min(1,(duration-age)/150)*.7);
+      draw(c,skillFrame(slot.name,frame,layer),p[0],p[1],(level()===1?76:104)*scale,0,Math.min(1,(duration-age)/150)*(reduced()?.5:.9));
     }
   }
 })();

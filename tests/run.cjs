@@ -11,7 +11,16 @@ suites.push('referral-bound.cjs','prelaunch-server.cjs','prelaunch-creators.cjs'
 suites.push('mythic-animation-controller.cjs','mythic-animation.cjs');
 suites.push('mythic-motion-v3.cjs');
 suites.push('mythic-expressions.cjs');
+suites.push('combat-rules.cjs','combat-identity.cjs','combat-native.cjs','combat-adventure.cjs','combat-hunt.cjs');
 if(fs.existsSync(path.join(__dirname,'archive.cjs')))suites.unshift('archive.cjs');
 console.log('Global Chest regression runner · Node '+process.version+' · isolated fixtures only');
+const concurrency=Math.max(1,Math.min(2,Number(process.env.SHINOBI_TEST_CONCURRENCY)||1));
+if(concurrency===1){
 for(const name of suites){console.log('\nRunning '+name);const result=spawnSync(process.execPath,[path.join(__dirname,name)],{stdio:'inherit',env:process.env});if(result.status!==0){console.error('FAILED: '+name);process.exit(result.status||1)}}
 console.log('\nPASS: all '+suites.length+' Global Chest suites. No real wallet or external service transaction was executed.');
+
+}else{(async()=>{
+ let cursor=0,failed=0;
+ async function worker(){while(!failed&&cursor<suites.length){const name=suites[cursor++];console.log('Running '+name);const status=await new Promise(resolve=>{const child=require('node:child_process').spawn(process.execPath,[path.join(__dirname,name)],{stdio:'inherit',env:process.env});child.once('error',error=>{console.error(error);resolve(1)});child.once('exit',code=>resolve(code??1))});if(status!==0){console.error('FAILED: '+name);failed=status;}}}
+ await Promise.all(Array.from({length:concurrency},()=>worker()));if(failed)process.exitCode=failed;else console.log('PASS: all '+suites.length+' Global Chest suites with '+concurrency+' isolated workers. No real wallet or external service transaction was executed.');
+})().catch(error=>{console.error(error);process.exitCode=1});}

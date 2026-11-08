@@ -91,11 +91,11 @@
     },
     {
       "path": "gameplay-options/options.js",
-      "sha256": "31d8196d88847b842514e6b035c4ec540266989b34ca57889a7f118cd567633b"
+      "sha256": "fbd2f37644d39103f930c92a8d3353727cf46751c8c5d9a314ec763fa6f9bbd8"
     },
     {
       "path": "gameplay-options/server.cjs",
-      "sha256": "a4003c04a8364a194ab437711aad64740886da6ea22b2f3e3b777b30371c0249"
+      "sha256": "e4380323726807588fcfbda36d232f1cfdc42018ac349a31b7eab40978c52296"
     },
     {
       "path": "heroes-design/heroes-design.css",
@@ -103,7 +103,7 @@
     },
     {
       "path": "heroes-design/heroes-design.js",
-      "sha256": "295dd666d8a3694dba7303d1b499f258d0aa2a33684c5629ae619b7b6a0c9b26"
+      "sha256": "651b01720654488ff6cbf35e910128a006589b536cc687a874a63ec76aebb307"
     },
     {
       "path": "heroes-design/heroes-menu.png",
@@ -207,7 +207,7 @@
     },
     {
       "path": "reveal-design/reveal-design.js",
-      "sha256": "59e6c806fad03b1586ef66907ac4148b0d3dc16fb9528ee8a0f36d1d04553402"
+      "sha256": "94788620085d72881d02c89bcff62f7bd64e8e11ae19e16d85c9d32eb4654716"
     },
     {
       "path": "reveal-design/reveal-design.png",
@@ -223,7 +223,7 @@
     },
     {
       "path": "roster-design/roster-design.js",
-      "sha256": "3f8b0fcf884325df71f0521f8e4f52ecfe33eafe0db510755c0ba22e220568a6"
+      "sha256": "be95bf7ab8be90aca325063cd4d2eae1c349d7dcfd4915e339224af100db4c98"
     },
     {
       "path": "roster-design/source.png",
@@ -259,7 +259,7 @@
     },
     {
       "path": "app/server/adventure.cjs",
-      "sha256": "ee8a74843e6d8e727a15566ac216bd42f0319a16e57105893a495706252bc3d2"
+      "sha256": "cb318726fcf2ad49e8760c6fb122c3f2966018d4d455c273b108bf8ff17c4ff8"
     },
     {
       "path": "app/server/create-treasury.cjs",
@@ -271,11 +271,11 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "079c98f39dff7bb97766c79646c52aab622565c4ce997dd04cfeeb653af7152b"
+      "sha256": "cf9fbbd36a7f177683d60fc65b0bfbb3f1bfb56db985b2545d2e14610e832104"
     },
     {
       "path": "app/server/gameplay-options.cjs",
-      "sha256": "a4003c04a8364a194ab437711aad64740886da6ea22b2f3e3b777b30371c0249"
+      "sha256": "e4380323726807588fcfbda36d232f1cfdc42018ac349a31b7eab40978c52296"
     },
     {
       "path": "app/server/init-db.cjs",
@@ -291,15 +291,15 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "93811b92aac1eaeec4c758cf79468e9d001862fa0fcd9e0f9450f20652b1741b"
+      "sha256": "fdd84bc362ee393a26a6cbca6821c00fb6167376014f7aec67247523a5149f22"
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "6b12e5ce00e3838d61d77255a9ab085b3396bf9d9c5d20a30bf4a9ebe2af1a9e"
+      "sha256": "84bc2ab573b2b84b20b3a215358f546ece92c63dea84803085b7a2466af946d1"
     },
     {
       "path": "app/server/store.cjs",
-      "sha256": "054330ad3e497be4536a49e30a901f3b8f443e8acbf063cc9342f5cd757f47d7"
+      "sha256": "d37a825ce627d5f9fe4d99e4dadeff8d84c83c13a59737788da9de07693df755"
     },
     {
       "path": "app/server/transaction-review.cjs",

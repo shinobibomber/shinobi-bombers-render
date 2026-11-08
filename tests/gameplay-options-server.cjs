@@ -17,8 +17,8 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
  const ready=make(5);ready.battleReady=ids(ready);assert.throws(()=>economy.quote(ready,'fusion',{heroIds:ids(ready)}),/Reserve/);
  const batch=make(8),bq=economy.quote(batch,'fusion',{heroIds:batch.heroes.slice(0,6).map(h=>h.tokenId)});let rolls=[0,99];crypto.randomInt=(...args)=>args.length===1&&args[0]===100?rolls.shift():originalRandom(...args);const partial=economy.fulfill(batch,bq);crypto.randomInt=originalRandom;assert.equal(partial.result.fusion.succeeded,1);assert.equal(partial.result.fusion.failed,1);assert.equal(partial.profile.heroes.length,3);assert.equal(partial.result.fusion.totalCharged,50000);
  const legacy={...bq};delete legacy.fusion;assert.equal(roll(99,()=>economy.fulfill(batch,legacy)).result.outputs.length,2,'preexisting persisted quotes preserve guaranteed legacy outcomes');
- const now=Date.now(),online=make(12);online.battleReady=online.heroes.map(h=>h.tokenId);const data={map:1,target:0,hp:10000,kills:0,pending:0,claimed:0,last:now-1000,active:true,team:online.battleReady.slice(0,10),energy:Object.fromEntries(online.heroes.map((h,i)=>[h.tokenId,i<10?0:300]))};
- online.senseiReturnPercent=50;const lower=adventure.advance(structuredClone(data),online,now,true);assert(lower.team.includes('hero-10'),'50% setting returns 60%-rested hero');online.senseiReturnPercent=90;const upper=adventure.advance(structuredClone(data),online,now,true);assert(!upper.team.includes('hero-10'),'90% setting keeps same hero resting');
+ const now=Date.now(),online=make(12);online.battleReady=online.heroes.map(h=>h.tokenId);const data={map:1,target:0,hp:10000,kills:0,pending:0,claimed:0,last:now-1000,active:false,team:online.battleReady.slice(0,10),energy:Object.fromEntries(online.heroes.map((h,i)=>[h.tokenId,i<10?0:90]))};
+ online.senseiReturnPercent=50;const lower=adventure.advance(structuredClone(data),structuredClone(online),now,false);assert(lower.team.includes('hero-10'),'50% setting returns 60%-rested hero');online.senseiReturnPercent=90;const upper=adventure.advance(structuredClone(data),online,now,true);assert(!upper.team.includes('hero-10'),'90% setting keeps same hero resting');
  online.senseiEnabled=false;const stopped=adventure.advance({...structuredClone(data),last:now-3600000,active:false},online,now,false);assert.equal(stopped.pending,0,'disabled Sensei earns no offline loot');
  const db=new PGlite();await db.exec(fs.readFileSync(path.join(root,'schema.sql'),'utf8'));const pool={query:(s,a)=>db.query(s,a),async connect(){return{query:(s,a)=>db.query(s,a),release(){}}}};let clock=now;const store=new Store(pool,'test-options',()=>clock),wallet='local-test';
  await store.transaction(async c=>{await store.locked(c,wallet);await c.query('UPDATE ryo_accounts SET balance=1000000');await store.profileLocked(c,wallet);await c.query('UPDATE ryo_profiles SET data=$1',[JSON.stringify(make(8))])});
@@ -38,38 +38,7 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
  assert.throws(()=>economy.quote(full(500),'summon',{quantity:1}),/holds 500 of 500 heroes. Fuse heroes to free 1 slot/);
  assert.throws(()=>economy.quote(full(498),'summon',{quantity:5}),/holds 498 of 500 heroes. Fuse heroes to free 3 slot/);
  assert.equal(economy.quote(full(500),'fusion',{heroIds:ids(full(500))}).product,'fusion','a full collection can still fuse');
- // Adventure kill reports: the server pays the battle's reported kills within the heroes' damage.
- {
-  const team=make(5,4,5);team.heroes.forEach(h=>h.baseStats={pw:15,sp:15,st:15});team.battleReady=team.heroes.map(h=>h.tokenId);const t0=1_900_000_000_000,report=(totals,stage=1,id='session-aaaa-1111')=>({killSession:id,killTotals:totals,killStage:stage});
-  let d=adventure.advance(undefined,team,t0,true,60,report([0,0,0,0,0,0,0,0]));
-  d=adventure.advance(d,team,t0+5000,true,60,report([3,0,1,0,0,0,1,0]));
-  assert.equal(d.reportedKills,5,'every reported kill within budget is credited');
-  assert.equal(d.pending,3*Math.floor(35625*.6)+Math.floor(81250*.6)+Math.floor(812500*.6),'paid at the server tier table and loot rate');
-  const paid=d.pending;d=adventure.advance(d,team,t0+10000,true,60,report([3,0,1,0,0,0,1,0]));
-  assert.equal(d.reportedKills,5,'replaying the same totals pays nothing more');
-  d=adventure.advance(d,team,t0+15000,true,60,report([3,1,1,0,0,0,1,0]));
-  assert.equal(d.pending-paid>=Math.floor(35625*.6*1.15),true,'the Fortune bonus pays 15% more');
-  // Fabricated totals are capped by the damage the team could deal, then wait for more budget.
-  const before=d.reportedKills;d=adventure.advance(d,team,t0+20000,true,60,report([3,1,1,0,0,0,100000,0]));
-  const trained=require(path.join(root,'gameplay-options.cjs')).trainedStats,capacity=team.heroes.reduce((n,h)=>n+5/(Math.max(.6,1.6-trained(h).sp*.05)*.85)*(h.rank+1)*(trained(h).pw+1),0)*1.5+4000;
-  assert(((d.reportedKills-before)*1625)<=capacity,'a fake diamond flood is limited to the team damage');
-  assert(d.reportedKills-before<100000,'most of the fake kills are not paid');
-  // Malformed reports fall back to the server's own battle; under-reported stages are floored.
-  assert.equal(require(path.join(root,'gameplay-options.cjs')).killReport({killSession:'x',killTotals:[1]}),null);
-  const floor=adventure.advance({...structuredClone(d),reportedKills:25000},team,t0+25000,true,60,report([3,1,1,0,0,0,100000,0],1));
-  assert(floor.map>=251,'a client cannot report stage 1 to dodge the payout taper');
- }
- // Trained heroes: a Lv5 Genin has +5 Power over its base, so the battle kills far faster than base
- // stats suggest, and fights on after base stamina would be spent. Each sync must
- // credit every kill made so far, not queue them for later.
- {
-  const team=make(10,0,5);team.heroes.forEach(h=>h.baseStats={pw:1,sp:1,st:1});team.battleReady=team.heroes.map(h=>h.tokenId);
-  const t0=1_900_000_000_000,clientDps=10*(1+5)/(1.6-1*.05),report=k=>({killSession:'trained-genin-1',killTotals:[k,0,0,0,0,0,0,0],killStage:1});
-  let d=adventure.advance(undefined,team,t0,true,60,report(0)),behind=0;
-  for(let t=1500;t<=210000;t+=1500){const kills=Math.floor(t/1000*clientDps/100);d=adventure.advance(d,team,t0+t,true,60,report(kills));behind=Math.max(behind,kills-(d.reportedKills||0))}
-  assert.equal(behind,0,'trained heroes have every kill credited on the sync right after it');
-  assert(require(path.join(root,'gameplay-options.cjs')).teamDps(team.heroes)>=clientDps,"the budget covers the battle's trained damage");
- }
+ // Combat protocol, finite chakra and immediate rewards are covered by combat-adventure.cjs and realtime-rewards-guard.cjs.
  // Training: max level 5. Genin/Chunin gain +1 Power per level-up, Jonin/Elite/Legend a random +1
  // (server-rolled), and Lv4→5 gives two +1s. Prices are per step × rank, plus the 2% studio fee.
  {
@@ -108,10 +77,10 @@ function roll(value,fn){crypto.randomInt=(...args)=>args.length===1&&args[0]===1
  {
   const go=require(path.join(root,'gameplay-options.cjs'));
   const old=economy.normalizeProfile({dojo:0,heroes:[0,1,2,3,4].map(r=>({tokenId:'ident-'+r,rank:r,level:1,name:'I'+r,baseStats:{pw:5,sp:5,st:5}}))});
-  for(const h of old.heroes){assert.equal(h.perks.length,h.rank+1);assert.equal(new Set(h.perks).size,h.perks.length,'perks are distinct');assert(h.perks.every(k=>[0,1,2,3,4,5,6].includes(k)));assert(Number.isInteger(h.look)&&h.look>=0&&h.look<8);if(h.rank===0)assert(!h.perks.includes(5),'Genin never roll Piercing Shuriken')}
+  for(const h of old.heroes){assert.equal(h.perks.length,h.rank+1);assert.equal(new Set(h.perks).size,h.perks.length,'perks are distinct');assert(h.perks.every(k=>[0,1,2,3,4,5,6].includes(k)));assert(Number.isInteger(h.look)&&h.look>=0&&h.look<8);}
   assert.deepEqual(economy.normalizeProfile(structuredClone(old)).heroes,old.heroes,'old heroes keep the same perks and look on every read');
   const summoned=economy.fulfill(old,economy.quote(old,'summon',{quantity:5})).result.outputs;
-  assert(summoned.every(h=>h.identityVersion===1&&h.perks.length===h.rank+1&&Number.isInteger(h.look)),'summons roll their own identity');
+  assert(summoned.every(h=>h.identityVersion===2&&h.perks.length===h.rank+1&&Number.isInteger(h.look)),'summons roll their own identity');
   const fuse=make(5,0,1);const fused=roll(0,()=>economy.fulfill(fuse,economy.quote(fuse,'fusion',{heroIds:ids(fuse)}))).result.outputs[0];
   assert.equal(fused.perks.length,2,'a fused Chunin gets two perks');assert(Number.isInteger(fused.look));
   assert.deepEqual(go.rollIdentity(4,()=>0),{perks:[0,1,2,3,4],look:0});

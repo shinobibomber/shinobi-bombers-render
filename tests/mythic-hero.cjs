@@ -28,16 +28,20 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     await p.evaluate(() => go(1)); await p.waitForFunction(() => WebsiteDesign.current() === 'heroes' && document.querySelector('.sbw-scr.on .sbw-hcard.mythic'));
     await p.waitForFunction(() => MythicHero.assetsReady, null, { timeout: 20000 });
     const card = await p.locator('.sbw-scr.on .sbw-hcard.mythic').textContent();
-    assert.match(card, /MYTHIC/); assert.equal((card.match(/★/g)||[]).length,7,'exactly seven Mythic stars'); assert.match(card, /NFT/); assert.match(card, /Tsukiyomi[\s\S]*Dragon Slash/);
+    assert.match(card, /MYTHIC/); assert.equal((card.match(/★/g)||[]).length,0,'rarity name only'); assert.match(card, /NFT/); assert.match(card, /Tsukiyomi[\s\S]*Dragon Slash/);
     await p.locator('.sbw-scr.on .sbw-hcard.mythic .sbw-hc-name').click();
     await p.waitForSelector('.sbw-scr.on .sbw-myth');
     const det = await p.evaluate(() => { const d = document.querySelector('.sbw-scr.on .sbw-hd2');
       return { text: d.innerText.replace(/\s+/g, ' '), sell: d.querySelector('[data-k="sell"]').disabled, rank: d.querySelector('.sbw-h2-rank').textContent, train: d.querySelector('[data-k="train"]').textContent.replace(/\s+/g, ' ') }; });
     assert.equal(det.rank, 'MYTHIC');
-    assert.match(det.text, /Exclusive Mythic NFT/i); assert.equal((det.text.match(/★/g)||[]).length,7);
+    assert.match(det.text, /Exclusive Mythic NFT/i); assert.equal((det.text.match(/★/g)||[]).length,0);
     assert.match(det.text, /NFT verified · TsuK…1111/, 'the box NFT is shown');
     for (const skill of ['Dragon Slash', 'Void Shuriken', 'Raijin Field', '⚡ Dragon Ascension']) assert(det.text.includes(skill), skill + ' listed');
-    assert.match(det.text, /PERKS 6 \/ 6/, 'six perks');
+    assert.match(det.text, /PERKS 7 \/ 7/, 'seven perks');
+    const energyView = await p.evaluate(() => { const h=S.h.find(h=>h.r===5); window.__mythicPanel=document.querySelector('.sbw-scr.on .sbw-myth'); h.en-=2; return {count:h.pk.length,capacity:CombatRules.maxChakra(h),expected:h.st*55}; });
+    assert.equal(energyView.count,7); assert.equal(energyView.capacity,energyView.expected);
+    await p.waitForTimeout(500);
+    assert(await p.evaluate(()=>window.__mythicPanel===document.querySelector('.sbw-scr.on .sbw-myth')),'chakra updates preserve focused Mythic controls');
     assert.equal(det.sell, true); assert.match(det.text, /NFT ONLY/, 'traded only as the NFT');
     assert.match(det.train, /60,000/, 'Lv 2 → 3 training at the Legend price (20,000 × 3)');
     // His portrait is his own art (not one of the eight shared models), with the aura around it.
@@ -69,7 +73,7 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     assert.deepEqual(frames.fx.slice(1), ['raijin_field', 'mythic_dragon_ascension']); assert(['dragon_slash', 'void_shuriken'].includes(frames.fx[0]));
     assert.equal(frames.legendFx, false); assert.equal(frames.meta, 21);
     // Skills are visuals on normal shots: Tsukiyomi volleys like a Legend (5 shots, 1 chakra each).
-    assert.deepEqual(await p.evaluate(() => { const h = S.h.find(x => x.r === 5), l = S.h.find(x => x.r === 4); return [h.bm, h.rg, l.bm]; }), [5, 5, 5]);
+    assert.deepEqual(await p.evaluate(() => { const h = S.h.find(x => x.r === 5), l = S.h.find(x => x.r === 4); return [h.bm, h.rg, l.bm]; }), [7, 7, 5]);
 
     // Adventure: he deploys, walks and fights with his own effects; nothing else changes.
     await p.evaluate(() => { go(0); Experience.workAll(); });
@@ -93,5 +97,5 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     await p.screenshot({ path: path.join(output, 'mythic-phone.png') });
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: seven-star Tsukiyomi NFT display, own directional pose fallback, aura/skills, NFT checks, unchanged Adventure/Boss Hunt mechanics and phone layout. Authored animation assets remain incomplete.');
+  console.log('PASS: Mythic rarity-name NFT display, own directional pose fallback, aura/skills, NFT checks, unchanged Adventure/Boss Hunt mechanics and phone layout. Authored animation assets remain incomplete.');
 })().catch(e => { console.error(e); process.exit(1); });

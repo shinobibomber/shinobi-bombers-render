@@ -108,6 +108,10 @@ that they are unavailable.
 
 ## Handoff notes (Claude ↔ Codex)
 
+### Nov 8, 2026 — beta combat/perk update (validated for test-server release)
+
+Work is isolated on `review/combat-perks-beta-2026-11-08`. New `combat-rules/` sources and `apply-combat-rules.cjs` are applied after network setup. Shared seven-perk registry, persistent chakra, Power-based attacks, paid-hunt snapshots and referral ledger integration replace old combat formulas. Mythic animation presentation version 5 uses names without stars, base stats 17–20, seven perks/visual shots and range 6+1. Existing approved Aura and NFT ownership infrastructure are retained. See `docs/COMBAT_PERKS_BETA.md` for migration and the remaining browser-owned Adventure map boundary. Never deploy this work to the `live` branch without explicit authorization. Validation: Node 22 lint passed; all 60 isolated game suites and 20 website checks passed; the real-time guard covers 48 teams across six ranks. Desktop/phone Codex, movement frames, skill effects and a ten-Mythic team were rendered and inspected. Release only through beta’s `main` branch; production remains on `live`. Deployment asset/browser evidence is written locally to `tests/out/beta-combat-live.json`.
+
 - 2026-11-08 MYTHIC EXPRESSIONS V4 — continued polish authorized for TEST SERVER ONLY.
   Targets main / shinobi-bombers-beta; never push live. See mythic-hero/MOTION_V4.md.
   Added localized idle blink/breathing, attack anticipation/recovery, articulated bomb,

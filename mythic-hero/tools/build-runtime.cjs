@@ -3,7 +3,8 @@ const fs=require('node:fs'),path=require('node:path');
 const dir=path.resolve(__dirname,'../assets/metadata');
 function buildRuntime() {
   const meta=JSON.parse(fs.readFileSync(path.join(dir,'tsukiyomi.json'),'utf8'));
-  meta.hero.stars=7; meta.hero.classification='Exclusive Mythic NFT';
+  delete meta.hero.stars; meta.hero.classification='Exclusive Mythic NFT';
+  meta.hero.presentation={rarityLabel:'Mythic',baseStatBand:[17,20],visualVolley:7,baseRange:6,effectiveRange:7,perks:7};
   const states={}, add=(name,frames,durationMs,loop=false,priority=1,events={})=>states[name]={frames,frameWidth:128,frameHeight:128,durationMs,fps:frames*1000/durationMs,loop,priority,anchor:[64,124],direction:name.startsWith('WALK_')?name.slice(5).toLowerCase():'facing',events,texture:null,assetStatus:'runtime-skinned-approved-views',fallback:'approved-view-skeletal-mesh'};
   add('IDLE',8,1600,true,0);
   for(const dir of ['FRONT','LEFT','RIGHT','BACK'])add('WALK_'+dir,8,800,true,0);
@@ -22,7 +23,7 @@ function buildRuntime() {
     add(state,count,durationMs,false,3,{visualPeak:Math.floor(count*.65)});
     skills[key]={name:s.name,path:null,frameWidth:320,frameHeight:320,frameCount:count,fps:s.fps,anchor:[160,160],requiredFrames:count,durationMs,frames:Array.from({length:count},(_,i)=>i),eventsMs:Object.fromEntries(Object.entries(s.events||{}).map(([k,v])=>[k,v*1000/s.fps])),renderer:'celestial-v3',assetStatus:'procedural-vfx-with-generated-dragon',legacySource:{path:s.path,frameCount:s.frameCount},damage:false};
   }
-  const data={version:2,presentationVersion:4,hero:meta.hero,frame:meta.frame,states,skills,vfxSources:[{path:'skills/dragon-spirit-v3.png',width:1254,height:1254,kind:'generated-single-sprite'}],aura:{source:'metadata/tsukiyomi.json',unchanged:true,quality:'legacy-extracted-layers'},limits:{actors:128,effects:48,lowEffects:12,textureFrames:160},assetStatus:'articulated-views-and-celestial-vfx'};
+  const data={version:2,presentationVersion:5,hero:meta.hero,frame:meta.frame,states,skills,vfxSources:[{path:'skills/dragon-spirit-v3.png',width:1254,height:1254,kind:'generated-single-sprite'}],aura:{source:'metadata/tsukiyomi.json',unchanged:true,quality:'legacy-extracted-layers'},limits:{actors:128,effects:48,lowEffects:12,textureFrames:160},assetStatus:'articulated-views-and-celestial-vfx'};
   fs.writeFileSync(path.join(dir,'tsukiyomi.json'),JSON.stringify(meta,null,2)+'\n');
   fs.writeFileSync(path.join(dir,'animations.json'),JSON.stringify(data,null,2)+'\n');
   return data;

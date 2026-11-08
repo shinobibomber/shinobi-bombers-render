@@ -1,6 +1,6 @@
 /* Tsukiyomi (Mythic, rank 5) ownership on the real store (in-memory Postgres) with a fake Solana RPC:
  * dormant until configured; one hero per box NFT held (mint list or verified collection); Mythic
- * stats 15–18 with six perks; Legend training prices; never listed on the Market; the hero (with its
+ * stats 17–20 with seven perks; Legend training prices; never listed on the Market; the hero (with its
  * training) follows the NFT to the next holder and leaves the old wallet and its battle-ready team;
  * RPC failures never remove a hero; checks are cached and rate limited; a full collection waits. */
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), { PGlite } = require('@electric-sql/pglite');
@@ -60,9 +60,10 @@ function rpc() {
   let r = await mythic.sync(store, alice, conn, { env });
   assert.deepEqual([r.enabled, r.mints], [true, [m1]], 'only the configured box NFT (amount 1, 0 decimals)');
   let [t] = await mythicOf(alice);
-  assert.deepEqual([t.tokenId, t.name, t.nft.mint, t.mythic, 'stars' in t, t.level, t.perks.length], ['mythic-' + m1, 'Tsukiyomi', m1, 'tsukiyomi', false, 1, 6]);
-  assert(['pw', 'sp', 'st'].every(k => t.baseStats[k] >= 15 && t.baseStats[k] <= 18), 'Mythic base stats roll 15–18');
-  assert.equal(gameplay.trainedStats({ rank: 5, baseStats: {}, bonus: {} }).pw, 15, 'Mythic stat band starts at 15');
+  assert.deepEqual([t.tokenId, t.name, t.nft.mint, t.mythic, 'stars' in t, t.level, t.perks.length], ['mythic-' + m1, 'Tsukiyomi', m1, 'tsukiyomi', false, 1, 7]);
+  assert.deepEqual(t.perks.slice().sort(),[0,1,2,3,4,5,6]);
+  assert(['pw', 'sp', 'st'].every(k => t.baseStats[k] >= 17 && t.baseStats[k] <= 20), 'Mythic base stats roll 17–20');
+  assert.equal(gameplay.trainedStats({ rank: 5, baseStats: {}, bonus: {} }).pw, 17, 'Mythic stat band starts at 17');
   assert.equal(gameplay.trainingPrice(5, 1), gameplay.trainingPrice(4, 1), 'Mythic trains at Legend prices');
   const trained = { ...t, level: 1, bonus: { pw: 0, sp: 0, st: 0 } }; gameplay.levelUp(trained, () => 1);
   assert.deepEqual([trained.level, trained.bonus.sp], [2, 1], 'Mythic levels gain a random stat like Legend');
@@ -116,5 +117,5 @@ function rpc() {
   await setup(dave, [hero('d1', 0, 1), hero('d2', 0, 1)]);
   r = await mythic.sync(store, dave, conn, { env, force: true });
   assert.deepEqual([r.waiting, (await mythicOf(dave)).length], [0, 1]);
-  console.log('PASS: Mythic Tsukiyomi ownership: dormant until configured, mint list and verified collection checks (finalized), 15–18 stats with 6 perks, Legend training prices, no Market listing, the hero and its training follow the NFT (old team cleared), outages never remove it, cached and rate-limited checks, full collections wait.');
+  console.log('PASS: Mythic Tsukiyomi ownership: dormant until configured, mint list and verified collection checks (finalized), 17–20 stats with 7 perks, Legend training prices, no Market listing, the hero and its training follow the NFT (old team cleared), outages never remove it, cached and rate-limited checks, full collections wait.');
 })().catch(e => { console.error(e); process.exit(1); });

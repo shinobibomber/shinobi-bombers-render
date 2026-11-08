@@ -15,3 +15,7 @@ roster-design/roster-design.js text eol=lf
 tier-auras/tier-auras.js text eol=lf
 map-design/maps.json text eol=lf
 tier-auras/manifest.json text eol=lf
+
+gameplay-options/options.js text eol=lf
+
+gameplay-options/server.cjs text eol=lf

@@ -1,6 +1,6 @@
 /* Tsukiyomi, the Mythic Shinobi (rank 5). Rendering only: the hero's frames, his existing
    Mythic Aura and his skill effects replace the shared art for Mythic heroes. Damage, chakra,
-   rewards and collisions stay with the game's own rules (Legend's ultimate rules apply).
+   rewards and collisions stay with the game's authoritative combat rules.
    Assets and metadata: assets/mythic-hero/ (built by mythic-hero/tools/build-assets.cjs). */
 (() => {
   const sprites = window.ShinobiSprites, previousReady = sprites.ready;
@@ -16,10 +16,10 @@
     get auraEnabled() { try { return localStorage.getItem(AURA_KEY) !== 'off'; } catch { return true; } },
     setAura(on) { try { localStorage.setItem(AURA_KEY, on ? 'on' : 'off'); } catch {} auraCache.clear(); dispatchEvent(new CustomEvent('mythic-aura-changed', { detail: { on: !!on } })); },
     skills: [
-      { key: 'dragon_slash', name: 'Dragon Slash', text: 'A violet crescent blade on his normal shots (1 attack, 1 chakra).' },
-      { key: 'void_shuriken', name: 'Void Shuriken', text: 'A spinning celestial shuriken. Alternates with Dragon Slash.' },
-      { key: 'raijin_field', name: 'Raijin Field', text: 'A violet lightning field where his attacks land.' },
-      { key: 'mythic_dragon_ascension', name: 'Mythic Dragon Ascension', text: 'Every 8th volley: a spectral dragon rises around him (visual only, normal damage).', ultimate: true }
+      { key: 'dragon_slash', name: 'Dragon Slash', text: 'Seven violet trails decorate one attack: Hero Power damage, 1 chakra. VFX cost 0 additional chakra.' },
+      { key: 'void_shuriken', name: 'Void Shuriken', text: 'A celestial shuriken volley decorates one attack. No extra damage or chakra cost.' },
+      { key: 'raijin_field', name: 'Raijin Field', text: 'Violet lightning marks the native impact. Cosmetic only: no extra damage or chakra.' },
+      { key: 'mythic_dragon_ascension', name: 'Mythic Dragon Ascension', text: 'Every 8th attack: a spectral dragon rises. Cosmetic only: Hero Power damage, 1 attack chakra, 0 additional skill chakra.', ultimate: true }
     ]
   };
 

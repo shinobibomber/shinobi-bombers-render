@@ -50,7 +50,7 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
       others: [{ name: 'KuroSenpai', damage: 42000 }, { name: 'YukiChan', damage: 31000 }], yesterday: { day: '2030-01-01', pool: 18000, winners: [{ rank: 1, name: 'KuroSenpai', wallet: 'Kuro…1111', damage: 99000, prize: 10800 }] } };
     await login(p);
     // Nobody deployed and some heroes out of chakra: the hunt team does not need either.
-    await p.evaluate(() => S.h.filter(h => h.tokenId).forEach((h, i) => { h.on = false; if (i % 2) h.en = 0; }));
+    await p.evaluate(() => S.h.filter(h => h.tokenId).forEach((h, i) => { h.on = false; h.en = CombatRules.maxChakra(h); }));
     await p.evaluate(() => go(8)); await p.waitForFunction(() => WebsiteDesign.current() === 'boss-hunt' && document.querySelector('.sbw-scr.on .bh-pool'));
     const view = await p.evaluate(() => { const sec = document.querySelector('.sbw-scr.on');
       return { art: [...sec.querySelectorAll('.hs:not([hidden])')].map(e => e.dataset.sbwid), text: sec.innerText, tiles: sec.querySelectorAll('.bh-tile:not(.empty)').length, fit: getComputedStyle(sec.querySelector('.sbw-bh-canvas')).objectFit }; });
@@ -71,8 +71,9 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     assert.deepEqual(await p.evaluate(() => V2.bossState().team.map(u => u.id)), strongest, 'the hunt team is the 5 strongest battle-ready heroes');
     const chakra = await p.evaluate(() => S.h.map(h => h.en));
     await p.waitForFunction(() => V2.bossState().damage > 0, null, { timeout: 15000 });
+    await p.waitForFunction(() => V2.bossState().team.some(u=>u.shots>=3), null, { timeout: 15000 });
     const later = await p.evaluate(() => S.h.map(h => h.en));
-    assert(later.every((en, i) => en >= chakra[i] - 1e-9), 'the hunt spends no chakra (heroes at 0 chakra still fight)');
+    assert(later.some((en,i)=>en<chakra[i]),'actual Boss Hunt attacks spend chakra');assert(later.every(en=>en>=0),'no negative chakra');
     assert.match(await p.locator('.sbw-scr.on .bh-go').textContent(), /HUNTING · \d+s/);
     assert(await p.evaluate(() => V2.bossState().time <= 60), 'hunts last 60 seconds');
     await p.screenshot({ path: path.join(output, 'boss-hunt-fight.png') });
@@ -136,5 +137,5 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     assert.equal(await p.evaluate(() => document.getElementById('p8')?.innerText.includes('Adventure pauses')), false, 'no screen says Adventure pauses');
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: Summon History lists summoned heroes (owned, fused, pending, refunded); Boss Hunt shows only live panels, auto-picks the 5 strongest battle-ready heroes, takes the 10,000 Ryo entry (80% pool, 10% treasury, 10% burn), runs 60 seconds without chakra, shows daily and weekly rankings (Legend/Elite prizes), reports damage to the daily ranking and prize pool, fits phones, and Adventure keeps fighting during a hunt.');
+  console.log('PASS: Summon History lists summoned heroes (owned, fused, pending, refunded); Boss Hunt shows only live panels, auto-picks the 5 strongest battle-ready heroes, takes the 10,000 Ryo entry (80% pool, 10% treasury, 10% burn), runs 60 seconds with one chakra per attack, shows daily and weekly rankings (Legend/Elite prizes), reports damage to the daily ranking and prize pool, fits phones, and Adventure keeps fighting during a hunt.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -13,7 +13,7 @@ const addr = k => k.publicKey.toBase58(), newWallet = () => addr(web3.Keypair.ge
    fs.mkdirSync(path.join(fixture, 'server')); fs.mkdirSync(path.join(fixture, 'public'));
    for (const file of ['service.cjs', 'store.cjs', 'adventure.cjs','economy.cjs','market.cjs','netlify-handler.cjs']) fs.copyFileSync(path.join(root, 'app/server', file), path.join(fixture, 'server', file));
    fs.copyFileSync(path.join(root, 'app/public/index.html'), path.join(fixture, 'public/index.html'));
-   const expected = originalRead(path.join(root, 'app/server/schema.sql'), 'utf8'), at = expected.indexOf('\n-- Creators Portal v1:'); assert(at > 0);
+   const expected = originalRead(path.join(root, 'app/server/schema.sql'), 'utf8').replace(/\n-- Combat contract v1[\s\S]*$/, ''), at = expected.indexOf('\n-- Creators Portal v1:'); assert(at > 0);
    fs.writeFileSync(path.join(fixture, 'server/schema.sql'), expected.slice(0, at));
    const sources = [...['schema.sql','player-schema.sql'].map(file => path.join(root, 'creators-portal',file)), path.join(root, 'prelaunch/schema.sql'),path.join(root,'sr-revenue/schema.sql')];
    fs.readFileSync = function (name, options) { const value = originalRead.apply(this, arguments); return sources.includes(path.resolve(String(name))) && options === 'utf8' ? value.replace(/\r?\n/g, '\r\n') : value; };
@@ -50,10 +50,13 @@ const addr = k => k.publicKey.toBase58(), newWallet = () => addr(web3.Keypair.ge
    await store.settlePurchase(wallet, requestId, status); return row;
  }
  async function progress(wallet, target = 100) {
-   let state = await adventure.adventure(store, wallet, { active: true }, 1e12), steps = 0;
+   const rules=require('../app/server/combat-rules.cjs'),before=await store.profile(wallet),energy=new Map(before.heroes.map(h=>[h.tokenId,h.chakra?.value??rules.maxChakra(h)]));
+   const report=await require('./combat-report-fixture.cjs').driver(store,wallet,()=>now);let state = await adventure.adventure(store, wallet, { active: true,report:report() }, 1e12), steps = 0;
    while (number((await rows('SELECT proof FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [wallet]))[0].proof.kills) < target) {
-     now += 5000; state = await adventure.adventure(store, wallet, { active: true }, 1e12); if (++steps > 100) throw Error('verifier did not progress');
+     now += 5000; state = await adventure.adventure(store, wallet, { active: true,report:report() }, 1e12); if (++steps > 100) throw Error('verifier did not progress');
    }
+   const actual=(await rows('SELECT data FROM ryo_adventures WHERE scope=$1 AND wallet=$2',[wallet]))[0].data,after=await store.profile(wallet),accepted=actual.combatSessions[report().killSession].heroes;
+   for(const h of after.heroes)if(accepted[h.tokenId]?.accepted)assert(Math.abs(energy.get(h.tokenId)-h.chakra.value-accepted[h.tokenId].accepted)<.1,'referral qualification observes combat without a second chakra debit');
    return state;
  }
  const number = v => Number(v || 0);

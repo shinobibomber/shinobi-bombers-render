@@ -1,7 +1,7 @@
 {
   "version": 3,
   "source": "approved-views-skeletal-mesh",
-  "generatorSha256": "d59c2da58c1142213b04724e75b5146919525befaa005f0ff4ef4334ea9aee01",
+  "generatorSha256": "053e8569cb39463e6a1fdbedc741c6b92e901714327997720befb8d047baea27",
   "clips": {
     "walk_front": {
       "path": "animations/rig-v3/walk_front.png",

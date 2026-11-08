@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "presentationVersion": 4,
+  "presentationVersion": 5,
   "hero": {
     "id": 13,
     "key": "tsukiyomi",
@@ -9,8 +9,18 @@
     "rarity": "Mythic",
     "rank": 5,
     "theme": "Lunar / Celestial / Void",
-    "stars": 7,
-    "classification": "Exclusive Mythic NFT"
+    "classification": "Exclusive Mythic NFT",
+    "presentation": {
+      "rarityLabel": "Mythic",
+      "baseStatBand": [
+        17,
+        20
+      ],
+      "visualVolley": 7,
+      "baseRange": 6,
+      "effectiveRange": 7,
+      "perks": 7
+    }
   },
   "frame": {
     "width": 128,
