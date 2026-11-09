@@ -289,7 +289,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     const action = body.action; limit(ip, action);
     if (action === 'status') return { data: status() };
     if (action === 'leaderboard') return { data: await leaderboard(body) };
-    if (action === 'founders-info') { let w = null; if (sessionToken(req)) { try { w = (await authenticated(req)).wallet; } catch {} } const [data, usd] = await Promise.all([need('founders.cjs').info(store, w, env), solUsd()]); if (usd) data.founders.usdPerSol = usd; return { data }; }
+    if (action === 'founders-info') { let w = null; if (sessionToken(req)) { try { w = (await authenticated(req)).wallet; } catch {} } const [data, usd] = await Promise.all([need('founders.cjs').info(store, w, env), solUsd()]); if (usd) data.founders.usdPerSol = usd; data.founders.wallet = w; return { data }; }
     if (action === 'challenge') {
       const w = wallet(body.wallet), nonce = crypto.randomBytes(16).toString('hex'), t = now();
       const message = siwsMessage(w, nonce, t);

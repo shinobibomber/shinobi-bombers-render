@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 9, 2026 — Founder box button fixes
+
+- If you are already signed in, the Founder box buttons now show "Buy now" with the price after you reload the page, instead of asking you to connect your wallet again. Your wallet reconnects when you press Buy.
+- The remaining-supply line shows its numbers again, for example "30 of 30 left · 1 SOL ≈ $86.74".
+
 ## November 9, 2026 — Founder box prices in USD and wallet approval
 
 - Founder box buttons now show the SOL price with an approximate US dollar value, for example "Buy now · 1 SOL (≈ $86.74)". You always pay the exact SOL price; the dollar value is a guide and is hidden if a reliable rate is not available.

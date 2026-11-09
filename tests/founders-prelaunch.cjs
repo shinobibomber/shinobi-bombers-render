@@ -51,7 +51,9 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
     let r = await call('founders-info'); assert.equal(r.status, 200);
     assert.deepEqual([r.body.founders.mode, r.body.founders.eligible, r.body.founders.tiers.mythic.price, r.body.founders.tiers.legacy.price, r.body.founders.tiers.mythic.remaining], ['off', false, 1, 0.5, 30]);
     assert.equal((await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000001' })).status, 401, 'buying needs sign-in');
+    assert.equal(r.body.founders.wallet, null, 'signed out: no wallet');
     const alice = key(), aliceCookie = await cookieOf(alice);
+    assert.equal((await call('founders-info', {}, aliceCookie)).body.founders.wallet, alice.wallet, 'signed in: the session wallet (recognised after a page reload)');
     r = await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000001' }, aliceCookie);
     assert.deepEqual([r.status, r.body.code], [403, 'FOUNDERS_CLOSED']);
     passed.push('public sale state without sign-in; buying needs sign-in; sales closed by default');

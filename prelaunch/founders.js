@@ -52,13 +52,24 @@
     if (!memo.startsWith('shinobi-founder-v1:' + tier + ':')) throw Error(label('err.program'));
     return true;
   }
+  /* Sign with the wallet account the buyer signed in with (owner). After a page reload the session is still valid but
+   * the wallet is not connected on this page: reconnect it silently, or (only one capable wallet) with its prompt. */
   async function signWith(owner, wire, network) {
-    const wallet = [...standard].find(w => w.accounts?.some(a => a.address === owner) && typeof w.features?.['solana:signTransaction']?.signTransaction === 'function')
-      || [...standard].find(w => normalized(w.name) === normalized(window.SBWallet?.active?.name) && typeof w.features?.['solana:signTransaction']?.signTransaction === 'function');
-    if (!wallet) throw Error(label('err.wallet'));
-    let account = wallet.accounts.find(a => a.address === owner);
-    if (!account) { const r = await wallet.features['standard:connect'].connect({ silent: true }); account = (r?.accounts || wallet.accounts).find(a => a.address === owner); }
-    if (!account) throw Error(label('err.wallet'));
+    const signers = [...standard].filter(w => typeof w.features?.['solana:signTransaction']?.signTransaction === 'function');
+    if (!signers.length) throw Error(label('err.wallet'));
+    const holds = w => (w.accounts || []).find(a => a.address === owner);
+    let wallet = signers.find(holds) || signers.find(w => normalized(w.name) === normalized(window.SBWallet?.active?.name)), account = wallet && holds(wallet);
+    for (const silent of [true, false]) {
+      if (account) break;
+      const tries = wallet ? [wallet] : silent ? signers : signers.length === 1 ? signers : [];
+      for (const w of tries) {
+        const connect = w.features?.['standard:connect']?.connect; if (typeof connect !== 'function') continue;
+        try { const r = await connect(silent ? { silent: true } : undefined); account = (r?.accounts || w.accounts || []).find(a => a.address === owner); }
+        catch (e) { if (!silent) throw e; }
+        if (account) { wallet = w; break; }
+      }
+    }
+    if (!account) throw Error(label('err.reconnect'));
     const out = await wallet.features['solana:signTransaction'].signTransaction({ account, transaction: wire, chain: 'solana:' + network });
     const signed = out?.[0]?.signedTransaction;
     if (!(signed instanceof Uint8Array)) throw Error(label('err.wallet'));
@@ -75,13 +86,16 @@
   }
 
   // usd: display-only SOL→USD rate from the server (founders-info.usdPerSol); the payment is always the exact SOL price.
-  let state = null, busy = '', note = '', usd = null;
-  const remember = s => { const r = Number(s?.founders?.usdPerSol); if (Number.isFinite(r) && r > 0) usd = r; return s; };
+  // signedIn: the session's wallet from founders-info, so a signed-in buyer is recognised after a page reload even
+  // before the wallet extension reconnects (SBWallet.active is only set by a connect on this page).
+  let state = null, busy = '', note = '', usd = null, signedIn = null;
+  const remember = s => { const r = Number(s?.founders?.usdPerSol); if (Number.isFinite(r) && r > 0) usd = r; if (s?.founders && 'wallet' in s.founders) signedIn = s.founders.wallet || null; return s; };
+  const ownerOf = () => window.SBWallet?.active?.address || signedIn;
   const money = x => { try { return new Intl.NumberFormat(document.documentElement?.lang || 'en-US', { style: 'currency', currency: 'USD' }).format(x); } catch { return '$' + x.toFixed(2); } };
   // Our own reservation for this tier that the buyer has not approved yet (e.g. they rejected it in the wallet).
   const ownPending = (tier, owner) => { const p = read(); return !!owner && p?.account === owner && p?.tier === tier; };
   function stateFor(tier) {
-    const f = state?.founders, t = f?.tiers?.[tier], owner = window.SBWallet?.active?.address;
+    const f = state?.founders, t = f?.tiers?.[tier], owner = ownerOf();
     if (busy === tier) return 'minting';
     if (!f) return 'soon';
     if (f.mine?.status === 'confirmed') return f.mine.tier === tier ? 'confirmed' : 'already';
@@ -98,10 +112,10 @@
     for (const tier of ['mythic', 'legacy']) {
       const t = f?.tiers?.[tier], s = stateFor(tier), btn = $('#fdBuy-' + tier), left = $('#fdLeft-' + tier);
       const price = t?.price, usdText = usd && price ? money(price * usd) : '';
-      if (left) left.textContent = t ? label('supply').replace('{n}', t.remaining).replace('{of}', t.supply) + (usdText ? ' · ' + label('usd').replace('{price}', price).replace('{usd}', usdText) : '') : '';
+      if (left) left.textContent = t ? label('supply').replace('[n]', t.remaining).replace('[of]', t.supply) + (usdText ? ' · ' + label('usd').replace('[price]', price).replace('[usd]', usdText) : '') : '';
       let text = label('state.' + s);
-      if (s === 'eligible' && price) text = label(usdText ? 'state.buyPrice' : 'state.buySol').replace('{price}', price).replace('{usd}', usdText);
-      if (s === 'resume' && price) text = label('state.resume').replace('{price}', price);
+      if (s === 'eligible' && price) text = label(usdText ? 'state.buyPrice' : 'state.buySol').replace('[price]', price).replace('[usd]', usdText);
+      if (s === 'resume' && price) text = label('state.resume').replace('[price]', price);
       if (btn) { btn.textContent = text; btn.disabled = !['eligible', 'connect', 'resume'].includes(s) || !!busy; btn.dataset.state = s; }
     }
     const msg = $('#fdStatus'); if (msg) { msg.textContent = note; msg.hidden = !note; }
@@ -119,7 +133,7 @@
 
   /* No browser dialog: the buyer approves (or rejects) the exact payment in the wallet they signed in with. */
   async function buy(tier) {
-    const owner = window.SBWallet?.active?.address;
+    const owner = ownerOf();
     if (!owner) { document.querySelector('#connectBtn')?.click(); return; }
     const t = state?.founders?.tiers?.[tier]; if (!t) return;
     busy = tier; note = label('step.reserve'); render();
