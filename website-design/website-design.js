@@ -180,7 +180,7 @@
   }
   const HOME = {
     'logo': () => {}, 'prof': editNickname, 'mng': () => go(1), 't1': () => go(1), 't2': () => go(1), 't3': () => go(1), 't4': () => go(1), 't5': () => go(1),
-    'ev': () => openBox(),
+    'ev': () => openFounders(),
     'go1': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go2': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go3': () => notice('Daily missions', 'Daily missions are not available yet.'),
     'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => window.CreatorsPortal?.open(), 'news': () => window.CreatorsPortal?.openPlayer(),
     'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
@@ -271,11 +271,14 @@
     mk('i', '', b.chat).textContent = '[Global]'; mk('b', '', b.chat); mk('span', '', b.chat);
     // EVENT: the Limited Mythic NFT Box card covers the printed banner inside the ev hotspot.
     const evArt = b.st.querySelector('[data-sbwid="ev"] > .sl');
-    if (evArt) { b.box = place(mk('div', 'sbw-boxcard', evArt), 0, 0, 369, 132); b.box.innerHTML = '<img src="assets/mythic-box/box-256.webp" alt=""><div><small>LIMITED EVENT</small><b>MYTHIC NFT BOX</b><span>Mythic Tsukiyomi · 10% off</span><em>1 SOL · 20 pcs only</em></div><i>VIEW</i>'; }
+    if (evArt) { b.box = place(mk('div', 'sbw-boxcard', evArt), 0, 0, 369, 132); b.box.innerHTML = '<img src="/founders/art/mythic.png" alt=""><div><small>LIMITED EVENT</small><b>FOUNDER BOXES</b><span>Mythic &amp; Legacy · Founder sale</span><em>Founder sale</em></div><i>VIEW</i>'; }
     b.tiles = [1270, 1345, 1420, 1494, 1569].map((x, i) => { const t = place(mk('div', 'sbw-tile', b.st), x, 302, 66, 122); const cv = mk('canvas', '', t); cv.width = 132; cv.height = 150; mk('b', '', t); t.addEventListener('click', () => go(1)); return t; });
   };
   PAINT.home = (b, now) => {
-    if (b.box) { if (account() && !BOXS.busy && Date.now() - BOXS.at > 60000) boxLoad(); const i = BOXS.info; setText($('em', b.box), !i || !account() ? '1 SOL · 20 pcs only' : i.soldOut ? 'SOLD OUT · ' + i.supply + ' / ' + i.supply : (i.limitReached ? 'Owned ' + i.owned + ' · ' : (i.price || 1) + ' SOL · ') + i.remaining + ' / ' + i.supply + ' left'); b.box.classList.toggle('sold', !!i?.soldOut); }
+    // EVENT card: the live Founder sale (prices and boxes left come only from the server's founders-info).
+    if (b.box) { if (!FDS.busy && Date.now() - FDS.at > 60000) foundersLoad(); const f = FDS.info, t = f && f.tiers, sold = !!(t && t.mythic.soldOut && t.legacy.soldOut);
+      if (t) setText($('span', b.box), 'Mythic ' + t.mythic.price + ' · Legacy ' + t.legacy.price + ' SOL');
+      setText($('em', b.box), !t ? 'Founder sale' : f.paused ? 'Sale paused' : sold ? 'SOLD OUT' : t.mythic.remaining + ' + ' + t.legacy.remaining + ' left'); b.box.classList.toggle('sold', sold || !!(f && f.paused)); }
     const nickName = (gs() && gs().nick) || 'Shinobi', mine = owned(), dep = deployed();
     setText(b.name, nickName); setText(b.line, `${mine.length} Shinobi · ${dep.length}/10 deployed`);
     // Message IDs share one sequence, so the higher ID is the newer of Global and System.
@@ -733,6 +736,38 @@
     }
   }
   window.MythicBoxUI = { open: openBox };
+  /* Founder NFT Boxes (owner decision 2026-11-10): the Events card shows the live Founder sale and VIEW opens this pop-up;
+   * buying happens on the /founders page (it cannot be embedded: payment page with frame protection), opened in a new
+   * tab so the game stays open. Same-origin founders-info, no sign-in; cached 60 s, one request at a time. */
+  const FDS = { info: null, at: 0, busy: false };
+  async function foundersLoad() {
+    if (FDS.busy) return FDS.info; FDS.busy = true; FDS.at = Date.now();
+    try {
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch('/api/prelaunch', { method: 'POST', credentials: 'same-origin', signal: ctl.signal, headers: { 'Content-Type': 'application/json', 'X-SB-Prelaunch': '1' }, body: JSON.stringify({ action: 'founders-info' }) });
+      clearTimeout(timer); const f = (await r.json())?.data?.founders; if (f?.tiers?.mythic && f.tiers.legacy) FDS.info = f;
+    } catch {} finally { FDS.busy = false; }
+    return FDS.info;
+  }
+  // Benefit lines as on the Founders page (prelaunch/i18n/en.json fd.mythic.points / fd.legacy.points).
+  const FD_TIERS = { mythic: { name: "Mythic Founder's Box", art: '/founders/art/mythic.png', points: ['Exclusive Mythic Tsukiyomi + 1 Legend hero + 1 Elite hero', '10 Limited Hero Summon Passes (no Genin, no Mythic)', 'Free permanent Sensei', '10% game-service discount', '12-hour Chest claim cooldown'] },
+    legacy: { name: "Legacy Founder's Box", art: '/founders/art/legacy.png', points: ['1 Legend hero + 1 Elite hero', '10 Limited Hero Summon Passes (no Genin, no Mythic)', '7-day free Sensei trial; permanent Sensei for 0.2 SOL before it ends', '5% game-service discount', '12-hour Chest claim cooldown'] } };
+  function openFounders() {
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    const token = 'fd' + Date.now() + Math.random().toString(36).slice(2), ours = () => dlg.open && !!dlg.querySelector(`h2[data-founders="${token}"]`);
+    dlg.className = 'sbw-dialog sbw-fddlg';
+    const draw = () => {
+      const f = FDS.info, t = f && f.tiers, closed = !!(t && (f.paused || (t.mythic.soldOut && t.legacy.soldOut)));
+      const row = k => { const x = t && t[k], price = x ? Number(x.price) + ' SOL' + (Number(x.regularPrice) > Number(x.price) ? ` <s>${Number(x.regularPrice)} SOL</s>` : '') : '…';
+        const left = !x ? '' : x.soldOut ? 'SOLD OUT' : `${Number(x.remaining)} of ${Number(x.supply)} left`;
+        return `<div class="fd-tier ${k}${x && x.soldOut ? ' sold' : ''}"><img src="${FD_TIERS[k].art}" alt=""><div><b>${FD_TIERS[k].name}</b><span class="fd-price">${price}</span>${left ? `<em>${left}</em>` : ''}<ul>${FD_TIERS[k].points.map(p => `<li>${p}</li>`).join('')}</ul></div></div>`; };
+      dlg.innerHTML = `<h2 data-founders="${token}">Founder NFT Boxes</h2><p>Founder prices until each tier sells out. One box per wallet across both tiers.</p><div class="fd-tiers">${row('mythic')}${row('legacy')}</div>${f && f.paused ? '<p class="sbw-small">The Founder sale is paused right now.</p>' : ''}<div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Cancel</button><button type="button" class="sbw-btn" data-k="go">${closed ? 'View the Founders page ↗' : 'Buy on the Founders page ↗'}</button></div><p class="sbw-small">Opens the Founders page in a new tab; your game stays open here.</p>`;
+    };
+    draw();
+    dlg.onclick = e => { const k = e.target.closest('[data-k]')?.dataset.k; if (k === 'x') dlg.close(); else if (k === 'go') { window.open('/founders', '_blank', 'noopener'); dlg.close(); } };
+    if (!dlg.open) dlg.showModal();
+    foundersLoad().then(() => { if (ours()) draw(); });
+  }
 
   /* ---------- Heroes (game page 1) ---------- */
   const HF = [-1, -3, -2, 0, 1, 2, 3, 4], HFL = ['ALL', 'BATTLE-READY', 'RESERVE', 'GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND'];

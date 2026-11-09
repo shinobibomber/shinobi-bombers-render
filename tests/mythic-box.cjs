@@ -15,13 +15,10 @@ const login = async p => {
     f.box = { sold: 2, supply: 20 };
     await login(p);
     await p.evaluate(() => go(5)); await p.waitForFunction(() => WebsiteDesign.current() === 'home');
-    // Event card over the printed banner, with the live supply.
-    await p.waitForFunction(() => /18 \/ 20 left/.test(document.querySelector('.sbw-scr.on .sbw-boxcard em')?.textContent || ''), null, { timeout: 15000 });
-    const card = await p.locator('.sbw-scr.on .sbw-boxcard').textContent();
-    assert.match(card, /MYTHIC NFT BOX[\s\S]*Mythic Tsukiyomi · 10% off[\s\S]*1 SOL · 18 \/ 20 left/);
+    // The Events card now shows the Founder sale (tests/founders-event.cjs); the old box dialog stays reachable.
     await p.screenshot({ path: path.join(output, 'mythic-box-home.png') });
-    // Pressing the event opens the box: description, perks, supply and price.
-    await p.locator('.sbw-scr.on [data-sbwid="ev"]').click(); await p.waitForSelector('.sbw-boxdlg[open]');
+    // The old box dialog: description, perks, supply and price.
+    await p.evaluate(() => MythicBoxUI.open()); await p.waitForSelector('.sbw-boxdlg[open]');
     await p.waitForFunction(() => /18 of 20 left/.test(document.querySelector('.sbw-boxdlg')?.textContent || ''));
     const text = (await p.evaluate(() => document.querySelector('.sbw-boxdlg').innerText)).replace(/\s+/g, ' ');
     for (const re of [/LIMITED MYTHIC NFT BOX/, /EXCLUSIVE INITIAL INVESTOR OFFER/, /MYTHIC HERO \+ MYTHIC AURA/, /Mythic hero · Tsukiyomi/, /10% DISCOUNT ON ALL IN-GAME PURCHASES/,
@@ -54,7 +51,7 @@ const login = async p => {
     const phoneCard = await p.evaluate(() => { const r = document.querySelector('.sbw-scr.on .sbw-boxcard').getBoundingClientRect(); return r.width > 200 && r.left >= 0 && r.right <= innerWidth + 1; });
     assert.equal(phoneCard, true);
     await p.screenshot({ path: path.join(output, 'mythic-box-phone-home.png') });
-    await p.locator('.sbw-scr.on [data-sbwid="ev"]').click(); await p.waitForSelector('.sbw-boxdlg[open]');
+    await p.evaluate(() => MythicBoxUI.open()); await p.waitForSelector('.sbw-boxdlg[open]');
     const fits = await p.evaluate(() => { const d = document.querySelector('.sbw-boxdlg'); return d.scrollWidth <= d.clientWidth + 1 && d.getBoundingClientRect().right <= innerWidth + 1; });
     assert.equal(fits, true, 'the box dialog fits a phone');
     await p.screenshot({ path: path.join(output, 'mythic-box-phone.png') });

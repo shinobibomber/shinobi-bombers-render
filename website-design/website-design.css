@@ -161,6 +161,19 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-dtog.on{background:#17a34a;border-color:#4ef08a;color:#fff}
 #sbwLayer .sbw-dtl{position:absolute;z-index:12;display:flex;align-items:center;justify-content:center;border-radius:6px;background:linear-gradient(#ffd25a,#f2a01a);color:#2a1406;font:700 17px Rajdhani,sans-serif;pointer-events:none}
 .sbw-dialog .sbw-small{font-size:13px;color:#a99ad8}
+/* Founder NFT Boxes pop-up (Events card): both tiers side by side, stacked on phones. */
+.sbw-dialog.sbw-fddlg{width:min(780px,calc(100vw - 32px));max-width:min(780px,calc(100vw - 32px));box-sizing:border-box}
+.sbw-fddlg .fd-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin:10px 0}
+.sbw-fddlg .fd-tier{display:flex;gap:10px;min-width:0;padding:10px;border:1px solid #ffd257;border-radius:10px;background:linear-gradient(110deg,#3a1468,#1a0838 55%,#2a1a05)}
+.sbw-fddlg .fd-tier.legacy{border-color:#7fb4ff;background:linear-gradient(110deg,#14305a,#0a1430 55%,#1a1a2a)}
+.sbw-fddlg .fd-tier img{flex:none;width:84px;height:84px;border-radius:8px;object-fit:cover}
+.sbw-fddlg .fd-tier div{min-width:0}
+.sbw-fddlg .fd-tier b{display:block;font:800 18px/1.1 Rajdhani,sans-serif;color:#ffd257}
+.sbw-fddlg .fd-price{display:block;font-weight:700;color:#fff}
+.sbw-fddlg .fd-price s{margin-left:4px;color:#a99bc0;font-weight:400}
+.sbw-fddlg .fd-tier em{display:inline-block;margin:4px 0 2px;padding:1px 8px;border-radius:6px;background:#ffd257;color:#2a1000;font:800 12.5px Rajdhani,sans-serif;font-style:normal}
+.sbw-fddlg .fd-tier.sold em{background:#5a4a6a;color:#eee}
+.sbw-fddlg .fd-tier ul{margin:4px 0 0;padding-left:16px;font-size:12.5px;line-height:1.35;color:#e6dcf5}
 /* Summon History: summoned heroes per batch, newest first. */
 .sbw-dialog.sbw-history{width:min(860px,94vw);max-width:none;max-height:86vh;overflow:auto}
 .sbw-history .sbw-sh-top{position:sticky;top:-16px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-16px -18px 6px;padding:14px 18px 8px;background:linear-gradient(#1a0b40,#160a38)}
