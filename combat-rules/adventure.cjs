@@ -49,7 +49,7 @@ function advance(data,profile,now,active,ratePercent=50,report=null,onReward=nul
     for(const h of roster)if(!fighters.has(h.tokenId))C.setResting(h,true,at,profile.dojo);
     for(let i=0;i<team.length;i++){
      let h=team[i];const s=C.recover(h,at,profile.dojo);
-     if(s.value<1){const replacement=roster.find(x=>!team.includes(x)&&!(x.chakra?.lockUntil>at)&&C.recover(x,at,profile.dojo).value>=R.maxChakra(x)*profile.senseiReturnPercent/100);if(replacement){C.setResting(h,true,at,profile.dojo);h=team[i]=replacement;C.setResting(h,false,at,profile.dojo);d.teamSince[h.tokenId]=at;}}
+     if(s.value<1||s.napping){const replacement=roster.find(x=>!team.includes(x)&&!(x.chakra?.lockUntil>at)&&C.recover(x,at,profile.dojo).value>=R.maxChakra(x)*profile.senseiReturnPercent/100);if(replacement){C.setResting(h,true,at,profile.dojo);h=team[i]=replacement;C.setResting(h,false,at,profile.dojo);d.teamSince[h.tokenId]=at;}}
      const n=C.spend(h,Math.ceil((to-at)/1000/R.cooldown(h))+1,to,{dojo:profile.dojo,activeSince:at});
      for(let a=0;a<n;a++){d.hp-=R.damage(h);if(d.hp<=0){pay(d.target,h,to);d.target=d.kills%4;d.hp=HP[d.target];if(d.kills%20===0)d.map++;}}
     }

@@ -24,11 +24,13 @@
  const damage=h=>stat(h,'pw');
  const cooldown=h=>Math.round(Math.max(.6,1.6-stat(h,'sp')*.05)*(has(h,6)?.92:1)*1e6)/1e6;
  const maxChakra=h=>Math.round(stat(h,'st')*50*(has(h,4)?1.1:1)*1000)/1000;
+ // Owner decision 2026-11-10: a deployed hero that runs out rests until this share of its max chakra is back, then fights.
+ const REST_RESUME=.1,restTarget=h=>Math.max(1,Math.min(maxChakra(h),Math.round(maxChakra(h)*REST_RESUME*1000)/1000));   // never below 1: a rest always ends in an attack
  const recovery=(h,dojo=0,resting=true)=>((resting?DOJO[Math.max(0,Math.min(6,dojo|0))]:1)+(resting&&has(h,3)?.5:0))/60;
  const movementMultiplier=h=>has(h,2)?1.12:1;
  const range=h=>(rank(h)===5?6:rank(h)+1)+(has(h,5)?1:0);
  const volley=h=>rank(h)===5?7:rank(h)+1;
  const rewardMultiplier=h=>has(h,0)?1.03:1;
  function consume(h){if(!Number.isFinite(h.en)||h.en<1)return false;h.en-=1;return true;}
- return Object.freeze({VERSION,BANDS,COUNTS,DOJO,PERKS,rank,perkCount,normalizePerks,perks,has,stats,damage,cooldown,maxChakra,recovery,movementMultiplier,range,volley,rewardMultiplier,consume});
+ return Object.freeze({VERSION,BANDS,COUNTS,DOJO,PERKS,rank,perkCount,normalizePerks,perks,has,stats,damage,cooldown,maxChakra,REST_RESUME,restTarget,recovery,movementMultiplier,range,volley,rewardMultiplier,consume});
 });

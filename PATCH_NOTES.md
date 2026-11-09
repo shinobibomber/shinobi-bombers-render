@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Chakra rest at 10%
+
+- Deployed heroes that run out of chakra now rest until 10% of their chakra is back, then fight again at full speed until they run out. A better Dojo makes the rest much shorter (at the Legendary Dojo about 17 times shorter than at the Training Grounds; a strong hero rests about 73 minutes at the Training Grounds and about 6 minutes at the Legendary Dojo).
+- Every enemy kill is still added to your Chest as it happens, and Session gained rises with every kill.
+- Tip: hire a Sensei to swap rested bench heroes in while your deployed heroes rest.
+
 ## November 10, 2026 — Sign-in connection fix
 
 - Fixed: some players saw "Solana Mainnet request timed out" when signing in, usually because a VPN, firewall or privacy extension blocked the game's Solana connection. The game now switches automatically to a backup connection through shinobibombers.fun, so signing in, deposits and purchases keep working. A payment is never sent twice: if a payment's connection times out, the game asks you to refresh instead of paying again.
