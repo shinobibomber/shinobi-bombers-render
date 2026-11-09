@@ -125,6 +125,15 @@ With `PRELAUNCH_MODE=on` the live server runs **only** the pre-launch portal fro
 - **Legal pages:** Referral Rules and the Privacy notice describe what the code actually does. **Terms is a draft**,
   marked as such, to be replaced with reviewed text before launch.
 
+### Automatic public release (owner decision 2026-11-09)
+
+On the live server the game opens to the public by itself once the released SR mint is configured: `RYO_TOKEN_MINT`
+equal to `srMintAddress` in the reviewed treasury registry. `PRELAUNCH_MODE` and a valid `RELEASE_STAGE` are then
+overridden (an unknown `RELEASE_STAGE` still refuses to start), and `RYO_TREASURY_SECRET` is required.
+`GAME_LAUNCH_HOLD=on` keeps the pre-launch portal (rollback); for private testing with the real mint use
+`GAME_LAUNCH_HOLD=on` with `RELEASE_STAGE=private` and `RYO_PRIVATE_TEST_WALLETS`. Money features stay behind their own
+switches (see `docs/treasury/ACTIVATION_CHECKLIST.md`).
+
 ### Private live testing (Stage 1: owner only, portal stays public)
 
 `RELEASE_STAGE=private` together with `PRELAUNCH_MODE=on` loads the real game on the live server while the pre-launch

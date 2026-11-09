@@ -19,7 +19,7 @@ function start(extra) {
     });
     r.on('error', reject); r.end(body);
   });
-  return { child, ready, req };
+  return { child, ready, req, port };
 }
 
 (async () => {
@@ -38,6 +38,15 @@ function start(extra) {
     assert.equal((await a.req('GET', '/', 'evil.example')).status !== 301, true, 'unlisted hosts are never redirected (no open redirect)');
     passed.push('listed old host: page loads 301 to the same path and query on RYO_SITE_ORIGIN; /healthz, NFT metadata/art and API calls stay; other hosts untouched');
   } finally { a.child.kill(); }
+
+  // After the release the portal is gone: minted Founder NFTs still find their sale terms at /founders/terms.
+  const c = start({ PRELAUNCH_MODE: '' });
+  try {
+    await c.ready;
+    const r = await new Promise((resolve, reject) => { const q = http.request({ host: '127.0.0.1', port: c.port, path: '/founders/terms', headers: { host: 'new.example' } }, res => { let t = ''; res.on('data', d => t += d); res.on('end', () => resolve({ status: res.statusCode, text: t })); }); q.on('error', reject); q.end(); });
+    assert.equal(r.status, 200); assert.match(r.text, /One Founder box per wallet/); assert.doesNotMatch(r.text, /<script/i, 'read-only page, no scripts');
+    passed.push('after the release /founders/terms serves the Founder sale terms (no portal needed)');
+  } finally { c.child.kill(); }
 
   const b = start({});
   try {

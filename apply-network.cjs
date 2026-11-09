@@ -65,6 +65,7 @@ function applyNetwork(appDir = path.join(__dirname, 'app'), env = process.env) {
   const liveCheckout=path.join(appDir,'public/index.html');
   fs.writeFileSync(liveCheckout,require('./apply-sr-revenue.cjs').clientText(fs.readFileSync(liveCheckout,'utf8')));
   fs.writeFileSync(liveCheckout,require('./apply-treasury.cjs').liveClientText(fs.readFileSync(liveCheckout,'utf8')));
+  fs.writeFileSync(liveCheckout,require('./apply-live-economy.cjs').liveClientText(fs.readFileSync(liveCheckout,'utf8')));
   for (const patch of mainnetPatches) {
     const p = path.join(appDir, patch[0]);
     fs.writeFileSync(p, patchOnce(fs.readFileSync(p, 'utf8'), patch));

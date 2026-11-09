@@ -66,7 +66,7 @@ async function readChain(ctx,vaults){
   await ctx.checkNetwork();
   const {PublicKey}=require('@solana/web3.js'),{TOKEN_PROGRAM_ID}=require('@solana/spl-token');
   const mint=new PublicKey(ctx.mint),supply=await ctx.connection.getTokenSupply(mint,'finalized');
-  const rows=[{label:'Player custody',wallet:ctx.treasuryAddress},{label:'Studio fees',wallet:ctx.studioAddress},{label:'Revenue treasury',wallet:ctx.revenueAddress},...vaults];
+  const rows=[{label:'Player custody',wallet:ctx.treasuryAddress},{label:'Studio fees',wallet:ctx.studioAddress},{label:'Revenue treasury',wallet:ctx.revenueAddress},...vaults].filter(v=>v.wallet); // studio/revenue are optional on live
   const unique=[...new Set(rows.map(v=>v.wallet))];
   const balances=new Map(await Promise.all(unique.map(async wallet=>{
    const reply=await ctx.connection.getParsedTokenAccountsByOwner(new PublicKey(wallet),{mint},'finalized');

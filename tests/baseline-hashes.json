@@ -283,11 +283,11 @@
     },
     {
       "path": "app/server/netlify-handler.cjs",
-      "sha256": "9e21c28bf31d41a2e772c6b9a40a8463f4ddc2716af1faf4434dd75ba2159da5"
+      "sha256": "04fc70c5c44ae140225832c7905e7533fbb2c20a9042468002312ed76fc69bee"
     },
     {
       "path": "app/server/render-server.cjs",
-      "sha256": "44cb12ab082837de97eeb99b661a1ae56b15985f825866bf8089575a6fcd8af0"
+      "sha256": "d59d2ea7dd3a6b62d956de3c61a732cc58ffc5eea98d4d51b646eaaead9e14ff"
     },
     {
       "path": "app/server/schema.sql",
@@ -295,7 +295,7 @@
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "a13a818f4f9c541f1a0a0498d9d23d3569fbd01bed9c16d29668f55ec8328fc6"
+      "sha256": "ace65d9db15c787f789e6a76074f31626f564e1e1759cf9cd0f3cccfe03cbdf8"
     },
     {
       "path": "app/server/store.cjs",

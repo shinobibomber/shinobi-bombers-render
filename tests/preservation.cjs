@@ -5,6 +5,8 @@ for(const file of baseline.files){assert.equal(sha(fs.readFileSync(path.join(roo
 let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 // The last build step points image URLs at their WebP versions; restore the original names first.
 html=require('../apply-performance.cjs').restoreReferences(html);
+// Live economy (applied after the Founders step): fee-free deposit wallet hooks.
+for(const [before,after,count]of require('../apply-live-economy.cjs').clientPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact live economy client hook: '+before.slice(0,50));html=html.split(after).join(before)}
 // Founder's NFT Boxes (applied last): RyoPayments.founders.
 for(const [before,after]of require('../apply-founders.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact Founder hook');html=html.replace(after,()=>before)}
 for(const [before,after]of require('../apply-mythic-skill-rotation.cjs').patches.slice().reverse()){assert.equal(html.split(after).length-1,1,'one cosmetic skill identity per Hunt attack/impact');html=html.replace(after,before)}

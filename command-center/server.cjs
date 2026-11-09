@@ -165,7 +165,7 @@ async function health(ctx) {
     catch (e) { checks.rpc = e.status ? { status: 'mismatch', note: 'RPC genesis does not match this build\'s network.' } : { status: 'unavailable', note: e.timeout ? 'RPC did not answer within 5 seconds.' : 'RPC request failed.' }; }
   } else checks.rpc = { status: 'unavailable', note: 'No RPC check is available on this server.' };
   let release = { prelaunch: null, stage: null };
-  try { const n = require('./network.cjs'); release = { prelaunch: n.prelaunch(), stage: n.releaseStage() }; } catch {}
+  try { const n = require('./network.cjs'); release = { prelaunch: n.prelaunch(), stage: n.releaseStage(), mintReleased: n.mintReleased ? n.mintReleased() : false, launched: n.launched ? n.launched() : false, hold: !!String(process.env.GAME_LAUNCH_HOLD || '').trim() }; } catch {}
   let gates = null; try { gates = require('./launch-gates.cjs').publicGates(); } catch {}
   const integrity = readJson(path.join(__dirname, '../public/build-integrity.json'));
   const commit = String(process.env.RENDER_GIT_COMMIT || '').slice(0, 12) || null;

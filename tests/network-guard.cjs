@@ -78,7 +78,33 @@ const temps = [];
 
     // 4. Start-up guards for the live server.
     const dir = path.join(mainDir, 'server'), problems = env => network.startupProblems(env, dir).join('\n');
-    assert.equal(problems(MAINNET_ENV), '');
+    assert.equal(problems(MAINNET_ENV), '', 'a manual public release keeps its existing rules (RPC-only before the token)');
+    // Automatic release (2026-11-09): the released mint (= reviewed registry srMintAddress) opens the game by itself.
+    {
+      const regMod = require(path.join(dir, 'treasury-registry.cjs')), raw = JSON.parse(fs.readFileSync(regMod.FILE, 'utf8'));
+      const MINT = require(path.join(app, 'node_modules/@solana/web3.js')).Keypair.generate().publicKey.toBase58();
+      const pre = { ...MAINNET_ENV, PRELAUNCH_MODE: 'on', RELEASE_STAGE: 'portal' };
+      assert.equal(network.launched(pre, dir), false, 'no mint registered: still pre-launch');
+      regMod.useForIsolatedTest({ ...raw, srMintAddress: MINT });
+      try {
+        assert.equal(network.registryMint(dir), MINT);
+        assert.equal(network.launched({ ...pre, RYO_TOKEN_MINT: TESTER }, dir), false, 'a mint that is not the registered one never launches');
+        assert.equal(network.launched({ ...pre, RYO_TOKEN_MINT: MINT }, dir), true, 'the registered mint launches');
+        assert.equal(network.launched({ ...pre, RYO_TOKEN_MINT: MINT, GAME_LAUNCH_HOLD: 'on' }, dir), false, 'GAME_LAUNCH_HOLD keeps pre-launch');
+        assert.equal(network.launched({ ...pre, SOLANA_NETWORK: 'devnet', RYO_TOKEN_MINT: MINT }, dir), false, 'the test server never auto-launches');
+        const auto = { ...pre, RYO_TOKEN_MINT: MINT, RYO_TREASURY_SECRET: '[1]' };
+        assert.equal(problems(auto), '', 'PRELAUNCH_MODE=on and RELEASE_STAGE=portal are ignored once the mint is released');
+        assert.match(problems({ ...auto, RYO_TREASURY_SECRET: '' }), /needs RYO_TREASURY_SECRET/, 'released without custody refuses to start');
+        assert.equal(problems({ ...auto, RELEASE_STAGE: 'private', PRELAUNCH_MODE: '' }), '', 'a valid RELEASE_STAGE is overridden by the release');
+        assert.match(problems({ ...auto, RELEASE_STAGE: 'privte' }), /RELEASE_STAGE/, 'a typo still fails closed after release');
+        for (const v of ['enabled', 'hold', 'y', 'on.']) assert.equal(network.launched({ ...pre, RYO_TOKEN_MINT: MINT, GAME_LAUNCH_HOLD: v }, dir), false, 'GAME_LAUNCH_HOLD fails closed: ' + v);
+        for (const v of ['off', 'false', '0', 'no', '']) assert.equal(network.launched({ ...pre, RYO_TOKEN_MINT: MINT, GAME_LAUNCH_HOLD: v }, dir), true, 'GAME_LAUNCH_HOLD released by ' + JSON.stringify(v));
+        assert.match(problems({ ...auto, GAME_LAUNCH_HOLD: 'on', RELEASE_STAGE: 'private', RYO_PRIVATE_TEST_WALLETS: TESTER, DATABASE_URL: 'postgres://x' }), /^$/, 'hold → private live testing with the full money settings');
+        assert.equal(problems({ ...auto, GAME_LAUNCH_HOLD: 'on', DATABASE_URL: 'postgres://x' }), '', 'rollback: a held release keeps its settings while the portal serves');
+        assert.match(problems({ ...pre, RYO_TOKEN_MINT: TESTER, RYO_TREASURY_SECRET: '[1]', GAME_LAUNCH_HOLD: 'on', DATABASE_URL: 'postgres://x' }), /must not hold money settings/, 'a hold never excuses an unregistered mint');
+      } finally { regMod.useForIsolatedTest(raw); }
+      assert.equal(network.launched({ ...pre, RYO_TOKEN_MINT: MINT }, dir), false, 'registry restored');
+    }
     assert.match(problems({}), /built for Solana Mainnet/);
     assert.match(problems({ ...MAINNET_ENV, STARTER_PACK: 'on' }), /STARTER_PACK must be off/);
     assert.match(problems({ ...MAINNET_ENV, SOLANA_RPC_URL: '' }), /SOLANA_RPC_URL/);
@@ -150,7 +176,9 @@ const temps = [];
     // Allowed in principle, but the reviewed treasury registry still governs the mint (pending in this build).
     assert.equal(problems({ ...priv, ...money }), 'RYO_TOKEN_MINT is set but the SR mint is still pending in the reviewed treasury registry (treasury/treasury-registry.json). Register the mint through a reviewed commit first.',
       'private live testing holds complete money settings only under the same registry locks as launch');
-    assert.match(problems({ ...priv, RYO_TREASURY_SECRET: '[1]' }), /all money settings or none \(missing RYO_TOKEN_MINT, RYO_STUDIO_WALLET, RYO_REVENUE_WALLET\)/);
+    assert.match(problems({ ...priv, RYO_TREASURY_SECRET: '[1]' }), /all required money settings or none \(missing RYO_TOKEN_MINT\)/);
+    // Live economy (2026-11-09): custody + token are the required pair; the studio and game revenue wallets are optional.
+    assert.doesNotMatch(problems({ ...priv, RYO_TREASURY_SECRET: '[1]', RYO_TOKEN_MINT: TESTER }), /money settings or none/, 'custody + token without studio/revenue is complete on live');
     assert.match(problems({ ...pre, ...money }), /must not hold money settings/, 'the portal-only stage still refuses money settings');
     assert.match(problems({ ...pre, ...money, RELEASE_STAGE: 'portal' }), /must not hold money settings/);
     assert.match(problems({ ...priv, ...money, RYO_PRIVATE_TEST_WALLETS: '' }), /must not hold money settings/, 'no testers: no money settings');
@@ -159,7 +187,7 @@ const temps = [];
     assert.match(problems({ ...priv, STARTER_PACK: 'on' }), /STARTER_PACK must be off/);
     // The launch gates ship in the Mainnet build and default to closed there.
     const liveGates = require(path.join(mainDir, 'server/launch-gates.cjs'));
-    assert.deepEqual(Object.values(liveGates.publicGates({})), [false, false, false, false, false]);
+    assert.deepEqual(liveGates.publicGates({}), { summoning: false, marketplace: false, rewardClaims: false, solDeposits: false, solWithdrawals: false, bossHunt: false }, 'every gate, Boss Hunt included, is closed on the live build');
     // The real Mainnet pre-launch host publishes policy without mounting or contacting money services.
     const verifyLive=`(async()=>{const assert=require('node:assert/strict'),{server,prelaunch}=require('./server/site-server.cjs');await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;try{const policy=await(await fetch(base+'/economy-policy.json')).json();assert.equal(policy.mode,'live-sr');assert.equal(policy.network,'mainnet');assert.equal(policy.prelaunch,true);assert.equal(policy.monetaryEndpointsMounted,false);assert.deepEqual(policy.ratesBps,{lockedTreasury:5000,activeRewards:3000,communityRewards:1000,economicReserve:1000});assert.equal((await fetch(base+'/api/ryo',{method:'POST',body:'{}'})).status,403);assert.equal((await fetch(base+'/admin/')).status,404);const page=await fetch(base+'/treasury');assert.equal(page.status,200);assert.match(page.headers.get('content-security-policy'),/script-src 'self'/);assert.match(await page.text(),/Every SR wallet/);for(const a of ['/treasury/treasury.js','/treasury/treasury.css'])assert.equal((await fetch(base+a)).status,200);assert.equal((await fetch(base+'/treasury/../server/site-server.cjs')).status,404);assert.equal((await fetch(base+'/treasury',{method:'POST'})).status,405);const reg=await(await fetch(base+'/treasury-registry.json')).json();assert.equal(reg.readOnly,true);assert.equal(reg.prelaunch,true);assert.equal(reg.registry.destinations[0].address,'5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn');assert.equal(reg.registry.srMint.address,null);assert.equal(reg.verification.status,'unverified','unreachable RPC is unverified, never zero');assert.equal(reg.claimFunding.status,'not-configured');assert.equal(reg.claimFunding.availableRyo,null);assert.equal(reg.paymentsEnabled,false,'pre-launch: Mainnet payments disabled');let last=200;for(let i=0;i<60;i++)last=(await fetch(base+'/treasury-registry.json')).status;assert.equal(last,429,'public JSON is rate limited per client');assert.equal((await fetch(base+'/treasury')).status,200,'the page itself stays available');const panel=await fetch(base+'/');assert.equal(panel.status,200);}finally{await new Promise(r=>server.close(r));await prelaunch.close();}})().catch(e=>{console.error(e);process.exitCode=1});`;
     const verifySecureHeaders=verifyLive.replace("const policy=await", "const landing=await fetch(base+'/');assert.equal(landing.headers.get('strict-transport-security'),'max-age=31536000');assert.equal(landing.headers.get('x-frame-options'),'DENY');assert(landing.headers.get('content-security-policy').includes(\"script-src 'self'\"));const policy=await");
@@ -189,6 +217,8 @@ const temps = [];
       for (const k of Object.keys(MAINNET_ENV)) delete process.env[k];
       assert.throws(() => createServer({ publicRoot: path.join(mainDir, 'public') }), /Refusing to start/);
       Object.assign(process.env, MAINNET_ENV, { RYO_TOKEN_MINT: '11111111111111111111111111111111', RYO_STUDIO_WALLET: '11111111111111111111111111111111' }); assert.throws(() => createServer({ publicRoot: path.join(mainDir, 'public') }), /SR mint is still pending/, 'an unregistered mint cannot launch'); { const file = path.join(mainDir, 'server/treasury-registry.json'), r = JSON.parse(fs.readFileSync(file, 'utf8')); r.srMintAddress = '11111111111111111111111111111111'; fs.writeFileSync(file, JSON.stringify(r)); require(path.join(mainDir, 'server/treasury-registry.cjs')).useForIsolatedTest(r); }
+      // The registered mint now releases the game automatically (2026-11-09), which needs the custody key: a throw-away one here.
+      process.env.RYO_TREASURY_SECRET = JSON.stringify([...require(path.join(app, 'node_modules/@solana/web3.js')).Keypair.generate().secretKey]);
       const srv = createServer({ publicRoot: path.join(mainDir, 'public') });
       await new Promise(r => srv.listen(0, '127.0.0.1', r));
       try {

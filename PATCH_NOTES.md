@@ -1,5 +1,18 @@
 # Shinobi Bombers patch notes
 
+## November 9, 2026 — Launch rules, no deposit fee and Boss Hunt update
+
+- The game opens to the public automatically when the SR token is released.
+- SR deposits are free: the full amount you deposit is credited to your game balance (the previous 2% fee is removed).
+- Boss Hunt is closed for now and will open after it is configured. When it opens, 10% of every entry goes to the Locked Treasury (the Squads multisig shown on the Treasury page); the prize pool (80%) and the burn (10%) are unchanged.
+- SR spent on summons, fusion, dojo and training is split 50/30/10/10 to the four wallets on the Treasury page.
+
+## November 9, 2026 — Founder pre-launch prices
+
+- Mythic Founder boxes are 0.7 SOL and Legacy Founder boxes are 0.25 SOL until the game opens to the public.
+- At public launch, any remaining boxes return to the regular prices: 1 SOL for Mythic and 0.5 SOL for Legacy.
+- This replaces the earlier Mythic early-bird offer. Existing purchases keep their agreed prices.
+
 ## November 9, 2026 — Mythic early bird
 
 - The Mythic Founder box now has 33 boxes instead of 30.

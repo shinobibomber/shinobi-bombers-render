@@ -45,11 +45,11 @@ const serverHooks = [
 // Live (Mainnet build) game-page wording, applied by apply-network.cjs before its Mainnet text rules.
 const liveClientPatches = [
   ["'Withdrawal finalized: net tokens returned after the 2% studio fee.'", "'Withdrawal finalized: 95% paid to your wallet; 5% returned to the Locked Treasury.'", 1],
-  ['Deposits and withdrawals deduct a 2% studio fee. Withdraw at least 100,000 Ryo, once per rolling 24 hours.', 'Deposits deduct a 2% studio fee. Withdrawals return 5% to the Locked Treasury; withdraw at least 100,000 Ryo at any time.', 1],
+  ['Deposits and withdrawals deduct a 2% studio fee. Withdraw at least 100,000 Ryo, once per rolling 24 hours.', 'Deposits are fee-free. Withdrawals return 5% to the Locked Treasury; withdraw at least 100,000 Ryo at any time.', 1],   // fee-free deposits: live-economy (2026-11-09)
   ["'Withdrawal available: minimum 100,000 Ryo; one success every 24 hours.'", "'Withdrawal available any time: minimum 100,000 Ryo; 5% returns to the Locked Treasury.'", 1],
   ["' One successful withdrawal every 24 hours.'", "' Withdraw any time; 5% returns to the Locked Treasury.'", 1],
   ["'Studio fee: '+Math.ceil(n/50).toLocaleString()+' Ryo · You receive: '+(n-Math.ceil(n/50)).toLocaleString()+(withdraw?' tokens.':' Ryo.')",
-   "(withdraw?'Locked Treasury 5%: '+(n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' Ryo · You receive: '+(n-n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' tokens.':'Studio fee: '+Math.ceil(n/50).toLocaleString()+' Ryo · You receive: '+(n-Math.ceil(n/50)).toLocaleString()+' Ryo.')", 1],
+   "(withdraw?'Locked Treasury 5%: '+(n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' Ryo · You receive: '+(n-n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' tokens.':'No deposit fee · You receive: '+n.toLocaleString()+' Ryo.')", 1],
   ["result.withdrawal.status==='confirmed'?(n-Math.ceil(n/50)).toLocaleString()+' tokens withdrawn after the 2% studio fee.'", "result.withdrawal.status==='confirmed'?(n-n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' tokens withdrawn; 5% returned to the Locked Treasury.'", 1],
   ['Withdrawals: minimum 100,000 Ryo, once every 24 hours, with a 2% studio fee.', 'Withdrawals: minimum 100,000 Ryo, any time; 5% returns to the Locked Treasury. Chest rewards can be claimed once every 24 hours.', 1],
   ["'Studio fee '+fmt(row.studio_fee)+' Ryo'", "(row.treasury_fee_raw?'Locked Treasury 5% '+(Number(row.treasury_fee_raw)/1e6).toLocaleString(undefined,{maximumFractionDigits:6})+' Ryo':'Studio fee '+fmt(row.studio_fee)+' Ryo')", 1],

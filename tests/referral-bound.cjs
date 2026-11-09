@@ -49,20 +49,20 @@ const hero = (id, rank, extra = {}) => ({ tokenId: id, rank, level: 1, name: 'He
   const gates = require(path.join(server, 'launch-gates.cjs'));
   const cases = [['purchase', { product: 'summon' }, 'summoning'], ['purchase', { product: 'training' }, null], ['market-post', {}, 'marketplace'], ['market-buy', {}, 'marketplace'], ['market-offer', {}, 'marketplace'], ['market-accept', {}, 'marketplace'],
     ['market-cancel', {}, null], ['market-browse', {}, null], ['claim-adventure', {}, 'rewardClaims'], ['creator-player-claim', {}, 'rewardClaims'], ['creator-redeem', {}, 'rewardClaims'],
-    ['deposit', {}, 'solDeposits'], ['box-mint', {}, 'solDeposits'], ['box-confirm', {}, null], ['withdraw', {}, 'solWithdrawals'], ['state', {}, null]];
+    ['deposit', {}, 'solDeposits'], ['box-mint', {}, 'solDeposits'], ['box-confirm', {}, null], ['withdraw', {}, 'solWithdrawals'], ['hunt-enter', {}, 'bossHunt'], ['purchase', { product: 'hunt' }, 'bossHunt'], ['state', {}, null]];
   for (const [action, body, gate] of cases) assert.equal(gates.gateFor(action, body), gate, action);
   assert.equal(require(path.join(server, 'network.cjs')).built(server).key, 'devnet');
-  assert.deepEqual(gates.publicGates({}), { summoning: true, marketplace: true, rewardClaims: true, solDeposits: true, solWithdrawals: true }, 'devnet build: test server unchanged');
+  assert.deepEqual(gates.publicGates({}), { summoning: true, marketplace: true, rewardClaims: true, solDeposits: true, solWithdrawals: true, bossHunt: true }, 'devnet build: test server unchanged');
   assert.equal(gates.publicGates({ SOL_WITHDRAWALS_ENABLED: 'off' }).solWithdrawals, false);
   assert.throws(() => gates.check('withdraw', {}, { SOL_WITHDRAWALS_ENABLED: 'off' }), e => e.status === 403 && e.code === 'LAUNCH_GATE_CLOSED' && e.gate === 'solWithdrawals');
   // A mainnet build defaults every gate off; each one opens on its own.
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sb-gates-'));
   try {
-    for (const f of ['launch-gates.cjs', 'network.cjs']) fs.copyFileSync(path.join(server, f), path.join(dir, f));
+    for (const f of ['launch-gates.cjs', 'network.cjs', 'live-economy.cjs', 'treasury-registry.cjs', 'treasury-registry.json'].filter(f => fs.existsSync(path.join(server, f)))) fs.copyFileSync(path.join(server, f), path.join(dir, f));
     fs.writeFileSync(path.join(dir, 'network-build.json'), '{"network":"mainnet"}');
     const live = require(path.join(dir, 'launch-gates.cjs'));
-    assert.deepEqual(live.publicGates({}), { summoning: false, marketplace: false, rewardClaims: false, solDeposits: false, solWithdrawals: false });
-    assert.deepEqual(live.publicGates({ SUMMONING_ENABLED: 'on' }), { summoning: true, marketplace: false, rewardClaims: false, solDeposits: false, solWithdrawals: false }, 'opening one gate never opens money gates');
+    assert.deepEqual(live.publicGates({}), { summoning: false, marketplace: false, rewardClaims: false, solDeposits: false, solWithdrawals: false, bossHunt: false }, 'live: Boss Hunt closed by default too');
+    assert.deepEqual(live.publicGates({ SUMMONING_ENABLED: 'on' }), { summoning: true, marketplace: false, rewardClaims: false, solDeposits: false, solWithdrawals: false, bossHunt: false }, 'opening one gate never opens money gates');
     for (const [action, body, gate] of cases) if (gate) assert.throws(() => live.check(action, body, {}), e => e.code === 'LAUNCH_GATE_CLOSED', action); else live.check(action, body, {});
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 

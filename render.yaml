@@ -48,7 +48,7 @@ services:
         value: "22"
       - key: SOLANA_NETWORK
         value: mainnet
-      - key: PRELAUNCH_MODE         # remove (or set off) on launch day to open the game
+      - key: PRELAUNCH_MODE         # the released SR mint (RYO_TOKEN_MINT = registry srMintAddress) opens the game automatically; GAME_LAUNCH_HOLD=on keeps the portal
         value: "on"
       - key: RYO_SCOPE              # NEVER change once players register: their accounts live under it
         value: solana-mainnet:live

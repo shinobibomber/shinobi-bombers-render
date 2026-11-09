@@ -43,8 +43,12 @@ const TIERS = Object.freeze({
 const TOTAL_SUPPLY = 63, LIMITED_PASSES = 10, MAX_HEROES = 500;
 /** The game release controls, not the public NFT sale switch, end promotional pricing.
  * Missing/invalid release configuration never grants a discount. Existing reservations keep their stored price. */
-const prelaunchPricing = (env = process.env) => on(env.PRELAUNCH_MODE) &&
-  ['', 'portal', 'private'].includes(String(env.RELEASE_STAGE ?? '').trim().toLowerCase());
+// The same release rule as the server (network.cjs): the released SR mint ends pre-launch automatically, so the
+// promotional prices end with it. If the rule cannot be read, no discount is granted (fail closed).
+const prelaunchPricing = (env = process.env) => {
+  try { const n = require('./network.cjs'); return n.prelaunch(env) && ['portal', 'private'].includes(n.releaseStage(env)); }
+  catch { return false; }
+};
 const priceFor = (t, serial, env = process.env) => prelaunchPricing(env) ? t.prelaunchLamports : t.lamports;
 const RANKS = Object.freeze(['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic']);
 // Weighted pools out of 10,000. Excluded ranks are simply absent, so the draw happens on the filtered pool:

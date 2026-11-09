@@ -38,8 +38,9 @@ const networkText = file => network.rewriteText(fs.readFileSync(file, 'utf8'), f
 // RELEASE_STAGE=private (Stage 1, private live testing): the game is mounted, but every game path answers exactly
 // as in "portal" unless the request carries a private pass (PRIVATE_COOKIE) for a live session of a wallet listed
 // in RYO_PRIVATE_TEST_WALLETS. The check runs on the server for every request, on every hostname.
-const PRELAUNCH = network.prelaunch();
-const PRIVATE = network.privateTesting();
+// The release rule reads the reviewed registry of the installed game build (the released SR mint opens the game).
+const PRELAUNCH = network.prelaunch(process.env, path.join(GAME_DIR, 'server'));
+const PRIVATE = network.privateTesting(process.env, path.join(GAME_DIR, 'server'));
 const TESTERS = PRIVATE ? network.privateTesters() : new Set();
 const PRELAUNCH_DIR = path.join(ROOT, 'prelaunch');
 const PRIVATE_DIR = path.join(ROOT, 'private-access');
@@ -178,6 +179,18 @@ async function serveSite(req, res, name) {
 /* Founder's NFT Boxes public files, mounted in every release stage: NFT metadata JSON (the URI written into each NFT),
  * the NFT artwork, and links to the sale terms on the portal. No account, wallet or sale data is served here. */
 const FOUNDERS_DIR = path.join(ROOT, 'founders', 'public');
+/* After the public release the pre-launch portal (and its #founders section) is gone, but minted Founder NFTs link to
+ * /founders/terms: serve the same sale terms (prelaunch/i18n/en.json fd.terms) as a plain read-only page. */
+function founderTermsPage(req, res) {
+  let t; try { t = JSON.parse(fs.readFileSync(path.join(PRELAUNCH_DIR, 'i18n', 'en.json'), 'utf8')); } catch { return sendSite(req, res, 503, 'Service is temporarily unavailable.'); }
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const items = (Array.isArray(t['fd.terms']) ? t['fd.terms'] : []).map(x => '<li>' + esc(x) + '</li>').join('');
+  const body = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Founder\'s NFT Boxes — terms · Shinobi Bombers</title>' +
+    '<style>body{margin:0;font:16px/1.55 system-ui,sans-serif;background:#0d0717;color:#f6f1ff}main{max-width:760px;margin:0 auto;padding:32px 16px}h1{font-size:1.5rem}li{margin:.5em 0}a{color:#ffcf4a}</style></head>' +
+    '<body><main><h1>' + esc(t['fd.title'] || "Founder's NFT Boxes") + ' — ' + esc(t['fd.terms.title'] || 'Sale terms') + '</h1><ul>' + items + '</ul><p><a href="/">Shinobi Bombers</a></p></main></body></html>';
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300', ...SITE_HEADERS, 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" });
+  return res.end(req.method === 'HEAD' ? undefined : body);
+}
 async function foundersRoute(req, res, url, name) {
   if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
   // Serial must exist in its tier (founders.cjs TIERS supply: Mythic #1-#33, Legacy #1-#30).
@@ -190,6 +203,7 @@ async function foundersRoute(req, res, url, name) {
     return res.end(req.method === 'HEAD' ? undefined : body);
   }
   if (name.startsWith('/founders/art/')) return serveFrom(FOUNDERS_DIR, req, res, name.slice('/founders'.length), new Set(['.png']));
+  if (name === '/founders/terms' && !PRELAUNCH) return founderTermsPage(req, res);
   if (['/founders', '/founders/', '/founders/terms'].includes(name)) { res.writeHead(302, { Location: '/#founders', 'Cache-Control': 'no-store' }); return res.end(); }
   return sendSite(req, res, 404, 'Not found.');
 }
@@ -299,7 +313,7 @@ const server = http.createServer((req, res) => {
  * (403 "Access forbidden"). Answer with the network and the browser RPC only; the client accepts this form
  * ({network, rpcUrl}, no tokenAddress) and keeps every payment path disabled. Anything else: the game's own answer. */
 function rpcOnlyConfig(req, res) {
-  if (NET.key !== 'mainnet' || (process.env.RYO_TOKEN_MINT && process.env.RYO_STUDIO_WALLET)) return false;
+  if (NET.key !== 'mainnet' || process.env.RYO_TOKEN_MINT) return false;   // with the mint, the game's own config answers (studio wallet optional on live)
   let rpcUrl; try { const u = new URL(String(process.env.SOLANA_PUBLIC_RPC_URL || '')); if (u.protocol !== 'https:' || u.username || u.password) return false; rpcUrl = u.href; } catch { return false; }
   if (!['GET', 'HEAD'].includes(req.method)) return false;
   res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' });

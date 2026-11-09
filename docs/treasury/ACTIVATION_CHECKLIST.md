@@ -22,7 +22,17 @@ OFF on Mainnet) and `PRELAUNCH_MODE`.
 - [ ] External security review of `sr-revenue`, `treasury/*`, the withdrawal/claim hooks and, if built, the Anchor programs.
 - [ ] Review the main → `live` merge, including the 3 commits that exist only on `live` (`d1fb08d`, `9c504b4`, `ef20b54`).
 
-## Launch day (in order, one at a time)
+## Automatic release (owner decision 2026-11-09)
+
+The live server opens to the public by itself once the released SR mint is configured: `RYO_TOKEN_MINT` equal to
+`srMintAddress` in the reviewed, committed registry (network.cjs `launched()`), on the Mainnet build. `PRELAUNCH_MODE` /
+`RELEASE_STAGE` are then ignored. It also needs `RYO_TREASURY_SECRET` (custody); the studio and game revenue wallets are
+optional on the live build. `GAME_LAUNCH_HOLD=on` keeps the pre-launch portal (rollback; with custody set, use
+`RELEASE_STAGE=private` + testers). Founder pre-launch prices end with it. Money features stay behind their own switches:
+`SOL_DEPOSITS_ENABLED` (SR deposits, fee-free on live), `SUMMONING_ENABLED` (needs SR routing below), `BOSS_HUNT_ENABLED`
+(closed), claims, withdrawals and the Market.
+
+## Launch day (in order, one at a time) (manual path, still valid)
 
 1. Approve and merge to `live`. Render deploys the live build with `PRELAUNCH_MODE` still on; confirm `/treasury` shows VERIFIED.
 2. Remove `PRELAUNCH_MODE`. Add `SOLANA_RPC_URL`, `SOLANA_PUBLIC_RPC_URL`, `RYO_TREASURY_SECRET`, `RYO_TOKEN_MINT` (must equal the registry), `RYO_STUDIO_WALLET` and `RYO_REVENUE_WALLET`.
