@@ -58,7 +58,8 @@ function advance(data,profile,now,active,ratePercent=50,report=null,onReward=nul
  }
  if(authorized){d.combatSessions[tally.id].seq=tally.seq;const next=tally.deployed.map(id=>byId.get(id)).filter(h=>h&&!(h.chakra?.lockUntil>now));const old=new Set(team.map(h=>h.tokenId));for(const h of next)if(!old.has(h.tokenId)||!d.active){C.setResting(h,false,now,profile.dojo);d.teamSince[h.tokenId]=now}team=next;}
  const fighters=new Set(team.map(h=>h.tokenId));
- for(const h of profile.heroes){const s=C.recover(h,now,profile.dojo);if(!(s.lockUntil>now))C.setResting(h,!active||!fighters.has(h.tokenId),now,profile.dojo);d.energy[h.tokenId]=s.value;}
+ // Reserve heroes never recover chakra (owner decision 2026-11-10): keep each hero's reserve flag in step with the roster.
+ for(const h of profile.heroes){if(!(h.chakra?.lockUntil>now))C.setReserve(h,!ready.has(h.tokenId),now,profile.dojo);const s=C.recover(h,now,profile.dojo);if(!(s.lockUntil>now))C.setResting(h,!active||!fighters.has(h.tokenId),now,profile.dojo);d.energy[h.tokenId]=s.value;}
  d.team=team.map(h=>h.tokenId);d.last=now;d.active=!!active;return d;
 }
 module.exports={advance,parse,HP,PAY};

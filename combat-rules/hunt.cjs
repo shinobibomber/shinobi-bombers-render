@@ -12,7 +12,7 @@ async function activate(store,wallet,id){return store.transaction(async c=>{
  if(row.combat?.team)return {id,started:row.combat.started,seconds:60,guardian:row.guardian,team:row.combat.team.map(u=>u.id),pending:false,combat:row.combat};
  const now=store.now(),p=await store.profileLocked(c,wallet);await require('./adventure.cjs').settleLocked(store,c,wallet,p,false);
  if(p.heroes.some(h=>h.chakra?.hunt&&h.chakra.hunt.ends>now))fail('Finish your current hunt first.',409);
- const ready=new Set(p.battleReady),team=p.heroes.filter(h=>ready.has(h.tokenId)&&C.recover(h,now,p.dojo).value>=1&&!(h.chakra.lockUntil>now)).sort((a,b)=>R.damage(b)-R.damage(a)).slice(0,5);
+ const ready=new Set(p.battleReady),team=p.heroes.filter(h=>ready.has(h.tokenId)&&C.recover(h,now,p.dojo).value>=1&&!h.chakra.napping&&!(h.chakra.lockUntil>now)).sort((a,b)=>R.damage(b)-R.damage(a)).slice(0,5);
  if(!team.length)fail('Rest a battle-ready hero before starting your paid hunt.',409);
  const combat={version:1,started:now,ends:now+60000,team:team.map(h=>({id:h.tokenId,started:Math.max(now,h.chakra.nextAt),power:R.damage(h),cooldown:R.cooldown(h)*1000,energy:Math.floor(h.chakra.value)}))};
  for(const h of team){const u=combat.team.find(x=>x.id===h.tokenId);h.chakra.hunt={...u,entryId:id,ends:combat.ends,spent:0};h.chakra.lockUntil=combat.ends;h.chakra.resting=false;C.recover(h,now,p.dojo);}

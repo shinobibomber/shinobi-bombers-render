@@ -299,7 +299,7 @@
     },
     {
       "path": "app/server/store.cjs",
-      "sha256": "7bf91e5e1c36173ebe065104ac6453c4bc695cb6ba90447ea9e69171f909f2f6"
+      "sha256": "5f24b8fdc985a35f5bb65a4dac37aa9ed0a66a9bf9dc3272b3960922a4d8117e"
     },
     {
       "path": "app/server/transaction-review.cjs",
