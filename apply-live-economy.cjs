@@ -103,6 +103,8 @@ const liveClientPatches = [
   ['S.h.push(mk(0,true),mk(0,true));newMap()}', '/* live: no free practice heroes */newMap()}', 1],
   ['S.h=S.h.filter(h=>h.tokenOwner!==p.account||ids.has(h.tokenId));', 'S.h=S.h.filter(h=>h.tokenId&&(h.tokenOwner!==p.account||ids.has(h.tokenId)));', 1],
   ["mode==='deposit'?(n-Math.ceil(n/50)).toLocaleString()+' Ryo deposited after the 2% studio fee.'", "mode==='deposit'?n.toLocaleString()+' Ryo deposited (no deposit fee).'", 1],
+  // Browser tab title on live (owner request 2026-11-10); the test server keeps "Tester Demo".
+  ['<title>Shinobi Bombers — Tester Demo</title>', '<title>Shinobi Bombers</title>', 1],
 ];
 
 function replaceCount(text, [before, after, count = 1], label) {

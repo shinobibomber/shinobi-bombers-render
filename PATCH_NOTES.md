@@ -14,6 +14,7 @@
 - The Dojo Upgrades list now shows the current prices: Apprentice Dojo 3,000,000 Ryo, Shinobi Dojo 7,200,000, Veteran Dojo 14,700,000, Master Dojo 25,200,000, Grandmaster Dojo 38,700,000, Legendary Dojo 55,200,000 (it still showed the old prices).
 - The Dojo is open: you can upgrade it now.
 - The Events card on the Home screen now shows the Founder NFT Boxes with live prices and boxes left. VIEW shows both boxes and their benefits, and opens the Founders page in a new tab to buy (the old Mythic NFT Box is sold out).
+- The browser tab now shows "Shinobi Bombers" (it still said "Tester Demo").
 
 ## November 10, 2026 — Adventure reward funding
 
