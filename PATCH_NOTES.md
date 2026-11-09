@@ -1,5 +1,9 @@
 # Shinobi Bombers patch notes
 
+## November 9, 2026 — Clearer Founder purchase errors
+
+- If your wallet does not hold enough SOL for a Founder box plus network fees, the page now tells you how much SOL is needed instead of showing a "temporarily unavailable" message. No payment is sent in that case.
+
 ## November 9, 2026 — Founder SOL purchases
 
 - Mythic Founder boxes cost 1 SOL and Legacy boxes cost 0.5 SOL on Solana Mainnet, with 30 of each tier and one purchase per wallet across both tiers.

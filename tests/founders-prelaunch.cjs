@@ -16,12 +16,12 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
   let tail = Promise.resolve(); const lock = async () => { let release; const before = tail; tail = new Promise(r => release = r); await before; return release; };
   const pool = { async query(s, a) { const release = await lock(); try { return await db.query(s, a); } finally { release(); } }, async connect() { const release = await lock(); return { query: (s, a) => db.query(s, a), release }; } };
   const authority = web3.Keypair.generate(), revenue = web3.Keypair.generate().publicKey.toBase58();
-  const statuses = new Map(), sent = []; let genesis = DEVNET;
+  const statuses = new Map(), sent = []; let genesis = DEVNET, balance = 5e9;
   const connection = {
     async getGenesisHash() { return genesis; },
     async getMinimumBalanceForRentExemption(n) { return 890880 + n * 6960; },
     async getLatestBlockhash() { return { blockhash: web3.Keypair.generate().publicKey.toBase58(), lastValidBlockHeight: 250 }; },
-    async getFeeForMessage() { return { value: 15000 }; }, async getBalance() { return 5e9; },
+    async getFeeForMessage() { return { value: 15000 }; }, async getBalance() { return balance; },
     async getAccountInfo() { return null; }, async getBlockHeight() { return 100; },
     async getSignatureStatuses(sigs) { return { value: sigs.map(s => statuses.get(s) || null) }; },
     async sendRawTransaction(raw) { sent.push(Buffer.from(raw)); return 'ok'; },
@@ -63,6 +63,16 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
     r = await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000001' }, aliceCookie); assert.deepEqual([r.status, r.body.code], [503, 'SERVER_ERROR'], 'a Mainnet RPC on a Devnet portal is refused');
     genesis = DEVNET; restart({ FOUNDERS_PUBLIC_SALE_ENABLED: 'on' });
     passed.push('missing revenue wallet or an RPC on the wrong network refuses the sale');
+
+    // A buyer without enough SOL sees the real reason (not a generic outage), and nothing is reserved or sent.
+    balance = 1e8;
+    r = await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000009' }, aliceCookie);
+    assert.deepEqual([r.status, r.body.code], [503, 'SOL_GAS_INSUFFICIENT'], JSON.stringify(r.body));
+    assert.match(r.body.error, /does not have enough (Devnet )?SOL/); assert.match(r.body.error, /No new payment was submitted/);
+    r = await call('founders-info', {}, aliceCookie);
+    assert.deepEqual([r.body.founders.tiers.mythic.reserved, r.body.founders.tiers.mythic.sold, r.body.founders.mine ?? null, sent.length], [0, 0, null, 0]);
+    balance = 5e9;
+    passed.push('insufficient buyer SOL shows the real reason; no reservation or broadcast');
 
     // Buy → the page reviews → wallet signs → server checks bytes and broadcasts → confirmed.
     r = await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000001' }, aliceCookie); assert.equal(r.status, 200, JSON.stringify(r.body));

@@ -328,8 +328,11 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
       try { const { data, cookie: c } = await dispatch(req, body, clientIp(req)); send(res, 200, data, c ? { 'Set-Cookie': c } : {}); }
       catch (e) {
         const status = Number.isInteger(e.status) && e.status >= 400 && e.status < 600 ? e.status : 500;
-        if (status >= 500) console.error('[prelaunch]', e);
-        send(res, status, { error: status >= 500 ? 'The pre-launch service is temporarily unavailable.' : e.message, code: status >= 500 ? 'SERVER_ERROR' : codeOf(e) }, status === 401 ? { 'Set-Cookie': cookie('', 0) } : {});
+        // Wallet preflight refusals (gas-safety.cjs: e.g. not enough SOL) are 503 but written for the buyer and
+        // certify that nothing was sent, so show them. Every other 5xx stays generic.
+        const buyerFacing = e.paymentNotSubmitted === true && typeof e.code === 'string' && /^SOL_GAS_[A-Z_]+$/.test(e.code);
+        if (status >= 500 && !buyerFacing) console.error('[prelaunch]', e);
+        send(res, status, { error: status >= 500 && !buyerFacing ? 'The pre-launch service is temporarily unavailable.' : e.message, code: status >= 500 && !buyerFacing ? 'SERVER_ERROR' : (buyerFacing ? e.code : codeOf(e)) }, status === 401 ? { 'Set-Cookie': cookie('', 0) } : {});
       }
     });
   }
