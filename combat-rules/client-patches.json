@@ -226,17 +226,17 @@
   ],
   [
     "if(!h.on||h.x<0){h.en=Math.min(mx,h.en+dt*CombatRules.recovery(h,S.dojo||0,true));h.z=0;return}",
-    "if(!h.on||h.x<0){if(benchReady.has(h)){h.en=Math.min(mx,h.en+dt*CombatRules.recovery(h,S.dojo||0,true));if(h.en>=mx)h.nap=0}h.z=0;return}",
+    "if(!h.on||h.x<0){if(benchReady.has(h))h.en=Math.min(mx,h.en+dt*CombatRules.recovery(h,S.dojo||0,true));h.z=0;return}",
     1
   ],
   [
     "if(h.en<1){h.en=Math.min(1,h.en+dt*CombatRules.recovery(h,0,true));h.z=1;h.p=[];return}h.z=0;",
-    "if(h.en<1)h.nap=1;if(h.nap){h.en=Math.min(mx,h.en+dt*CombatRules.recovery(h,S.dojo||0,true));if(h.en<mx){h.z=1;h.p=[];return}h.nap=0}h.z=0;",
+    "if(h.en<1){h.en=Math.min(1,h.en+dt*CombatRules.recovery(h,S.dojo||0,true));h.z=1;h.p=[];return}h.z=0;",
     1
   ],
   [
     "h.en=Number.isFinite(descriptor.chakra?.value)?Math.min(CombatRules.maxChakra(h),descriptor.chakra.value):",
-    "h.nap=descriptor.chakra?.napping?1:0;h.en=Number.isFinite(descriptor.chakra?.value)?Math.min(CombatRules.maxChakra(h),window.CombatClient?.projectChakra?CombatClient.projectChakra(h,descriptor.chakra,p):descriptor.chakra.value):",
+    "h.en=Number.isFinite(descriptor.chakra?.value)?Math.min(CombatRules.maxChakra(h),window.CombatClient?.projectChakra?CombatClient.projectChakra(h,descriptor.chakra,p):descriptor.chakra.value):",
     1
   ]
 ]

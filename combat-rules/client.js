@@ -14,11 +14,11 @@
   huntPayload(id){own();return {combatVersion:1,attacks:[...(hunts.get(id)?.values()||[])].map(({id,attacks})=>({id,attacks}))};},
   canAttack(h){own();return !leaving&&(!RyoPayments.state.authenticated||allowed.has(h.tokenId));},
   payload(){own();const ready=new Set(BattleRoster.list().map(h=>h.tokenId));return {combatVersion:1,combatSeq:++sequence,combatHeroes:[...heroes.values()].filter(r=>ready.has(r.id)).map(r=>({...r,kills:r.kills.slice()})),deployed:deployed()};},
-  reconcile(chest){own();if(chest?.combatVersion===1&&Array.isArray(chest.deployed))allowed=new Set(chest.deployed);if(!chest?.chakra)return;for(const h of S.h){const s=chest.chakra[h.tokenId];if(!s||!Number.isFinite(s.value))continue;const ack=chest.attackAck?.[h.tokenId],local=heroes.get(h.tokenId)?.attacks||0;h.en=Math.max(0,Math.min(R.maxChakra(h),s.value-(Number.isFinite(ack)?Math.max(0,local-ack):0)));h.nap=s.napping?1:0;}},
+  reconcile(chest){own();if(chest?.combatVersion===1&&Array.isArray(chest.deployed))allowed=new Set(chest.deployed);if(!chest?.chakra)return;for(const h of S.h){const s=chest.chakra[h.tokenId];if(!s||!Number.isFinite(s.value))continue;const ack=chest.attackAck?.[h.tokenId],local=heroes.get(h.tokenId)?.attacks||0;h.en=Math.max(0,Math.min(R.maxChakra(h),s.value-(Number.isFinite(ack)?Math.max(0,local-ack):0)));}},
   /** The server's saved chakra brought forward to the server time (same rule as combat-chakra.cjs recover):
-   * Reserve, Boss Hunt and locked heroes gain nothing; resting or napping heroes gain the Dojo rate, capped. */
+   * Reserve, Boss Hunt and locked heroes gain nothing; resting (bench) heroes gain the Dojo rate, capped. */
   projectChakra(h,c,p){const v=Number(c?.value),at=Number(c?.at),t=Number(p?.serverTime)||Date.now();if(!Number.isFinite(v))return v;
-   if(!Number.isFinite(at)||c.reserve||c.hunt||Number(c.lockUntil)>t||!(c.resting||c.napping))return v;
+   if(!Number.isFinite(at)||c.reserve||c.hunt||Number(c.lockUntil)>t||!c.resting)return v;
    return Math.min(R.maxChakra(h),v+Math.min(12*3600000,Math.max(0,t-Math.max(at,Number(c.lockUntil)||0)))/1000*R.recovery(h,p?.profile?.dojo||0,true));}
  };
  const originalAdventure=RyoPayments.adventure;

@@ -29,14 +29,14 @@ assert.equal(A.parse({combatVersion:1,killSession:'bad',combatHeroes:[]}),null);
 }
 
 
-// Chakra rules (owner decision 2026-11-10): a deployed hero that runs out naps until full at the Dojo rate; Reserve
-// heroes never recover; bench heroes recover at the Dojo rate.
-for(const dojo of [0,6]){const h=profile().heroes[0],cap=R.maxChakra(h),rate=R.recovery(h,dojo,true)/1000;h.chakra={version:1,value:1.5,at:t0,nextAt:t0,resting:false};
- assert.equal(C.spend(h,12,t0+550000,{activeSince:t0,dojo}),1,'exhaustion: one attack, then the hero naps');assert.equal(h.chakra.napping,true);
- const napEnd=t0+Math.ceil((cap-0.5)/rate);assert(h.chakra.value<cap,'still napping after 550 s');
- assert.equal(C.spend(h,12,napEnd-1000,{activeSince:napEnd-1000,dojo}),0,'no attack before the nap is complete');
- const later=C.spend(h,3,napEnd+600000,{activeSince:napEnd,dojo});assert(later>=1,'attacks resume once full');assert.equal(h.chakra.napping,undefined,'nap cleared at full');
- assert.equal(h.chakra.value,cap-later,'each attack after the nap costs exactly one chakra');}
+// Chakra rules (owner decisions 2026-11-10): an exhausted deployed hero keeps fighting at the Dojo rate (Training Grounds
+// is the rule before that day, restored as it was); Reserve heroes never recover; bench heroes recover at the Dojo rate.
+{const h=profile().heroes[0];h.chakra={version:1,value:1.5,at:t0,nextAt:t0,resting:false};assert.equal(C.spend(h,12,t0+550000,{activeSince:t0}),12,'exhaustion midway through a sync gap retains genuine recharge and attacks');assert.equal(h.chakra.value,1,'faster recovery refills only the one-chakra active-idle cap');assert.equal(C.spend(h,1,t0+550000,{activeSince:t0+550000}),1);assert.equal(h.chakra.value,0,'spending the refilled chakra still costs exactly one');const idle=profile().heroes[0];idle.chakra={version:1,value:0,at:t0,nextAt:t0,resting:false};assert.equal(C.recover(idle,t0+550000).value,1,'active idle recovery cannot bank a full chakra reserve');}
+{const h=profile().heroes[0],rate=R.recovery(h,6,true);h.chakra={version:1,value:0,at:t0,nextAt:t0,resting:false};
+ const n=C.spend(h,1000,t0+60000,{activeSince:t0,dojo:6});assert(n>=Math.floor(rate*60)-1&&n<=Math.floor(rate*60),'Dojo 6: one attack per recovered chakra (17.5/min with Fast Charge): '+n);assert(h.chakra.value<1,'never banks beyond the next attack');
+ const h0=profile().heroes[0];h0.chakra={version:1,value:0,at:t0,nextAt:t0,resting:false};assert.equal(C.spend(h0,1000,t0+60000,{activeSince:t0,dojo:0}),Math.floor(R.recovery(h0,0,true)*60),'Training Grounds: about one attack a minute (as before)');
+ const idle=profile().heroes[0];idle.chakra={version:1,value:0,at:t0,nextAt:t0,resting:false};assert.equal(C.recover(idle,t0+3600000,6).value,1,'an idle deployed hero banks at most 1 chakra, even at Dojo 6');
+ const old=profile().heroes[0];old.chakra={version:1,value:300,at:t0,nextAt:t0,resting:false,napping:true};assert.equal(C.spend(old,5,t0+10000,{activeSince:t0,dojo:0}),5,'a hero saved mid-nap (retired rule) fights at once with the chakra it has');assert.equal(old.chakra.napping,undefined);}
 {const reserve=profile().heroes[0];reserve.chakra={version:1,value:10,at:t0,nextAt:t0,resting:true};C.setReserve(reserve,true,t0,6);
  assert.equal(C.recover(reserve,t0+3600000,6).value,10,'Reserve: no recovery over an hour');C.setReserve(reserve,false,t0+3600000,6);
  assert.equal(C.recover(reserve,t0+3600000,6).value,10,'moving back to battle-ready credits no Reserve time');

@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Adventure rewards fix
+
+- Fixed: Adventure rewards stopped about 10 minutes into a session. Deployed heroes that ran out of chakra were napping until full, which could take hours. They now keep fighting as they recover chakra: about one attack a minute at the Training Grounds, faster with a better Dojo (up to 17 a minute at the Legendary Dojo). Every enemy kill is added to your Chest as it happens, and Session gained keeps rising.
+- Heroes that were napping when this update arrived wake up and fight with the chakra they already have.
+
 ## November 10, 2026 — Chakra recovery rules
 
 - Deployed heroes that run out of chakra now nap until their chakra is full, then fight again. A better Dojo makes the nap shorter. (Before, they recovered only 1 chakra at a time at the slowest rate.)
