@@ -13,7 +13,8 @@ const {Store,hash}=require('../app/server/store.cjs'),{createService,GENESIS}=re
  process.env.RYO_ADMIN_OPERATORS=ow;process.env.RYO_ADMIN_APPROVERS=aw;process.env.RYO_ADMIN_VIEWERS=vw;
  const connection={
   async getGenesisHash(){if(rpcDown)throw Error('RPC unavailable');return GENESIS},
-  async getTokenSupply(){return {context:{slot:1234},value:{amount:'900000000000000',decimals:6}}},
+  // A real outage fails every read (live caches the genesis check once per process, so the supply read must fail too).
+  async getTokenSupply(){if(rpcDown)throw Error('RPC unavailable');return {context:{slot:1234},value:{amount:'900000000000000',decimals:6}}},
   async getParsedTokenAccountsByOwner(owner){return {context:{slot:1235},value:[{account:{owner:TOKEN_PROGRAM_ID,data:{parsed:{info:{owner:owner.toBase58(),mint:addr(mint),tokenAmount:{amount:owner.equals(treasury.publicKey)?'5000000000000':'100000000000',decimals:6}}}}}}]}},
   async getSignatureStatuses(){return {value:[{confirmationStatus:'finalized',err:{InstructionError:[0,'failed']}}]}},
   async getBlockHeight(){return 100}
@@ -97,6 +98,22 @@ const {Store,hash}=require('../app/server/store.cjs'),{createService,GENESIS}=re
   }
   const file={'/admin/':'index.html','/admin/dashboard.js':'dashboard.js','/admin/dashboard.css':'dashboard.css'}[req.url];if(!file){res.writeHead(404).end();return}res.writeHead(200,{'Content-Type':file.endsWith('.html')?'text/html':file.endsWith('.js')?'application/javascript':'text/css'});res.end(fs.readFileSync(path.join(root,'economic-dashboard',file)));
  });await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
+ // ---- ADMIN_SELF_APPROVAL=on (owner decision 2026-11-10): an approver may review its own proposal; the audit marks it.
+ { process.env.RYO_ADMIN_APPROVERS=aw+','+ow; process.env.ADMIN_SELF_APPROVAL='on';
+   assert.equal((await call(ow,'admin-snapshot')).selfApproval,true,'the page is told one-wallet approval is on');
+   const own=await propose('monitor',{concentrationPercent:40,claimRyo:100,pendingMinutes:1});
+   assert.equal((await call(ow,'admin-review',{id:own.id,approve:false,reason:'Self review with the switch on'})).ok,true,'one wallet reviews its own proposal');
+   const last=(await call(ow,'admin-snapshot')).audits[0];assert.equal(last.action,'configuration.rejected');assert.equal(last.data.selfApproved,true,'self review is marked in the audit chain');
+   const snapOn=await call(ow,'admin-snapshot');assert(snapOn.alerts.some(x=>x.signal==='One-wallet approval is on'),'alert while the switch is on');
+   const applied=await propose('monitor',{concentrationPercent:41,claimRyo:101,pendingMinutes:2}),before=snapOn.control.version;
+   assert.equal((await call(ow,'admin-review',{id:applied.id,approve:true,reason:'Self approval with the switch on'})).ok,true,'one wallet approves its own proposal');
+   const after=await call(ow,'admin-snapshot');assert.equal(after.control.version,before+1,'the configuration changed');assert.equal(after.audits[0].action,'configuration.approved');assert.equal(after.audits[0].data.selfApproved,true);
+   const stale=await propose('monitor',{concentrationPercent:42,claimRyo:102,pendingMinutes:3});await call(ow,'admin-review',{id:(await propose('monitor',{concentrationPercent:43,claimRyo:103,pendingMinutes:4})).id,approve:true,reason:'Newer self approval first'});
+   await assert.rejects(call(ow,'admin-review',{id:stale.id,approve:true,reason:'Stale self approval'}),/stale/i,'stale versions are still refused');
+   await call(ow,'admin-review',{id:stale.id,approve:false,reason:'Clean up stale'});
+   process.env.ADMIN_SELF_APPROVAL='off';const again=await propose('monitor',{concentrationPercent:40,claimRyo:100,pendingMinutes:1});
+   await assert.rejects(call(ow,'admin-review',{id:again.id,approve:false,reason:'Self review with the switch off'}),/different authorized wallet/,'switch off: two wallets again');
+   await call(aw,'admin-review',{id:again.id,approve:false,reason:'Clean up'});delete process.env.ADMIN_SELF_APPROVAL;process.env.RYO_ADMIN_APPROVERS=aw; }
  try{
   browser=await chromium.launch({channel:'chrome'});const p=await browser.newPage({viewport:{width:1600,height:1100}}),errors=[];p.on('pageerror',e=>errors.push(e.message));
   await p.addInitScript(wallet=>{window.phantom={solana:{isPhantom:true,connect:async()=>({publicKey:{toString:()=>wallet}}),signMessage:async()=>({signature:new Uint8Array(64)})}}},ow);

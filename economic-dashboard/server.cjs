@@ -110,7 +110,8 @@ async function snapshot(ctx,wallet){
   if(top1>=config.monitor.concentrationPercent&&total)alerts.push({wallet:leaders[0].wallet,signal:'Reward concentration',detail:top1.toFixed(2)+'% of lifetime claimed Ryo',severity:'review'});
   for(const r of transactions)if(r.status==='pending'&&now-safeNum(r.created)>config.monitor.pendingMinutes*60000)alerts.push({wallet:r.wallet,signal:'Stale pending transaction',detail:r.kind+' '+r.request_id,severity:'review'});
   const revenueIncome=await require('./sr-revenue.cjs').income(store,c);
-   return {treasury:await require('./treasury-rewards.cjs').summary(store,c),revenueDistribution:await require('./sr-revenue.cjs').summary(ctx,c),marker:MARKER,serverTime:now,role:role(wallet),wallet,scope:store.scope,control:{version:ctl.version,config,pauses:ctl.pauses,installed:safeNum(ctl.installed)},flow,products:products.map(numRow),liabilities:{...liability,reserved:liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool,total:liability.balances+liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool+liability.chests},rewards:{claimed:total,recorded,unassignedHistory:Math.max(0,total-recorded),outsideSeasons:safeNum(claimTotals.outside),seasons,pool:Math.max(0,Number(revenueIncome.n)-total)},activity:numRow(activity),concentration:{top1Percent:top1,top10Percent:top10,earners:safeNum(pop.earners),leaders:leaders.map(numRow)},alerts,transactions,transactionCounts:txCounts.map(numRow),proposals,audits,nft:{minted:null,reason:'The beta stores hero entitlements. No NFT mint/escrow service is deployed.'}};
+   if(selfApproval())alerts.push({signal:'One-wallet approval is on',detail:'ADMIN_SELF_APPROVAL=on in Render: an approver can approve its own proposals. Turn it off to require two wallets again.',severity:'review'});
+   return {selfApproval:role(wallet)==='approver'&&selfApproval(),treasury:await require('./treasury-rewards.cjs').summary(store,c),revenueDistribution:await require('./sr-revenue.cjs').summary(ctx,c),marker:MARKER,serverTime:now,role:role(wallet),wallet,scope:store.scope,control:{version:ctl.version,config,pauses:ctl.pauses,installed:safeNum(ctl.installed)},flow,products:products.map(numRow),liabilities:{...liability,reserved:liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool,total:liability.balances+liability.purchases+liability.withdrawals+liability.offers+liability.hunt_pool+liability.chests},rewards:{claimed:total,recorded,unassignedHistory:Math.max(0,total-recorded),outsideSeasons:safeNum(claimTotals.outside),seasons,pool:Math.max(0,Number(revenueIncome.n)-total)},activity:numRow(activity),concentration:{top1Percent:top1,top10Percent:top10,earners:safeNum(pop.earners),leaders:leaders.map(numRow)},alerts,transactions,transactionCounts:txCounts.map(numRow),proposals,audits,nft:{minted:null,reason:'The beta stores hero entitlements. No NFT mint/escrow service is deployed.'}};
  });
  // Limited Mythic NFT Box sales (SOL, outside the Ryo ledger).
  try{result.nft=await require('./mythic-box.cjs').stats(ctx.store)}catch{}
@@ -173,7 +174,9 @@ async function handle(ctx,wallet,action,body){
    if(typeof body.approve!=='boolean')fail('Choose approve or reject.');
    const p=(await c.query('SELECT * FROM ryo_admin_proposals WHERE scope=$1 AND id=$2 FOR UPDATE',[store.scope,text(body.id,80)])).rows[0];
    if(!p||p.status!=='pending')fail('Proposal is unavailable or already reviewed.',409);
-   if(p.proposer===wallet)fail('A different authorized wallet must review this proposal.',403);
+   // Owner decision 2026-11-10: ADMIN_SELF_APPROVAL=on lets an approver review its own proposal (one-wallet approval).
+   // Off (default): a different authorized wallet must review. Every other check below still applies.
+   const selfReview=p.proposer===wallet;if(selfReview&&!selfApproval())fail('A different authorized wallet must review this proposal.',403);
    if(now-safeNum(p.created)>7*86400000)fail('Proposal expired. Create a new proposal.',409);
    if(body.approve){
     if(Number(p.version)!==Number(ctl.version))fail('Proposal is stale. Re-propose against the current configuration.',409);
@@ -187,10 +190,12 @@ async function handle(ctx,wallet,action,body){
    }
    const status=body.approve?'approved':'rejected';
    await c.query('UPDATE ryo_admin_proposals SET status=$3,reviewer=$4,reviewed=$5 WHERE scope=$1 AND id=$2',[store.scope,p.id,status,wallet,now]);
-   await audit(store,c,wallet,'configuration.'+status,{id:p.id,kind:p.kind,payload:p.payload,proposer:p.proposer,reason});return {ok:true};
+   await audit(store,c,wallet,'configuration.'+status,{id:p.id,kind:p.kind,payload:p.payload,proposer:p.proposer,reason,...(selfReview?{selfApproved:true}:{})});return {ok:true};
   }
   fail('Unknown admin action.',404);
  });
 }
 // audit/control are shared with the Command Center so all staff actions extend this one hash chain.
-module.exports={handle,guard,snapshot,validate,canonical,digest,audit,control,MARKER};
+/** One-wallet approval switch (Render ADMIN_SELF_APPROVAL=on); anything else keeps the two-wallet rule. */
+function selfApproval(env=process.env){return /^(1|on|true|yes)$/i.test(String(env.ADMIN_SELF_APPROVAL||'').trim())}
+module.exports={handle,guard,snapshot,validate,canonical,digest,audit,control,selfApproval,MARKER};
