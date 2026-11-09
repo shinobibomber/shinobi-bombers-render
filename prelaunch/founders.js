@@ -74,13 +74,18 @@
     return data;
   }
 
-  let state = null, busy = '', note = '';
+  // usd: display-only SOL→USD rate from the server (founders-info.usdPerSol); the payment is always the exact SOL price.
+  let state = null, busy = '', note = '', usd = null;
+  const remember = s => { const r = Number(s?.founders?.usdPerSol); if (Number.isFinite(r) && r > 0) usd = r; return s; };
+  const money = x => { try { return new Intl.NumberFormat(document.documentElement?.lang || 'en-US', { style: 'currency', currency: 'USD' }).format(x); } catch { return '$' + x.toFixed(2); } };
+  // Our own reservation for this tier that the buyer has not approved yet (e.g. they rejected it in the wallet).
+  const ownPending = (tier, owner) => { const p = read(); return !!owner && p?.account === owner && p?.tier === tier; };
   function stateFor(tier) {
     const f = state?.founders, t = f?.tiers?.[tier], owner = window.SBWallet?.active?.address;
     if (busy === tier) return 'minting';
     if (!f) return 'soon';
     if (f.mine?.status === 'confirmed') return f.mine.tier === tier ? 'confirmed' : 'already';
-    if (f.mine?.status === 'pending') return f.mine.tier === tier ? 'minting' : 'already';
+    if (f.mine?.status === 'pending') return f.mine.tier === tier ? (ownPending(tier, owner) ? 'resume' : 'minting') : 'already';
     if (t?.soldOut) return 'soldout';
     if (f.paused) return 'paused';
     if (f.mode === 'off') return 'soon';
@@ -92,32 +97,52 @@
     const f = state?.founders;
     for (const tier of ['mythic', 'legacy']) {
       const t = f?.tiers?.[tier], s = stateFor(tier), btn = $('#fdBuy-' + tier), left = $('#fdLeft-' + tier);
-      if (left) left.textContent = t ? label('supply').replace('{n}', t.remaining).replace('{of}', t.supply) : '';
-      if (btn) { btn.textContent = label('state.' + s); btn.disabled = !['eligible', 'connect'].includes(s) || !!busy; btn.dataset.state = s; }
+      const price = t?.price, usdText = usd && price ? money(price * usd) : '';
+      if (left) left.textContent = t ? label('supply').replace('{n}', t.remaining).replace('{of}', t.supply) + (usdText ? ' · ' + label('usd').replace('{price}', price).replace('{usd}', usdText) : '') : '';
+      let text = label('state.' + s);
+      if (s === 'eligible' && price) text = label(usdText ? 'state.buyPrice' : 'state.buySol').replace('{price}', price).replace('{usd}', usdText);
+      if (s === 'resume' && price) text = label('state.resume').replace('{price}', price);
+      if (btn) { btn.textContent = text; btn.disabled = !['eligible', 'connect', 'resume'].includes(s) || !!busy; btn.dataset.state = s; }
     }
     const msg = $('#fdStatus'); if (msg) { msg.textContent = note; msg.hidden = !note; }
   }
-  async function refresh() { try { state = await api('founders-info'); } catch { state = null; } render(); }
+  async function refresh() {
+    const p = read();
+    // A reservation of ours that is still pending is settled through founders-confirm (it expires there).
+    if (p?.requestId && state?.founders?.mine?.status === 'pending') {
+      try { const c = await api('founders-confirm', { requestId: p.requestId }); if (c.purchase.status !== 'pending') write(null); state = remember(c); render(); return; } catch {}
+    }
+    try { state = remember(await api('founders-info')); } catch { state = null; }
+    render();
+  }
+  const rejected = e => e?.code === 4001 || /reject|denied|declin|cancel/i.test(String(e?.message || '') + ' ' + String(e?.name || ''));
 
+  /* No browser dialog: the buyer approves (or rejects) the exact payment in the wallet they signed in with. */
   async function buy(tier) {
     const owner = window.SBWallet?.active?.address;
     if (!owner) { document.querySelector('#connectBtn')?.click(); return; }
     const t = state?.founders?.tiers?.[tier]; if (!t) return;
-    if (!confirm(label('confirm').replace('{tier}', t.name).replace('{price}', t.price))) return;
     busy = tier; note = label('step.reserve'); render();
     try {
       let p = read(); if (!p || p.account !== owner || p.tier !== tier) { p = { account: owner, tier, requestId: 'fb-' + crypto.randomUUID() }; write(p); }
       const r = await api('founders-mint', { tier, requestId: p.requestId });
-      if (r.purchase.status !== 'pending' || !r.purchase.wire) { write(null); state = r; return; }
+      if (r.purchase.status !== 'pending' || !r.purchase.wire) { write(null); state = remember(r); return; }
+      state = remember(r);
       const wire = fromB64(r.purchase.wire); review(wire, owner, r.purchase.price, tier);
       note = label('step.sign'); render();
-      const signed = await signWith(owner, wire, r.founders.network === 'solana-mainnet' ? 'mainnet' : 'devnet');
+      let signed;
+      try { signed = await signWith(owner, wire, r.founders.network === 'solana-mainnet' ? 'mainnet' : 'devnet'); }
+      catch (e) { throw rejected(e) ? Object.assign(Error(label('err.rejected')), { code: 'REJECTED' }) : e; }
       note = label('step.confirm'); render();
       let c = await api('founders-confirm', { requestId: p.requestId, signed: toB64(signed) });
       for (let i = 0; i < 45 && c.purchase.status === 'pending'; i++) { await sleep(i < 5 ? 2000 : 4000); c = await api('founders-confirm', { requestId: p.requestId }); }
-      state = c; if (c.purchase.status !== 'pending') write(null);
+      state = remember(c); if (c.purchase.status !== 'pending') write(null);
       note = label('done.' + c.purchase.status);
-    } catch (e) { note = e?.message || label('err.network'); }
+    } catch (e) {
+      // Our stored reservation expired on the server: forget it so the next press reserves a fresh box.
+      if (e?.status === 409 && e?.code !== 'FOUNDERS_WALLET_LIMIT' && ownPending(tier, owner)) write(null);
+      note = e?.message || label('err.network');
+    }
     finally { busy = ''; render(); }
   }
   function boot() {

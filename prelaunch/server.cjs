@@ -49,7 +49,7 @@ function readAnnouncements(file) {
 /* privateAccess (only when RELEASE_STAGE=private, see network/network.cjs): { allowed(wallet) -> boolean }.
  * The "private-access" action then hands an allowlisted, signed-in wallet the same session token in a second
  * cookie (PRIVATE_COOKIE, Path=/) that the site host checks on every game path. Without it the action does not exist. */
-function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null, privateAccess = null, foundersConnection = null } = {}) {
+function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null, privateAccess = null, foundersConnection = null, priceFetch = null, usdPrices = null } = {}) {
   const server = path.join(gameDir, 'server'), need = name => require(path.join(server, name));
   const fromApp = name => require(require.resolve(name, { paths: [server] }));
   const { Store } = need('store.cjs'), { verifySignature } = need('service.cjs'), cp = need('creators-portal.cjs'), players = need('player-referrals.cjs');
@@ -236,6 +236,33 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     return (foundersCtx = { store, connection, revenueAddress: revenue, origin });
   }
 
+  /* Display-only SOL → USD rate for the Founder buttons. Never used for pricing: buyers always pay the exact SOL
+   * amount. Two independent keyless sources (Jupiter, CoinGecko) must agree within 2%, else no USD is shown.
+   * Cached 60 s (failures too), 2.5 s timeout per source, Mainnet only unless a test enables it. */
+  const SOL_MINT = 'So11111111111111111111111111111111111111112';
+  const USD_SOURCES = ['https://lite-api.jup.ag/price/v3?ids=' + SOL_MINT, 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&include_last_updated_at=true'];
+  let usdCache = { at: -Infinity, value: null }, usdPending = null;
+  async function priceJson(url) {
+    const r = await (priceFetch || fetch)(url, { signal: AbortSignal.timeout(2500), headers: { accept: 'application/json' } });
+    if (!r.ok) throw Error('price source ' + r.status);
+    return r.json();
+  }
+  function solUsd() {
+    if (!(usdPrices ?? net.key === 'mainnet')) return Promise.resolve(null);
+    if (now() - usdCache.at < 60000) return Promise.resolve(usdCache.value);
+    return usdPending || (usdPending = (async () => {
+      let value = null;
+      try {
+        const [jup, gecko] = await Promise.all(USD_SOURCES.map(priceJson));
+        const a = Number(jup?.[SOL_MINT]?.usdPrice), b = Number(gecko?.solana?.usd), updated = Number(gecko?.solana?.last_updated_at) * 1000;
+        const sane = x => Number.isFinite(x) && x > 1 && x < 100000;
+        if (sane(a) && sane(b) && Math.abs(a - b) / Math.min(a, b) <= 0.02 && !(updated && now() - updated > 15 * 60000)) value = Math.round((a + b) / 2 * 100) / 100;
+      } catch {}
+      usdCache = { at: now(), value }; usdPending = null;
+      return value;
+    })());
+  }
+
   function status() {
     return { prelaunch: true, network: net.label, launchAt, registrationEnabled: flags.registration, referralsEnabled: flags.referrals,
       links, announcements: readAnnouncements(announcementsFile),
@@ -262,7 +289,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     const action = body.action; limit(ip, action);
     if (action === 'status') return { data: status() };
     if (action === 'leaderboard') return { data: await leaderboard(body) };
-    if (action === 'founders-info') { let w = null; if (sessionToken(req)) { try { w = (await authenticated(req)).wallet; } catch {} } return { data: await need('founders.cjs').info(store, w, env) }; }
+    if (action === 'founders-info') { let w = null; if (sessionToken(req)) { try { w = (await authenticated(req)).wallet; } catch {} } const [data, usd] = await Promise.all([need('founders.cjs').info(store, w, env), solUsd()]); if (usd) data.founders.usdPerSol = usd; return { data }; }
     if (action === 'challenge') {
       const w = wallet(body.wallet), nonce = crypto.randomBytes(16).toString('hex'), t = now();
       const message = siwsMessage(w, nonce, t);

@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 9, 2026 — Founder box prices in USD and wallet approval
+
+- Founder box buttons now show the SOL price with an approximate US dollar value, for example "Buy now · 1 SOL (≈ $86.74)". You always pay the exact SOL price; the dollar value is a guide and is hidden if a reliable rate is not available.
+- Pressing Buy now opens the wallet you signed in with, where you review and approve the exact payment. The extra browser pop-up is gone.
+- If you reject the payment in your wallet, nothing is charged, and you can press "Approve in wallet" to try again within about a minute.
+
 ## November 9, 2026 — Clearer Founder purchase errors
 
 - If your wallet does not hold enough SOL for a Founder box plus network fees, the page now tells you how much SOL is needed instead of showing a "temporarily unavailable" message. No payment is sent in that case.

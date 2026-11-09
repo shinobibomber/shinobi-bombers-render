@@ -29,7 +29,7 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
   const baseEnv = { SOLANA_NETWORK: 'devnet', RYO_SITE_ORIGIN: ORIGIN, RYO_SCOPE: SCOPE, RYO_REVENUE_WALLET: revenue, FOUNDERS_MINT_AUTHORITY_SECRET: JSON.stringify([...authority.secretKey]) };
   let env = { ...baseEnv }, portal = null;
   const server = http.createServer((req, res) => portal.handle(req, res)); await new Promise(r => server.listen(0, '127.0.0.1', r));
-  const restart = extra => { env = { ...baseEnv, ...extra }; portal = createPrelaunch({ gameDir: app, env, pool, foundersConnection: connection }); };
+  const restart = (extra, opts = {}) => { env = { ...baseEnv, ...extra }; portal = createPrelaunch({ gameDir: app, env, pool, foundersConnection: connection, ...opts }); };
   let ip = 0;
   const call = (action, body = {}, cookie) => new Promise((resolve, reject) => {
     const data = JSON.stringify({ ...body, action }), headers = { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data), origin: ORIGIN, 'x-sb-prelaunch': '1', 'x-forwarded-for': '10.1.0.' + (++ip % 250 + 1) };
@@ -55,6 +55,22 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
     r = await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000001' }, aliceCookie);
     assert.deepEqual([r.status, r.body.code], [403, 'FOUNDERS_CLOSED']);
     passed.push('public sale state without sign-in; buying needs sign-in; sales closed by default');
+
+    // Display-only USD rate: Jupiter and CoinGecko must agree within 2%; failures or disagreement show no USD; cached.
+    let priceCalls = 0;
+    const quotes = q => async url => { priceCalls++; const jup = url.startsWith('https://lite-api.jup.ag/'), v = jup ? q.jup : q.gecko; if (v instanceof Error) throw v;
+      return { ok: true, json: async () => jup ? { So11111111111111111111111111111111111111112: { usdPrice: v } } : { solana: { usd: v, last_updated_at: Math.floor(Date.now() / 1000) } } }; };
+    restart({}, { usdPrices: true, priceFetch: quotes({ jup: 86.72, gecko: 86.75 }) });
+    r = await call('founders-info'); assert.equal(r.body.founders.usdPerSol, 86.74, 'average of two agreeing sources');
+    priceCalls = 0; await call('founders-info'); assert.equal(priceCalls, 0, 'rate cached for 60 s');
+    restart({}, { usdPrices: true, priceFetch: quotes({ jup: 86, gecko: 95 }) });
+    r = await call('founders-info'); assert.deepEqual([r.status, r.body.founders.usdPerSol], [200, undefined], 'sources disagree: no USD');
+    restart({}, { usdPrices: true, priceFetch: quotes({ jup: Error('down'), gecko: 86 }) });
+    r = await call('founders-info'); assert.deepEqual([r.status, r.body.founders.usdPerSol, r.body.founders.mode], [200, undefined, 'off'], 'a source failure hides USD only');
+    priceCalls = 0; restart({}, { priceFetch: quotes({ jup: 86.72, gecko: 86.75 }) });
+    r = await call('founders-info'); assert.deepEqual([r.body.founders.usdPerSol, priceCalls], [undefined, 0], 'Devnet portal never shows or fetches USD');
+    restart({});
+    passed.push('display-only USD: two agreeing sources, cached; disagreement, failure or Devnet show none');
 
     // Server settings are required and checked (fail closed).
     restart({ FOUNDERS_PUBLIC_SALE_ENABLED: 'on', RYO_REVENUE_WALLET: '' });
