@@ -6,6 +6,8 @@
 - After the game opens, the Founder boxes are sold at https://shinobibombers.fun/founders.
 - The game now supports the released SR token (a Token-2022 token): deposits, balances and payouts use it directly.
 - The login screen now shows Solana Mainnet, and its Discord, X and Pump.fun buttons open our official pages.
+- New accounts no longer receive free Genin heroes: every hero comes from the Summoning Shrine. Unused free starter Genin were removed from accounts that had not played with them yet.
+- Founder rewards are open: Founder box buyers can sign in with their buying wallet and press the FOUNDER button (bottom-left) to activate their benefits. The button is now visible on every screen.
 
 ## November 9, 2026 — Feature schedule control
 

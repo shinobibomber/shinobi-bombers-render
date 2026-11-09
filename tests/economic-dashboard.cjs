@@ -63,6 +63,8 @@ const {Store,hash}=require('../app/server/store.cjs'),{createService,GENESIS}=re
  const data={map:1,target:0,hp:100,kills:30,pending:500000,claimed:300,last:now,active:false,energy:{}};
  await pool.query('INSERT INTO ryo_adventures(scope,wallet,data) VALUES($1,$2,$3)',[store.scope,pw,JSON.stringify(data)]);
  await pool.query('INSERT INTO ryo_reward_claims(scope,wallet,amount,created) VALUES($1,$2,100,$3)',[store.scope,pw,now]);
+ // Live starts with no free heroes (2026-11-09): this player summoned one hero and deployed it, like a real player.
+ if(LIVE_ECONOMY){const prof=await store.profile(pw),h=require('../app/server/economy.cjs').hero(0);prof.heroes.push(h);prof.battleReady=[...(prof.battleReady||[]),h.tokenId];await store.pool.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[store.scope,pw,JSON.stringify(prof)])}
  await store.presence(pw,tokens[pw],true);await other.profile('other-wallet');
  await pool.query('INSERT INTO ryo_spends(scope,wallet,request_id,amount,created) VALUES($1,$2,$3,200,$4)',[store.scope,pw,'legacy-service',now]);
  await admin.guard(store,'purchase',pw,{requestId:'pending-buy'});await admin.guard(store,'withdraw',pw,{requestId:'pending-withdraw'});

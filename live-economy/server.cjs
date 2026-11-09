@@ -108,4 +108,17 @@ function assertPurchase(action, body) {
   if (live() && action === 'purchase' && body && body.product === 'hunt') throw Object.assign(Error('Enter Boss Hunt from the Boss Hunt screen.'), { status: 403, code: 'LAUNCH_GATE_CLOSED', gate: 'bossHunt' });
 }
 
-module.exports = { TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };
+/* No free starter heroes on live (owner decision 2026-11-09): heroes come from summons only. New live profiles start
+ * empty and carry liveStart. A profile made before this rule that is still untouched (exactly the two default level-1
+ * Genin, no Dojo, no Sensei) loses those two once; any other profile is only marked, never changed. The test server
+ * keeps its two default Genin. */
+function initialProfile(profile) { return live() ? { ...profile, heroes: [], liveStart: 1 } : profile; }
+function cleanStarterProfile(profile) {
+  if (!live() || !profile || typeof profile !== 'object' || profile.liveStart === 1) return profile;
+  const heroes = Array.isArray(profile.heroes) ? profile.heroes : [];
+  if (heroes.length === 2 && heroes.every(h => h && h.rank === 0 && h.level === 1 && !h.nft && !h.mythic && !h.starter && !h.referralReward) && !profile.dojo && !profile.sensei) profile.heroes = [];
+  profile.liveStart = 1;
+  return profile;
+}
+
+module.exports = { initialProfile, cleanStarterProfile, TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };

@@ -105,6 +105,23 @@ const passed = [];
       assert(E.programId().equals(spl.TOKEN_PROGRAM_ID), 'without srMintProgram the registry means classic SPL Token');
       passed.push('SR token program: registry-decided on live (classic on the test server); Token-2022 mint accepted only with MetadataPointer/TokenMetadata; transfer fee/hook, permanent delegate, non-transferable, default-frozen and wrong-program mints refused; Token-2022 treasury account checks'); }
 
+    // ---- No free starter heroes on live (owner decision 2026-11-09).
+    { const economy = require('../app/server/economy.cjs');
+      mainnet();
+      const fresh = economy.normalizeProfile(economy.initialProfile());
+      assert.deepEqual([fresh.heroes.length, fresh.liveStart, fresh.battleReady], [0, 1, []], 'a new live account starts with no heroes');
+      const old = () => { devnet(); const p = economy.initialProfile(); mainnet(); delete p.liveStart; return p; };
+      let p = old(); assert.equal(p.heroes.length, 2);
+      p = economy.normalizeProfile(p); assert.deepEqual([p.heroes.length, p.liveStart, p.battleReady.length], [0, 1, 0], 'an untouched older account loses the two default Genin once');
+      const summoned = economy.hero(0); p.heroes.push(summoned, economy.hero(0));
+      assert.equal(economy.normalizeProfile(p).heroes.length, 2, 'marked profiles are never cleaned again (two summoned Genin stay)');
+      for (const change of [q => { q.heroes[0].level = 2; }, q => { q.heroes.push(economy.hero(1)); }, q => { q.dojo = 1; }, q => { q.sensei = true; }, q => { q.heroes[0].nft = { mint: 'x' }; }]) {
+        const q = old(); change(q); const before = q.heroes.length;
+        assert.equal(economy.normalizeProfile(q).heroes.length, before, 'a profile that is not the untouched default keeps every hero');
+      }
+      devnet(); assert.equal(economy.normalizeProfile(economy.initialProfile()).heroes.length, 2, 'the test server keeps its two default Genin'); mainnet();
+      passed.push('no free heroes on live: new accounts start empty; untouched older accounts lose the two default Genin once; anything else is never touched; the test server is unchanged'); }
+
     // The startup guard (custody + token required together, studio/revenue optional) is covered in network-guard.cjs on a real Mainnet build.
     // ---- Founder offer prices stay after the automatic release (owner decision 2026-11-09), until each tier sells out.
     { const regMod = require('../app/server/treasury-registry.cjs'), F = require('../app/server/founders.cjs'), saved = JSON.parse(require('node:fs').readFileSync(regMod.FILE, 'utf8')); delete saved.gameCustody; saved.srMintAddress = null; delete saved.srMintProgram; saved.activation = { approved: false, reference: null };

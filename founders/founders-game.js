@@ -81,9 +81,10 @@
     const body = dialog.querySelector('.fd-body'); body.replaceChildren();
     if (!f) body.append($('p', {}, 'This wallet has no Founder box.'));
     else {
-      body.append($('p', { class: 'fd-tier fd-' + f.tier }, 'Founder ' + f.name), !f.valid ? $('p', { class: 'fd-warn' }, 'This Founder entitlement is suspended. Contact support.') : null,
+      // Element.append prints null as the text "null": optional notices are filtered out first.
+      body.append(...[$('p', { class: 'fd-tier fd-' + f.tier }, 'Founder ' + f.name), !f.valid ? $('p', { class: 'fd-warn' }, 'This Founder entitlement is suspended. Contact support.') : null,
         !f.redemptionOpen ? $('p', { class: 'fd-note' }, 'Founder rewards open for redemption at a later release stage.') : null,
-        $('p', { class: 'fd-badge' }, f.chestCooldownHours === 12 ? 'FOUNDER BENEFIT: 12-HOUR CHEST COOLDOWN' : '24-HOUR CHEST COOLDOWN'));
+        $('p', { class: 'fd-badge' }, f.chestCooldownHours === 12 ? 'FOUNDER BENEFIT: 12-HOUR CHEST COOLDOWN' : '24-HOUR CHEST COOLDOWN')].filter(Boolean));
       const dl = $('dl', { class: 'fd-list' },
         row('Limited Hero Summon Passes', f.limitedPasses + ' left · ' + f.limitedPool.map(p => p.rank + ' ' + p.percent + '%').join(' / ') + ' (no Genin, no Mythic)'),
         row('Premium Hero Summon', 'Every ' + f.premium.everyWeeks + ' completed qualifying weeks · ' + f.premium.qualifyingWeeks + ' week(s) so far · ' + f.premium.available + ' available (Elite 70% / Legend 30%)'),
