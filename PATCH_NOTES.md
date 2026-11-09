@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 9, 2026 — New official address: shinobibombers.fun
+
+- Shinobi Bombers now lives at https://shinobibombers.fun. Old shinobibombers.onrender.com links open the same page on the new address.
+- Sign in once more with your wallet on the new address. Your account, registration and referrals are unchanged.
+- The Founder's NFT Boxes are at https://shinobibombers.fun/#founders.
+
 ## November 9, 2026 — Founder box button fixes
 
 - If you are already signed in, the Founder box buttons now show "Buy now" with the price after you reload the page, instead of asking you to connect your wallet again. Your wallet reconnects when you press Buy.

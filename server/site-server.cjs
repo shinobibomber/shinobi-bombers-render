@@ -243,9 +243,30 @@ async function treasuryRoute(req, res, url, name) {
 const prelaunch = PRELAUNCH ? loadPrelaunch() : null;
 const game = loadGame();
 
+/* Canonical host. Wallet sign-in, CSRF checks and Founder NFT links are bound to ONE origin (RYO_SITE_ORIGIN), so a
+ * page served from an old host (e.g. shinobibombers.onrender.com after a custom domain) could never sign in. Hosts listed
+ * in RYO_SITE_REDIRECT_HOSTS answer page loads (GET/HEAD) with a 301 to the same path and query on RYO_SITE_ORIGIN.
+ * Never redirected: other hosts (no open redirect), other methods (the origin check already refuses them), /healthz
+ * (Render health checks) and public Founder NFT metadata/art (NFTs keep resolving on every host). Unset = no change. */
+const CANONICAL = (() => {
+  let origin = null; try { const u = new URL(String(process.env.RYO_SITE_ORIGIN || '').trim()); if (u.protocol === 'https:' && !u.username && !u.password) origin = u.origin; } catch {}
+  const hosts = new Set(String(process.env.RYO_SITE_REDIRECT_HOSTS || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean));
+  if (origin) hosts.delete(new URL(origin).host);
+  return origin && hosts.size ? { origin, hosts } : null;
+})();
+function canonicalRedirect(req, res, url, name) {
+  if (!CANONICAL || !['GET', 'HEAD'].includes(req.method)) return false;
+  const host = String(req.headers.host || '').trim().toLowerCase().replace(/:\d+$/, '');
+  if (!CANONICAL.hosts.has(host) || name === '/healthz' || name.startsWith('/founders/metadata/') || name.startsWith('/founders/art/')) return false;
+  res.writeHead(301, { Location: CANONICAL.origin + url.pathname + url.search, 'Cache-Control': 'no-store', 'Content-Type': 'text/plain; charset=utf-8' });
+  res.end(req.method === 'HEAD' ? undefined : 'Moved to ' + CANONICAL.origin + '\n');
+  return true;
+}
+
 const server = http.createServer((req, res) => {
   let url; try { url = new URL(req.url, 'http://localhost'); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
+  if (canonicalRedirect(req, res, url, name)) return;
   // Read-only release policy: available during pre-launch without mounting any game or money API.
   if (require('../dev-vfx-lab/handler.cjs').handle(req, res, name)) return;
   if(name==='/economy-policy.json'){

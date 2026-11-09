@@ -17,6 +17,7 @@ suites.push('mythic-expressions.cjs');
 suites.push('combat-rules.cjs','combat-identity.cjs','combat-native.cjs','combat-adventure.cjs','combat-hunt.cjs');
 suites.push('hero-upgrades-server.cjs','hero-upgrades-ui.cjs');
 suites.push('founders-server.cjs','founders-prelaunch.cjs');
+suites.push('canonical-host.cjs');
 if(fs.existsSync(path.join(__dirname,'archive.cjs')))suites.unshift('archive.cjs');
 suites.unshift('archive-download.cjs');
 suites.push('adventure-hero-size.cjs','mythic-vfx-v6.cjs');

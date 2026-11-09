@@ -52,7 +52,9 @@ services:
         value: "on"
       - key: RYO_SCOPE              # NEVER change once players register: their accounts live under it
         value: solana-mainnet:live
-      - key: RYO_SITE_ORIGIN        # https://shinobibombers.onrender.com (custom domain later); also used at build time
+      - key: RYO_SITE_ORIGIN        # https://shinobibombers.fun (official custom domain); also used at build time
+        sync: false
+      - key: RYO_SITE_REDIRECT_HOSTS # shinobibombers.onrender.com: page loads 301 to RYO_SITE_ORIGIN (not /healthz, NFT metadata/art or APIs)
         sync: false
       - key: DATABASE_URL           # a separate, paid Render Postgres (Internal Database URL)
         sync: false
