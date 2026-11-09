@@ -72,8 +72,16 @@ function required(all) {
 }
 const feeFree = () => live();
 /** Public `config` fields for the client: on live the deposit carries no studio fee and no studio destination. */
+/* Deposit maximum per transaction (owner decision 2026-11-10): 10,000,000 SR on live; the test server keeps 1,000,000.
+ * Withdrawals keep their own 1,000,000 maximum (service.cjs amount()). */
+const LIVE_MAX_DEPOSIT = 10000000;
+function depositAmount(original, value) {
+  if (!live()) return original(value);
+  if (!Number.isSafeInteger(value) || value < 1000 || value > LIVE_MAX_DEPOSIT) fail('Choose a whole amount between 1,000 and 10,000,000 Ryo.');
+  return value;
+}
 function depositConfig(studioAddress) {
-  return feeFree() ? { studioAddress: null, studioFeeBps: 0, depositFeeBps: 0 } : { studioAddress, studioFeeBps: 200 };
+  return feeFree() ? { studioAddress: null, studioFeeBps: 0, depositFeeBps: 0, maxAmount: LIVE_MAX_DEPOSIT } : { studioAddress, studioFeeBps: 200 };
 }
 /** Boss Hunt treasury share: the registered Locked Treasury on live, the legacy revenue wallet on the test server. */
 function huntTreasury(revenueAddress) {
@@ -141,4 +149,4 @@ function cleanStarterProfile(profile) {
   return profile;
 }
 
-module.exports = { genesis, initialProfile, cleanStarterProfile, TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };
+module.exports = { LIVE_MAX_DEPOSIT, depositAmount, genesis, initialProfile, cleanStarterProfile, TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };

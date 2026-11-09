@@ -22,6 +22,8 @@ const serviceHooks = [
   // SR token program (classic SPL Token or Token-2022, from the reviewed registry on live; classic on the test server):
   // the mint check, the custody account, payouts and burns all use it. Applied after the Boss Hunt hook above.
   ["const value=await spl.getMint(connection,key(mint),'finalized');", 'const value=await ' + L + '.getMint(connection,mint);'],
+  // Live deposit maximum 10,000,000 (live-economy depositAmount); withdrawals keep amount()'s 1,000,000.
+  ['const gross=amount(body.amount),hash=signature(body.signature)', 'const gross=' + L + '.depositAmount(amount,body.amount),hash=signature(body.signature)'],
   // RPC load: the RPC's genesis hash is read once per process (live-economy genesis), not on every game action.
   ["async function checkNetwork(){if(await connection.getGenesisHash()!==GENESIS)", "async function checkNetwork(){if(await " + L + ".genesis(connection)!==GENESIS)"],
   ['spl.getAssociatedTokenAddressSync(key(mint),treasury.publicKey)', 'spl.getAssociatedTokenAddressSync(key(mint),treasury.publicKey,false,' + L + '.programId())'],
@@ -74,6 +76,9 @@ const clientPatches = [
 // Live (Mainnet build) wording, applied by apply-network.cjs after apply-treasury's live text.
 // (The fee-free notice and the deposit fee line are part of apply-treasury's live patches, which own those strings.)
 const liveClientPatches = [
+  // Live deposit maximum 10,000,000 SR in the wallet's own check (the server and the config say the same).
+  ['amount<1000||amount>1000000||!valid(treasuryAddress)', 'amount<1000||amount>10000000||!valid(treasuryAddress)', 1],
+  ["throw Error('Choose 1,000–1,000,000 whole Ryo and configured custody/studio destinations.')", "throw Error('Choose 1,000–10,000,000 whole Ryo and configured custody/studio destinations.')", 1],
   // No free practice heroes on live: a new local save starts with an empty roster, and token-less practice heroes are
   // dropped when the player signs in (only the server's heroes remain).
   ['S.h.push(mk(0,true),mk(0,true));newMap()}', '/* live: no free practice heroes */newMap()}', 1],
