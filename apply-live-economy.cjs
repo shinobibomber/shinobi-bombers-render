@@ -105,6 +105,23 @@ const liveClientPatches = [
   ["mode==='deposit'?(n-Math.ceil(n/50)).toLocaleString()+' Ryo deposited after the 2% studio fee.'", "mode==='deposit'?n.toLocaleString()+' Ryo deposited (no deposit fee).'", 1],
   // Browser tab title on live (owner request 2026-11-10); the test server keeps "Tester Demo".
   ['<title>Shinobi Bombers — Tester Demo</title>', '<title>Shinobi Bombers</title>', 1],
+  // Same-origin RPC relay fallback (owner decision 2026-11-10; rpc-relay/server.cjs), live build only: when the browser
+  // cannot reach the RPC provider (VPN, firewall, privacy extension, or no answer within 12 s), the same JSON-RPC call
+  // goes through this site's /api/rpc, and the next 10 minutes try the relay first. Only a real relay answer is used
+  // (200, or its 502/504 carrying the "do not pay again" text); anything else (unmounted, unavailable, rate-limited,
+  // unreachable, timed out) falls back to the direct connection and its original error. A provider rate limit is not
+  // relayed (same public key and quota). A signed payment whose send TIMED OUT (direct or relayed) is never re-sent: it
+  // may have arrived, so the player refreshes and the pending check recovers it. After an immediate failure (blocked,
+  // refused) it may be re-sent the other way: one signed transaction has one signature, so Solana can never charge it
+  // twice. Relayed calls wait longer than the relay's own 20 s upstream limit (reads 22 s, payments 25 s).
+  ['async function rpcFetch(input,options={}){',
+   `async function rpcFetch(input,options={}){const relay=location.origin+'/api/rpc';let method='',until=0;try{method=JSON.parse(options.body).method}catch{}try{until=Number(sessionStorage.getItem('shinobi-rpc-relay'))||0}catch{}
+  if(String(input)===relay)return rpcFetchDirect(input,options,22000);
+  const viaRelay=async()=>{let r=null;try{r=await rpcFetchDirect(relay,options,method==='sendTransaction'?25000:22000)}catch(err){if(method==='sendTransaction'&&/timed out/.test(String(err&&err.message)))throw err}if(r&&(r.ok||r.status===502||r.status===504))return r;try{sessionStorage.removeItem('shinobi-rpc-relay')}catch{}return null};
+  if(until>Date.now()){const r=await viaRelay();if(r)return r}
+  try{return await rpcFetchDirect(input,options,method==='sendTransaction'?15000:12000)}catch(e){const m=String(e&&e.message);if(/rate-limiting/.test(m)||(method==='sendTransaction'&&/timed out/.test(m)))throw e;try{sessionStorage.setItem('shinobi-rpc-relay',String(Date.now()+600000))}catch{}const r=await viaRelay();if(r)return r;throw e}}
+ async function rpcFetchDirect(input,options={},rpcTimeout=15000){`, 1],
+  ['timer=setTimeout(()=>controller.abort(),15000);', 'timer=setTimeout(()=>controller.abort(),rpcTimeout);', 1],
 ];
 
 function replaceCount(text, [before, after, count = 1], label) {

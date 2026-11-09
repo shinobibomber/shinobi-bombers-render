@@ -1,5 +1,9 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Sign-in connection fix
+
+- Fixed: some players saw "Solana Mainnet request timed out" when signing in, usually because a VPN, firewall or privacy extension blocked the game's Solana connection. The game now switches automatically to a backup connection through shinobibombers.fun, so signing in, deposits and purchases keep working. A payment is never sent twice: if a payment's connection times out, the game asks you to refresh instead of paying again.
+
 ## November 10, 2026 — Adventure rewards fix
 
 - Fixed: Adventure rewards stopped about 10 minutes into a session. Deployed heroes that ran out of chakra were napping until full, which could take hours. They now keep fighting as they recover chakra: about one attack a minute at the Training Grounds, faster with a better Dojo (up to 17 a minute at the Legendary Dojo). Every enemy kill is added to your Chest as it happens, and Session gained keeps rising.

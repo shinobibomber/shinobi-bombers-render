@@ -299,10 +299,15 @@ function canonicalRedirect(req, res, url, name) {
   return true;
 }
 
+// Same-origin Solana RPC relay (rpc-relay/server.cjs), loaded once at start: a missing or broken module turns the relay
+// off (the page then keeps its direct connection) instead of crashing a request.
+const rpcRelay = (() => { try { return require('../rpc-relay/server.cjs'); } catch (e) { console.warn('[site] RPC relay unavailable: ' + e.message); return null; } })();
 const server = http.createServer((req, res) => {
   let url; try { url = new URL(req.url, 'http://localhost'); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   if (canonicalRedirect(req, res, url, name)) return;
+  // Same-origin Solana RPC relay for the game page's wallet (rpc-relay/server.cjs): limited methods, same origin only.
+  if (!PRELAUNCH && rpcRelay && name === '/api/rpc') return rpcRelay.handle(req, res).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   // Read-only release policy: available during pre-launch without mounting any game or money API.
   if (require('../dev-vfx-lab/handler.cjs').handle(req, res, name)) return;
   if(name==='/economy-policy.json'){
