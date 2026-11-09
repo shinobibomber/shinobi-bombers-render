@@ -142,7 +142,7 @@ const registryModule = require('../app/server/treasury-registry.cjs');
   const p = await propose('revenueReplenishment', topup); await assert.rejects(approve(p), /not finalized/);
   const sourceOwner = D.activeRewards, sourceAta = spl.getAssociatedTokenAddressSync(mint, new web3.PublicKey(sourceOwner), true).toBase58();
   const balances = (a, b) => [{ accountIndex: 0, mint: ctx.mint, owner: sourceOwner, uiTokenAmount: { amount: String(a), decimals: 6 } }, { accountIndex: 1, mint: ctx.mint, owner: ctx.treasuryAddress, uiTokenAmount: { amount: String(b), decimals: 6 } }];
-  const proofFor = (signature, src = sourceAta) => ({ slot: 123, meta: { err: null, preTokenBalances: balances(200000000n, 0n), postTokenBalances: balances(100000000n, 100000000n) }, transaction: { signatures: [signature], message: { accountKeys: [{ pubkey: new web3.PublicKey(src) }, { pubkey: treasuryAta }], instructions: [{ programId: spl.TOKEN_PROGRAM_ID, parsed: { type: 'transferChecked', info: { source: src, destination: treasuryAta.toBase58(), mint: ctx.mint, authority: sourceOwner, tokenAmount: { amount: '100000000', decimals: 6 } } } }] } } });
+  const proofFor = (signature, src = sourceAta) => ({ slot: 123, meta: { err: null, preTokenBalances: balances(200000000n, 0n), postTokenBalances: balances(100000000n, 100000000n) }, transaction: { signatures: [signature], message: { accountKeys: [{ pubkey: new web3.PublicKey(src) }, { pubkey: treasuryAta }, { pubkey: new web3.PublicKey(sourceOwner), signer: true }], instructions: [{ programId: spl.TOKEN_PROGRAM_ID, parsed: { type: 'transferChecked', info: { source: src, destination: treasuryAta.toBase58(), mint: ctx.mint, authority: sourceOwner, tokenAmount: { amount: '100000000', decimals: 6 } } } }] } } });
   receipt.set(sig, proofFor(sig)); assert.equal(Number((await router.income(store, pool)).n), 7500, 'observed but unapproved transfer is not active funding');
   await approve(p); assert.equal(Number((await router.income(store, pool)).n), 7600);
   assert.equal((await router.summary(ctx, pool)).transactions, 2, 'an internal top-up is never booked as new Chapter 04 revenue');
@@ -160,6 +160,17 @@ const registryModule = require('../app/server/treasury-registry.cjs');
       const run = router.verifyReplenishment(ctx, cfgNow, { ...topup, signature: s }); return expect ? assert.rejects(run, expect, 'refused: ' + label) : run.then(r => assert.equal(r.amountRaw, topup.amountRaw, label)); };
     const otherMint = { programId: spl.TOKEN_PROGRAM_ID, parsed: { type: 'transferChecked', info: { source: address(), destination: address(), mint: address(), authority: address(), tokenAmount: { amount: '5', decimals: 6 } } } };
     await check('signed by a wallet other than the source', p => { p.transaction.message.instructions[0].parsed.info.authority = address(); }, /explicit approved SR transfer/);
+    // Real Mainnet shape (2026-11-10, 6,000,000 SR from the Active Reward Pool): the wallet listed itself again as an extra
+    // signer, so Solana reports multisigAuthority + signers instead of authority.
+    const selfListed = (p, signers) => { const info = p.transaction.message.instructions[0].parsed.info; delete info.authority; info.multisigAuthority = sourceOwner; info.signers = signers; };
+    await check('signed by the source wallet listed again as its own only signer', p => selfListed(p, [sourceOwner]), null);
+    await check('extra trailing accounts after the source wallet are ignored', p => selfListed(p, [sourceOwner, address()]), null);
+    await check('the source wallet did not sign the transaction', p => { selfListed(p, [address()]); p.transaction.message.accountKeys[2].signer = false; }, /not signed by the registered activeRewards wallet/);
+    await check('the source wallet is missing from the transaction', p => { p.transaction.message.accountKeys.pop(); }, /not signed by the registered activeRewards wallet/);
+    await check('a multisig authority other than the source wallet', p => { const info = p.transaction.message.instructions[0].parsed.info; delete info.authority; info.multisigAuthority = address(); info.signers = [sourceOwner]; }, /not signed by the registered activeRewards wallet/);
+    await check('a game deposit (deposit memo) is never a top-up', p => { p.transaction.message.instructions.push({ programId: new web3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), parsed: 'shinobi-deposit-v2:' + crypto.randomUUID() }); }, /game deposit/);
+    { overrides[sourceOwner] = { owner: spl.TOKEN_PROGRAM_ID, data: Buffer.alloc(0), lamports: 1 }; try { await check('a source that is no longer a plain wallet', () => {}, /plain wallet/); } finally { delete overrides[sourceOwner]; } }
+    { const s = bs58.encode(crypto.randomBytes(64)), proof = proofFor(s); receipt.set(s, proof); const r = await router.verifyReplenishment(ctx, cfgNow, { ...topup, signature: s }); assert.deepEqual([r.path, r.signer], ['direct', 'authority'], 'the evidence records the path and signer shape'); }
     await check('a transfer of another token alongside is accepted', p => { p.transaction.message.instructions.push(otherMint); }, null);
     await check('another SR account changes balance (unchecked transfer, burn)', p => { const extra = (a) => ({ accountIndex: 2, mint: ctx.mint, owner: address(), uiTokenAmount: { amount: a, decimals: 6 } }); p.meta.preTokenBalances.push(extra('50')); p.meta.postTokenBalances.push(extra('40')); }, /Other SR balances changed/);
     await check('an SR account created with a balance in the same transaction', p => { p.meta.postTokenBalances.push({ accountIndex: 2, mint: ctx.mint, owner: address(), uiTokenAmount: { amount: '7', decimals: 6 } }); }, /Other SR balances changed/);
@@ -193,8 +204,12 @@ const registryModule = require('../app/server/treasury-registry.cjs');
       const s = bs58.encode(crypto.randomBytes(64)); receipt.set(s, squadsProof(s, opts));
       await assert.rejects(router.verifyReplenishment(ctx, cfgNow, { ...lt, signature: s }), /explicit approved SR transfer/, 'refused: ' + label);
     }
-    { const s = bs58.encode(crypto.randomBytes(64)), direct = squadsProof(s); direct.transaction.message.instructions = [direct.meta.innerInstructions[0].instructions.at(-1)]; direct.meta.innerInstructions = []; receipt.set(s, direct);
-      await assert.rejects(router.verifyReplenishment(ctx, cfgNow, { ...lt, signature: s }), /explicit approved SR transfer/, 'the Locked Treasury can never use the direct path'); }
+    { const s = bs58.encode(crypto.randomBytes(64)), direct = squadsProof(s); direct.transaction.message.instructions = [direct.meta.innerInstructions[0].instructions.at(-1)]; direct.meta.innerInstructions = []; direct.transaction.message.accountKeys.push({ pubkey: new web3.PublicKey(vault), signer: true }); receipt.set(s, direct);
+      await assert.rejects(router.verifyReplenishment(ctx, cfgNow, { ...lt, signature: s }), /can only send SR through an approved Squads vault transaction/, 'the Locked Treasury can never use the direct path'); }
+    // On the Squads path only the vault itself as 'authority' is accepted (a vault PDA is never a token multisig).
+    { const s = bs58.encode(crypto.randomBytes(64)), p = squadsProof(s), info = p.meta.innerInstructions[0].instructions.at(-1).parsed.info; delete info.authority; info.multisigAuthority = vault; info.signers = [vault]; receipt.set(s, p);
+      await assert.rejects(router.verifyReplenishment(ctx, cfgNow, { ...lt, signature: s }), /not signed by the registered lockedTreasury wallet/, 'Squads path: the multisigAuthority shape is refused'); }
+    { const s = bs58.encode(crypto.randomBytes(64)); receipt.set(s, squadsProof(s)); assert.deepEqual(((r) => [r.path, r.signer])(await router.verifyReplenishment(ctx, cfgNow, { ...lt, signature: s })), ['squads-vault-execute', 'authority'], 'Squads evidence records its path'); }
     // The inner transfer is attributed to its own parent: the same transfer under the compute-budget instruction is refused.
     { const s = bs58.encode(crypto.randomBytes(64)), p = squadsProof(s); p.meta.innerInstructions[0].index = 0; receipt.set(s, p);
       await assert.rejects(router.verifyReplenishment(ctx, cfgNow, { ...lt, signature: s }), /explicit approved SR transfer/, 'inner transfers are matched to their actual parent instruction'); }

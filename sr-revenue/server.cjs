@@ -179,7 +179,14 @@ async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
   if (!viaSquads) refuse('the Locked Treasury can only send SR through an approved Squads vault transaction.');
   const problem = squadsProblem(parent); if (problem) refuse(problem);
  } else if (viaSquads) refuse('the ' + payload.source + ' wallet must send SR itself, as a top-level transfer (this one was made inside another program).');
- if (info.authority !== owner) refuse('the transfer was not signed by the registered ' + payload.source + ' wallet.');
+ // The signer. Squads path: the registered vault PDA as the transfer authority. Direct path: the registered wallet as the
+ // transfer authority (Solana reports it as multisigAuthority when the wallet built the instruction with extra trailing
+ // accounts, as on 2026-11-10) AND as a signer of the transaction itself; it is re-verified below as a plain wallet, so
+ // the token program accepted the transfer on that wallet's own signature.
+ const signedBy = viaSquads ? info.authority : (info.authority || info.multisigAuthority);
+ if (signedBy !== owner || (!viaSquads && !keys.some(k => k.pubkey.toString() === owner && k.signer === true))) refuse('the transfer was not signed by the registered ' + payload.source + ' wallet.');
+ // A game deposit (it carries the deposit memo) belongs to the player deposit ledger and is never a top-up.
+ if (all.some(x => typeof x.i.parsed === 'string' && x.i.parsed.startsWith('shinobi-deposit'))) refuse('this is a game deposit (it carries a deposit memo), not a top-up.');
  // From here an inner (viaSquads) transfer is always the approved Squads path of the Locked Treasury.
  if (info.source !== source || info.destination !== target || info.mint !== ctx.mint || info.tokenAmount?.amount !== payload.amountRaw || info.tokenAmount?.decimals !== 6) fail('Replenishment source, destination, token or amount does not match the approved request.', 409);
  const indexOf = ata => keys.findIndex(k => k.pubkey.toString() === ata), si = indexOf(source), ti = indexOf(target);
@@ -205,7 +212,8 @@ async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
  // top-up is approved; a drifted multisig can no longer fund claims. This checks the current state: the state at the
  // transaction's slot is not readable, so the two-person top-up approval remains the review of past governance.
  if (viaSquads) await verifySquadsGovernance(ctx, cfg);
- return { sourceAta: source, destinationAta: target, mint: ctx.mint, amountRaw: payload.amountRaw, commitment: 'finalized', slot: tx.slot, internalTransfer: true };
+ else { const w = await require('./treasury-verify.cjs').verifyWallet(ctx.connection, owner); if (w.status !== 'verified') fail('The ' + payload.source + ' wallet could not be verified as a plain wallet. ' + (w.problems || []).join(' '), 503); }
+ return { sourceAta: source, destinationAta: target, mint: ctx.mint, amountRaw: payload.amountRaw, commitment: 'finalized', slot: tx.slot, internalTransfer: true, path: viaSquads ? 'squads-vault-execute' : 'direct', signer: info.authority ? 'authority' : 'multisigAuthority' };
 }
 async function applyApproval(ctx, c, kind, value, proposal) {
  if (!enabled()) fail('SR revenue configuration is available only on the live server.', 403);
