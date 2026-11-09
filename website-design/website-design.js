@@ -1547,6 +1547,18 @@
   // The same request returns new System announcements (Legend summons) for the System tab.
   let chatPop = null, chatTab = 'Global', chatAfter = 0, sysAfter = 0, sysPrimed = false, sysUnread = false, chatOwner = null, chatTimer = 0, chatFetching = false, chatSending = false;
   const chatMsgs = [], sysMsgs = [], CHAT_KEEP = 50, WELCOME = 'Welcome to Shinobi Bombers! Forge your ninja way!';
+  // Moderation (enforced by the chat server): `removed` drops messages staff hid; `standing` is this
+  // wallet's own mute / ban / recent warning, shown so a refused send is never a surprise.
+  let chatStanding = null;
+  const chatBlocked = () => !!(chatStanding && (chatStanding.banned || chatStanding.mutedUntil > Date.now()));
+  const standingText = () => !chatStanding ? '' : chatStanding.banned ? 'You can no longer send messages in Global chat. You can still read it. Contact support to appeal.'
+    : chatStanding.mutedUntil > Date.now() ? 'You are muted in Global chat until ' + new Date(chatStanding.mutedUntil).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + '.'
+    : chatStanding.warning ? chatStanding.warning.text : '';
+  function applyModeration(feed) {
+    if (!feed) return;
+    if (Array.isArray(feed.removed) && feed.removed.length) { const gone = new Set(feed.removed); for (const list of [chatMsgs, sysMsgs]) for (let i = list.length - 1; i >= 0; i--) if (gone.has(list[i].id)) list.splice(i, 1); }
+    chatStanding = feed.standing || null;
+  }
   function chatBar() { return cur && built[cur] ? built[cur].sec.querySelector('[data-sbwid="chatbar"]') : null; }
   const chatReady = () => !!(window.RyoPayments?.chat && RyoPayments.state.authenticated);
   function chatNote(text, isError = false) { if (!chatPop) return; const n = $('.sbw-cp-note', chatPop); n.textContent = text; n.classList.toggle('sbw-cp-error', isError); n.setAttribute('role', isError ? 'alert' : 'status'); }
@@ -1571,18 +1583,19 @@
     }
     log.replaceChildren(...nodes); if (stick) log.scrollTop = log.scrollHeight;
     const sysTab = $$('[role="tab"]', chatPop)[2]; sysTab.classList.toggle('sbw-cp-unread', sysUnread); sysTab.setAttribute('aria-label', sysUnread ? 'System, new announcement' : 'System');
-    const input = $('input', chatPop), on = chatTab === 'Global' && chatReady();
+    const input = $('input', chatPop), on = chatTab === 'Global' && chatReady() && !chatBlocked();
     input.disabled = !on; $('button[type="submit"]', chatPop).disabled = !on || chatSending;
-    input.placeholder = chatTab !== 'Global' ? 'Switch to Global to chat' : chatReady() ? 'Type your message…' : 'Sign in to chat';
+    input.placeholder = chatTab !== 'Global' ? 'Switch to Global to chat' : !chatReady() ? 'Sign in to chat' : chatBlocked() ? 'Sending is restricted' : 'Type your message…';
   }
   function addMessages(target, list) {
     const seen = new Set(target.map(m => m.id)), added = (list || []).filter(m => !seen.has(m.id));
     target.push(...added); target.sort((a, b) => a.id - b.id); if (target.length > CHAT_KEEP) target.splice(0, target.length - CHAT_KEEP);
     return added.length;
   }
-  function mergeChat(list, system) {
+  function mergeChat(list, system, feed) {
     const account = RyoPayments.state.account;
-    if (account !== chatOwner) { chatOwner = account; chatMsgs.length = sysMsgs.length = 0; chatAfter = sysAfter = 0; sysPrimed = sysUnread = false; }
+    if (account !== chatOwner) { chatOwner = account; chatMsgs.length = sysMsgs.length = 0; chatAfter = sysAfter = 0; sysPrimed = sysUnread = false; chatStanding = null; }
+    applyModeration(feed);
     addMessages(chatMsgs, list); chatAfter = chatMsgs.at(-1)?.id || chatAfter;
     if (system) {
       // Announcements already present at first load are history, not new.
@@ -1598,9 +1611,10 @@
       try {
         if (RyoPayments.state.account !== chatOwner) mergeChat([]);
         const feed = await RyoPayments.chat('chat-list', { channel: 'global', after: chatAfter, systemAfter: sysAfter });
-        mergeChat(feed.messages, feed.system);
-        if (open && !chatSending && $('.sbw-cp-note', chatPop).classList.contains('sbw-cp-error')) chatNote('');
-        if (onScreen && !chatSending) csNote('');
+        mergeChat(feed.messages, feed.system, feed);
+        const standing = standingText();
+        if (open && !chatSending && (standing || $('.sbw-cp-note', chatPop).classList.contains('sbw-cp-error'))) chatNote(standing, chatBlocked());
+        if (onScreen && !chatSending && !csReporting) csNote(standing, chatBlocked());
       } catch { if (open) chatNote('Chat is temporarily unavailable. Retrying…', true); if (onScreen) csNote('Chat is temporarily unavailable. Retrying…', true); }
       finally { chatFetching = false; }
     }
@@ -1611,8 +1625,9 @@
     if (!text || chatSending || !chatReady()) return;
     chatSending = true; renderChat();
     try {
-      mergeChat((await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter })).messages);
-      input.value = ''; chatNote(''); updateCount();
+      const sent = await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter });
+      mergeChat(sent.messages, undefined, sent);
+      input.value = ''; chatNote(standingText()); updateCount();
     } catch (err) { chatNote(err.message || 'Message could not be sent.', true); }
     finally { chatSending = false; renderChat(); input.focus(); }
   }
@@ -1659,7 +1674,7 @@
   const CS_ANN = [['🎁', 'Weekend Boost Event!', 'Increased drop rates and rewards!', '3d 12h 45m', 'gold'], ['⚔️', 'Guild War Sign-Up!', 'Register your guild by Jan 28!', '1d 18h 30m', 'cyan'], ['⚙️', 'Maintenance Notice', 'Server maintenance on Jan 27, 03:00 – 05:00 (UTC).', '', 'purple']];
   const CS_NINJAS = [['NinjaMaster', 68, '🏯 In Dojo', 'ok'], ['ShadowKage', 72, '⚔️ Boss Hunt', 'warn'], ['RyoSenpai', 70, '🏪 In Market', 'ok'], ['KuroFox', 75, '🌿 In Adventure', 'ok'], ['EmberLeaf', 65, '💤 Idle', 'idle']];
   const CS_EMOJI = ['😀', '😂', '😎', '🔥', '⚔️', '💥', '🍃', '🌸', '👍', '🙏', '🎉', '💎'];
-  let csTab = 'Global';
+  let csTab = 'Global', csReporting = null;
   const csHue = n => { let h = 0; for (const c of n) h = (h * 31 + c.codePointAt(0)) % 360; return h; };
   function csAvatar(parent, name, cls) { const a = mk('span', 'sbw-cs-av' + (cls ? ' ' + cls : ''), parent); a.textContent = ([...name][0] || '?').toUpperCase(); a.style.setProperty('--h', csHue(name)); a.setAttribute('aria-hidden', 'true'); return a; }
   function csNote(text, isError = false) { const b = built.chat, n = b && b.cs && b.cs.note; if (!n) return; n.textContent = text; n.classList.toggle('sbw-cs-error', isError); n.setAttribute('role', isError ? 'alert' : 'status'); }
@@ -1679,6 +1694,10 @@
         <div class="sbw-cs-ann">${CS_ANN.map(([i, t, d, c, k]) => `<article class="sbw-cs-card ${k}"><i aria-hidden="true">${i}</i><div><b></b><span></span>${c ? '<em>⏱ </em>' : ''}</div></article>`).join('')}</div>
         <div class="sbw-cs-log" role="log" aria-live="polite" tabindex="0" aria-label="Messages"></div>
         <p class="sbw-cs-note" role="status"></p>
+        <form class="sbw-cs-report" hidden aria-label="Report a message"><p class="sbw-cs-report-q"></p>
+          <select aria-label="Report reason"><option value="spam">Spam</option><option value="scam">Scam or phishing</option><option value="harassment">Harassment</option><option value="impersonation">Impersonation</option><option value="offensive">Offensive language</option><option value="other">Other rule break</option></select>
+          <input type="text" maxlength="300" autocomplete="off" placeholder="Optional details for moderators" aria-label="Report details">
+          <button type="submit">Send report</button><button type="button" class="sbw-cs-report-x">Cancel</button></form>
         <form class="sbw-cs-form">
           <select class="sbw-cs-ch2" aria-label="Send to channel"><option>Global</option></select>
           <span class="sbw-cs-emoji-wrap"><button type="button" class="sbw-cs-ico sbw-cs-emoji" aria-label="Emoji" aria-expanded="false">😊</button><span class="sbw-cs-emoji-pop" hidden></span></span>
@@ -1690,7 +1709,7 @@
       <aside class="sbw-cs-side" id="sbwCsSide" aria-label="Social">
         <section class="sbw-cs-panel"><h3>👥 ONLINE NINJAS <span class="sbw-cs-tag">Preview data</span><button type="button" class="sbw-cs-link" data-soon="Full online-player list">View All ›</button></h3><ul class="sbw-cs-ninjas"></ul></section>
         <section class="sbw-cs-panel sbw-cs-guild"><h3>🔖 MY GUILD <span class="sbw-cs-tag">Preview</span></h3><div><span class="sbw-cs-crest" aria-hidden="true">忍</span><p><b>ShadowLegacy</b><small>Members: 48 / 50</small><small class="ok">● 12 online</small></p><button type="button" data-soon="Guild chat">💬 Guild Chat</button></div></section>
-        <section class="sbw-cs-panel"><h3>⚡ QUICK ACTIONS</h3><div class="sbw-cs-qa"><button type="button" data-soon="Create Party">➕ Create Party</button><button type="button" data-soon="Invite">✉️ Invite</button><button type="button" data-soon="Whisper">💬 Whisper</button><button type="button" data-soon="Report">⚠️ Report</button></div></section>
+        <section class="sbw-cs-panel"><h3>⚡ QUICK ACTIONS</h3><div class="sbw-cs-qa"><button type="button" data-soon="Create Party">➕ Create Party</button><button type="button" data-soon="Invite">✉️ Invite</button><button type="button" data-soon="Whisper">💬 Whisper</button><button type="button" class="sbw-cs-report-help">⚠️ Report</button></div></section>
       </aside>`;
     // Announcement cards: text through textContent (static placeholder content).
     $$('.sbw-cs-card', r).forEach((c, i) => { $('b', c).textContent = CS_ANN[i][1]; $('span', c).textContent = CS_ANN[i][2]; const em = $('em', c); if (em) em.append(CS_ANN[i][3]); });
@@ -1713,7 +1732,7 @@
       e.preventDefault(); const n = all[(i + d + all.length) % all.length]; n.focus(); setTab(n.dataset.ch);
     });
     pick.onchange = () => setTab(pick.value);
-    const form = $('form', r), input = $('input', form), pop = $('.sbw-cs-emoji-pop', r), eb = $('.sbw-cs-emoji', r);
+    const form = $('.sbw-cs-form', r), input = $('input', form), pop = $('.sbw-cs-emoji-pop', r), eb = $('.sbw-cs-emoji', r);
     pop.replaceChildren(...CS_EMOJI.map(em => { const x = mk('button', '', null); x.type = 'button'; x.textContent = em; x.setAttribute('aria-label', 'Insert ' + em); x.onclick = () => { if (!input.disabled && [...input.value].length < 199) { input.value += em; csCount(); } input.focus(); }; return x; }));
     eb.onclick = () => { pop.hidden = !pop.hidden; eb.setAttribute('aria-expanded', String(!pop.hidden)); };
     r.addEventListener('keydown', e => { if (e.key === 'Escape' && !pop.hidden) { pop.hidden = true; eb.setAttribute('aria-expanded', 'false'); eb.focus(); } });
@@ -1721,29 +1740,51 @@
     r.addEventListener('click', e => { const s = e.target.closest('[data-soon]'); if (s) notice(s.dataset.soon, 'This is a preview of the design. It opens when the feature launches.'); });
     $('.sbw-cs-sticker', r).dataset.soon = 'Stickers';
     input.addEventListener('input', csCount); form.onsubmit = csSend;
+    // Reporting a Global message: a persistent panel (the log re-renders on every poll), sent to the
+    // server's chat-report action. Moderators review it; reporting never hides anything by itself.
+    const rep = $('.sbw-cs-report', r), closeReport = () => { rep.hidden = true; csReporting = null; };
+    $('.sbw-cs-log', r).addEventListener('click', e => {
+      const btn = e.target.closest('[data-report]'); if (!btn) return;
+      const m = chatMsgs.find(x => x.id === Number(btn.dataset.report)); if (!m) return;
+      csReporting = m; rep.hidden = false; $('.sbw-cs-report-q', rep).textContent = 'Report ' + m.name + ' (' + m.from + '): “' + m.text + '”';
+      $('input', rep).value = ''; $('select', rep).focus();
+    });
+    $('.sbw-cs-report-x', rep).onclick = closeReport;
+    rep.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeReport(); } });
+    rep.onsubmit = async e => {
+      e.preventDefault(); const m = csReporting; if (!m || !chatReady()) return;
+      const send = $('button[type="submit"]', rep); send.disabled = true;
+      try {
+        const res = await RyoPayments.chat('chat-report', { messageId: m.id, category: $('select', rep).value, details: $('input', rep).value.trim() || undefined });
+        closeReport(); csNote(res.status === 'duplicate' ? 'You already reported this message for that reason.' : res.status === 'removed' ? 'Moderators already removed this message.' : 'Thanks — moderators will review this message.');
+      } catch (err) { csNote(err.message || 'The report could not be sent.', true); }
+      finally { send.disabled = false; }
+    };
+    $('.sbw-cs-report-help', r).onclick = () => csNote('To report a message, choose ⚑ next to it in Global chat.');
     b.cs = { tabs, pick, log: $('.sbw-cs-log', r), note: $('.sbw-cs-note', r), input, send: $('.sbw-cs-send', r), count: $('.sbw-cs-count', r), title: $('.sbw-cs-title', r), online: $('.sbw-cs-online b', r), ch2: $('.sbw-cs-ch2', r) };
     renderChatScreen();
   }
   function renderChatScreen() {
     const b = built.chat, c = b && b.cs; if (!c || cur !== 'chat') return;
     const log = c.log, stick = log.scrollHeight - log.scrollTop - log.clientHeight < 40, nodes = [];
-    const msg = (cls, who, text, created, from, mine) => {
+    const msg = (cls, who, text, created, from, mine, reportId) => {
       const a = document.createElement('article'); a.className = 'sbw-cs-msg ' + cls + (mine ? ' mine' : '');
       if (cls === 'sys') mk('span', 'sbw-cs-av sys', a).textContent = '⚙'; else csAvatar(a, who);
       const h = mk('p', 'sbw-cs-mh', a); mk('b', '', h).textContent = who; if (from) mk('small', 'sbw-cs-lvb', h).textContent = from; if (created) csTime(h, created);
+      if (reportId) { const rb = mk('button', 'sbw-cs-rep', h); rb.type = 'button'; rb.textContent = '⚑'; rb.dataset.report = reportId; rb.title = 'Report message'; rb.setAttribute('aria-label', 'Report message from ' + who); }
       mk('p', 'sbw-cs-mt', a).textContent = text; return a;
     };
-    if (csTab === 'Global') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of chatMsgs) nodes.push(msg('', m.name, m.text, m.created, m.from, m.mine)); }
+    if (csTab === 'Global') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of chatMsgs) nodes.push(msg('', m.name, m.text, m.created, m.from, m.mine, !m.mine && chatReady() ? m.id : 0)); }
     else if (csTab === 'System') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of sysMsgs) { const n = msg('sys legend', '[System]', m.text, m.created); nodes.push(n); } }
     else if (csTab === 'Help') for (const t of CS_HELP) nodes.push(msg('sys', '[Help]', t));
     else { const p = document.createElement('p'); p.className = 'sbw-cs-empty'; p.textContent = CS_SOON[csTab]; nodes.push(p); }
     log.replaceChildren(...nodes); if (stick) log.scrollTop = log.scrollHeight;
-    const ready = chatReady(), live = csTab === 'Global' && ready;
+    const ready = chatReady(), live = csTab === 'Global' && ready && !chatBlocked();
     $$('.sbw-cs-tab', c.tabs).forEach(t => { const on = t.dataset.ch === csTab; t.classList.toggle('on', on); t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1;
       const bd = $('.sbw-cs-badge', t); bd.hidden = !(t.dataset.ch === 'System' && sysUnread); bd.textContent = 'NEW'; });
     c.title.textContent = csTab.toUpperCase() + ' CHAT'; c.pick.value = csTab; c.ch2.replaceChildren(new Option(csTab === 'Global' ? 'Global' : csTab));
     c.input.disabled = !live; c.send.disabled = !live || chatSending;
-    c.input.placeholder = csTab !== 'Global' ? 'Switch to Global to chat' : ready ? 'Type your message…' : 'Sign in to chat';
+    c.input.placeholder = csTab !== 'Global' ? 'Switch to Global to chat' : !ready ? 'Sign in to chat' : chatBlocked() ? 'Sending is restricted' : 'Type your message…';
     const op = document.getElementById('onlinePlayers'); c.online.textContent = ((op && /\d[\d,]*/.exec(op.textContent)) || ['—'])[0];
   }
   async function csSend(e) {
@@ -1751,8 +1792,9 @@
     if (!text || chatSending || !chatReady() || csTab !== 'Global') return;
     chatSending = true; renderChatScreen();
     try {
-      mergeChat((await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter })).messages);
-      c.input.value = ''; csNote(''); csCount();
+      const sent = await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter });
+      mergeChat(sent.messages, undefined, sent);
+      c.input.value = ''; csNote(standingText()); csCount();
     } catch (err) { csNote(err.message || 'Message could not be sent.', true); }
     finally { chatSending = false; renderChatScreen(); c.input.focus(); }
   }

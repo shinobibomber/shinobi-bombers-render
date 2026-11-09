@@ -2,7 +2,7 @@ const fs=require('node:fs'),path=require('node:path');
 // Global chat add-on: server module, additive table and one authenticated client entry point.
 // The client hook is exported so the preservation test can reverse it exactly.
 const chatPatches=[
- ["window.RyoPayments={","window.RyoPayments={chat:(action,body={})=>{if(action!=='chat-list'&&action!=='chat-send')throw Error('Unknown chat action.');return api(action,body)},"]
+ ["window.RyoPayments={","window.RyoPayments={chat:(action,body={})=>{if(action!=='chat-list'&&action!=='chat-send'&&action!=='chat-report')throw Error('Unknown chat action.');return api(action,body)},"]
 ];
 const serviceHook=["if(action==='presence')return store.presence(wallet,token,body.active===true);","if(action==='chat-list'||action==='chat-send')return require('./chat.cjs').handle(store,wallet,action,body);\n  if(action==='presence')return store.presence(wallet,token,body.active===true);"];
 // Explicit \n joins: the generated schema.sql is hash-checked, so it must not depend on checkout line endings.

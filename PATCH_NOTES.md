@@ -20,6 +20,22 @@ Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 9, 2026 · Safer Global Chat)**
+
+**✨ New**
+• **Report a message** — tap ⚑ next to any player's message on the Chat screen, pick a reason, and our moderators will review it.
+• **Official announcements** — team news now arrives in the System channel with a 📢, in English and Português.
+
+**🔄 Changes**
+• **Moderated Global chat** — the team can now remove scam or abusive messages and mute or ban repeat offenders. Removed messages disappear for everyone right away.
+• **Clear notices** — if you receive a warning or mute, the chat tells you why and when it ends. You can always keep reading chat.
+
+ℹ️ The game is still in pre-launch, so these arrive with chat when the game opens. No change to Ryo, heroes, rewards or wallets.
+
+Thanks for playing — see you on the battlefield! 🥷
+
+---
+
 **SHINOBI BOMBERS — TEST SERVER PATCH NOTES (Nov 9, 2026 · New Chat Screen)**
 
 **✨ New**

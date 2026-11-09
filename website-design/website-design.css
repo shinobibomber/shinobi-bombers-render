@@ -950,6 +950,16 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-cs-empty{margin:auto;color:var(--cs-mut);font-size:18px;text-align:center}
 #sbwLayer .sbw-cs-note{margin:4px 0 0;min-height:1.2em;font-size:14px;color:var(--cs-mut)}
 #sbwLayer .sbw-cs-note.sbw-cs-error{color:#ff9aa8}
+/* Report a message (server chat-report). The flag sits after the time and stays small. */
+#sbwLayer .sbw-cs-rep{flex:none;min-width:30px;height:30px;padding:0 6px;border-radius:8px;border:1px solid #5a3ba8;background:transparent;color:var(--cs-mut);font-size:14px;cursor:pointer;opacity:.7}
+#sbwLayer .sbw-cs-rep:hover,#sbwLayer .sbw-cs-rep:focus-visible{opacity:1;color:#ff9aa8;border-color:#ff9aa8}
+#sbwLayer .sbw-cs-report{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;padding:8px 10px;border:2px solid #ff9aa8;border-radius:10px;background:#140a3a}
+#sbwLayer .sbw-cs-report[hidden]{display:none}
+#sbwLayer .sbw-cs-report-q{flex:1 1 100%;margin:0;color:var(--cs-ink);font-size:14px;overflow-wrap:anywhere}
+#sbwLayer .sbw-cs-report select,#sbwLayer .sbw-cs-report input{min-height:40px;border-radius:8px;border:1px solid #5a3ba8;background:#0d0830;color:var(--cs-ink);padding:0 8px;font-size:14px}
+#sbwLayer .sbw-cs-report input{flex:1 1 180px;min-width:0}
+#sbwLayer .sbw-cs-report button{min-height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--cs-orange);background:#2a1450;color:var(--cs-ink);font-weight:700;cursor:pointer}
+#sbwLayer .sbw-cs-report button[type="submit"]{background:linear-gradient(180deg,#ffb830,#e07a00);color:#1b0b00}
 #sbwLayer .sbw-cs-form{display:flex;align-items:center;gap:8px;margin-top:6px}
 #sbwLayer .sbw-cs-form input{flex:1;min-width:0}
 #sbwLayer .sbw-cs-count{color:var(--cs-mut);white-space:nowrap}

@@ -1,0 +1,479 @@
+'use strict';
+/* Shinobi Command Center, Phase 1: staff operations API.
+ *
+ * Copied to app/server/command-center.cjs by apply-command-center.cjs. Every action arrives through the
+ * existing /api/ryo endpoint (POST only, exact Origin, JSON, 8 KB limit in netlify-handler.cjs) after the
+ * wallet session is authenticated, so identity, roles and scope are always derived on the server.
+ *
+ * What it can do: read operational data, moderate Global chat (warn, hide, mute, ban), publish reviewed
+ * System announcements, show health and the audit chain, and let the Owner grant Moderator/Support roles.
+ * What it can never do: move SOL or Ryo, change balances, rewards, purchases, withdrawals, heroes or NFTs,
+ * or change financial roles. Financial configuration stays in the economic dashboard's two-wallet flow.
+ */
+const crypto = require('node:crypto'), fs = require('node:fs'), path = require('node:path');
+const { fail, hash } = require('./store.cjs');
+const MARKER = 'shinobi-command-center-v1';
+
+/* ---------- Roles and permissions ---------- */
+// Ordered from most to least privileged; the first role is the one displayed.
+const ROLES = ['owner', 'approver', 'operator', 'moderator', 'support', 'viewer'];
+// Hosting-environment roles. Approver/Operator/Viewer are the existing economic-dashboard lists, unchanged.
+const ENV_ROLES = { owner: 'RYO_ADMIN_OWNERS', approver: 'RYO_ADMIN_APPROVERS', operator: 'RYO_ADMIN_OPERATORS', viewer: 'RYO_ADMIN_VIEWERS' };
+// Only these can be granted in the backend, and only by an Owner.
+const GRANTABLE = ['moderator', 'support'];
+const ALL = ROLES;
+const PERMISSIONS = Object.freeze({
+  'overview.read': ALL,
+  'ops.read': ALL,
+  'player.read': ALL,
+  'player.wallet': ['owner', 'approver', 'operator', 'moderator', 'support'],   // viewers see shortened wallets
+  'player.heroes': ['owner', 'approver', 'operator', 'support', 'viewer'],
+  'player.economy': ['owner', 'approver', 'operator', 'viewer'],
+  'player.transactions': ['owner', 'approver', 'operator'],
+  'moderation.read': ['owner', 'operator', 'moderator', 'support'],
+  'moderation.write': ['owner', 'operator', 'moderator'],
+  'reports.resolve': ['owner', 'operator', 'moderator', 'support'],
+  'announcement.read': ['owner', 'approver', 'operator', 'moderator', 'viewer'],
+  'announcement.propose': ['owner', 'operator', 'moderator'],
+  'announcement.review': ['owner', 'operator'],
+  'audit.read': ['owner', 'approver', 'operator', 'viewer'],
+  'audit.own': ['moderator', 'support'],
+  'roles.manage': ['owner'],
+});
+const envList = name => String(process.env[name] || '').split(',').map(s => s.trim()).filter(Boolean);
+async function rolesOf(store, db, wallet) {
+  const set = new Set();
+  for (const [role, name] of Object.entries(ENV_ROLES)) if (envList(name).includes(wallet)) set.add(role);
+  for (const row of (await db.query('SELECT role FROM ryo_cc_roles WHERE scope=$1 AND wallet=$2 AND revoked IS NULL', [store.scope, wallet])).rows) set.add(row.role);
+  return ROLES.filter(r => set.has(r));
+}
+const can = (roles, perm) => roles.some(r => PERMISSIONS[perm].includes(r));
+const actingRole = (roles, perm) => roles.find(r => PERMISSIONS[perm].includes(r));
+function need(roles, ...perms) {
+  if (!perms.some(p => can(roles, p))) fail('Your Command Center role does not include this permission (' + perms.join(' or ') + ').', 403);
+}
+const permissionsOf = roles => Object.keys(PERMISSIONS).filter(p => can(roles, p));
+
+/* ---------- Input validation ---------- */
+function address(value) {
+  try { const { PublicKey } = require('@solana/web3.js'); if (typeof value === 'string' && new PublicKey(value).toBase58() === value) return value; } catch {}
+  fail('Invalid Solana wallet address.');
+}
+const isAddress = value => { try { return address(value) === value; } catch { return false; } };
+function requestId(value) { if (typeof value !== 'string' || !/^[-a-zA-Z0-9_]{16,80}$/.test(value)) fail('A request ID (16-80 letters, digits, - or _) is required.'); return value; }
+function reason(value) {
+  if (typeof value !== 'string') fail('A reason is required.');
+  const v = value.replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁤﻿]/g, ' ').replace(/\s+/g, ' ').trim();
+  if ([...v].length < 8 || [...v].length > 500) fail('Give a reason of 8 to 500 characters.');
+  return v;
+}
+function version(value) { if (!Number.isSafeInteger(value) || value < 0) fail('expectedVersion is required. Refresh and try again.'); return value; }
+function limit(value, def = 50, max = 100) { if (value === undefined) return def; if (!Number.isSafeInteger(value) || value < 1 || value > max) fail('limit must be a whole number from 1 to ' + max + '.'); return value; }
+const cursorOut = id => (id ? Buffer.from(JSON.stringify({ id: Number(id) })).toString('base64url') : null);
+function cursorIn(value) {
+  if (value === undefined || value === null || value === '') return Number.MAX_SAFE_INTEGER;
+  try { const x = JSON.parse(Buffer.from(String(value), 'base64url').toString('utf8')); if (Number.isSafeInteger(x.id) && x.id > 0) return x.id; } catch {}
+  fail('Invalid page cursor.');
+}
+const short = w => (w ? w.slice(0, 4) + '…' + w.slice(-4) : w);
+const num = v => (v === null || v === undefined ? null : Number(v));
+const sha = text => crypto.createHash('sha256').update(String(text)).digest('hex');
+// Writes carry the scope the page was loaded for; a page from another network or scope can never act here.
+function sameScope(store, body) { if (body.scope !== store.scope) fail('This page was loaded for a different game network or scope. Refresh before acting.', 409); }
+const envelope = (store, data, extra = {}) => ({ marker: MARKER, scope: store.scope, observedAt: store.now(), status: 'ready', data, ...extra });
+
+/* ---------- Writes: one transaction, re-authorized, idempotent, audited ---------- */
+const WRITE_LIMIT = 30, WRITE_WINDOW_MS = 60000;
+async function write(ctx, wallet, action, body, perm, fn) {
+  const { store } = ctx, id = requestId(body.requestId);
+  sameScope(store, body);
+  const dashboard = require('./economic-dashboard.cjs');
+  return store.transaction(async c => {
+    // The admin control row lock serializes every staff write per scope, which also keeps the
+    // shared audit hash chain linear.
+    await dashboard.control(store, c, true);
+    const roles = await rolesOf(store, c, wallet);   // checked again inside the transaction, before commit
+    need(roles, perm);
+    const prior = (await c.query('SELECT action,result FROM ryo_cc_requests WHERE scope=$1 AND actor=$2 AND request_id=$3', [store.scope, wallet, id])).rows[0];
+    if (prior) { if (prior.action !== action) fail('This request ID was already used for a different action.', 409); return { ...prior.result, replayed: true }; }
+    const now = store.now();
+    const recent = Number((await c.query('SELECT COUNT(*) AS n FROM ryo_cc_requests WHERE scope=$1 AND actor=$2 AND created>$3', [store.scope, wallet, now - WRITE_WINDOW_MS])).rows[0].n);
+    if (recent >= WRITE_LIMIT) fail('Too many staff actions in a minute. Wait before trying again.', 429);
+    const role = actingRole(roles, perm), out = await fn(c, { roles, role, now, requestId: id });
+    const result = { ok: true, ...out.result };
+    await dashboard.audit(store, c, wallet, 'cc.' + out.audit, { role, requestId: id, outcome: 'success', ...out.data });
+    await c.query('INSERT INTO ryo_cc_requests(scope,actor,request_id,action,result,created) VALUES($1,$2,$3,$4,$5,$6)', [store.scope, wallet, id, action, JSON.stringify(result), now]);
+    return result;
+  });
+}
+
+/* ---------- Session ---------- */
+function networkInfo() {
+  try { const n = require('./network.cjs').built(__dirname); return { key: n.key, label: n.label }; } catch { return { key: 'unknown', label: 'Unknown' }; }
+}
+async function session(ctx, wallet, roles) {
+  const { store } = ctx;
+  const row = ctx.token ? (await store.pool.query('SELECT expires FROM ryo_sessions WHERE scope=$1 AND token_hash=$2', [store.scope, hash(ctx.token)])).rows[0] : null;
+  return envelope(store, { wallet, roles, role: roles[0], permissions: permissionsOf(roles), network: networkInfo(), sessionExpires: num(row?.expires) });
+}
+
+/* ---------- Overview ---------- */
+const metric = (key, value, source, status = 'ready', note) => ({ key, value, source, status, ...(note ? { note } : {}) });
+async function overview(ctx) {
+  const { store } = ctx, now = store.now();
+  const q = async (sql, args = []) => (await store.pool.query(sql, [store.scope, ...args])).rows[0];
+  const players = await q('SELECT COUNT(*) AS n FROM ryo_profiles WHERE scope=$1');
+  const online = await q('SELECT COUNT(DISTINCT wallet) AS n FROM ryo_presence WHERE scope=$1 AND last_seen>$2', [now - 90000]);
+  const reports = await q("SELECT COUNT(*) AS n FROM ryo_cc_chat_reports WHERE scope=$1 AND status='open'");
+  const muted = await q('SELECT COUNT(*) FILTER(WHERE banned) AS banned,COUNT(*) FILTER(WHERE NOT banned AND muted_until>$2) AS muted FROM ryo_cc_chat_status WHERE scope=$1', [now]);
+  const ann = await q("SELECT COUNT(*) AS n FROM ryo_cc_announcements WHERE scope=$1 AND status='pending'");
+  const proposals = await q("SELECT COUNT(*) AS n FROM ryo_admin_proposals WHERE scope=$1 AND status='pending'");
+  const pending = await q("SELECT (SELECT COUNT(*) FROM ryo_purchases WHERE scope=$1 AND status='pending') AS purchases,(SELECT COUNT(*) FROM ryo_withdrawals WHERE scope=$1 AND status='pending') AS withdrawals,(SELECT COUNT(*) FROM ryo_purchases WHERE scope=$1 AND status='pending' AND created<$2)+(SELECT COUNT(*) FROM ryo_withdrawals WHERE scope=$1 AND status='pending' AND created<$2) AS stale", [now - 30 * 60000]);
+  const ctl = await q('SELECT pauses FROM ryo_admin_control WHERE scope=$1');
+  const metrics = [
+    metric('players', num(players.n), 'ryo_profiles: wallets with a saved game profile'),
+    metric('activeSessions', num(online.n), 'ryo_presence: signed-in wallets with a heartbeat in the last 90 seconds'),
+    metric('newSignups24h', null, 'No account creation time is recorded', 'unavailable'),
+    metric('dailyActive', null, 'Presence is not retained after 90 seconds, so daily/weekly actives cannot be counted', 'unavailable'),
+    metric('openReports', num(reports.n), 'ryo_cc_chat_reports'),
+    metric('activeMutes', num(muted.muted), 'ryo_cc_chat_status'),
+    metric('activeBans', num(muted.banned), 'ryo_cc_chat_status'),
+    metric('pendingAnnouncements', num(ann.n), 'ryo_cc_announcements'),
+    metric('pendingProposals', num(proposals.n), 'ryo_admin_proposals (economic dashboard)'),
+    metric('pendingPurchases', num(pending.purchases), 'ryo_purchases'),
+    metric('pendingWithdrawals', num(pending.withdrawals), 'ryo_withdrawals'),
+    metric('stalePending', num(pending.stale), 'Pending purchases/withdrawals older than 30 minutes'),
+    metric('revenue', null, 'Verified Ryo/SOL revenue is reported in the Ryo Observatory (/admin/) for finance roles', 'not_implemented'),
+    metric('nftSales', null, 'Founder NFT management is planned for Phase 2', 'not_implemented'),
+  ];
+  return envelope(store, { metrics, pauses: Object.keys(ctl?.pauses || {}) });
+}
+
+/* ---------- Health ---------- */
+const timed = async (fn, ms) => { let t; const start = Date.now(); try { return { value: await Promise.race([fn(), new Promise((_, reject) => { t = setTimeout(() => reject(Object.assign(Error('timeout'), { timeout: true })), ms); })]), ms: Date.now() - start }; } finally { clearTimeout(t); } };
+function readJson(file) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; } }
+async function health(ctx) {
+  const { store } = ctx, now = store.now(), checks = {};
+  try {
+    const r = await timed(() => store.pool.query("SELECT to_regclass('ryo_cc_chat_status') IS NOT NULL AS cc,to_regclass('ryo_admin_audit') IS NOT NULL AS audit"), 5000);
+    checks.database = { status: r.value.rows[0].cc && r.value.rows[0].audit ? 'ok' : 'degraded', latencyMs: r.ms, schema: { commandCenter: !!r.value.rows[0].cc, auditChain: !!r.value.rows[0].audit } };
+  } catch { checks.database = { status: 'unavailable', note: 'Database did not answer within 5 seconds.' }; }
+  if (typeof ctx.checkNetwork === 'function') {
+    try { const r = await timed(() => ctx.checkNetwork(), 5000); checks.rpc = { status: 'ok', latencyMs: r.ms, note: 'Genesis hash matches this build\'s network.' }; }
+    catch (e) { checks.rpc = e.status ? { status: 'mismatch', note: 'RPC genesis does not match this build\'s network.' } : { status: 'unavailable', note: e.timeout ? 'RPC did not answer within 5 seconds.' : 'RPC request failed.' }; }
+  } else checks.rpc = { status: 'unavailable', note: 'No RPC check is available on this server.' };
+  let release = { prelaunch: null, stage: null };
+  try { const n = require('./network.cjs'); release = { prelaunch: n.prelaunch(), stage: n.releaseStage() }; } catch {}
+  let gates = null; try { gates = require('./launch-gates.cjs').publicGates(); } catch {}
+  const integrity = readJson(path.join(__dirname, '../public/build-integrity.json'));
+  const commit = String(process.env.RENDER_GIT_COMMIT || '').slice(0, 12) || null;
+  let queue = null;
+  if (checks.database.status !== 'unavailable') {
+    try {
+      const r = (await store.pool.query("SELECT (SELECT MIN(created) FROM ryo_purchases WHERE scope=$1 AND status='pending') AS p,(SELECT MIN(created) FROM ryo_withdrawals WHERE scope=$1 AND status='pending') AS w", [store.scope])).rows[0];
+      const oldest = [num(r.p), num(r.w)].filter(x => x !== null);
+      queue = { oldestPendingMinutes: oldest.length ? Math.floor((now - Math.min(...oldest)) / 60000) : null };
+    } catch {}
+  }
+  return envelope(store, {
+    api: { status: 'ok', serverTime: now },
+    ...checks,
+    build: { network: networkInfo(), commit, archiveSha256: integrity?.archiveSha256 ? String(integrity.archiveSha256).slice(0, 16) : null },
+    release, launchGates: gates, queue,
+    notes: ['Launch gates and release stage are set in the hosting environment and cannot be changed here.'],
+  });
+}
+
+/* ---------- Player lookup (read-only) ---------- */
+async function playerLookup(ctx, roles, body) {
+  const { store } = ctx, now = store.now(), query = typeof body.query === 'string' ? body.query.trim() : '';
+  if (!query) fail('Enter a wallet address or chat name.');
+  const shown = w => (can(roles, 'player.wallet') ? w : short(w));
+  if (!isAddress(query)) {
+    if ([...query].length < 2 || [...query].length > 14) fail('Search by a full wallet address, or 2-14 characters of a chat name.');
+    const like = '%' + query.replace(/[\\%_]/g, m => '\\' + m) + '%';
+    const rows = (await store.pool.query("SELECT DISTINCT ON (wallet) wallet,name,created FROM ryo_chat WHERE scope=$1 AND channel='global' AND lower(name) LIKE lower($2) ESCAPE '\\' ORDER BY wallet,id DESC LIMIT 20", [store.scope, like])).rows;
+    return envelope(store, { kind: 'matches', matches: rows.map(r => ({ wallet: shown(r.wallet), name: r.name, lastMessage: num(r.created) })), source: 'Recent Global chat names only (chat keeps the newest messages). Referral code and NFT serial search are not implemented.' });
+  }
+  const w = query, one = async (sql, args = []) => (await store.pool.query(sql, [store.scope, w, ...args])).rows[0];
+  const profile = await one('SELECT data FROM ryo_profiles WHERE scope=$1 AND wallet=$2');
+  const account = await one('SELECT balance FROM ryo_accounts WHERE scope=$1 AND wallet=$2');
+  const name = await one("SELECT name,created FROM ryo_chat WHERE scope=$1 AND wallet=$2 AND channel='global' ORDER BY id DESC LIMIT 1");
+  const seen = await one('SELECT MAX(last_seen) AS t FROM ryo_presence WHERE scope=$1 AND wallet=$2');
+  const status = await one('SELECT version,muted_until,banned,warnings,updated FROM ryo_cc_chat_status WHERE scope=$1 AND wallet=$2');
+  const reports = await one("SELECT COUNT(*) FILTER(WHERE target_wallet=$2) AS against,COUNT(*) FILTER(WHERE target_wallet=$2 AND status='open') AS open,COUNT(*) FILTER(WHERE reporter=$2) AS filed FROM ryo_cc_chat_reports WHERE scope=$1 AND (target_wallet=$2 OR reporter=$2)");
+  const staff = await rolesOf(store, store.pool, w);
+  const data = {
+    kind: 'player', wallet: shown(w), found: !!(profile || account || name),
+    identity: { chatName: name?.name || null, hasProfile: !!profile, onlineNow: num(seen?.t) !== null && num(seen.t) > now - 90000, staffRoles: staff },
+    chat: { version: status ? Number(status.version) : 0, mutedUntil: status && Number(status.muted_until) > now ? Number(status.muted_until) : null, banned: !!status?.banned, warnings: status ? Number(status.warnings) : 0, reportsAgainst: num(reports.against), openReportsAgainst: num(reports.open), reportsFiled: num(reports.filed) },
+  };
+  if (can(roles, 'moderation.read')) data.moderation = (await store.pool.query('SELECT id,actor,role,decision,message_id,duration_ms,reason_code,reason,created FROM ryo_cc_chat_actions WHERE scope=$1 AND target_wallet=$2 ORDER BY id DESC LIMIT 20', [store.scope, w])).rows.map(r => ({ id: Number(r.id), actor: r.actor, role: r.role, decision: r.decision, messageId: num(r.message_id), durationMs: num(r.duration_ms), reasonCode: r.reason_code, reason: r.reason, created: Number(r.created) }));
+  if (can(roles, 'player.heroes')) {
+    const heroes = Array.isArray(profile?.data?.heroes) ? profile.data.heroes : [];
+    const byRank = {}; for (const h of heroes) { const k = String(h?.rank ?? 'unknown'); byRank[k] = (byRank[k] || 0) + 1; }
+    data.heroes = { total: heroes.length, byRank, source: 'ryo_profiles (game entitlements, not NFTs)' };
+  }
+  if (can(roles, 'player.economy')) {
+    const adv = await one('SELECT data FROM ryo_adventures WHERE scope=$1 AND wallet=$2');
+    const pend = await one("SELECT (SELECT COUNT(*) FROM ryo_purchases WHERE scope=$1 AND wallet=$2 AND status='pending') AS purchases,(SELECT COUNT(*) FROM ryo_withdrawals WHERE scope=$1 AND wallet=$2 AND status='pending') AS withdrawals");
+    data.economy = { ryoBalance: num(account?.balance), chestPending: adv ? Math.floor(Number(adv.data?.pending || 0) / 1000) : null, chestClaimed: adv ? Number(adv.data?.claimed || 0) : null, pendingPurchases: num(pend.purchases), pendingWithdrawals: num(pend.withdrawals), source: 'Game ledger (read-only). Balances cannot be changed from the Command Center.' };
+  }
+  if (can(roles, 'player.transactions')) {
+    const purchases = (await store.pool.query('SELECT request_id,product,status,amount,signature,created,settled_at FROM ryo_purchases WHERE scope=$1 AND wallet=$2 ORDER BY created DESC LIMIT 10', [store.scope, w])).rows;
+    const withdrawals = (await store.pool.query('SELECT request_id,status,amount,signature,created,settled_at FROM ryo_withdrawals WHERE scope=$1 AND wallet=$2 ORDER BY created DESC LIMIT 10', [store.scope, w])).rows;
+    const tx = (r, kind) => ({ kind, requestId: r.request_id, product: r.product || null, status: r.status, amount: Number(r.amount), signature: r.signature, created: Number(r.created), settled: num(r.settled_at) });
+    data.transactions = [...purchases.map(r => tx(r, 'purchase')), ...withdrawals.map(r => tx(r, 'withdrawal'))].sort((a, b) => b.created - a.created);
+  }
+  return envelope(store, data);
+}
+
+/* ---------- Chat moderation ---------- */
+const CATEGORIES = ['spam', 'scam', 'harassment', 'impersonation', 'offensive', 'other'];
+const WARN_TEXT = { spam: 'spam', scam: 'scam or phishing messages', harassment: 'harassment', impersonation: 'impersonation', offensive: 'offensive language', other: 'breaking the chat rules' };
+const MUTE_MINUTES = [5, 30, 60, 1440, 10080];
+const DECISIONS = ['warn', 'hide', 'unhide', 'mute', 'unmute', 'ban', 'unban'];
+const EVIDENCE_RETENTION_MS = 90 * 86400000;   // owner decision pending; see the Phase 1 review
+async function chatFeed(ctx, body) {
+  const { store } = ctx, ch = body.channel === 'system' ? 'system' : 'global', before = cursorIn(body.cursor), n = limit(body.limit);
+  const rows = (await store.pool.query("SELECT c.id,c.channel,c.wallet,c.name,c.text,c.created,c.hidden,(SELECT COUNT(*) FROM ryo_cc_chat_reports r WHERE r.scope=c.scope AND r.message_id=c.id AND r.status='open') AS open_reports FROM ryo_chat c WHERE c.scope=$1 AND c.channel=$2 AND c.id<$3 ORDER BY c.id DESC LIMIT $4", [store.scope, ch, before, n])).rows;
+  return envelope(store, { channel: ch, messages: rows.map(r => ({ id: Number(r.id), wallet: r.wallet, name: r.name, text: r.text, created: Number(r.created), hidden: num(r.hidden), openReports: Number(r.open_reports) })) }, { nextCursor: rows.length === n ? cursorOut(rows.at(-1).id) : null });
+}
+async function reportQueue(ctx, body) {
+  const { store } = ctx, status = ['open', 'actioned', 'dismissed'].includes(body.status) ? body.status : 'open', before = cursorIn(body.cursor), n = limit(body.limit);
+  const rows = (await store.pool.query('SELECT r.*,c.hidden AS message_hidden,(c.id IS NOT NULL) AS message_stored,(SELECT COUNT(*) FROM ryo_cc_chat_reports d WHERE d.scope=r.scope AND d.message_id=r.message_id) AS total_for_message FROM ryo_cc_chat_reports r LEFT JOIN ryo_chat c ON c.scope=r.scope AND c.id=r.message_id WHERE r.scope=$1 AND r.status=$2 AND r.id<$3 ORDER BY r.id DESC LIMIT $4', [store.scope, status, before, n])).rows;
+  return envelope(store, {
+    status, reports: rows.map(r => ({ id: Number(r.id), messageId: Number(r.message_id), reporter: r.reporter, category: r.category, details: r.details, targetWallet: r.target_wallet, snapshot: { name: r.snapshot_name, text: r.snapshot_text, created: Number(r.message_created) }, message: { stored: r.message_stored, hidden: num(r.message_hidden) }, reportsForMessage: Number(r.total_for_message), status: r.status, created: Number(r.created), resolved: num(r.resolved), resolvedBy: r.resolved_by, resolution: r.resolution })),
+    retentionDays: EVIDENCE_RETENTION_MS / 86400000,
+  }, { nextCursor: rows.length === n ? cursorOut(rows.at(-1).id) : null });
+}
+async function sanctions(ctx) {
+  const { store } = ctx, now = store.now();
+  const rows = (await store.pool.query('SELECT wallet,version,muted_until,banned,warnings,actor,updated FROM ryo_cc_chat_status WHERE scope=$1 AND (banned OR muted_until>$2) ORDER BY updated DESC LIMIT 100', [store.scope, now])).rows;
+  return envelope(store, { sanctions: rows.map(r => ({ wallet: r.wallet, version: Number(r.version), mutedUntil: Number(r.muted_until) > now ? Number(r.muted_until) : null, banned: r.banned, warnings: Number(r.warnings), actor: r.actor, updated: Number(r.updated) })) });
+}
+// Evidence older than the retention period is redacted (the decision record itself stays).
+async function expireEvidence(store, c, now) {
+  const cutoff = now - EVIDENCE_RETENTION_MS;
+  await c.query("UPDATE ryo_cc_chat_reports SET snapshot_text='[evidence expired]',details=NULL WHERE scope=$1 AND status<>'open' AND created<$2 AND snapshot_text<>'[evidence expired]'", [store.scope, cutoff]);
+  await c.query("UPDATE ryo_cc_chat_actions SET evidence_text='[evidence expired]' WHERE scope=$1 AND created<$2 AND evidence_text IS NOT NULL AND evidence_text<>'[evidence expired]'", [store.scope, cutoff]);
+}
+async function moderate(ctx, wallet, body) {
+  const decision = DECISIONS.includes(body.decision) ? body.decision : fail('Choose a moderation decision.');
+  const code = CATEGORIES.includes(body.reasonCode) ? body.reasonCode : fail('Choose a reason category.');
+  const why = reason(body.reason);
+  const messageId = body.messageId === undefined || body.messageId === null ? null : (Number.isSafeInteger(body.messageId) && body.messageId > 0 ? body.messageId : fail('Invalid message ID.'));
+  const reportId = body.reportId === undefined || body.reportId === null ? null : (Number.isSafeInteger(body.reportId) && body.reportId > 0 ? body.reportId : fail('Invalid report ID.'));
+  if (['hide', 'unhide'].includes(decision) && !messageId) fail('Choose the message to ' + decision + '.');
+  const minutes = decision === 'mute' ? (MUTE_MINUTES.includes(body.durationMinutes) ? body.durationMinutes : fail('Choose a mute duration: 5m, 30m, 1h, 24h or 7d.')) : null;
+  const expected = ['hide', 'unhide'].includes(decision) ? null : version(body.expectedVersion);
+  return write(ctx, wallet, 'cc-chat-moderate', body, 'moderation.write', async (c, { role, now }) => {
+    const { store } = ctx;
+    let message = null;
+    if (messageId) {
+      message = (await c.query('SELECT id,channel,wallet,name,text,hidden,ref FROM ryo_chat WHERE scope=$1 AND id=$2', [store.scope, messageId])).rows[0];
+      if (!message) fail('That message is no longer stored (chat keeps only the newest messages). Use the report snapshot and act on the wallet instead.', 404);
+      // Official announcements are shown or withdrawn only through the two-person Announcements review.
+      if (String(message.ref || '').startsWith('announcement:')) fail('Official announcements are published and unpublished from Announcements.', 409);
+    }
+    const target = message ? message.wallet : address(body.targetWallet);
+    if (body.targetWallet !== undefined && message && body.targetWallet !== message.wallet) fail('The message was not sent by that wallet.', 409);
+    if (target === wallet) fail('You cannot moderate your own wallet or messages.', 403);
+    const isSystem = message?.channel === 'system';
+    if (!isSystem) {
+      if ((await rolesOf(store, c, target)).length) fail('Staff wallets cannot be moderated here. Remove the staff role first.', 403);
+      // Same row lock as chat-send: an in-flight send either commits before this decision or sees it.
+      await c.query('SELECT 1 FROM ryo_accounts WHERE scope=$1 AND wallet=$2 FOR UPDATE', [store.scope, target]);
+    } else if (!['hide', 'unhide'].includes(decision)) fail('System announcements can only be hidden or restored.', 409);
+    let report = null;
+    if (reportId) {
+      report = (await c.query('SELECT id,message_id,target_wallet,status FROM ryo_cc_chat_reports WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, reportId])).rows[0];
+      if (!report || report.status !== 'open') fail('That report is unavailable or already resolved.', 409);
+      if (report.target_wallet !== target || (messageId && Number(report.message_id) !== messageId)) fail('That report is about a different message or wallet.', 409);
+    }
+    // System announcements have no player standing; their hide/restore only changes visibility.
+    if (!isSystem) await c.query('INSERT INTO ryo_cc_chat_status(scope,wallet,updated) VALUES($1,$2,$3) ON CONFLICT DO NOTHING', [store.scope, target, now]);
+    const st = isSystem ? { version: 0, muted_until: 0, banned: false, warnings: 0, last_warning: null, last_warning_at: null }
+      : (await c.query('SELECT * FROM ryo_cc_chat_status WHERE scope=$1 AND wallet=$2 FOR UPDATE', [store.scope, target])).rows[0];
+    if (expected !== null && expected !== Number(st.version)) fail('This player\'s chat standing changed. Refresh and review it again.', 409);
+    const next = { muted_until: Number(st.muted_until), banned: st.banned, warnings: Number(st.warnings), last_warning: st.last_warning, last_warning_at: num(st.last_warning_at) };
+    if (decision === 'hide') {
+      if (message.hidden !== null) fail('That message is already hidden.', 409);
+      await c.query('UPDATE ryo_chat SET hidden=$3 WHERE scope=$1 AND id=$2', [store.scope, messageId, now]);
+      await c.query("UPDATE ryo_cc_chat_reports SET status='actioned',resolved=$3,resolved_by=$4,resolution='hidden' WHERE scope=$1 AND message_id=$2 AND status='open'", [store.scope, messageId, now, wallet]);
+    } else if (decision === 'unhide') {
+      if (message.hidden === null) fail('That message is not hidden.', 409);
+      await c.query('UPDATE ryo_chat SET hidden=NULL WHERE scope=$1 AND id=$2', [store.scope, messageId]);
+    } else if (decision === 'warn') { next.warnings += 1; next.last_warning = 'A moderator warned you about ' + WARN_TEXT[code] + '. Repeated problems can lead to a mute or ban.'; next.last_warning_at = now; }
+    else if (decision === 'mute') next.muted_until = now + minutes * 60000;
+    else if (decision === 'unmute') { if (next.muted_until <= now) fail('This player is not muted.', 409); next.muted_until = 0; }
+    else if (decision === 'ban') { if (next.banned) fail('This player is already banned from chat.', 409); next.banned = true; }
+    else if (decision === 'unban') { if (!next.banned) fail('This player is not banned from chat.', 409); next.banned = false; }
+    const changesStanding = !['hide', 'unhide'].includes(decision);
+    let newVersion = Number(st.version);
+    if (changesStanding) {
+      newVersion += 1;
+      await c.query('UPDATE ryo_cc_chat_status SET version=$3,muted_until=$4,banned=$5,warnings=$6,last_warning=$7,last_warning_at=$8,actor=$9,updated=$10 WHERE scope=$1 AND wallet=$2', [store.scope, target, newVersion, next.muted_until, next.banned, next.warnings, next.last_warning, next.last_warning_at, wallet, now]);
+    }
+    if (report && report.status === 'open') await c.query("UPDATE ryo_cc_chat_reports SET status='actioned',resolved=$3,resolved_by=$4,resolution=$5 WHERE scope=$1 AND id=$2 AND status='open'", [store.scope, reportId, now, wallet, decision]);
+    const actionRow = (await c.query('INSERT INTO ryo_cc_chat_actions(scope,actor,role,decision,target_wallet,message_id,report_id,duration_ms,reason_code,reason,evidence_name,evidence_text,request_id,created) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id', [store.scope, wallet, role, decision, target, messageId, reportId, minutes ? minutes * 60000 : null, code, why, message?.name || null, message?.text || null, body.requestId, now])).rows[0];
+    await expireEvidence(store, c, now);
+    return {
+      result: { actionId: Number(actionRow.id), decision, targetWallet: target, messageId, standing: { version: newVersion, mutedUntil: next.muted_until > now ? next.muted_until : null, banned: next.banned, warnings: next.warnings } },
+      audit: 'chat.' + decision,
+      // Message text is kept out of the audit chain; its hash links the record to the restricted evidence.
+      data: { target, messageId, reportId, reasonCode: code, reason: why, durationMinutes: minutes, evidenceSha256: message ? sha(message.text) : null, versionBefore: Number(st.version), versionAfter: newVersion },
+    };
+  });
+}
+async function resolveReport(ctx, wallet, body) {
+  const id = Number.isSafeInteger(body.reportId) && body.reportId > 0 ? body.reportId : fail('Choose a report.'), why = reason(body.reason);
+  if (body.resolution !== 'dismiss') fail('Reports are dismissed here; use a moderation decision to act on them.');
+  return write(ctx, wallet, 'cc-report-resolve', body, 'reports.resolve', async (c, { now }) => {
+    const { store } = ctx;
+    const r = (await c.query('SELECT id,status,target_wallet,message_id FROM ryo_cc_chat_reports WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, id])).rows[0];
+    if (!r || r.status !== 'open') fail('That report is unavailable or already resolved.', 409);
+    await c.query("UPDATE ryo_cc_chat_reports SET status='dismissed',resolved=$3,resolved_by=$4,resolution=$5 WHERE scope=$1 AND id=$2", [store.scope, id, now, wallet, 'dismissed: ' + why]);
+    await expireEvidence(store, c, now);
+    return { result: { reportId: id, status: 'dismissed' }, audit: 'report.dismissed', data: { reportId: id, target: r.target_wallet, messageId: Number(r.message_id), reason: why } };
+  });
+}
+
+/* ---------- Official System announcements (two-person: propose, then review by another wallet) ---------- */
+const ANNOUNCEMENT_TTL_MS = 7 * 86400000, OFFICIAL = 'command-center';
+function announcementText(value, label, optional = false) {
+  if (optional && (value === undefined || value === null || value === '')) return null;
+  try { return require('./chat.cjs').clean(value); } catch (e) { fail(label + ': ' + e.message); }
+}
+const publicAnnouncement = r => ({ id: Number(r.id), textEn: r.text_en, textPt: r.text_pt, status: r.status, version: Number(r.version), proposer: r.proposer, reason: r.reason, created: Number(r.created), reviewer: r.reviewer, reviewReason: r.review_reason, reviewed: num(r.reviewed), unpublishedBy: r.unpublished_by, unpublished: num(r.unpublished), expires: r.status === 'pending' ? Number(r.created) + ANNOUNCEMENT_TTL_MS : null });
+async function announcements(ctx) {
+  const { store } = ctx;
+  const rows = (await store.pool.query('SELECT * FROM ryo_cc_announcements WHERE scope=$1 ORDER BY id DESC LIMIT 50', [store.scope])).rows;
+  return envelope(store, { announcements: rows.map(publicAnnouncement), ttlDays: ANNOUNCEMENT_TTL_MS / 86400000 });
+}
+async function proposeAnnouncement(ctx, wallet, body) {
+  const en = announcementText(body.textEn, 'English text'), pt = announcementText(body.textPt, 'Portuguese text', true), why = reason(body.reason);
+  return write(ctx, wallet, 'cc-announce-propose', body, 'announcement.propose', async (c, { now }) => {
+    const { store } = ctx;
+    const pendingCount = Number((await c.query("SELECT COUNT(*) AS n FROM ryo_cc_announcements WHERE scope=$1 AND status='pending'", [store.scope])).rows[0].n);
+    if (pendingCount >= 20) fail('Twenty announcements are already waiting for review.', 429);
+    const row = (await c.query('INSERT INTO ryo_cc_announcements(scope,text_en,text_pt,proposer,reason,created) VALUES($1,$2,$3,$4,$5,$6) RETURNING id', [store.scope, en, pt, wallet, why, now])).rows[0];
+    return { result: { id: Number(row.id), status: 'pending' }, audit: 'announcement.proposed', data: { id: Number(row.id), textEn: en, textPt: pt, reason: why } };
+  });
+}
+async function reviewAnnouncement(ctx, wallet, body) {
+  const id = Number.isSafeInteger(body.id) && body.id > 0 ? body.id : fail('Choose an announcement.');
+  if (typeof body.approve !== 'boolean') fail('Choose approve or reject.');
+  const expected = version(body.expectedVersion), why = reason(body.reason);
+  return write(ctx, wallet, 'cc-announce-review', body, 'announcement.review', async (c, { now }) => {
+    const { store } = ctx;
+    const a = (await c.query('SELECT * FROM ryo_cc_announcements WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, id])).rows[0];
+    if (!a || a.status !== 'pending') fail('That announcement is unavailable or already reviewed.', 409);
+    if (a.proposer === wallet) fail('A different authorized wallet must review this announcement.', 403);
+    if (Number(a.version) !== expected) fail('This announcement changed. Refresh before reviewing.', 409);
+    if (now - Number(a.created) > ANNOUNCEMENT_TTL_MS) fail('This announcement expired. Propose it again.', 409);
+    const status = body.approve ? 'published' : 'rejected', published = [];
+    if (body.approve) {
+      for (const [lang, text] of [['en', a.text_en], ['pt', a.text_pt]]) {
+        if (!text) continue;
+        const r = (await c.query("INSERT INTO ryo_chat(scope,channel,wallet,name,text,created,ref) VALUES($1,'system',$2,'System',$3,$4,$5) ON CONFLICT DO NOTHING RETURNING id", [store.scope, OFFICIAL, '📢 ' + text, now, 'announcement:' + id + ':' + lang])).rows[0];
+        if (r) published.push(Number(r.id));
+      }
+      await require('./chat.cjs').prune(store, c, 'system');
+    }
+    await c.query('UPDATE ryo_cc_announcements SET status=$3,version=version+1,reviewer=$4,review_reason=$5,reviewed=$6 WHERE scope=$1 AND id=$2', [store.scope, id, status, wallet, why, now]);
+    return { result: { id, status, messageIds: published }, audit: 'announcement.' + status, data: { id, proposer: a.proposer, reason: why, messageIds: published, versionBefore: expected, versionAfter: expected + 1 } };
+  });
+}
+async function unpublishAnnouncement(ctx, wallet, body) {
+  const id = Number.isSafeInteger(body.id) && body.id > 0 ? body.id : fail('Choose an announcement.');
+  const expected = version(body.expectedVersion), why = reason(body.reason);
+  return write(ctx, wallet, 'cc-announce-unpublish', body, 'announcement.review', async (c, { now }) => {
+    const { store } = ctx;
+    const a = (await c.query('SELECT * FROM ryo_cc_announcements WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, id])).rows[0];
+    if (!a || a.status !== 'published') fail('Only a published announcement can be unpublished.', 409);
+    if (Number(a.version) !== expected) fail('This announcement changed. Refresh before unpublishing.', 409);
+    const hidden = (await c.query("UPDATE ryo_chat SET hidden=$3 WHERE scope=$1 AND channel='system' AND ref=ANY($2) AND hidden IS NULL RETURNING id", [store.scope, ['announcement:' + id + ':en', 'announcement:' + id + ':pt'], now])).rows.map(r => Number(r.id));
+    await c.query("UPDATE ryo_cc_announcements SET status='unpublished',version=version+1,unpublished_by=$3,unpublished=$4 WHERE scope=$1 AND id=$2", [store.scope, id, wallet, now]);
+    return { result: { id, status: 'unpublished', hiddenMessageIds: hidden }, audit: 'announcement.unpublished', data: { id, reason: why, hiddenMessageIds: hidden, versionBefore: expected, versionAfter: expected + 1 } };
+  });
+}
+
+/* ---------- Audit log (the existing economic-dashboard hash chain) ---------- */
+async function auditLog(ctx, wallet, roles, body) {
+  const { store } = ctx, { digest } = require('./economic-dashboard.cjs'), before = cursorIn(body.cursor), n = limit(body.limit);
+  const own = !can(roles, 'audit.read');
+  // `prefix`, not `action`: the request's own `action` field names the API call.
+  const prefix = typeof body.prefix === 'string' && /^[a-z.]{1,40}$/.test(body.prefix) ? body.prefix : null;
+  const actor = body.actor ? address(body.actor) : null;
+  const args = [store.scope, before, n], where = ['scope=$1', 'sequence<$2'];
+  if (own) { args.push(wallet); where.push('actor=$' + args.length, "action LIKE 'cc.%'"); }
+  if (prefix) { args.push(prefix.replace(/[\\%_]/g, m => '\\' + m) + '%'); where.push('action LIKE $' + args.length + " ESCAPE '\\'"); }
+  if (actor) { args.push(actor); where.push('actor=$' + args.length); }
+  const rows = (await store.pool.query('SELECT sequence,actor,action,data,created,previous,hash FROM ryo_admin_audit WHERE ' + where.join(' AND ') + ' ORDER BY sequence DESC LIMIT $3', args)).rows;
+  const entries = rows.map((r, i) => {
+    const record = { sequence: Number(r.sequence), actor: r.actor, action: r.action, data: r.data, created: Number(r.created), previous: r.previous };
+    const next = rows[i + 1], linked = next && Number(next.sequence) === record.sequence - 1 ? next.hash === r.previous : null;
+    return { ...record, hash: r.hash, hashValid: digest(record) === r.hash, linked };
+  });
+  return envelope(store, { entries, scopeLimited: own ? 'Your own Command Center actions only.' : null }, { nextCursor: rows.length === n ? cursorOut(rows.at(-1).sequence) : null });
+}
+
+/* ---------- Staff roles (Owner grants Moderator / Support only) ---------- */
+async function ccControl(store, c, lock = false) {
+  await c.query('INSERT INTO ryo_cc_control(scope,installed) VALUES($1,$2) ON CONFLICT DO NOTHING', [store.scope, store.now()]);
+  return (await c.query('SELECT roles_version FROM ryo_cc_control WHERE scope=$1' + (lock ? ' FOR UPDATE' : ''), [store.scope])).rows[0];
+}
+async function roleList(ctx) {
+  const { store } = ctx, ctl = await ccControl(store, store.pool);
+  const grants = (await store.pool.query('SELECT wallet,role,granted_by,reason,created,revoked,revoked_by FROM ryo_cc_roles WHERE scope=$1 ORDER BY created DESC LIMIT 200', [store.scope])).rows;
+  const env = Object.fromEntries(Object.entries(ENV_ROLES).map(([role, name]) => [role, envList(name)]));
+  return envelope(store, { rolesVersion: Number(ctl.roles_version), environment: env, grants: grants.map(g => ({ wallet: g.wallet, role: g.role, grantedBy: g.granted_by, reason: g.reason, created: Number(g.created), revoked: num(g.revoked), revokedBy: g.revoked_by })), note: 'Owner, Financial Approver, Game Operator and Viewer are set in the hosting environment and need a redeploy to change.' });
+}
+async function changeRole(ctx, wallet, body, grant) {
+  const target = address(body.wallet), role = GRANTABLE.includes(body.role) ? body.role : fail('Only the Moderator or Support role can be granted here.'), expected = version(body.expectedVersion), why = reason(body.reason);
+  if ([ctx.treasuryAddress, ctx.studioAddress, ctx.revenueAddress].filter(Boolean).includes(target)) fail('Custody, studio and revenue wallets cannot hold staff roles.', 403);
+  return write(ctx, wallet, grant ? 'cc-role-grant' : 'cc-role-revoke', body, 'roles.manage', async (c, { now }) => {
+    const { store } = ctx, ctl = await ccControl(store, c, true);
+    if (Number(ctl.roles_version) !== expected) fail('Staff roles changed. Refresh before changing them.', 409);
+    const row = (await c.query('SELECT revoked FROM ryo_cc_roles WHERE scope=$1 AND wallet=$2 AND role=$3 FOR UPDATE', [store.scope, target, role])).rows[0];
+    if (grant) {
+      if (row && row.revoked === null) fail('This wallet already has that role.', 409);
+      await c.query('INSERT INTO ryo_cc_roles(scope,wallet,role,granted_by,reason,created) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(scope,wallet,role) DO UPDATE SET granted_by=$4,reason=$5,created=$6,revoked=NULL,revoked_by=NULL', [store.scope, target, role, wallet, why, now]);
+    } else {
+      if (!row || row.revoked !== null) fail('This wallet does not have that role.', 409);
+      await c.query('UPDATE ryo_cc_roles SET revoked=$4,revoked_by=$5 WHERE scope=$1 AND wallet=$2 AND role=$3', [store.scope, target, role, now, wallet]);
+    }
+    await c.query('UPDATE ryo_cc_control SET roles_version=roles_version+1 WHERE scope=$1', [store.scope]);
+    return { result: { wallet: target, role, active: grant, rolesVersion: expected + 1 }, audit: 'role.' + (grant ? 'granted' : 'revoked'), data: { target, role, reason: why, versionBefore: expected, versionAfter: expected + 1 } };
+  });
+}
+
+/* ---------- Dispatcher ---------- */
+async function handle(ctx, wallet, action, body = {}) {
+  const { store } = ctx;
+  if ([ctx.treasuryAddress, ctx.studioAddress, ctx.revenueAddress].filter(Boolean).includes(wallet)) fail('Custody, studio and revenue wallets cannot use the Command Center.', 403);
+  const roles = await rolesOf(store, store.pool, wallet);
+  if (!roles.length) fail('This wallet has no Command Center access. Ask the service owner to assign a staff role.', 403);
+  switch (action) {
+    case 'cc-session': return session(ctx, wallet, roles);
+    case 'cc-overview': need(roles, 'overview.read'); return overview(ctx);
+    case 'cc-health': need(roles, 'ops.read'); return health(ctx);
+    case 'cc-player-lookup': need(roles, 'player.read'); return playerLookup(ctx, roles, body);
+    case 'cc-chat-feed': need(roles, 'moderation.read'); return chatFeed(ctx, body);
+    case 'cc-chat-reports': need(roles, 'moderation.read'); return reportQueue(ctx, body);
+    case 'cc-chat-sanctions': need(roles, 'moderation.read'); return sanctions(ctx);
+    case 'cc-chat-moderate': need(roles, 'moderation.write'); return moderate(ctx, wallet, body);
+    case 'cc-report-resolve': need(roles, 'reports.resolve'); return resolveReport(ctx, wallet, body);
+    case 'cc-announcements': need(roles, 'announcement.read', 'announcement.propose', 'announcement.review'); return announcements(ctx);
+    case 'cc-announce-propose': need(roles, 'announcement.propose'); return proposeAnnouncement(ctx, wallet, body);
+    case 'cc-announce-review': need(roles, 'announcement.review'); return reviewAnnouncement(ctx, wallet, body);
+    case 'cc-announce-unpublish': need(roles, 'announcement.review'); return unpublishAnnouncement(ctx, wallet, body);
+    case 'cc-audit': need(roles, 'audit.read', 'audit.own'); return auditLog(ctx, wallet, roles, body);
+    case 'cc-roles': need(roles, 'roles.manage'); return roleList(ctx);
+    case 'cc-role-grant': need(roles, 'roles.manage'); return changeRole(ctx, wallet, body, true);
+    case 'cc-role-revoke': need(roles, 'roles.manage'); return changeRole(ctx, wallet, body, false);
+    default: fail('Unknown Command Center action.', 404);
+  }
+}
+module.exports = { handle, rolesOf, permissionsOf, PERMISSIONS, ROLES, MARKER, MUTE_MINUTES, CATEGORIES };

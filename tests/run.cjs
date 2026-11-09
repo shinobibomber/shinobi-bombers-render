@@ -21,6 +21,7 @@ suites.unshift('archive-download.cjs');
 suites.push('adventure-hero-size.cjs','mythic-vfx-v6.cjs');
 suites.push('mythic-automatic-skills.cjs','mythic-skill-rotation.cjs','mythic-completion.cjs','mythic-mode-rotation.cjs');
 suites.push('mythic-poster-release.cjs');
+suites.push('command-center-server.cjs','command-center-ui.cjs');
 console.log('Global Chest regression runner · Node '+process.version+' · isolated fixtures only');
 const concurrency=Math.max(1,Math.min(2,Number(process.env.SHINOBI_TEST_CONCURRENCY)||1));
 if(concurrency===1){

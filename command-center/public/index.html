@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow"><title>Shinobi Command Center</title>
+<link rel="stylesheet" href="/admin/command-center/cc.css"><script src="/admin/command-center/cc.js" defer></script></head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="network" class="network" role="status" hidden></div>
+<header class="top">
+  <button id="menu" class="icon-btn menu" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Menu" hidden>☰</button>
+  <a class="brand" href="#overview"><span class="crest" aria-hidden="true">忍</span><span><b>SHINOBI</b><small data-i18n="brand.sub">COMMAND CENTER</small></span></a>
+  <div class="who" id="who" hidden><span id="who-wallet" class="mono"></span><span id="who-role" class="badge"></span><span id="who-readonly" class="badge muted" hidden data-i18n="state.readonly">Read only</span><small id="who-expiry"></small></div>
+  <div class="top-actions">
+    <span id="health-dot" class="dot" hidden></span>
+    <label class="lang"><span class="sr" data-i18n="lang.label">Language</span><select id="lang"><option value="en">EN</option><option value="pt">PT-BR</option></select></label>
+    <button id="connect" class="primary" type="button" data-i18n="auth.connect">Connect staff wallet</button>
+    <button id="signout" type="button" hidden data-i18n="auth.signout">Sign out</button>
+  </div>
+</header>
+<div class="layout">
+  <nav id="sidebar" class="sidebar" aria-label="Command Center"></nav>
+  <main id="main" tabindex="-1">
+    <div id="notice" class="notice" role="status" hidden></div>
+    <section id="locked" class="locked">
+      <div class="eyebrow" data-i18n="locked.eyebrow">RESTRICTED STAFF CONSOLE</div>
+      <h1 data-i18n="locked.title">Shinobi Command Center</h1>
+      <p data-i18n="locked.body">Sign in with an authorized Phantom wallet. Every view and action is authorized again on the server; this page only shows what your role allows.</p>
+      <ul class="pills"><li data-i18n="locked.p1">Wallet-signed session</li><li data-i18n="locked.p2">Server-enforced roles</li><li data-i18n="locked.p3">Hash-chained audit</li><li data-i18n="locked.p4">No money movement</li></ul>
+    </section>
+    <div id="view" hidden></div>
+  </main>
+</div>
+<dialog id="dialog" aria-labelledby="dialog-title"><form method="dialog" id="dialog-form">
+  <h2 id="dialog-title"></h2><div id="dialog-body"></div><p id="dialog-error" class="error" role="alert" hidden></p>
+  <div class="dialog-actions"><button value="cancel" formnovalidate type="submit" data-i18n="action.cancel">Cancel</button><button id="dialog-ok" class="primary" value="ok" type="submit"></button></div>
+</form></dialog>
+</body></html>

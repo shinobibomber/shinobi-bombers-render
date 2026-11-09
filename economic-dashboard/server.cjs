@@ -192,4 +192,5 @@ async function handle(ctx,wallet,action,body){
   fail('Unknown admin action.',404);
  });
 }
-module.exports={handle,guard,snapshot,validate,canonical,digest,MARKER};
+// audit/control are shared with the Command Center so all staff actions extend this one hash chain.
+module.exports={handle,guard,snapshot,validate,canonical,digest,audit,control,MARKER};
