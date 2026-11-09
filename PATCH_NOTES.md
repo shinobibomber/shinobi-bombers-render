@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Adventure reward funding
+
+- The Adventure reward pool can now be funded from the Locked Treasury through its Squads multisig vote. The game counts each top-up exactly once, and only after it has been checked on-chain and approved by the team.
+- Reward claims open once the pool funding and the daily claim limits are approved. We will announce it.
+
 ## November 9, 2026 — Founder prices stay, SR token support
 
 - Founder box prices stay at 0.7 SOL (Mythic) and 0.25 SOL (Legacy) until each tier sells out. They no longer return to 1 SOL / 0.5 SOL when the game opens.
