@@ -228,12 +228,12 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
   async function foundersContext() {
     if (foundersCtx) return foundersCtx;
     const rpc = env.SOLANA_RPC_URL || (net.key === 'devnet' ? env.SOLANA_DEVNET_RPC_URL || net.rpc : '');
-    const revenue = String(env.RYO_REVENUE_WALLET || '').trim();
-    let validRevenue = false; try { validRevenue = new PublicKey(revenue).toBase58() === revenue; } catch {}
-    if (!rpc || !validRevenue) fail('Founder box sales are not configured.', 503, 'FOUNDERS_NOT_CONFIGURED');
+    // The SOL receipt wallet is checked where a payment is built (founders.cjs founderRevenue), never here: confirming
+    // an already-paid reservation must keep working even if FOUNDERS_REVENUE_WALLET is later removed or mistyped.
+    if (!rpc) fail('Founder box sales are not configured.', 503, 'FOUNDERS_NOT_CONFIGURED');
     const connection = foundersConnection || new (fromApp('@solana/web3.js').Connection)(rpc, 'finalized');
     if (await connection.getGenesisHash() !== net.genesis) fail('Founder box sales are temporarily offline.', 503, 'FOUNDERS_NETWORK');
-    return (foundersCtx = { store, connection, revenueAddress: revenue, origin });
+    return (foundersCtx = { store, connection, origin });
   }
 
   /* Release abandoned Founder reservations (blockhash can no longer land) so the public counts and the Mythic early-bird

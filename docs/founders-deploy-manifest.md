@@ -57,7 +57,7 @@ All new switches **fail closed**: unset or unrecognised means off.
 | `FOUNDERS_REWARD_REDEMPTION_ENABLED` | off until approved | Activation, summons, Sensei trial, 12h Chest cooldown, discounts. |
 | `SENSEI_SOL_ENABLED` | off until approved | Permanent Sensei for SOL. **On the live build the Ryo Sensei products are removed regardless.** |
 | `FOUNDERS_MINT_AUTHORITY_SECRET` | new dedicated keypair (JSON array) | Founder NFT mint/update authority. It must not be the custody, revenue, registry or Squads wallet; start-up checks refuse that. It only signs mints and pays no fees. |
-| `RYO_REVENUE_WALLET` | existing | Receives the Founder and SOL Sensei payments. |
+| `FOUNDERS_REVENUE_WALLET` | new (2026-11-09) | Receives the Founder box and SOL Sensei payments only. Must differ from the game revenue wallet `RYO_REVENUE_WALLET` once the game is public. |
 | `SOLANA_RPC_URL` | existing (Helius, server-side only) | Broadcast and verification. It is never sent to the browser. |
 
 There is no change to `PRELAUNCH_MODE`, `RELEASE_STAGE`, `RYO_PRIVATE_TEST_WALLETS` or any launch gate. A Founder NFT never opens the game.

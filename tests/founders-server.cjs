@@ -29,7 +29,8 @@ const ok = label => pass.push(label);
   let now = Date.UTC(2027, 0, 6, 12); // a Wednesday
   const store = new Store(pool, 'solana-devnet:founders-test', () => now);
 
-  const authority = web3.Keypair.generate(), revenue = web3.Keypair.generate().publicKey.toBase58();
+  // revenue = FOUNDERS_REVENUE_WALLET (SOL receipts); gameRevenue = the game's RYO_REVENUE_WALLET, which must never receive them.
+  const authority = web3.Keypair.generate(), revenue = web3.Keypair.generate().publicKey.toBase58(), gameRevenue = web3.Keypair.generate().publicKey.toBase58();
   const balances = new Map(), statuses = new Map(), accounts = new Map(), refs = new Map(), sent = []; let height = 100, sendFails = false;
   const connection = {
     async getGenesisHash() { return 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG'; },
@@ -45,9 +46,10 @@ const ok = label => pass.push(label);
     async getParsedTokenAccountsByOwner() { return { value: [] }; },
     async getMultipleAccountsInfo(a) { return a.map(() => null); },
   };
-  const env = (extra = {}) => ({ FOUNDERS_MINT_AUTHORITY_SECRET: JSON.stringify([...authority.secretKey]), RYO_REVENUE_WALLET: revenue, ...extra });
+  const env = (extra = {}) => ({ FOUNDERS_MINT_AUTHORITY_SECRET: JSON.stringify([...authority.secretKey]), FOUNDERS_REVENUE_WALLET: revenue, RYO_REVENUE_WALLET: gameRevenue, ...extra });
   const PUBLIC = env({ FOUNDERS_PUBLIC_SALE_ENABLED: 'on' });
-  const ctx = { store, connection, revenueAddress: revenue, origin: 'https://example.invalid' };
+  // The game hands its own revenue wallet in ctx (apply-founders hook); Founder/Sensei SOL must ignore it.
+  const ctx = { store, connection, revenueAddress: gameRevenue, origin: 'https://example.invalid' };
   const wallets = Array.from({ length: 80 }, () => web3.Keypair.generate()), W = k => k.publicKey.toBase58();
   for (const k of wallets) balances.set(W(k), 5 * SOL);
   const [alice, bob, carol, dave, eve] = wallets;
@@ -68,7 +70,10 @@ const ok = label => pass.push(label);
   assert.deepEqual([F.TIERS.mythic.supply, F.TIERS.legacy.supply, F.TIERS.mythic.earlyBird.count, F.TIERS.mythic.earlyBird.lamports], [33, 30, 3, SOL / 2]);
   assert.deepEqual([1, 2, 3, 4, 33].map(n => F.priceFor(F.TIERS.mythic, n)), [SOL / 2, SOL / 2, SOL / 2, SOL, SOL], 'Mythic early bird #1-#3');
   assert.deepEqual([1, 3, 30].map(n => F.priceFor(F.TIERS.legacy, n)), [SOL / 2, SOL / 2, SOL / 2], 'Legacy has no early bird');
-  ok('switches fail closed (off/invalid/missing key); private testing is allowlist-only; prices, early bird and supply are code constants');
+  await assert.rejects(F.mint(ctx, W(alice), { tier: 'mythic', requestId: id(1) }, { ...PUBLIC, FOUNDERS_REVENUE_WALLET: '' }), e => e.code === 'FOUNDERS_NOT_CONFIGURED', 'no Founder SOL wallet: the game wallet is never used instead');
+  await assert.rejects(F.mint(ctx, W(alice), { tier: 'mythic', requestId: id(1) }, { ...PUBLIC, FOUNDERS_REVENUE_WALLET: revenue + ' x' }), e => e.code === 'FOUNDERS_NOT_CONFIGURED');
+  assert.throws(() => F.mintAuthority({ ...PUBLIC, FOUNDERS_REVENUE_WALLET: W(authority) }), /dedicated key/, 'the mint key cannot be the Founder SOL wallet');
+  ok('switches fail closed (off/invalid/missing key); private testing is allowlist-only; prices, early bird and supply are code constants; Founder SOL needs FOUNDERS_REVENUE_WALLET');
 
   // The live database was created by v1: migrate it (twice, as every db:init does) and keep its rows.
   { const old = new PGlite(); await old.exec(F.SCHEMA);
@@ -97,7 +102,7 @@ const ok = label => pass.push(label);
   assert(tx.feePayer.equals(alice.publicKey));
   assert.deepEqual(tx.instructions.map(ix => ix.programId.toBase58()), [SYS, SYS, T22, T22, T22, ATA, T22, T22, MEMO]);
   const pay = web3.SystemInstruction.decodeTransfer(tx.instructions[0]);
-  assert.deepEqual([pay.fromPubkey.toBase58(), pay.toPubkey.toBase58(), Number(pay.lamports)], [W(alice), revenue, SOL / 2], 'exactly the early-bird 0.5 SOL to the revenue wallet');
+  assert.deepEqual([pay.fromPubkey.toBase58(), pay.toPubkey.toBase58(), Number(pay.lamports)], [W(alice), revenue, SOL / 2], 'exactly the early-bird 0.5 SOL to the Founder SOL wallet (not the game wallet in ctx)');
   assert.equal(Buffer.from(tx.instructions[8].data).toString(), 'shinobi-founder-v1:mythic:' + id(1));
   assert.match(Buffer.from(tx.instructions[4].data).toString('latin1'), /Shinobi Bombers Founder Mythic #1[\s\S]*SBFNDR[\s\S]*example\.invalid\/founders\/metadata\/mythic-1\.json/);
   assert.equal(tx.instructions[7].data[0], 6, 'mint authority removed after minting exactly 1');
@@ -192,7 +197,7 @@ const ok = label => pass.push(label);
     const table = kind === 'founder' ? 'ryo_founder_purchases' : 'ryo_sensei_sol_purchases';
     const purchase = kind === 'founder'
       ? (await F.mint(isolatedCtx, W(carol), { tier: 'mythic', requestId: id(9000 + index) }, PUBLIC)).purchase
-      : (await F.senseiBuy(isolatedCtx, W(carol), { requestId: id(9000 + index) }, { SENSEI_SOL_ENABLED: 'on' })).senseiPurchase;
+      : (await F.senseiBuy(isolatedCtx, W(carol), { requestId: id(9000 + index) }, env({ SENSEI_SOL_ENABLED: 'on' }))).senseiPurchase;
     const row = (await pool.query('SELECT * FROM ' + table + ' WHERE scope=$1 AND request_id=$2', [isolated.scope, purchase.requestId])).rows[0];
     const signature = bs58.encode(signWire(carol, purchase.wire).signatures[0].signature);
     const noise = Array.from({ length: 100 }, () => ({ signature: bs58.encode(crypto.randomBytes(64)) }));
@@ -389,7 +394,8 @@ const ok = label => pass.push(label);
   ok('discounts: Mythic 10% / Legacy 5% on approved services only, never stacked, closed with redemption');
 
   /* ---------- SOL Sensei (devnet) ---------- */
-  const SOLS = { ...ON, SENSEI_SOL_ENABLED: 'on' };
+  const SOLS = env({ ...ON, SENSEI_SOL_ENABLED: 'on' });   // Sensei SOL pays into FOUNDERS_REVENUE_WALLET
+  await assert.rejects(F.senseiBuy(ctx, W(dave), { requestId: 'sensei-nowallet-0001' }, { ...SOLS, FOUNDERS_REVENUE_WALLET: '' }), e => e.code === 'FOUNDERS_NOT_CONFIGURED', 'Sensei SOL never falls back to the game wallet');
   await assert.rejects(F.senseiBuy(ctx, W(dave), { requestId: 'sensei-req-000001' }, ON), e => e.code === 'SENSEI_SOL_CLOSED');
   let s = await F.senseiBuy(ctx, W(dave), { requestId: 'sensei-req-000001' }, SOLS);
   assert.deepEqual([s.senseiPurchase.price, s.senseiPurchase.founderDiscount], [0.4, false]);

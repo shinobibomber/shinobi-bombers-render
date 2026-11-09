@@ -110,9 +110,13 @@ const temps = [];
     const priv = { ...pre, RELEASE_STAGE: 'private', RYO_PRIVATE_TEST_WALLETS: TESTER, SOLANA_RPC_URL: MAINNET_ENV.SOLANA_RPC_URL, SOLANA_PUBLIC_RPC_URL: MAINNET_ENV.SOLANA_PUBLIC_RPC_URL };
     assert.equal(problems(priv), '', 'private live testing starts with testers and the Mainnet RPCs');
     // Founder receipts are independent of unlaunched game custody/token configuration.
+    const REGISTRY_JSON = require(path.join(root, 'treasury/treasury-registry.json'));
+    const REGISTRY_ADDRESS = REGISTRY_JSON.destinations.find(d => d.role === 'lockedTreasury').address, CUSTODY_ADDRESS = REGISTRY_JSON.gameCustody.address;
+    // Public game: Founder/Sensei SOL and game revenue must use different wallets (owner decision 2026-11-09).
+    assert.match(problems({ ...MAINNET_ENV, FOUNDERS_REVENUE_WALLET: TESTER, RYO_REVENUE_WALLET: TESTER }), /must differ from the game revenue wallet RYO_REVENUE_WALLET once the game is public/);
     const founderAuthority = JSON.stringify([...require(path.join(app, 'node_modules/@solana/web3.js')).Keypair.generate().secretKey]);
     for (const stageEnv of [pre, priv]) {
-      const founder = { ...stageEnv, RYO_REVENUE_WALLET: TESTER, FOUNDERS_MINT_AUTHORITY_SECRET: founderAuthority };
+      const founder = { ...stageEnv, RYO_REVENUE_WALLET: TESTER, FOUNDERS_REVENUE_WALLET: TESTER, FOUNDERS_MINT_AUTHORITY_SECRET: founderAuthority };
       for (const sale of ['on', 'off']) assert.equal(problems({ ...founder, FOUNDERS_PUBLIC_SALE_ENABLED: sale }), '', 'Founder receipts and paused sale can start without game custody');
       assert.notEqual(problems({ ...founder, FOUNDERS_MINT_AUTHORITY_SECRET: '' }), '', 'a public revenue destination alone does not bypass the money guard');
       assert.notEqual(problems({ ...founder, RYO_REVENUE_WALLET: 'invalid' }), '', 'invalid Founder revenue destination refused');
@@ -120,6 +124,20 @@ const temps = [];
         assert.notEqual(problems({ ...founder, [key]: TESTER }), '', key + ' still requires complete game money configuration');
       assert.match(problems({ ...founder, SR_REVENUE_ROUTING_ENABLED: 'on' }), /SR_REVENUE_ROUTING_ENABLED must be off/);
       assert.match(problems({ ...founder, RELEASE_STAGE: 'public' }), /RELEASE_STAGE must be/);
+      // Founder/Sensei SOL has its own receipt wallet (FOUNDERS_REVENUE_WALLET), separate from the game's RYO_REVENUE_WALLET.
+      const own = { ...stageEnv, FOUNDERS_REVENUE_WALLET: TESTER, FOUNDERS_MINT_AUTHORITY_SECRET: founderAuthority };
+      for (const k of ['FOUNDERS_PUBLIC_SALE_ENABLED', 'FOUNDERS_PRIVATE_TESTING_ENABLED', 'SENSEI_SOL_ENABLED']) {
+        assert.equal(problems({ ...own, [k]: 'on' }), '', k + ' with only the Founder SOL wallet starts');
+        assert.match(problems({ ...own, [k]: 'on', FOUNDERS_REVENUE_WALLET: '' }), /FOUNDERS_REVENUE_WALLET \(their SOL receipt wallet\) is not set/, k + ' needs the Founder SOL wallet');
+      }
+      assert.equal(problems({ ...own, FOUNDERS_REVENUE_WALLET: '' }), '', 'sales off: no Founder SOL wallet needed');
+      assert.match(problems({ ...own, FOUNDERS_REVENUE_WALLET: 'not-a-wallet' }), /FOUNDERS_REVENUE_WALLET must be a valid/);
+      assert.match(problems({ ...own, FOUNDERS_REVENUE_WALLET: REGISTRY_ADDRESS }), /must not be a Chapter 04, game custody or Squads address/);
+      assert.match(problems({ ...own, FOUNDERS_REVENUE_WALLET: CUSTODY_ADDRESS }), /must not be a Chapter 04, game custody or Squads address/, 'never the game custody hot wallet');
+      assert.match(problems({ ...own, RYO_STUDIO_WALLET: TESTER }), /FOUNDERS_REVENUE_WALLET must not be RYO_STUDIO_WALLET/);
+      assert.match(problems({ ...own, FOUNDERS_REVENUE_WALLET: 'z'.repeat(44) }), /FOUNDERS_REVENUE_WALLET must be a valid/, 'base58 of 33 bytes is not a public key');
+      assert.match(problems({ ...own, FOUNDERS_PUBLIC_SALE_ENABLED: ' on ', FOUNDERS_REVENUE_WALLET: '' }), /is not set/, 'switch values are trimmed like the runtime');
+      assert.doesNotMatch(problems({ ...own, RYO_REVENUE_WALLET: TESTER }), /must differ from the game revenue wallet/, 'pre-launch may still share the wallet (transition)');
     }
     assert.equal(network.privateTesting(priv), true); assert.deepEqual([...network.privateTesters(priv)], [TESTER]);
     assert.match(problems({ ...priv, RYO_PRIVATE_TEST_WALLETS: '' }), /needs RYO_PRIVATE_TEST_WALLETS/);

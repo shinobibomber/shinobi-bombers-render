@@ -26,7 +26,7 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
     async getSignatureStatuses(sigs) { return { value: sigs.map(s => statuses.get(s) || null) }; },
     async sendRawTransaction(raw) { sent.push(Buffer.from(raw)); return 'ok'; },
   };
-  const baseEnv = { SOLANA_NETWORK: 'devnet', RYO_SITE_ORIGIN: ORIGIN, RYO_SCOPE: SCOPE, RYO_REVENUE_WALLET: revenue, FOUNDERS_MINT_AUTHORITY_SECRET: JSON.stringify([...authority.secretKey]) };
+  const baseEnv = { SOLANA_NETWORK: 'devnet', RYO_SITE_ORIGIN: ORIGIN, RYO_SCOPE: SCOPE, FOUNDERS_REVENUE_WALLET: revenue, FOUNDERS_MINT_AUTHORITY_SECRET: JSON.stringify([...authority.secretKey]) };
   let env = { ...baseEnv }, portal = null;
   const server = http.createServer((req, res) => portal.handle(req, res)); await new Promise(r => server.listen(0, '127.0.0.1', r));
   const restart = (extra, opts = {}) => { env = { ...baseEnv, ...extra }; portal = createPrelaunch({ gameDir: app, env, pool, foundersConnection: connection, ...opts }); };
@@ -76,7 +76,7 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
     passed.push('display-only USD: two agreeing sources, cached; disagreement, failure or Devnet show none');
 
     // Server settings are required and checked (fail closed).
-    restart({ FOUNDERS_PUBLIC_SALE_ENABLED: 'on', RYO_REVENUE_WALLET: '' });
+    restart({ FOUNDERS_PUBLIC_SALE_ENABLED: 'on', FOUNDERS_REVENUE_WALLET: '', RYO_REVENUE_WALLET: revenue });   // the game wallet never stands in
     r = await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000001' }, aliceCookie); assert.deepEqual([r.status, r.body.code], [503, 'SERVER_ERROR'], 'configuration problems are 503 without details');
     restart({ FOUNDERS_PUBLIC_SALE_ENABLED: 'on' }); genesis = '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d';
     r = await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000001' }, aliceCookie); assert.deepEqual([r.status, r.body.code], [503, 'SERVER_ERROR'], 'a Mainnet RPC on a Devnet portal is refused');

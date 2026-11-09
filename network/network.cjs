@@ -31,7 +31,7 @@ function built(dir = __dirname) {
 }
 
 const httpsUrl = value => { try { return new URL(String(value || '')).protocol === 'https:'; } catch { return false; } };
-const on = value => /^(1|on|true|yes)$/i.test(String(value || ''));
+const on = value => /^(1|on|true|yes)$/i.test(String(value || '').trim());   // same reading as the runtime switches
 
 /** PRELAUNCH_MODE=on: the site serves the pre-launch portal as the only public page. */
 const prelaunch = (env = process.env) => on(env.PRELAUNCH_MODE);
@@ -82,11 +82,32 @@ function treasuryProblems(env, dir) {
   return problems;
 }
 
+/* Founder boxes and Sensei SOL pay into FOUNDERS_REVENUE_WALLET only. Required when any of those sales is switched on;
+ * must be a valid address and, on Mainnet, never a Chapter 04 / custody / Squads address from the reviewed registry. */
+function founderRevenueProblems(env, dir, build) {
+  const problems = [], addr = String(env.FOUNDERS_REVENUE_WALLET || '').trim();
+  const selling = ['FOUNDERS_PUBLIC_SALE_ENABLED', 'FOUNDERS_PRIVATE_TESTING_ENABLED', 'SENSEI_SOL_ENABLED'].some(k => on(env[k]));
+  let reg = null; try { const file = path.join(dir, 'treasury-registry.cjs'); if (fs.existsSync(file)) reg = require(file); } catch {}
+  // The runtime requires a canonical 32-byte key (new PublicKey(a).toBase58() === a): check the same here when possible.
+  const valid = a => WALLET_RE.test(a) && (!reg?.isPublicKey || reg.isPublicKey(a));
+  if (addr && !valid(addr)) problems.push('FOUNDERS_REVENUE_WALLET must be a valid Solana wallet address.');
+  else if (!addr && selling) problems.push('Founder box / Sensei SOL sales are switched on but FOUNDERS_REVENUE_WALLET (their SOL receipt wallet) is not set.');
+  if (addr) {
+    let reserved = []; try { if (reg) { reserved = reg.reservedAddresses(); const custody = reg.registry().gameCustody?.address; if (custody) reserved.push(custody); } } catch {}
+    if (build.key === 'mainnet' && reserved.includes(addr)) problems.push('FOUNDERS_REVENUE_WALLET must not be a Chapter 04, game custody or Squads address from the treasury registry.');
+    if (addr === String(env.RYO_STUDIO_WALLET || '').trim()) problems.push('FOUNDERS_REVENUE_WALLET must not be RYO_STUDIO_WALLET.');
+    // Owner decision 2026-11-09: once the game is public, Founder/Sensei SOL and game revenue use different wallets.
+    if (!prelaunch(env) && addr === String(env.RYO_REVENUE_WALLET || '').trim()) problems.push('FOUNDERS_REVENUE_WALLET must differ from the game revenue wallet RYO_REVENUE_WALLET once the game is public.');
+  }
+  return problems;
+}
+
 /** Problems that must stop a server from starting. Empty array = safe to start. */
 function startupProblems(env = process.env, dir = __dirname) {
   const problems = [];
   let net; try { net = resolve(env); } catch (e) { return [e.message]; }
   const build = built(dir);
+  problems.push(...founderRevenueProblems(env, dir, build));
   if (net.key !== build.key) problems.push('This server was built for Solana ' + build.label + ' but SOLANA_NETWORK is "' + net.key + '". Rebuild and deploy (Render: "Clear build cache & deploy").');
   if (prelaunch(env)) {
     if (on(env.SR_REVENUE_ROUTING_ENABLED)) problems.push('SR_REVENUE_ROUTING_ENABLED must be off while PRELAUNCH_MODE is on.');

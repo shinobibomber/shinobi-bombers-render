@@ -23,6 +23,8 @@
  * Every switch fails closed (missing or unrecognised value = off):
  *   FOUNDERS_PUBLIC_SALE_ENABLED, FOUNDERS_PRIVATE_TESTING_ENABLED (RYO_PRIVATE_TEST_WALLETS only),
  *   FOUNDERS_REWARD_REDEMPTION_ENABLED, SENSEI_SOL_ENABLED; plus the admin pause ryo_admin_control.pauses.founders.
+ * SOL receipts (Founder boxes and Sensei SOL) go ONLY to FOUNDERS_REVENUE_WALLET (owner decision 2026-11-09), never to the
+ * game's SR revenue wallet RYO_REVENUE_WALLET; unset or invalid = those sales refuse (fail closed).
  * A Founder NFT never opens the game: game access stays with RELEASE_STAGE / PRELAUNCH_MODE.
  *
  * Copied to app/server/founders.cjs by apply-founders.cjs. */
@@ -160,7 +162,7 @@ function mintAuthority(env = process.env) {
   let reserved = [];
   try { reserved = require('./treasury-registry.cjs').reservedAddresses(); } catch { if (live()) fail('Founder minting is not configured.', 503, 'FOUNDERS_NOT_CONFIGURED'); }
   try { const custody = env.RYO_TREASURY_SECRET && web3().Keypair.fromSecretKey(Uint8Array.from(JSON.parse(env.RYO_TREASURY_SECRET))).publicKey.toBase58(); if (custody) reserved.push(custody); } catch {}
-  if (env.RYO_REVENUE_WALLET) reserved.push(String(env.RYO_REVENUE_WALLET));
+  for (const k of ['FOUNDERS_REVENUE_WALLET', 'RYO_REVENUE_WALLET']) { const a = String(env[k] || '').trim(); if (a) reserved.push(a); }
   if (reserved.includes(address)) fail('FOUNDERS_MINT_AUTHORITY_SECRET must be a dedicated key, separate from custody, revenue and Treasury registry wallets.', 503, 'FOUNDERS_NOT_CONFIGURED');
   return key;
 }
@@ -177,6 +179,13 @@ function metadata(origin, tier, serial) {
     properties: { category: 'image', files: [{ uri: base + 'art/' + tier + '.png', type: 'image/png' }] } };
 }
 
+/** The SOL receipt wallet for Founder boxes and Sensei SOL. Canonical address or 503 (never the game's revenue wallet). */
+function founderRevenue(env = process.env) {
+  const raw = String(env.FOUNDERS_REVENUE_WALLET || '').trim();
+  let ok = false; try { ok = new (web3().PublicKey)(raw).toBase58() === raw; } catch {}
+  if (!ok) fail('Founder SOL payments are not configured.', 503, 'FOUNDERS_NOT_CONFIGURED');
+  return raw;
+}
 async function buildMint({ connection, revenueAddress, origin, authority }, wallet, tier, serial, requestId, mintKeypair, lamports) {
   const { PublicKey, SystemProgram, Transaction, TransactionInstruction } = web3(), T = spl(), M = meta(), t = TIERS[tier];
   if (lamports !== priceFor(t, serial)) fail('Founder box price mismatch.', 500);
@@ -286,7 +295,7 @@ async function mint(ctx, wallet, body, env = process.env) {
   }
   assertCanMint(env, wallet);
   if (await paused(store.pool, store.scope)) fail('Founder box sales are paused.', 503, 'FOUNDERS_PAUSED');
-  const authority = mintAuthority(env);
+  const authority = mintAuthority(env), revenueAddress = founderRevenue(env);
   await sweep(ctx, wallet); await sweepExpired(ctx);
   const row = await store.transaction(async c => {
     await c.query('INSERT INTO ryo_founder_lock(scope) VALUES($1) ON CONFLICT DO NOTHING', [store.scope]);
@@ -298,7 +307,7 @@ async function mint(ctx, wallet, body, env = process.env) {
     let serial = 1; while (used.has(serial)) serial++;
     if (serial > t.supply) fail('All ' + t.supply + ' ' + t.name + ' Founder boxes are taken.', 409, 'FOUNDERS_SOLD_OUT');
     const mintKeypair = web3().Keypair.generate(), lamports = priceFor(t, serial);
-    const built = await buildMint({ ...ctx, authority }, wallet, t.key, serial, requestId, mintKeypair, lamports);
+    const built = await buildMint({ ...ctx, revenueAddress, authority }, wallet, t.key, serial, requestId, mintKeypair, lamports);
     return (await c.query(`INSERT INTO ryo_founder_purchases(scope,request_id,wallet,tier,serial,mint,price_lamports,status,message,wire,last_height,created)
       VALUES($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10,$11) RETURNING *`, [store.scope, requestId, wallet, t.key, serial, mintKeypair.publicKey.toBase58(), lamports, built.message, built.wire, built.lastHeight, nowOf(store)])).rows[0];
   });
@@ -552,7 +561,7 @@ async function senseiBuy(ctx, wallet, body, env = process.env) {
     const mine = (await c.query("SELECT status FROM ryo_sensei_sol_purchases WHERE scope=$1 AND wallet=$2 AND status IN ('pending','confirmed')", [store.scope, wallet])).rows[0];
     if (mine) fail(mine.status === 'pending' ? 'Finish or wait for your pending Sensei payment first.' : 'Permanent Sensei is already owned.', 409);
     const price = await senseiPrice(c, store, wallet, env), reference = web3().Keypair.generate().publicKey.toBase58();
-    const built = await buildPayment(ctx, wallet, price.lamports, 'shinobi-sensei-v1:' + requestId, reference);
+    const built = await buildPayment({ ...ctx, revenueAddress: founderRevenue(env) }, wallet, price.lamports, 'shinobi-sensei-v1:' + requestId, reference);
     return (await c.query(`INSERT INTO ryo_sensei_sol_purchases(scope,request_id,wallet,price_lamports,founder_discount,reference,status,message,wire,last_height,created)
       VALUES($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9,$10) RETURNING *`, [store.scope, requestId, wallet, price.lamports, price.founderDiscount, reference, built.message, built.wire, built.lastHeight, nowOf(store)])).rows[0];
   });
@@ -677,7 +686,7 @@ async function adminRevoke(store, actor, wallet, revoke, reason) {
 
 module.exports = { SCHEMA, MIGRATION_V2, priceFor, TIERS, TOTAL_SUPPLY, LIMITED_PASSES, LIMITED_POOL, PREMIUM_POOL, RANKS, FOUNDER_CHEST_COOLDOWN_MS, REGULAR_CHEST_COOLDOWN_MS,
   SENSEI_LAMPORTS, SENSEI_LEGACY_LAMPORTS, SENSEI_TRIAL_MS, DISCOUNTED, GAME_ACTIONS,
-  switches, saleMode, rankFor, weekStart, metadata, metadataUri, mintAuthority, buildMint, signedBy,
+  founderRevenue, switches, saleMode, rankFor, weekStart, metadata, metadataUri, mintAuthority, buildMint, signedBy,
   info, mint, confirm, settle, sweep, sweepExpired, entitlement, chestCooldownMs, discount, assertRyoProduct,
   activate, summon, recordActivity, qualifyingWeeks, senseiTrial, senseiInfo, senseiBuy, senseiConfirm, settleSensei,
   status, syncProfile, handleGame, adminOverview, adminPause, adminRevoke };

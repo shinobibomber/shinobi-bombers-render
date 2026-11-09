@@ -31,7 +31,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const pool = { async query(s, a) { const release = await lock(); try { return await db.query(s, a); } finally { release(); } }, async connect() { const release = await lock(); return { query: (s, a) => db.query(s, a), release }; } };
   const store = new (need('store.cjs').Store)(pool, 'solana-devnet:founders-e2e-' + Date.now()), F = need('founders.cjs');
   const authority = web3.Keypair.generate(), revenue = web3.Keypair.generate(), a = web3.Keypair.generate(), b = web3.Keypair.generate();
-  const env = { FOUNDERS_PUBLIC_SALE_ENABLED: 'on', FOUNDERS_REWARD_REDEMPTION_ENABLED: 'on', FOUNDERS_MINT_AUTHORITY_SECRET: JSON.stringify([...authority.secretKey]), RYO_REVENUE_WALLET: revenue.publicKey.toBase58() };
+  const env = { FOUNDERS_PUBLIC_SALE_ENABLED: 'on', FOUNDERS_REWARD_REDEMPTION_ENABLED: 'on', FOUNDERS_MINT_AUTHORITY_SECRET: JSON.stringify([...authority.secretKey]), FOUNDERS_REVENUE_WALLET: revenue.publicKey.toBase58() };
   const ctx = { store, connection, revenueAddress: revenue.publicKey.toBase58(), origin: 'https://shinobi-bombers-beta.onrender.com' };
   const report = { network: 'solana-devnet', buyers: { a: a.publicKey.toBase58(), b: b.publicKey.toBase58() }, revenue: ctx.revenueAddress, authority: authority.publicKey.toBase58(), steps: [] };
   const step = (name, detail = {}) => { report.steps.push({ name, ...detail }); console.log('✓ ' + name, Object.keys(detail).length ? JSON.stringify(detail) : ''); };
