@@ -86,10 +86,11 @@
         !f.redemptionOpen ? $('p', { class: 'fd-note' }, 'Founder rewards open for redemption at a later release stage.') : null,
         $('p', { class: 'fd-badge' }, f.chestCooldownHours === 12 ? 'FOUNDER BENEFIT: 12-HOUR CHEST COOLDOWN' : '24-HOUR CHEST COOLDOWN')].filter(Boolean));
       const dl = $('dl', { class: 'fd-list' },
-        row('Limited Hero Summon Passes', f.limitedPasses + ' left · ' + f.limitedPool.map(p => p.rank + ' ' + p.percent + '%').join(' / ') + ' (no Genin, no Mythic)'),
-        row('Premium Hero Summon', 'Every ' + f.premium.everyWeeks + ' completed qualifying weeks · ' + f.premium.qualifyingWeeks + ' week(s) so far · ' + f.premium.available + ' available (Elite 70% / Legend 30%)'),
+        // Passes and qualifying weeks start with activation: before it, say what activating gives (not "0 left").
+        row('Limited Hero Summon Passes', (f.activated ? f.limitedPasses + ' left' : (f.passesOnActivation || 10) + ' passes when you activate') + ' · ' + f.limitedPool.map(p => p.rank + ' ' + p.percent + '%').join(' / ') + ' (no Genin, no Mythic)'),
+        row('Premium Hero Summon', f.activated ? 'Every ' + f.premium.everyWeeks + ' completed qualifying weeks · ' + f.premium.qualifyingWeeks + ' week(s) so far · ' + f.premium.available + ' available (Elite 70% / Legend 30%)' : 'Every ' + f.premium.everyWeeks + ' completed qualifying weeks after you activate (Elite 70% / Legend 30%)'),
         row('Game-service discount', f.discountPercent + '% on Summon, Fusion, Dojo, Sensei and Training'),
-        row('Sensei', f.sensei === 'permanent' ? 'Free permanent Sensei' : f.trial ? 'Trial until ' + fmtTime(f.trial.ends) : '7-day free trial available'),
+        row('Sensei', f.sensei === 'permanent' ? (f.activated ? 'Free permanent Sensei' : 'Free permanent Sensei when you activate') : f.trial ? 'Trial until ' + fmtTime(f.trial.ends) : '7-day free trial available'),
         row('Weekly Mission Pass', (f.missionPass.level === 'full' ? 'Full' : 'Basic') + ' rewards — ' + f.missionPass.status),
         row("Founder's Council", f.council === 'full' ? 'Full membership' : 'Community access'),
         row('Early access', f.earlyAccess));
@@ -104,7 +105,9 @@
       }
       body.append(actions);
     }
-    if (s) {
+    // Mythic Founders get permanent Sensei free on activation: never offer them the SOL purchase.
+    if (s && f?.sensei === 'permanent' && f.valid) body.append($('h3', {}, 'Permanent Sensei'), $('p', {}, f.activated ? 'Included with your Mythic Founder box.' : 'Included free with your Mythic Founder box: press Activate Founder benefits.'));
+    else if (s) {
       const owned = s.owned || s.purchase?.status === 'confirmed';
       body.append($('h3', {}, 'Permanent Sensei'), $('p', {}, owned ? 'Permanent Sensei owned.' : s.founderDiscount ? 'Legacy Founder price: ' + s.price + ' SOL (regular ' + s.regularPrice + ' SOL) until ' + fmtTime(s.trialEnds) + '.' : 'Price: ' + s.price + ' SOL.'));
       if (!owned) body.append($('button', { type: 'button', onclick: buySensei, ...(s.enabled && !busy ? {} : { disabled: '' }) }, s.enabled ? 'Buy permanent Sensei (' + s.price + ' SOL)' : 'SOL Sensei opens later'));

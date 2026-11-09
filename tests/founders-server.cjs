@@ -456,6 +456,10 @@ const ok = label => pass.push(label);
   const SOLS = env({ ...ON, SENSEI_SOL_ENABLED: 'on' });   // Sensei SOL pays into FOUNDERS_REVENUE_WALLET
   await assert.rejects(F.senseiBuy(ctx, W(dave), { requestId: 'sensei-nowallet-0001' }, { ...SOLS, FOUNDERS_REVENUE_WALLET: '' }), e => e.code === 'FOUNDERS_NOT_CONFIGURED', 'Sensei SOL never falls back to the game wallet');
   await assert.rejects(F.senseiBuy(ctx, W(dave), { requestId: 'sensei-req-000001' }, ON), e => e.code === 'SENSEI_SOL_CLOSED');
+  { const mythicBuyer = web3.Keypair.generate().publicKey.toBase58();   // a Mythic Founder who has not activated yet
+    await pool.query("INSERT INTO ryo_founder_entitlements SELECT (jsonb_populate_record(NULL::ryo_founder_entitlements, to_jsonb(e) || jsonb_build_object('wallet',$2::text,'mint','sensei-fixture-mint','request_id','sensei-fixture-request','activated',NULL,'limited_passes',0))).* FROM ryo_founder_entitlements e WHERE scope=$1 AND tier='mythic' AND revoked IS NULL LIMIT 1", [store.scope, mythicBuyer]);
+    assert(mythicBuyer, 'fixture has a Mythic Founder who has not activated yet');
+    await assert.rejects(F.senseiBuy(ctx, mythicBuyer, { requestId: 'sensei-mythic-00001' }, SOLS), e => e.code === 'SENSEI_INCLUDED', 'a Mythic Founder (not activated yet) never pays SOL for the Sensei included in the box'); }
   let s = await F.senseiBuy(ctx, W(dave), { requestId: 'sensei-req-000001' }, SOLS);
   assert.deepEqual([s.senseiPurchase.price, s.senseiPurchase.founderDiscount], [0.4, false]);
   tx = web3.Transaction.from(Buffer.from(s.senseiPurchase.wire, 'base64'));

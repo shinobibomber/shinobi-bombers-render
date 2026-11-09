@@ -572,6 +572,9 @@ async function senseiBuy(ctx, wallet, body, env = process.env) {
     await store.locked(c, wallet);
     const profile = await store.profileLocked(c, wallet);
     if (profile.sensei === true) fail('Permanent Sensei is already owned.', 409);
+    // A Mythic Founder's permanent Sensei is free on activation: never take SOL for it (owner request 2026-11-09).
+    const founder = await entitlement(c, store.scope, wallet);
+    if (founder && valid(founder) && TIERS[founder.tier]?.sensei === 'permanent') fail('Permanent Sensei is free with your Mythic Founder box: press Activate Founder benefits.', 409, 'SENSEI_INCLUDED');
     const mine = (await c.query("SELECT status FROM ryo_sensei_sol_purchases WHERE scope=$1 AND wallet=$2 AND status IN ('pending','confirmed')", [store.scope, wallet])).rows[0];
     if (mine) fail(mine.status === 'pending' ? 'Finish or wait for your pending Sensei payment first.' : 'Permanent Sensei is already owned.', 409);
     const price = await senseiPrice(c, store, wallet, env), reference = web3().Keypair.generate().publicKey.toBase58();
@@ -635,7 +638,7 @@ async function status(store, wallet, env = process.env) {
   const weeks = activated ? await qualifyingWeeks(store.pool, store.scope, wallet, activated, now) : 0;
   const claimed = Number((await store.pool.query("SELECT COUNT(*) AS n FROM ryo_founder_summons WHERE scope=$1 AND wallet=$2 AND kind='premium'", [store.scope, wallet])).rows[0].n);
   return { founder: { tier: e.tier, name: t.name, mint: e.mint, valid: valid(e), redemptionOpen: s.redemption, activated,
-    limitedPasses: Number(e.limited_passes), limitedPool: LIMITED_POOL.map(([r, w]) => ({ rank: RANKS[r], percent: w / 100 })),
+    limitedPasses: Number(e.limited_passes), passesOnActivation: LIMITED_PASSES, limitedPool: LIMITED_POOL.map(([r, w]) => ({ rank: RANKS[r], percent: w / 100 })),
     premium: { everyWeeks: t.premiumEveryWeeks, qualifyingWeeks: weeks, claimed, available: Math.max(0, Math.floor(weeks / t.premiumEveryWeeks) - claimed), pool: PREMIUM_POOL.map(([r, w]) => ({ rank: RANKS[r], percent: w / 100 })) },
     chestCooldownHours: valid(e) && s.redemption ? 12 : 24, discountPercent: t.discountBps / 100, sensei: t.sensei,
     trial: e.trial_started != null ? { started: Number(e.trial_started), ends: Number(e.trial_ends) } : null,
