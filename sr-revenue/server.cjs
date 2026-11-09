@@ -74,14 +74,21 @@ async function preview(store, wallet, q) {
   note: bonus ? 'Starter Ryo payment: no tokens will be distributed.' : cfg?.stale ? 'SR routing configuration no longer matches the reviewed registry. No payment can be submitted.' : !cfg?.enabled ? 'Awaiting approved SR revenue vault configuration. No payment can be submitted.' : !cfg.products.includes(q.product) ? 'This SR service fee is not approved for revenue routing.' : locks.length ? 'SR revenue routing is not activated yet. No payment can be submitted.' : 'Squads Treasury and destinations are re-verified before submission.' } };
 }
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+// Squads v4 governance at finalized commitment: registered multisig, threshold, members, no config authority, owner.
+// Used by checkout routing approval and by Locked Treasury top-ups (a drifted multisig can fund neither).
+async function verifySquadsGovernance(ctx, cfg) {
+ const reg = registry(), own = [ctx.treasuryAddress, ctx.studioAddress, ctx.revenueAddress].filter(Boolean);
+ const squads = await require('./treasury-verify.cjs').verifySquads(ctx.connection, reg, { forbidden: [...own, cfg.destinations.activeRewards, cfg.destinations.communityRewards, cfg.destinations.economicReserve] });
+ if (squads.status !== 'verified') fail('Locked Treasury must be the registered, finalized Squads v4 vault (' + reg.squads.threshold + '-of-' + reg.squads.members.length + ', no config authority). ' + (squads.problems || []).join(' '), 503);
+ return squads;
+}
 async function verifyVaults(ctx, cfg) {
  const reg = registry(), v = require('./treasury-verify.cjs');
  for (const name of FIELDS) if (cfg.destinations[name] !== reg.addresses[name]) fail('SR destinations must equal the reviewed public registry.', 409);
  const own = [ctx.treasuryAddress, ctx.studioAddress, ctx.revenueAddress].filter(Boolean);
  for (const name of FIELDS) if (own.includes(cfg.destinations[name])) fail('SR revenue destinations must be separate from the game custody, studio and legacy revenue wallets. Active Rewards now leaves custody for the registered Active Reward Pool wallet.', 409);
  await ctx.checkNetwork();
- const squads = await v.verifySquads(ctx.connection, reg, { forbidden: [...own, cfg.destinations.activeRewards, cfg.destinations.communityRewards, cfg.destinations.economicReserve] });
- if (squads.status !== 'verified') fail('Locked Treasury must be the registered, finalized Squads v4 vault (' + reg.squads.threshold + '-of-' + reg.squads.members.length + ', no config authority). ' + (squads.problems || []).join(' '), 503);
+ const squads = await verifySquadsGovernance(ctx, cfg);
  for (const name of ['activeRewards', 'communityRewards', 'economicReserve']) {
   const w = await v.verifyWallet(ctx.connection, cfg.destinations[name]);
   if (w.status !== 'verified') fail('The ' + name + ' destination could not be verified as a plain wallet. ' + (w.problems || []).join(' '), 503);
@@ -136,6 +143,8 @@ function validateReplenishment(payload) {
  if (typeof payload.evidence !== 'string' || !payload.evidence.trim() || payload.evidence.length > 500) fail('Enter the replenishment approval/evidence reference.');
  return { source: payload.source, signature: payload.signature, amountRaw: payload.amountRaw, evidence: payload.evidence.trim() };
 }
+// Squads v4 Anchor discriminator of vault_transaction_execute: a vault transaction whose proposal reached the threshold.
+const SQUADS_VAULT_EXECUTE = crypto.createHash('sha256').update('global:vault_transaction_execute').digest().subarray(0, 8);
 async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
  const { PublicKey } = require('@solana/web3.js'), spl = require('@solana/spl-token');
  await ctx.checkNetwork();
@@ -145,21 +154,57 @@ async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
  const source = spl.getAssociatedTokenAddressSync(new PublicKey(ctx.mint), new PublicKey(cfg.destinations[payload.source]), true, program).toBase58();
  const target = spl.getAssociatedTokenAddressSync(new PublicKey(ctx.mint), new PublicKey(ctx.treasuryAddress), true, program).toBase58();
  const keys = tx.transaction.message.accountKeys;
- const transfer = tx.transaction.message.instructions.filter(i => i.programId.toString() === program.toBase58() && i.parsed?.type === 'transferChecked');
- if (transfer.length !== 1) fail('Replenishment must contain one explicit approved SR transfer.', 409);
- const info = transfer[0].parsed.info;
- if (info.source !== source || info.destination !== target || info.mint !== ctx.mint || info.tokenAmount?.amount !== payload.amountRaw || info.tokenAmount?.decimals !== 6) fail('Replenishment source, destination, token or amount does not match the approved request.', 409);
- const delta = (ata, owner) => {
-  const at = keys.findIndex(k => k.pubkey.toString() === ata); if (at < 0) fail('Missing replenishment account evidence.', 409);
-  const amount = values => { const b = values?.find(b => b.accountIndex === at && b.mint === ctx.mint && b.owner === owner); if (!b || b.uiTokenAmount.decimals !== 6) fail('Missing finalized replenishment token balances.', 409); return raw(b.uiTokenAmount.amount); };
-  return amount(tx.meta.postTokenBalances) - amount(tx.meta.preTokenBalances);
+ // SR transfer evidence (owner decision 2026-11-10). Exactly one SR transferChecked in the whole transaction, in one of
+ // two shapes:
+ //  - direct: a top-level transfer signed by the source wallet itself (Active Reward Pool / Economic Reserve);
+ //  - Squads: Locked Treasury only. An inner transfer signed by the registered vault inside a vote-approved
+ //    vault_transaction_execute of the registered Squads v4 multisig (never spending limits or other Squads calls).
+ // Then: exact accounts, mint and amount; exact finalized balance changes; no other SR balance may change.
+ const reg = registry(), TOKEN = program.toBase58(), owner = cfg.destinations[payload.source], amountRaw = raw(payload.amountRaw);
+ const top = tx.transaction.message.instructions || [];
+ const all = [...top.map(i => ({ i, parent: null })), ...(tx.meta.innerInstructions || []).flatMap(g => (g.instructions || []).map(i => ({ i, parent: top[g.index] || {} })))];
+ const srTransfers = all.filter(x => x.i.programId?.toString() === TOKEN && x.i.parsed?.type === 'transferChecked' && x.i.parsed?.info?.mint === ctx.mint);
+ const refuse = why => fail('Replenishment must contain one explicit approved SR transfer: ' + why, 409);
+ const squadsProblem = p => {
+  if (p?.programId?.toString() !== reg.squads.programId) return 'the transfer was made inside another program, not the registered Squads program.';
+  if (p.accounts?.[0]?.toString() !== reg.squads.multisig) return 'the Squads transaction belongs to a different multisig than the registered one.';
+  let discriminator; try { discriminator = Buffer.from(require('bs58').decode(String(p.data || ''))).subarray(0, 8); } catch { discriminator = Buffer.alloc(0); }
+  return discriminator.equals(SQUADS_VAULT_EXECUTE) ? null : 'only an approved Squads vault transaction (vault_transaction_execute) is accepted; spending limits, batches and config changes are not.';
  };
- if (delta(source, cfg.destinations[payload.source]) !== -raw(payload.amountRaw) || delta(target, ctx.treasuryAddress) !== raw(payload.amountRaw)) fail('Finalized replenishment balance changes do not match.', 409);
+ if (!srTransfers.length) refuse('no SR transfer was found in this transaction.');
+ if (srTransfers.length > 1) refuse('the transaction moves SR ' + srTransfers.length + ' times; exactly one transfer is accepted.');
+ const [{ i: transfer, parent }] = srTransfers, viaSquads = parent !== null, info = transfer.parsed.info;
+ if (payload.source === 'lockedTreasury') {
+  // Locked Treasury: only through Squads (an inner transfer of the vote-approved vault execution).
+  if (!viaSquads) refuse('the Locked Treasury can only send SR through an approved Squads vault transaction.');
+  const problem = squadsProblem(parent); if (problem) refuse(problem);
+ } else if (viaSquads) refuse('the ' + payload.source + ' wallet must send SR itself, as a top-level transfer (this one was made inside another program).');
+ if (info.authority !== owner) refuse('the transfer was not signed by the registered ' + payload.source + ' wallet.');
+ // From here an inner (viaSquads) transfer is always the approved Squads path of the Locked Treasury.
+ if (info.source !== source || info.destination !== target || info.mint !== ctx.mint || info.tokenAmount?.amount !== payload.amountRaw || info.tokenAmount?.decimals !== 6) fail('Replenishment source, destination, token or amount does not match the approved request.', 409);
+ const indexOf = ata => keys.findIndex(k => k.pubkey.toString() === ata), si = indexOf(source), ti = indexOf(target);
+ if (si < 0 || ti < 0) fail('Missing replenishment account evidence.', 409);
+ const srRows = (list, at) => (list || []).filter(b => b.accountIndex === at && b.mint === ctx.mint);
+ const balance = (list, at, who, missingIsZero = false) => { const rows = srRows(list, at); if (!rows.length && missingIsZero) return 0n; const b = rows.find(b => b.owner === who); if (!b || b.uiTokenAmount.decimals !== 6) fail('Missing finalized replenishment token balances.', 409); return raw(b.uiTokenAmount.amount); };
+ // Squads path only: the custody SR account may be created by this same transaction (no 'before' record under any owner),
+ // through an associated-token-account creation for the custody wallet and the SR mint.
+ const ATA_PROGRAM = spl.ASSOCIATED_TOKEN_PROGRAM_ID.toBase58();
+ const newTarget = viaSquads && !srRows(tx.meta.preTokenBalances, ti).length && all.some(x => x.i.programId?.toString() === ATA_PROGRAM && ['create', 'createIdempotent'].includes(x.i.parsed?.type)
+  && x.i.parsed?.info?.account === target && x.i.parsed?.info?.mint === ctx.mint && x.i.parsed?.info?.wallet === ctx.treasuryAddress);
+ if (balance(tx.meta.postTokenBalances, si, owner) - balance(tx.meta.preTokenBalances, si, owner) !== -amountRaw
+  || balance(tx.meta.postTokenBalances, ti, ctx.treasuryAddress) - balance(tx.meta.preTokenBalances, ti, ctx.treasuryAddress, newTarget) !== amountRaw) fail('Finalized replenishment balance changes do not match.', 409);
+ const srIndexes = new Set([...(tx.meta.preTokenBalances || []), ...(tx.meta.postTokenBalances || [])].filter(b => b.mint === ctx.mint).map(b => b.accountIndex));
+ const total = (list, at) => srRows(list, at).reduce((n, b) => n + raw(b.uiTokenAmount.amount), 0n);
+ for (const at of srIndexes) if (at !== si && at !== ti && total(tx.meta.postTokenBalances, at) !== total(tx.meta.preTokenBalances, at)) fail('Other SR balances changed in the replenishment transaction.', 409);
  // No distribution/claim/withdrawal signature may be re-used as a funding deposit.
  const duplicate = (await c.query(`SELECT 1 FROM ryo_service_revenue WHERE scope=$1 AND signature=$2 UNION ALL
    SELECT 1 FROM ryo_deposits WHERE scope=$1 AND signature=$2 UNION ALL SELECT 1 FROM ryo_revenue_replenishments WHERE scope=$1 AND signature=$2
    UNION ALL SELECT 1 FROM ryo_withdrawals WHERE scope=$1 AND signature=$2 UNION ALL SELECT 1 FROM ryo_purchases WHERE scope=$1 AND signature=$2`, [ctx.store.scope, payload.signature])).rows;
  if (duplicate.length) fail('This transaction is already accounted for.', 409);
+ // The Squads multisig must still have its registered governance (threshold, members, no config authority) when the
+ // top-up is approved; a drifted multisig can no longer fund claims. This checks the current state: the state at the
+ // transaction's slot is not readable, so the two-person top-up approval remains the review of past governance.
+ if (viaSquads) await verifySquadsGovernance(ctx, cfg);
  return { sourceAta: source, destinationAta: target, mint: ctx.mint, amountRaw: payload.amountRaw, commitment: 'finalized', slot: tx.slot, internalTransfer: true };
 }
 async function applyApproval(ctx, c, kind, value, proposal) {
