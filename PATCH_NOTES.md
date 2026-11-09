@@ -8,6 +8,7 @@
 - The login screen now shows Solana Mainnet, and its Discord, X and Pump.fun buttons open our official pages.
 - New accounts no longer receive free Genin heroes: every hero comes from the Summoning Shrine. Unused free starter Genin were removed from accounts that had not played with them yet.
 - Founder rewards are open: Founder box buyers can sign in with their buying wallet and press the FOUNDER button (bottom-left) to activate their benefits. The button is now visible on every screen.
+- Fixed: SR deposits from Phantom were refused with "The signed transaction differs from the reviewed request". Phantom adds its own safety checks to transactions; the game now accepts them while still checking every amount and recipient exactly.
 - You can now deposit up to 10,000,000 SR in one deposit (was 1,000,000).
 - Fixed: the game did not fully start for brand-new players who had no heroes yet.
 - Summoning without enough Ryo now tells you so and opens your Chest to deposit SR (it used to say "Summon is busy").

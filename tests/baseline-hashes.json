@@ -303,7 +303,7 @@
     },
     {
       "path": "app/server/transaction-review.cjs",
-      "sha256": "bcde937214147886f0dfa44b75be468d0cdda7979f0e324efcb465df5c6311f6"
+      "sha256": "8644615fe142c423e1fbb1c04ae2bbf8d55b6fbf5650d35750290d5d91daf25d"
     },
     {
       "path": "login-screen/login-reference.png",

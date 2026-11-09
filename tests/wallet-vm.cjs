@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const web3=require('../app/node_modules/@solana/web3.js'),spl=require('../app/node_modules/@solana/spl-token'),bs58=require('../app/node_modules/bs58');
 const GENESIS='EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',UNIT=1000000n;
 const owner=web3.Keypair.generate(),tester=web3.Keypair.generate(),other=web3.Keypair.generate(),studio=web3.Keypair.generate(),mints=new Map(),accounts=new Map(),receipts=new Map(),submitted=[];
-let genesis=GENESIS,reject=false,changeAfterSend=false,failNext=false,tamper=false,walletPriority=false,rpcFetchMode='ok',capturedRpcFetch;
+let genesis=GENESIS,reject=false,changeAfterSend=false,failNext=false,tamper=false,walletAppend=null,walletPriority=false,rpcFetchMode='ok',capturedRpcFetch;
 let solLamports=1000000000,feeUnavailable=false,gasRpcError=false,signCalls=0,solAfterSign=null;
 const storage=new Map(),localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v))};
 function mintInfo(mint){const value=mints.get(mint.toBase58());if(!value)return null;const data=Buffer.alloc(spl.MINT_SIZE);spl.MintLayout.encode({...value,mintAuthorityOption:value.authority?1:0,mintAuthority:value.authority||web3.PublicKey.default,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:web3.PublicKey.default},data);if(value.program)return {data:require('./sr-revenue-fixture.cjs').token2022(data,'mint',['MetadataPointer','TokenMetadata']),owner:value.program,lamports:1000000,executable:false};return {data,owner:spl.TOKEN_PROGRAM_ID,lamports:1000000,executable:false};}
@@ -25,6 +25,7 @@ class Connection {
   for(const ix of tx.instructions){
    if(ix.programId.equals(web3.ComputeBudgetProgram.programId)){instructions.push({programId:ix.programId,accounts:[],data:bs58.encode(ix.data)});continue}
    if(ix.programId.equals(web3.SystemProgram.programId)){assert.equal(web3.SystemInstruction.decodeInstructionType(ix),'Create');continue}
+   if(ix.programId.toBase58()==='L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95'){instructions.push({programId:ix.programId,accounts:ix.keys.map(k=>k.pubkey),data:bs58.encode(ix.data)});continue}   // Phantom's guard: assertions only
    if(ix.programId.equals(spl.ASSOCIATED_TOKEN_PROGRAM_ID)){const [,ata,recipient,mint]=ix.keys;if(!accounts.has(ata.pubkey.toBase58()))accounts.set(ata.pubkey.toBase58(),{owner:recipient.pubkey.toBase58(),mint:mint.pubkey.toBase58(),amount:0n});continue}
    if(ix.programId.equals(spl.TOKEN_PROGRAM_ID)||ix.programId.equals(spl.TOKEN_2022_PROGRAM_ID)){const P=ix.programId;
     switch(ix.data[0]){
@@ -40,7 +41,7 @@ class Connection {
   receipts.set(hash,receipt);if(changeAfterSend){changeAfterSend=false;phantom.publicKey=other.publicKey;phantom.emit('accountChanged',other.publicKey)}return hash;
  }
 }
-function wallet(signer){const handlers=new Map();return {publicKey:signer.publicKey,connect:async()=>{},disconnect:async()=>{},on:(name,fn)=>handlers.set(name,fn),removeListener:name=>handlers.delete(name),emit:(name,arg)=>handlers.get(name)?.(arg),async signTransaction(tx){signCalls++;if(reject){reject=false;throw Object.assign(Error('rejected'),{code:4001})}if(walletPriority)tx.instructions.unshift(web3.ComputeBudgetProgram.setComputeUnitLimit({units:400000}),web3.ComputeBudgetProgram.setComputeUnitPrice({microLamports:1000}));if(tamper){tamper=false;tx.add(web3.SystemProgram.transfer({fromPubkey:signer.publicKey,toPubkey:other.publicKey,lamports:1}))}tx.partialSign(signer);if(solAfterSign!==null){solLamports=solAfterSign;solAfterSign=null}return tx}}}
+function wallet(signer){const handlers=new Map();return {publicKey:signer.publicKey,connect:async()=>{},disconnect:async()=>{},on:(name,fn)=>handlers.set(name,fn),removeListener:name=>handlers.delete(name),emit:(name,arg)=>handlers.get(name)?.(arg),async signTransaction(tx){signCalls++;if(reject){reject=false;throw Object.assign(Error('rejected'),{code:4001})}if(walletPriority)tx.instructions.unshift(web3.ComputeBudgetProgram.setComputeUnitLimit({units:400000}),web3.ComputeBudgetProgram.setComputeUnitPrice({microLamports:1000}));if(tamper){tamper=false;tx.add(web3.SystemProgram.transfer({fromPubkey:signer.publicKey,toPubkey:other.publicKey,lamports:1}))}if(walletAppend){const f=walletAppend;walletAppend=null;f(tx)}tx.partialSign(signer);if(solAfterSign!==null){solLamports=solAfterSign;solAfterSign=null}return tx}}}
 const phantom=wallet(owner),solflare=wallet(tester);
 const gasSafety=require('../transaction-safety/gas-safety.js');
 const context={Buffer,console,URL,BigInt,AbortController,Response,clearTimeout,setTimeout:(fn,ms)=>setTimeout(fn,ms===15000?1:ms),fetch:async(input,options)=>{if(rpcFetchMode==='timeout')return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(Error('Aborted'))));return new Response('{}',{status:rpcFetchMode==='rate'?429:200})},crypto:crypto.webcrypto,location:{protocol:'file:'},localStorage,dispatchEvent:()=>{},CustomEvent:class{},ShinobiSolana:{...web3,...spl,...require('../app/server/transaction-review.cjs'),Connection},ShinobiBetaConfig:{network:'solana-devnet',tokenAddress:null,studioAddress:studio.publicKey.toBase58()},phantom:{solana:phantom},solflare};context.window=context;
@@ -89,6 +90,16 @@ const html=fs.readFileSync(require('node:path').join(__dirname,'../app/public/in
   assert.deepEqual(transfers.map(t=>[t.data.amount,t.keys.source.pubkey.toBase58(),t.keys.destination.pubkey.toBase58(),t.keys.mint.pubkey.toBase58()]),[[40000n*UNIT,mine,custodyAta,m22.toBase58()]]);
   assert.deepEqual(atas.map(i=>[i.keys[1].pubkey.toBase58(),i.keys[5].pubkey.toBase58()]),[[custodyAta,P22.toBase58()]],'custody account created under Token-2022');
   assert.equal(accounts.get(custodyAta).amount,40000n*UNIT);assert.equal(accounts.get(mine).amount,260000n*UNIT);client.acknowledge(r.record.hash);
+  // Phantom on Mainnet appends Lighthouse guard instructions: accepted (assertions only); anything else is still refused.
+  const LH=new web3.PublicKey('L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95'),guard=keys=>new web3.TransactionInstruction({programId:LH,keys,data:Buffer.from([10,1,2,3])});
+  walletAppend=tx=>tx.add(guard([{pubkey:new web3.PublicKey(mine),isSigner:false,isWritable:false}]));
+  {const before=submitted.length,r2=await client.deposit(10000,other.publicKey.toBase58(),crypto.randomUUID(),null);assert.equal(submitted.length,before+1,'a deposit with a Lighthouse guard is submitted');
+   assert(submitted[submitted.length-1].instructions.some(i=>i.programId.equals(LH)));assert.equal(accounts.get(custodyAta).amount,50000n*UNIT);client.acknowledge(r2.record.hash);}
+  walletAppend=tx=>tx.add(new web3.TransactionInstruction({programId:web3.Keypair.generate().publicKey,keys:[],data:Buffer.from([1])}));
+  await assert.rejects(client.deposit(10000,other.publicKey.toBase58(),crypto.randomUUID(),null),/differs from the reviewed request.*wallet programs/,'any other added program is refused');
+  walletAppend=tx=>tx.add(guard([{pubkey:web3.Keypair.generate().publicKey,isSigner:false,isWritable:true}]));
+  await assert.rejects(client.deposit(10000,other.publicKey.toBase58(),crypto.randomUUID(),null),/unexpected account added/,'a Lighthouse instruction may not add a writable account');
+  assert.equal(accounts.get(custodyAta).amount,50000n*UNIT,'refused deposits moved nothing');
   mints.set(m22.toBase58(),{decimals:6,authority:null,supply:mints.get(mint).supply,program:web3.Keypair.generate().publicKey});
   await assert.rejects(client.installConfig(m22.toBase58()),'a mint owned by any other program is refused');
   await client.installConfig(mint);assert.equal(client.state.tokenAddress,mint);}

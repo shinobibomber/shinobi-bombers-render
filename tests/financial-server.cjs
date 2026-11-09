@@ -48,7 +48,12 @@ function transfers(hash){return wireByHash.get(hash).instructions.filter(i=>i.pr
  if(LIVE){const base={wallet,mint:mint.toBase58(),treasury:treasury.publicKey.toBase58(),signature:hash,amount:record.amount,requestId:depositId};
   assert.deepEqual(liveVerify(feeFreeReceipt(record.amount,depositId,hash),base),{gross:record.amount,studioFee:0,net:record.amount},'live deposit credits the full amount');
   assert.throws(()=>liveVerify(depositReceipt(record.amount,depositId,hash,false),base),/Missing deposit transfer|Unexpected/,'a 2% studio-fee deposit is not the live deposit');
-  const extra=feeFreeReceipt(record.amount,depositId,hash);extra.transaction.message.instructions[0].parsed.info.account=web3.Keypair.generate().publicKey.toBase58();assert.throws(()=>liveVerify(extra,base),/token account creation/);
+  const extra=feeFreeReceipt(record.amount,depositId,hash);extra.transaction.message.instructions[0].parsed.info.account=web3.Keypair.generate().publicKey.toBase58();  assert.throws(()=>liveVerify(extra,base),/token account creation/);
+  // Phantom's Lighthouse guard instructions (assertions only) are accepted; the exact transfer/memo/balances still decide.
+  {const guarded=feeFreeReceipt(record.amount,depositId,hash);guarded.transaction.message.instructions.push({programId:key('L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95'),accounts:[],data:'3Bxs4h24hBtQy9rw'});
+   assert.deepEqual(liveVerify(guarded,base),{gross:record.amount,studioFee:0,net:record.amount},'a deposit with a Lighthouse guard is credited');
+   const foreign=feeFreeReceipt(record.amount,depositId,hash);foreign.transaction.message.instructions.push({programId:web3.Keypair.generate().publicKey,accounts:[],data:''});
+   assert.throws(()=>liveVerify(foreign,base),/Unexpected (program|deposit instructions)/,'any other program is still refused');}
   const short=feeFreeReceipt(record.amount,depositId,hash);short.meta.postTokenBalances[1].uiTokenAmount.amount=((BigInt(record.amount)-1n)*UNIT).toString();assert.throws(()=>liveVerify(short,base),/balances/);
   const memo=feeFreeReceipt(record.amount,depositId,hash);memo.transaction.message.instructions[2].parsed='shinobi-deposit-v2:other';assert.throws(()=>liveVerify(memo,base),/memo/);}
  assert.equal((await call('deposit',record)).balance,980000);assert.equal((await call('deposit',record)).balance,980000);await assert.rejects(call('spend',{amount:100000,requestId:crypto.randomUUID()}),/retired/);

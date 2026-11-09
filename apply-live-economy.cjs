@@ -38,6 +38,13 @@ const economyHooks = [
   ['function initialProfile(){return {version:1,dojo:0,sensei:false,heroes:[hero(),hero()]}}', 'function initialProfile(){return ' + L + '.initialProfile({version:1,dojo:0,sensei:false,heroes:[hero(),hero()]})}'],
   ['function normalizeProfile(profile){', 'function normalizeProfile(profile){' + L + '.cleanStarterProfile(profile);'],
 ];
+// Phantom's Lighthouse guards in the server's review of player-signed transactions (same rule as the browser copy).
+const reviewHooks = [
+  ["const core=items=>items.filter(ix=>ix.programId!==COMPUTE);", "const core=items=>items.filter(ix=>ix.programId!==COMPUTE&&ix.programId!=='L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95');"],
+  ["different('token instructions, recipients, amounts or memo changed');", "different('token instructions, recipients, amounts or memo changed (wallet programs: '+[...new Set(actualInstructions.map(ix=>ix.programId.slice(0,8)))].join(', ')+')');"],
+  ["if(!expectedRoles.has(account)&&(account!==COMPUTE||!limits.budgetCount||role.signer||role.writable))different('unexpected account added');",
+   "if(!expectedRoles.has(account)&&((account!==COMPUTE||!limits.budgetCount)&&!(account==='L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95'&&actualInstructions.some(ix=>ix.programId===account))||role.signer||role.writable))different('unexpected account added ('+account.slice(0,8)+(role.writable?', writable':'')+(role.signer?', signer':'')+')');"],
+];
 // /beta-config.json: on live the token config is ready with the mint alone and publishes no studio destination.
 const renderHooks = [
   ["if(!process.env.RYO_TOKEN_MINT||!process.env.RYO_STUDIO_WALLET)return send(res,503,{error:'Public token configuration is not ready.'});",
@@ -50,6 +57,14 @@ const handlerHooks = [
 ];
 // Wallet deposit: studioAddress === null means "fee-free" (one transfer of the whole amount to custody, no studio account).
 const clientPatches = [
+  // Phantom on Mainnet appends Lighthouse guard instructions (program L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95) to transactions with one
+  // signer. They only assert account state (they cannot move funds), so the signed-transaction review ignores them and
+  // accepts the Lighthouse program as an added read-only, non-signer account. Every other instruction, account, amount
+  // and memo must still match exactly; any other change names the programs involved in the refusal message.
+  ['A=B=>B.filter(U=>U.programId!==Oi);JSON.stringify(A(u))!==JSON.stringify(A(l))&&s("token instructions, recipients, amounts or memo changed");',
+   'A=B=>B.filter(U=>U.programId!==Oi&&U.programId!=="L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95");JSON.stringify(A(u))!==JSON.stringify(A(l))&&s("token instructions, recipients, amounts or memo changed (wallet programs: "+[...new Set(l.map(U=>U.programId.slice(0,8)))].join(", ")+")");', 1],
+  ['for(let[B,U]of v)!O.has(B)&&(B!==Oi||!R.budgetCount||U.signer||U.writable)&&s("unexpected account added")',
+   'for(let[B,U]of v)!O.has(B)&&((B!==Oi||!R.budgetCount)&&!(B==="L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95"&&l.some(I=>I.programId===B))||U.signer||U.writable)&&s("unexpected account added ("+B.slice(0,8)+(U.writable?", writable":"")+(U.signer?", signer":"")+")")', 1],
   // Live players can have no heroes (no free starters): the original hero drawing must skip a missing hero, or the
   // start-up go(5) throws before requestAnimationFrame(frame) and the game loop never starts.
   ['function sprite(c,h,cx,cy,sc,now,moving){const col=R[h.r][1];', 'function sprite(c,h,cx,cy,sc,now,moving){if(!h)return;const col=R[h.r][1];', 1],
@@ -100,10 +115,11 @@ function applyLiveEconomy(appDir = path.join(__dirname, 'app')) {
   fs.copyFileSync(path.join(__dirname, 'live-economy/server.cjs'), path.join(server, 'live-economy.cjs'));
   patchFile(path.join(server, 'service.cjs'), serviceHooks, 'service');
   patchFile(path.join(server, 'economy.cjs'), economyHooks, 'economy');
+  patchFile(path.join(server, 'transaction-review.cjs'), reviewHooks, 'transaction-review');
   patchFile(path.join(server, 'netlify-handler.cjs'), handlerHooks, 'netlify-handler');
   patchFile(path.join(server, 'render-server.cjs'), renderHooks, 'render-server');
   patchFile(path.join(appDir, 'public/index.html'), clientPatches, 'client');
   console.log('Live economy: fee-free SR deposits, Boss Hunt 10% to the Locked Treasury, studio/revenue wallets optional (live build only).');
 }
-module.exports = { applyLiveEconomy, economyHooks, serviceHooks, handlerHooks, renderHooks, clientPatches, liveClientPatches, liveClientText };
+module.exports = { applyLiveEconomy, reviewHooks, economyHooks, serviceHooks, handlerHooks, renderHooks, clientPatches, liveClientPatches, liveClientText };
 if (require.main === module) applyLiveEconomy();

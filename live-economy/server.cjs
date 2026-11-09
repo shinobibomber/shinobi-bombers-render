@@ -15,6 +15,8 @@ const present = v => typeof v === 'string' && v.trim() !== '';
 
 /* ---------- SR token program (classic SPL Token or Token-2022), decided by the reviewed registry ---------- */
 const TOKEN_2022 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+/* Phantom's transaction-guard program (Mainnet): assertion-only instructions appended to single-signer transactions. */
+const LIGHTHOUSE = 'L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95';
 /** The SR mint's token program: the registry's srMintProgram on the live build, the classic program on the test server. */
 function programId() {
   const spl = require('@solana/spl-token');
@@ -100,6 +102,9 @@ function verifyFeeFreeDeposit(receipt, { wallet, mint, treasury, signature: hash
   if (!feePayer?.signer || feePayer.pubkey.toString() !== wallet) fail('Deposit must be signed by your connected wallet.');
   const P = programId(), source = spl.getAssociatedTokenAddressSync(key(mint), key(wallet), false, P).toBase58(), vault = spl.getAssociatedTokenAddressSync(key(mint), key(treasury), false, P).toBase58();
   let instructions; try { instructions = stripComputeBudgetInstructions(message.instructions, { enforcePriorityCap: false }); } catch { fail('Invalid wallet network-fee instructions.'); }
+  // Phantom's Lighthouse guard instructions only assert account state; the exact transfer, memo and finalized balance
+  // changes below are still required.
+  instructions = instructions.filter(i => i.programId.toString() !== LIGHTHOUSE);
   if (!Array.isArray(instructions) || instructions.length < 2 || instructions.length > 3) fail('Unexpected deposit instructions.');
   const TOKEN = P.toBase58(), ATA = spl.ASSOCIATED_TOKEN_PROGRAM_ID.toBase58(), MEMO_ID = MEMO.toBase58();
   if (instructions.some(i => ![TOKEN, MEMO_ID, ATA].includes(i.programId.toString()))) fail('Unexpected program in deposit.');
@@ -149,4 +154,4 @@ function cleanStarterProfile(profile) {
   return profile;
 }
 
-module.exports = { LIVE_MAX_DEPOSIT, depositAmount, genesis, initialProfile, cleanStarterProfile, TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };
+module.exports = { LIGHTHOUSE, LIVE_MAX_DEPOSIT, depositAmount, genesis, initialProfile, cleanStarterProfile, TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };
