@@ -111,6 +111,16 @@ const passed = [];
       assert(E.programId().equals(spl.TOKEN_PROGRAM_ID), 'without srMintProgram the registry means classic SPL Token');
       passed.push('SR token program: registry-decided on live (classic on the test server); Token-2022 mint accepted only with MetadataPointer/TokenMetadata; transfer fee/hook, permanent delegate, non-transferable, default-frozen and wrong-program mints refused; Token-2022 treasury account checks'); }
 
+    // ---- Live Dojo prices (owner decision 2026-11-10): Apprentice 3,000,000, every later tier +1,200,000.
+    { const economy = require('../app/server/economy.cjs'), LIVE = [3000000, 7200000, 14700000, 25200000, 38700000, 55200000], TEST = [1800000, 6000000, 13500000, 24000000, 37500000, 54000000];
+      const quote = dojo => { const p = economy.normalizeProfile({ version: 1, dojo, sensei: false, heroes: [economy.hero(0)] }); return economy.quote(p, 'dojo').total; };
+      mainnet(); assert.deepEqual([0, 1, 2, 3, 4, 5].map(quote), LIVE, 'live: the server charges the new Dojo prices');
+      assert.deepEqual([...E.LIVE_DOJO_PRICES], [0, ...LIVE]);
+      devnet(); assert.deepEqual([0, 1, 2, 3, 4, 5].map(quote), TEST, 'test server: Dojo prices unchanged'); mainnet();
+      const html = require('node:fs').readFileSync(require('node:path').join(__dirname, '../app/public/index.html'), 'utf8'), patched = require('../apply-live-economy.cjs').liveClientText(html);
+      assert(patched.includes('dojoPrices:[0,' + LIVE.join(',') + ']') && !patched.includes('dojoPrices:[0,' + TEST.join(',') + ']'), 'the live page shows the same Dojo prices');
+      passed.push('live Dojo prices 3,000,000 / 7,200,000 / 14,700,000 / 25,200,000 / 38,700,000 / 55,200,000 (server quote and live page); test server unchanged'); }
+
     // ---- RPC load: genesis read once per connection on live; the registered mint verified once per 10 minutes.
     { mainnet(); let calls = 0; const c1 = { async getGenesisHash() { calls++; return 'G1'; } };
       assert.equal(await E.genesis(c1), 'G1'); assert.equal(await E.genesis(c1), 'G1'); assert.equal(calls, 1, 'live: one genesis read per connection');

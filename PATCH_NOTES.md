@@ -8,6 +8,7 @@
 - The login screen now shows Solana Mainnet, and its Discord, X and Pump.fun buttons open our official pages.
 - New accounts no longer receive free Genin heroes: every hero comes from the Summoning Shrine. Unused free starter Genin were removed from accounts that had not played with them yet.
 - Founder rewards are open: Founder box buyers can sign in with their buying wallet and press the FOUNDER button (bottom-left) to activate their benefits. The button is now visible on every screen.
+- New Dojo prices: Apprentice Dojo 3,000,000 Ryo, Shinobi Dojo 7,200,000, Veteran Dojo 14,700,000, Master Dojo 25,200,000, Grandmaster Dojo 38,700,000, Legendary Dojo 55,200,000. (The Dojo opens in a later roadmap phase.)
 - Fixed: SR deposits from Phantom were refused with "The signed transaction differs from the reviewed request". Phantom adds its own safety checks to transactions; the game now accepts them while still checking every amount and recipient exactly.
 - You can now deposit up to 10,000,000 SR in one deposit (was 1,000,000).
 - Fixed: the game did not fully start for brand-new players who had no heroes yet.

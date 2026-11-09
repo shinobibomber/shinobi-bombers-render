@@ -37,6 +37,8 @@ const serviceHooks = [
 const economyHooks = [
   ['function initialProfile(){return {version:1,dojo:0,sensei:false,heroes:[hero(),hero()]}}', 'function initialProfile(){return ' + L + '.initialProfile({version:1,dojo:0,sensei:false,heroes:[hero(),hero()]})}'],
   ['function normalizeProfile(profile){', 'function normalizeProfile(profile){' + L + '.cleanStarterProfile(profile);'],
+  // Live Dojo prices (live-economy dojoPrice): the price actually charged.
+  ['base=dojoPrices[profile.dojo+1]', 'base=' + L + '.dojoPrice(dojoPrices,profile.dojo+1)'],
 ];
 // Phantom's Lighthouse guards in the server's review of player-signed transactions (same rule as the browser copy).
 const reviewHooks = [
@@ -91,6 +93,8 @@ const clientPatches = [
 // Live (Mainnet build) wording, applied by apply-network.cjs after apply-treasury's live text.
 // (The fee-free notice and the deposit fee line are part of apply-treasury's live patches, which own those strings.)
 const liveClientPatches = [
+  // Live Dojo prices on every Dojo screen (they all read GameBalance.dojoPrices); the server charges the same list.
+  ['dojoPrices:[0,1800000,6000000,13500000,24000000,37500000,54000000]', 'dojoPrices:[0,3000000,7200000,14700000,25200000,38700000,55200000]', 1],
   // Live deposit maximum 10,000,000 SR in the wallet's own check (the server and the config say the same).
   ['amount<1000||amount>1000000||!valid(treasuryAddress)', 'amount<1000||amount>10000000||!valid(treasuryAddress)', 1],
   ["throw Error('Choose 1,000–1,000,000 whole Ryo and configured custody/studio destinations.')", "throw Error('Choose 1,000–10,000,000 whole Ryo and configured custody/studio destinations.')", 1],

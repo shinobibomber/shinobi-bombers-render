@@ -271,7 +271,7 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "3471051aace0d50fa70e53975ed38f028444e41ec219e00916cf83ccbf3afe2d"
+      "sha256": "420329854ed97d37c0c12956948727343b3a1fe7280e371355b4c211f8462120"
     },
     {
       "path": "app/server/gameplay-options.cjs",

@@ -74,6 +74,11 @@ function required(all) {
 }
 const feeFree = () => live();
 /** Public `config` fields for the client: on live the deposit carries no studio fee and no studio destination. */
+/* Dojo prices on live (owner decision 2026-11-10): Apprentice Dojo 3,000,000 Ryo; every later tier is the previous
+ * price list + 1,200,000. The test server keeps its prices. Decided per call (never cached at module load). */
+const LIVE_DOJO_PRICES = Object.freeze([0, 3000000, 7200000, 14700000, 25200000, 38700000, 55200000]);
+function dojoPrice(original, tier) { return live() ? LIVE_DOJO_PRICES[tier] : original[tier]; }
+
 /* Deposit maximum per transaction (owner decision 2026-11-10): 10,000,000 SR on live; the test server keeps 1,000,000.
  * Withdrawals keep their own 1,000,000 maximum (service.cjs amount()). */
 const LIVE_MAX_DEPOSIT = 10000000;
@@ -154,4 +159,4 @@ function cleanStarterProfile(profile) {
   return profile;
 }
 
-module.exports = { LIGHTHOUSE, LIVE_MAX_DEPOSIT, depositAmount, genesis, initialProfile, cleanStarterProfile, TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };
+module.exports = { LIVE_DOJO_PRICES, dojoPrice, LIGHTHOUSE, LIVE_MAX_DEPOSIT, depositAmount, genesis, initialProfile, cleanStarterProfile, TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };
