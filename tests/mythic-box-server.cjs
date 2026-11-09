@@ -2,7 +2,7 @@
  * atomic transaction (exact SOL payment to revenue, Token-2022 NFT with metadata minted to the buyer,
  * mint authority removed, memo; treasury and mint signatures, player signs last, ≤1232 bytes);
  * 1 SOL then 1.5 SOL; 2 per wallet; supply; replayed request ids; confirmation only by the player's
- * signature over that exact transaction (or the NFT existing); expiry frees the serial; not enough SOL
+ * signature over that exact transaction; expiry frees the serial; not enough SOL
  * reserves nothing; box holders get Tsukiyomi and 10% off summon/fusion/dojo/sensei/training only. */
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), { PGlite } = require('@electric-sql/pglite');
 const root = path.resolve(__dirname, '../app/server');
@@ -16,7 +16,7 @@ const T22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', SOL = 1e9;
   const store = new Store(pool, 'test-box', () => Date.now());
   const treasury = web3.Keypair.generate(), revenue = web3.Keypair.generate().publicKey.toBase58();
   const [alice, bob, carol] = [web3.Keypair.generate(), web3.Keypair.generate(), web3.Keypair.generate()];
-  const balances = new Map(), statuses = new Map(), accounts = new Set(), held = new Map(); let height = 100;
+  const balances = new Map(), statuses = new Map(), accounts = new Set(), held = new Map(), refs = new Map(); let height = 100;
   const connection = {
     async getGenesisHash() { return 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG'; },
     async getMinimumBalanceForRentExemption(n) { return 890880 + n * 6960; },
@@ -25,6 +25,7 @@ const T22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', SOL = 1e9;
     async getBalance(k) { return balances.get(k.toBase58()) ?? 0; },
     async getAccountInfo(k) { return accounts.has(k.toBase58()) ? { owner: new web3.PublicKey(T22), lamports: 1, data: Buffer.alloc(0) } : null; },
     async getSignatureStatuses(sigs) { return { value: sigs.map(s => statuses.get(s) || null) }; },
+    async getSignaturesForAddress(key, options, commitment) { assert.equal(commitment, 'finalized'); return (refs.get(key.toBase58()) || []).map(signature => ({ signature })); },
     async getBlockHeight() { return height; },
     async getParsedTokenAccountsByOwner(owner, { programId }) { return { value: programId.toBase58() !== T22 ? [] : (held.get(owner.toBase58()) || []).map(mint => ({ account: { data: { parsed: { info: { mint, tokenAmount: { amount: '1', decimals: 0 } } } } } })) }; },
     async getMultipleAccountsInfo(a) { return a.map(() => null); }
@@ -69,11 +70,14 @@ const T22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', SOL = 1e9;
   assert.equal(r.mint.status, 'confirmed'); assert.deepEqual(await box.mints(store), [r.mint.mint]);
   const firstMint = r.mint.mint;
 
-  // Box #2 for the same wallet costs 1.5 SOL; it confirms by the NFT existing (sweep, no client report).
+  // Box #2 for the same wallet costs 1.5 SOL; recover the paid signature without a client report.
   r = await box.mint(ctx, W(alice), { requestId: id(3) });
   assert.deepEqual([r.mint.serial, r.mint.price], [2, 1.5]);
   assert.equal(Number(web3.SystemInstruction.decodeTransfer(web3.Transaction.from(Buffer.from(r.mint.wire, 'base64')).instructions[0]).lamports), 1.5 * SOL);
-  accounts.add(r.mint.mint); await box.sweep(ctx, W(alice));
+  const secondSig = sign(alice, r.mint.wire).signature;
+  refs.set(r.mint.mint, [secondSig]); statuses.set(secondSig, { confirmationStatus: 'finalized', err: null });
+  await box.sweep(ctx, W(alice));
+  assert.equal((await box.confirm(ctx, W(alice), { requestId: id(3) })).mint.signature, secondSig);
   info = (await box.info(store, W(alice))).box;
   assert.deepEqual([info.owned, info.limitReached, info.price, info.remaining, info.sold], [2, true, null, 18, 2]);
   await assert.rejects(box.mint(ctx, W(alice), { requestId: id(4) }), /up to 2 Mythic Boxes/);
@@ -85,7 +89,14 @@ const T22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', SOL = 1e9;
 
   // Expiry: an unsent reservation frees its serial once its blockhash can no longer land.
   r = await box.mint(ctx, W(bob), { requestId: id(6) });
-  assert.equal(r.mint.serial, 3); height += 500; await box.sweep(ctx, W(bob));
+  assert.equal(r.mint.serial, 3);
+  // Funding the reserved address with SOL does not prove payment or minting.
+  const dust = new web3.Transaction({ feePayer: bob.publicKey, recentBlockhash: web3.Keypair.generate().publicKey.toBase58() }).add(web3.SystemProgram.transfer({ fromPubkey: bob.publicKey, toPubkey: new web3.PublicKey(r.mint.mint), lamports: 890880 }));
+  dust.sign(bob); const dustSig = bs58.encode(dust.signature);
+  refs.set(r.mint.mint, [dustSig]); statuses.set(dustSig, { confirmationStatus: 'finalized', err: null });
+  const dustCtx = { ...ctx, connection: { ...connection, async getAccountInfo() { return { owner: web3.SystemProgram.programId, data: Buffer.alloc(0), lamports: 890880 }; } } };
+  assert.equal((await box.confirm(dustCtx, W(bob), { requestId: id(6) })).mint.status, 'pending');
+  height += 500; await box.sweep(dustCtx, W(bob));
   assert.equal((await box.info(store, W(bob))).box.owned, 0, 'expired');
   await assert.rejects(box.mint(ctx, W(bob), { requestId: id(6) }), /expired/);
   r = await box.mint(ctx, W(bob), { requestId: id(7) });

@@ -35,6 +35,11 @@ remain in place if that prior application version is restored.
 
 ## Local validation
 
+Follow-up: the owner subsequently approved paid launch, clean poster crops,
+and Founder benefits claimable inside the game once it opens. See
+[paid-launch preparation](FOUNDERS_PAID_LAUNCH.md) for current status. This document
+records the initial disabled release.
+
 - Devnet and Mainnet builds and their real-time reward guards passed. Mainnet
   used `https://shinobibombers.onrender.com` as its required metadata origin.
   Direct build commands used Node 22; the installed npm launcher reported Node 26

@@ -6,6 +6,7 @@
 - Founder sales, reward activation, and SOL Sensei purchases remain closed.
 - Previous Mythic Box minting and Mainnet Ryo Sensei hire/rental purchases are retired. Existing memberships remain unchanged.
 - Founder purchase confirmation now requires successful finalized payment verification.
+- Approved Founder NFT artwork is included in public metadata. SOL Sensei and previous Mythic Box payment recovery also require successful finalized transaction proof.
 
 
 Player-facing notes, newest first. Each entry is ready to paste into Discord (under 2,000

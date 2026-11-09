@@ -102,12 +102,15 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
     assert.equal((await get('/founders/metadata/legacy-30.json')).status, 200);
     for (const p of ['/founders/metadata/mythic-31.json', '/founders/metadata/mythic-0.json', '/founders/metadata/gold-1.json', '/founders/art/../server.cjs', '/founders/art/%2e%2e/server.cjs', '/founders/build-assets.cjs', '/founders/server.cjs', '/founders/assets/source/mythic.png'])
       assert.equal((await get(p)).status, 404, p);
-    // The disabled live release deliberately omits unapproved NFT artwork. A development checkout can retain
-    // its local test image; a clean release must return 404 until approved artwork is supplied.
-    r = await get('/founders/art/mythic.png');
-    if (fs.existsSync(path.join(root, 'founders/public/art/mythic.png'))) {
+    // Both approved images must be present in a clean release and match their public metadata URLs.
+    for (const tier of ['mythic', 'legacy']) {
+      r = await get('/founders/art/' + tier + '.png');
       assert.equal(r.status, 200); assert.equal(r.headers.get('content-type'), 'image/png');
-    } else assert.equal(r.status, 404, 'unapproved NFT artwork is not replaced with a test image');
+      const png = Buffer.from(await r.arrayBuffer());
+      assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+      assert.equal(png.readUInt32BE(16), 800); assert.equal(png.readUInt32BE(20), 800);
+      assert.deepEqual(png, fs.readFileSync(path.join(root, 'founders/public/art/' + tier + '.png')));
+    }
     assert.equal((await get('/founders/art/not-approved.png')).status, 404);
     r = await get('/founders/terms'); assert.deepEqual([r.status, r.headers.get('location')], [302, '/#founders']);
     const home = await (await get('/')).text(); assert.match(home, /id="founders"/); assert.match(home, /src="\/pl\/founders\.js"/);

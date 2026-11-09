@@ -104,21 +104,40 @@ function signedBy(wallet, message, signature) {
     return crypto.verify(null, Buffer.from(message, 'base64'), key, bytes);
   } catch { return false; }
 }
-// Settle one pending box from chain state: the player's signature over our exact message, finalized
-// without error, or the NFT mint account existing (finalized) → confirmed; blockhash expired → expired.
-async function settle({ store, connection }, row, signature) {
-  let confirmed = false;
-  if (signature && signedBy(row.wallet, row.message, signature)) {
-    const status = (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0];
-    if (status?.err) return expire(store, row);
-    if (status?.confirmationStatus === 'finalized') confirmed = true;
+async function findMintSignature(connection, row) {
+  let before;
+  for (let page = 0; page < 10; page++) {
+    const list = await connection.getSignaturesForAddress(new (web3().PublicKey)(row.mint), { limit: 100, ...(before ? { before } : {}) }, 'finalized');
+    const match = list.find(s => signedBy(row.wallet, row.message, s.signature));
+    if (match) return match.signature;
+    if (list.length < 100) return null;
+    const next = list[list.length - 1].signature;
+    if (!next || next === before) break;
+    before = next;
   }
-  if (!confirmed && await connection.getAccountInfo(new (web3().PublicKey)(row.mint), 'finalized')) confirmed = true;
-  if (confirmed) {
-    await store.pool.query("UPDATE ryo_mythic_boxes SET status='confirmed',signature=COALESCE($3,signature),settled=$4 WHERE scope=$1 AND request_id=$2 AND status='pending'", [store.scope, row.request_id, signature || null, Date.now()]);
+  throw Error('Mythic Box transaction history is incomplete. Retry settlement.');
+}
+// Recovery remains available for retired sales, but only the exact paid transaction proves a purchase.
+async function settle({ store, connection }, row, reported) {
+  const height = await connection.getBlockHeight('finalized');
+  let signature = [reported, row.signature].find(s => s && signedBy(row.wallet, row.message, s)) || null;
+  let status = signature ? (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0] : null;
+  if (!status) {
+    let recovered;
+    try { recovered = await findMintSignature(connection, row); } catch { return 'pending'; }
+    if (recovered) {
+      signature = recovered;
+      status = (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0];
+      if (!status) return 'pending';
+    }
+  }
+  if (status?.confirmationStatus === 'finalized' && status.err === null) {
+    await store.pool.query("UPDATE ryo_mythic_boxes SET status='confirmed',signature=$3,settled=$4 WHERE scope=$1 AND request_id=$2 AND status='pending'", [store.scope, row.request_id, signature, Date.now()]);
     return 'confirmed';
   }
-  if (await connection.getBlockHeight('finalized') > Number(row.last_height)) return expire(store, row);
+  if (status?.confirmationStatus === 'finalized' && status.err != null) return expire(store, row);
+  if (status) return 'pending';
+  if (height > Number(row.last_height)) return expire(store, row);
   return 'pending';
 }
 async function expire(store, row) { await store.pool.query("UPDATE ryo_mythic_boxes SET status='expired',settled=$3 WHERE scope=$1 AND request_id=$2 AND status='pending'", [store.scope, row.request_id, Date.now()]); return 'expired'; }

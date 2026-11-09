@@ -264,10 +264,10 @@ async function mint(ctx, wallet, body, env = process.env) {
 // Recover an unreported buyer signature, never an account-existence proof. Other transactions can mention or fund
 // the mint, so only a signature over the stored payment-and-mint message is relevant. Bound RPC work, but fail
 // closed if history cannot be fully searched: an incomplete search must not expire a potentially paid purchase.
-async function findMintSignature(connection, row) {
+async function findMintSignature(connection, row, address = row.mint) {
   let before;
   for (let page = 0; page < 10; page++) {
-    const list = await connection.getSignaturesForAddress(new (web3().PublicKey)(row.mint), { limit: 100, ...(before ? { before } : {}) }, 'finalized');
+    const list = await connection.getSignaturesForAddress(new (web3().PublicKey)(address), { limit: 100, ...(before ? { before } : {}) }, 'finalized');
     const match = list.find(s => signedBy(row.wallet, row.message, s.signature));
     if (match) return match.signature;
     if (list.length < 100) return null;
@@ -516,18 +516,22 @@ async function senseiBuy(ctx, wallet, body, env = process.env) {
 }
 // Our exact message, signed by the buyer, found through the payment's reference key (finalized only).
 async function findByReference(connection, row) {
-  const list = await connection.getSignaturesForAddress(new (web3().PublicKey)(row.reference), { limit: 10 }, 'finalized');
-  return (list || []).map(s => s.signature).find(s => signedBy(row.wallet, row.message, s)) || null;
+  return findMintSignature(connection, row, row.reference);
 }
 async function settleSensei({ store, connection }, row, reported) {
-  let confirmed = false, signature = reported && signedBy(row.wallet, row.message, reported) ? reported : null;
-  if (!signature) { try { signature = await findByReference(connection, row); } catch { return 'pending'; } }
-  if (signature) {
-    const status = (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0];
-    if (status?.err) return expire(store, 'ryo_sensei_sol_purchases', row);
-    if (status?.confirmationStatus === 'finalized') confirmed = true;
+  const height = await connection.getBlockHeight('finalized');
+  let signature = [reported, row.signature].find(s => s && signedBy(row.wallet, row.message, s)) || null;
+  let status = signature ? (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0] : null;
+  if (!status) {
+    let recovered;
+    try { recovered = await findByReference(connection, row); } catch { return 'pending'; }
+    if (recovered) {
+      signature = recovered;
+      status = (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0];
+      if (!status) return 'pending';
+    }
   }
-  if (confirmed) {
+  if (status?.confirmationStatus === 'finalized' && status.err === null) {
     await store.transaction(async c => {
       await store.locked(c, row.wallet);
       const done = (await c.query("UPDATE ryo_sensei_sol_purchases SET status='confirmed',signature=$3,settled=$4 WHERE scope=$1 AND request_id=$2 AND status='pending' RETURNING *", [store.scope, row.request_id, signature, nowOf(store)])).rows[0];
@@ -538,13 +542,9 @@ async function settleSensei({ store, connection }, row, reported) {
     });
     return 'confirmed';
   }
-  // Expire only once the blockhash can no longer land AND the reference shows no payment at finalized commitment.
-  if (await connection.getBlockHeight('finalized') > Number(row.last_height)) {
-    if (signature && (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0]) return 'pending';
-    let late; try { late = await findByReference(connection, row); } catch { return 'pending'; }
-    if (late && late !== signature) return settleSensei({ store, connection }, row, late);
-    return expire(store, 'ryo_sensei_sol_purchases', row);
-  }
+  if (status?.confirmationStatus === 'finalized' && status.err != null) return expire(store, 'ryo_sensei_sol_purchases', row);
+  if (status) return 'pending';
+  if (height > Number(row.last_height)) return expire(store, 'ryo_sensei_sol_purchases', row);
   return 'pending';
 }
 async function senseiConfirm(ctx, wallet, body, env = process.env) {

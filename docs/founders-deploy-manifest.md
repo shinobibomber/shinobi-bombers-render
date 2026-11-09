@@ -4,13 +4,18 @@ Status: the owner approved a **disabled live release** on 2026-11-09. See [the s
 
 ## What ships
 
+Current status: the owner has since approved paid launch and final poster crops.
+See [paid-launch preparation](FOUNDERS_PAID_LAUNCH.md) for successful Devnet testing
+and the remaining deployment/configuration steps. Sales remain off until readiness
+is verified; benefits are claimed inside the game when it opens.
+
 | Area | Files |
 |---|---|
 | Server module | `founders/server.cjs`, copied to `app/server/founders.cjs` by `apply-founders.cjs` (build step in `unpack.cjs`) |
 | 12h Founder Chest cooldown | `treasury/treasury-rewards.cjs` (`claimCooldownFor`, `claimInfo`); `apply-treasury.cjs` (Chest response hook) |
 | Old Mythic Box retired | `mythic-box/server.cjs` (`box-mint` returns 410; recovery and holder benefits unchanged) |
 | Pre-landing sale | `prelaunch/server.cjs` (`founders-info`/`founders-mint`/`founders-confirm`), `prelaunch/founders.js`, `prelaunch/index.html`, `prelaunch/prelaunch.css`, `prelaunch/i18n/*.json`, `prelaunch/assets/founders-*.webp` |
-| Public NFT files | `server/site-server.cjs` (`/founders/metadata/<tier>-<n>.json`, `/founders/art/*.png`, `/founders/terms`), `founders/public/art/*.png` (**Devnet test art**) |
+| Public NFT files | `server/site-server.cjs` (`/founders/metadata/<tier>-<n>.json`, `/founders/art/*.png`, `/founders/terms`), `founders/public/art/*.png` (approved clean poster crops) |
 | Game panel | `founders/founders-game.js`, `founders/founders-game.css` (Activate, Limited/Premium summons, Sensei trial, SOL Sensei) |
 | Chest dialog | `chest-ui/src/ChestManager.tsx`, `chest-ui/src/bridge.ts` (per-wallet claim cycle, Founder label) |
 | Command Center | `command-center/server.cjs` (`cc-founders`, `cc-founders-pause`, `cc-founders-revoke`), `command-center/public/cc.js` (Founder NFTs view) |

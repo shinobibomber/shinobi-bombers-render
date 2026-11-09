@@ -160,11 +160,14 @@ const ok = label => pass.push(label);
     { name: 'payment behind unrelated mint transactions', history: true, paginated: true, status: { confirmationStatus: 'finalized', err: null }, expected: 'confirmed' },
     { name: 'history search limit reached', expired: true, saturated: true, expected: 'pending' },
   ];
-  for (const [index, test] of evidenceCases.entries()) {
-    const isolated = new Store(pool, store.scope + ':evidence-' + index, () => now);
+  for (const kind of ['founder', 'sensei']) for (const [index, test] of evidenceCases.entries()) {
+    const isolated = new Store(pool, store.scope + ':evidence-' + kind + '-' + index, () => now);
     const isolatedCtx = { ...ctx, store: isolated };
-    const purchase = (await F.mint(isolatedCtx, W(carol), { tier: 'mythic', requestId: id(9000 + index) }, PUBLIC)).purchase;
-    const row = (await pool.query('SELECT * FROM ryo_founder_purchases WHERE scope=$1 AND request_id=$2', [isolated.scope, purchase.requestId])).rows[0];
+    const table = kind === 'founder' ? 'ryo_founder_purchases' : 'ryo_sensei_sol_purchases';
+    const purchase = kind === 'founder'
+      ? (await F.mint(isolatedCtx, W(carol), { tier: 'mythic', requestId: id(9000 + index) }, PUBLIC)).purchase
+      : (await F.senseiBuy(isolatedCtx, W(carol), { requestId: id(9000 + index) }, { SENSEI_SOL_ENABLED: 'on' })).senseiPurchase;
+    const row = (await pool.query('SELECT * FROM ' + table + ' WHERE scope=$1 AND request_id=$2', [isolated.scope, purchase.requestId])).rows[0];
     const signature = bs58.encode(signWire(carol, purchase.wire).signatures[0].signature);
     const noise = Array.from({ length: 100 }, () => ({ signature: bs58.encode(crypto.randomBytes(64)) }));
     let searches = 0;
@@ -176,7 +179,7 @@ const ok = label => pass.push(label);
         return { value: [test.status || null] };
       },
       async getSignaturesForAddress(key, options, commitment) {
-        searches++; assert.equal(key.toBase58(), row.mint); assert.equal(commitment, 'finalized'); assert.equal(options.limit, 100);
+        searches++; assert.equal(key.toBase58(), row.mint || row.reference); assert.equal(commitment, 'finalized'); assert.equal(options.limit, 100);
         if (test.historyError) throw Error('RPC unavailable');
         if (test.saturated) return noise.map((entry, n) => ({ signature: searches + '-' + n + '-' + entry.signature }));
         if (test.paginated && searches === 1) return noise;
@@ -184,14 +187,21 @@ const ok = label => pass.push(label);
         return test.history ? [{ signature: dustSig }, { signature }] : [{ signature: dustSig }];
       },
     };
-    assert.equal(await F.settle(isolatedCtx, row, test.reported ? signature : null), test.expected, test.name);
-    const fresh = (await pool.query('SELECT * FROM ryo_founder_purchases WHERE scope=$1 AND request_id=$2', [isolated.scope, row.request_id])).rows[0];
+    assert.equal(await (kind === 'founder' ? F.settle : F.settleSensei)(isolatedCtx, row, test.reported ? signature : null), test.expected, kind + ': ' + test.name);
+    const fresh = (await pool.query('SELECT * FROM ' + table + ' WHERE scope=$1 AND request_id=$2', [isolated.scope, row.request_id])).rows[0];
     assert.equal(fresh.status, test.expected, test.name + ': database status');
-    assert.equal(!!await F.entitlement(pool, isolated.scope, W(carol)), test.expected === 'confirmed', test.name + ': entitlement');
+    if (kind === 'founder') assert.equal(!!await F.entitlement(pool, isolated.scope, W(carol)), test.expected === 'confirmed', test.name + ': entitlement');
+    else assert.equal((await isolated.profile(W(carol))).sensei === true, test.expected === 'confirmed', test.name + ': Sensei grant');
     if (test.expected === 'confirmed') {
       assert.equal(fresh.signature, signature, test.name + ': verified signature persisted');
-      await F.confirm(isolatedCtx, W(carol), { requestId: row.request_id });
-      assert.equal(Number((await pool.query('SELECT COUNT(*) AS n FROM ryo_founder_entitlements WHERE scope=$1', [isolated.scope])).rows[0].n), 1);
+      if (kind === 'founder') {
+        await F.confirm(isolatedCtx, W(carol), { requestId: row.request_id });
+        assert.equal(Number((await pool.query('SELECT COUNT(*) AS n FROM ryo_founder_entitlements WHERE scope=$1', [isolated.scope])).rows[0].n), 1);
+      } else {
+        const since = (await isolated.profile(W(carol))).senseiSince;
+        await F.senseiConfirm(isolatedCtx, W(carol), { requestId: row.request_id });
+        assert.equal((await isolated.profile(W(carol))).senseiSince, since);
+      }
     }
     if (test.paginated) assert.equal(searches, 2);
     if (test.saturated) assert.equal(searches, 10);

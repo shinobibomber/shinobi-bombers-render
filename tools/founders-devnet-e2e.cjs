@@ -41,9 +41,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   if (funderArg > 0) {
     const funder = web3.Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(process.argv[funderArg + 1], 'utf8'))));
     const tx = new web3.Transaction().add(...[[a, 1.2], [b, 0.7]].map(([k, n]) => web3.SystemProgram.transfer({ fromPubkey: funder.publicKey, toPubkey: k.publicKey, lamports: Math.round(n * SOL) })));
-    await web3.sendAndConfirmTransaction(connection, tx, [funder], { commitment: 'confirmed' });
+    await web3.sendAndConfirmTransaction(connection, tx, [funder], { commitment: 'finalized' });
   } else {
-    for (const [k, n] of [[a, 1.2], [b, 0.7]]) { const s = await connection.requestAirdrop(k.publicKey, Math.round(n * SOL)); await connection.confirmTransaction(s, 'confirmed'); }
+    for (const [k, n] of [[a, 1.2], [b, 0.7]]) { const s = await connection.requestAirdrop(k.publicKey, Math.round(n * SOL)); await connection.confirmTransaction(s, 'finalized'); }
   }
   step('buyers funded on Devnet');
   const before = await connection.getBalance(revenue.publicKey, 'finalized');
