@@ -2,7 +2,7 @@
 /* Founder's NFT Boxes on the assembled server modules (in-memory Postgres, fake Solana RPC, real SDK wires and
  * signatures, controllable clock). Concurrency is modelled by a pool that serializes connections like row locks;
  * true multi-connection races on a real Postgres are not exercised here.
- * Covers: atomic payment+NFT transaction, exact prices (Mythic early bird #1-#3 0.5 SOL), 33 Mythic + 30 Legacy / 63 total, one Founder NFT per wallet across
+ * Covers: atomic payment+NFT transaction, exact prelaunch and public-launch prices, 33 Mythic + 30 Legacy / 63 total, one Founder NFT per wallet across
  * tiers (server + database constraints), replays, forged/tampered signatures, server-side broadcast, expiry, pause,
  * fail-closed switches, buyer-bound entitlements (transfer gives the new holder nothing), activation grants,
  * Limited (no Genin/no Mythic) and Premium (70/30) summons with exact pools, pass accounting under parallel use,
@@ -47,7 +47,7 @@ const ok = label => pass.push(label);
     async getMultipleAccountsInfo(a) { return a.map(() => null); },
   };
   const env = (extra = {}) => ({ FOUNDERS_MINT_AUTHORITY_SECRET: JSON.stringify([...authority.secretKey]), FOUNDERS_REVENUE_WALLET: revenue, RYO_REVENUE_WALLET: gameRevenue, ...extra });
-  const PUBLIC = env({ FOUNDERS_PUBLIC_SALE_ENABLED: 'on' });
+  const PUBLIC = env({ FOUNDERS_PUBLIC_SALE_ENABLED: 'on', PRELAUNCH_MODE: 'off', RELEASE_STAGE: 'public' });
   // The game hands its own revenue wallet in ctx (apply-founders hook); Founder/Sensei SOL must ignore it.
   const ctx = { store, connection, revenueAddress: gameRevenue, origin: 'https://example.invalid' };
   const wallets = Array.from({ length: 80 }, () => web3.Keypair.generate()), W = k => k.publicKey.toBase58();
@@ -67,9 +67,17 @@ const ok = label => pass.push(label);
   await assert.rejects(F.mint(ctx, W(alice), { tier: 'mythic', requestId: id(1) }, { FOUNDERS_PUBLIC_SALE_ENABLED: 'on' }), e => e.code === 'FOUNDERS_NOT_CONFIGURED');
   await assert.rejects(F.mint(ctx, W(alice), { tier: 'gold', requestId: id(1) }, PUBLIC), /Mythic or Legacy/);
   assert.equal(F.TIERS.mythic.lamports, SOL); assert.equal(F.TIERS.legacy.lamports, SOL / 2); assert.equal(F.TOTAL_SUPPLY, 63);
-  assert.deepEqual([F.TIERS.mythic.supply, F.TIERS.legacy.supply, F.TIERS.mythic.earlyBird.count, F.TIERS.mythic.earlyBird.lamports], [33, 30, 3, SOL / 2]);
-  assert.deepEqual([1, 2, 3, 4, 33].map(n => F.priceFor(F.TIERS.mythic, n)), [SOL / 2, SOL / 2, SOL / 2, SOL, SOL], 'Mythic early bird #1-#3');
-  assert.deepEqual([1, 3, 30].map(n => F.priceFor(F.TIERS.legacy, n)), [SOL / 2, SOL / 2, SOL / 2], 'Legacy has no early bird');
+  assert.deepEqual([F.TIERS.mythic.supply, F.TIERS.legacy.supply], [33, 30]);
+  for (const stage of ['', 'portal', 'private']) {
+    const before = { PRELAUNCH_MODE: 'on', RELEASE_STAGE: stage, FOUNDERS_PUBLIC_SALE_ENABLED: 'on' };
+    assert.equal(F.priceFor(F.TIERS.mythic, 1, before), 700000000);
+    assert.equal(F.priceFor(F.TIERS.mythic, 33, before), 700000000);
+    assert.equal(F.priceFor(F.TIERS.legacy, 30, before), 250000000);
+  }
+  for (const settings of [{}, PUBLIC, { PRELAUNCH_MODE: 'on', RELEASE_STAGE: 'public' }, { PRELAUNCH_MODE: 'on', RELEASE_STAGE: 'invalid' }]) {
+    assert.equal(F.priceFor(F.TIERS.mythic, 1, settings), SOL);
+    assert.equal(F.priceFor(F.TIERS.legacy, 1, settings), SOL / 2);
+  }
   await assert.rejects(F.mint(ctx, W(alice), { tier: 'mythic', requestId: id(1) }, { ...PUBLIC, FOUNDERS_REVENUE_WALLET: '' }), e => e.code === 'FOUNDERS_NOT_CONFIGURED', 'no Founder SOL wallet: the game wallet is never used instead');
   await assert.rejects(F.mint(ctx, W(alice), { tier: 'mythic', requestId: id(1) }, { ...PUBLIC, FOUNDERS_REVENUE_WALLET: revenue + ' x' }), e => e.code === 'FOUNDERS_NOT_CONFIGURED');
   assert.throws(() => F.mintAuthority({ ...PUBLIC, FOUNDERS_REVENUE_WALLET: W(authority) }), /dedicated key/, 'the mint key cannot be the Founder SOL wallet');
@@ -84,9 +92,18 @@ const ok = label => pass.push(label);
     const names = (await old.query("SELECT conname FROM pg_constraint WHERE conrelid='ryo_founder_purchases'::regclass AND contype='c' ORDER BY 1")).rows.map(x => x.conname);
     assert.deepEqual(names, ['ryo_founder_price_rule', 'ryo_founder_purchases_status_check', 'ryo_founder_purchases_tier_check', 'ryo_founder_serial_range']);
     assert.equal(Number((await old.query('SELECT COUNT(*) AS n FROM ryo_founder_purchases')).rows[0].n), 3, 'v1 rows kept');
-    await put('d', 'w4', 'mythic', 2, SOL / 2); await put('e', 'w5', 'mythic', 33, SOL);
+    await put('d', 'w4', 'mythic', 2, SOL / 2, 'pending'); await put('e', 'w5', 'mythic', 33, SOL);
     for (const bad of [['f', 'w6', 'mythic', 4, SOL / 2], ['g', 'w7', 'mythic', 34, SOL], ['h', 'w8', 'legacy', 31, SOL / 2], ['i', 'w9', 'legacy', 3, SOL]])
       await assert.rejects(put(...bad), /check/i, 'v2 refuses ' + bad.slice(2).join(' '));
+    // v3 keeps v1/v2 receipts and pending early-bird reservations while admitting only the new exact prices.
+    await old.exec(F.MIGRATION_V3);
+    await put('promo-m', 'w10', 'mythic', 4, 700000000, 'pending');
+    await put('promo-l', 'w11', 'legacy', 1, 250000000, 'pending');
+    const beforeV3Repeat = (await old.query('SELECT * FROM ryo_founder_purchases ORDER BY request_id')).rows;
+    await old.exec(F.MIGRATION_V2); await old.exec(F.MIGRATION_V3);
+    assert.deepEqual((await old.query('SELECT * FROM ryo_founder_purchases ORDER BY request_id')).rows, beforeV3Repeat);
+    for (const bad of [['bad-m', 'w12', 'mythic', 5, 250000000], ['bad-l', 'w13', 'legacy', 2, 700000000], ['bad-price', 'w14', 'mythic', 6, 699999999]])
+      await assert.rejects(put(...bad), /check/i, 'v3 rejects wrong tier/amount');
     await old.close();
     // A table whose constraints are not exactly as expected stops db:init (the build) and changes nothing.
     const odd = new PGlite(); await odd.exec(F.SCHEMA.replace('CHECK(serial BETWEEN 1 AND 30)', 'CONSTRAINT odd_serial CHECK(serial BETWEEN 1 AND 30)'));
@@ -97,12 +114,12 @@ const ok = label => pass.push(label);
 
   /* ---------- Mythic purchase: one atomic transaction ---------- */
   let r = await F.mint(ctx, W(alice), { tier: 'mythic', requestId: id(1), price: 0.0001 }, PUBLIC);
-  assert.deepEqual([r.purchase.tier, r.purchase.serial, r.purchase.price, r.purchase.status], ['mythic', 1, 0.5, 'pending'], 'a client price is ignored; Mythic #1 is an early-bird box');
+  assert.deepEqual([r.purchase.tier, r.purchase.serial, r.purchase.price, r.purchase.status], ['mythic', 1, 1, 'pending'], 'a client price is ignored; public-launch Mythic is 1 SOL');
   let tx = web3.Transaction.from(Buffer.from(r.purchase.wire, 'base64'));
   assert(tx.feePayer.equals(alice.publicKey));
   assert.deepEqual(tx.instructions.map(ix => ix.programId.toBase58()), [SYS, SYS, T22, T22, T22, ATA, T22, T22, MEMO]);
   const pay = web3.SystemInstruction.decodeTransfer(tx.instructions[0]);
-  assert.deepEqual([pay.fromPubkey.toBase58(), pay.toPubkey.toBase58(), Number(pay.lamports)], [W(alice), revenue, SOL / 2], 'exactly the early-bird 0.5 SOL to the Founder SOL wallet (not the game wallet in ctx)');
+  assert.deepEqual([pay.fromPubkey.toBase58(), pay.toPubkey.toBase58(), Number(pay.lamports)], [W(alice), revenue, SOL], 'exactly 1 SOL to the Founder SOL wallet (not the game wallet in ctx)');
   assert.equal(Buffer.from(tx.instructions[8].data).toString(), 'shinobi-founder-v1:mythic:' + id(1));
   assert.match(Buffer.from(tx.instructions[4].data).toString('latin1'), /Shinobi Bombers Founder Mythic #1[\s\S]*SBFNDR[\s\S]*example\.invalid\/founders\/metadata\/mythic-1\.json/);
   assert.equal(tx.instructions[7].data[0], 6, 'mint authority removed after minting exactly 1');
@@ -114,7 +131,7 @@ const ok = label => pass.push(label);
   await assert.rejects(F.mint(ctx, W(bob), { tier: 'mythic', requestId: id(1) }, PUBLIC), /Invalid request ID/);
   await assert.rejects(F.mint(ctx, W(alice), { tier: 'mythic', requestId: id(1).replace('founder', 'founder-x') }, PUBLIC), e => e.code === 'FOUNDERS_PENDING');
   await assert.rejects(F.mint(ctx, W(alice), { tier: 'legacy', requestId: id(2) }, PUBLIC), e => e.code === 'FOUNDERS_PENDING');
-  ok('Mythic box: exact price (early bird 0.5 SOL) to revenue + Token-2022 NFT (metadata, authority removed, memo) in one ≤1232-byte transaction; replays idempotent');
+  ok('Mythic box: exact public-launch price (1 SOL) to revenue + Token-2022 NFT (metadata, authority removed, memo) in one ≤1232-byte transaction; replays idempotent');
 
   // Confirmation: tampered and forged transactions are refused; the server broadcasts the buyer-signed bytes.
   const tampered = web3.Transaction.from(Buffer.from(r.purchase.wire, 'base64')); tampered.instructions[0] = web3.SystemProgram.transfer({ fromPubkey: alice.publicKey, toPubkey: alice.publicKey, lamports: 1 });
@@ -251,24 +268,64 @@ const ok = label => pass.push(label);
   assert.equal((await pool.query('SELECT status FROM ryo_founder_purchases WHERE scope=$1 AND request_id=$2', [store.scope, id(11)])).rows[0].status, 'expired');
   ok('no reservation without enough SOL; expired reservations free the serial (also when another buyer arrives); admin pause blocks sales');
 
-  // Early bird: Mythic #1-#3 cost 0.5 SOL, #4+ the regular 1 SOL; a freed early serial is re-offered at 0.5 SOL.
+  // Mainnet stage transition with the same purchase ledger: discounted pending receipts keep their wire/price.
+  {
+    mainnet();
+    const saleStore = new Store(pool, 'solana-mainnet:launch-pricing-fixture', () => now);
+    const saleCtx = { ...ctx, store: saleStore };
+    const before = { ...PUBLIC, PRELAUNCH_MODE: 'on', RELEASE_STAGE: 'private' };
+    const transfer = wire => Number(web3.SystemInstruction.decodeTransfer(web3.Transaction.from(Buffer.from(wire, 'base64')).instructions[0]).lamports);
+    const orders = [];
+    for (const [tier, key, price] of [['mythic', alice, 0.7], ['legacy', bob, 0.25]]) {
+      const requestId = 'launch-price-' + tier;
+      const order = await F.mint(saleCtx, W(key), { tier, requestId, price: 0.01 }, before);
+      assert.equal(order.purchase.price, price); assert.equal(transfer(order.purchase.wire), price * SOL);
+      assert.equal(order.founders.tiers[tier].price, price);
+      assert.equal(order.founders.tiers[tier].prelaunchOffer, true);
+      const replay = await F.mint(saleCtx, W(key), { tier, requestId }, PUBLIC);
+      assert.equal(replay.purchase.wire, order.purchase.wire, 'launch never rewrites a reserved transaction');
+      assert.equal(replay.purchase.price, price);
+      assert.equal(replay.founders.tiers[tier].prelaunchOffer, false);
+      orders.push({ tier, key, requestId, order });
+    }
+    const atLaunch = (await F.info(saleStore, null, PUBLIC)).founders.tiers;
+    assert.deepEqual([atLaunch.mythic.price, atLaunch.legacy.price, atLaunch.mythic.remaining, atLaunch.legacy.remaining], [1, 0.5, 32, 29]);
+    for (const [tier, key, price] of [['mythic', carol, 1], ['legacy', dave, 0.5]]) {
+      const order = await F.mint(saleCtx, W(key), { tier, requestId: 'public-price-' + tier }, PUBLIC);
+      assert.equal(order.purchase.price, price); assert.equal(transfer(order.purchase.wire), price * SOL);
+    }
+    // A discounted transaction signed before launch still settles at its agreed price after launch.
+    const first = orders[0], tx = signWire(first.key, first.order.purchase.wire);
+    const sig = bs58.encode(tx.signatures.find(s => s.publicKey.equals(first.key.publicKey)).signature);
+    statuses.set(sig, { confirmationStatus: 'finalized', err: null });
+    const settled = await F.confirm(saleCtx, W(first.key), { requestId: first.requestId, signed: tx.serialize().toString('base64') }, PUBLIC);
+    assert.equal(settled.purchase.status, 'confirmed'); assert.equal(settled.purchase.price, 0.7);
+    // An expired discounted Legacy slot becomes available at the original price, without resetting inventory.
+    await pool.query('UPDATE ryo_founder_purchases SET last_height=$3 WHERE scope=$1 AND request_id=$2', [saleStore.scope, orders[1].requestId, height - 1]);
+    const replacement = await F.mint(saleCtx, W(eve), { tier: 'legacy', requestId: 'public-released-legacy' }, PUBLIC);
+    assert.equal(replacement.purchase.serial, 1); assert.equal(transfer(replacement.purchase.wire), SOL / 2);
+    devnet();
+    ok('Mainnet prelaunch 0.7/0.25 SOL; public launch 1/0.5 SOL; exact wires, pending replay/settlement, released slots and inventory preserved');
+  }
+
+  // Public launch: every Mythic serial costs 1 SOL, including released former early-bird serials.
   const paid = wire => Number(web3.SystemInstruction.decodeTransfer(web3.Transaction.from(Buffer.from(wire, 'base64')).instructions[0]).lamports);
   const mythicNow = async () => (await F.info(store, null, PUBLIC)).founders.tiers.mythic;
   let m = await mythicNow();
-  assert.deepEqual([m.price, m.regularPrice, m.supply, m.earlyBird], [0.5, 1, 33, { price: 0.5, total: 3, left: 2 }], 'Alice holds early #1: 2 early boxes left');
+  assert.deepEqual([m.price, m.regularPrice, m.supply, m.prelaunchOffer], [1, 1, 33, false], 'public-launch offer applies to all serials');
   const [e2, e3, e4, e5] = [wallets[72], wallets[73], wallets[74], wallets[78]];
   const r2 = await F.mint(ctx, W(e2), { tier: 'mythic', requestId: id(102) }, PUBLIC), r3 = await F.mint(ctx, W(e3), { tier: 'mythic', requestId: id(103) }, PUBLIC);
-  assert.deepEqual([r2.purchase.serial, r2.purchase.price, paid(r2.purchase.wire), r3.purchase.serial, r3.purchase.price, paid(r3.purchase.wire)], [2, 0.5, SOL / 2, 3, 0.5, SOL / 2]);
-  m = await mythicNow(); assert.deepEqual([m.price, m.earlyBird.left], [1, 0], 'early bird used up (reserved): next Mythic is 1 SOL');
+  assert.deepEqual([r2.purchase.serial, r2.purchase.price, paid(r2.purchase.wire), r3.purchase.serial, r3.purchase.price, paid(r3.purchase.wire)], [2, 1, SOL, 3, 1, SOL]);
+  m = await mythicNow(); assert.deepEqual([m.price, m.prelaunchOffer], [1, false], 'next Mythic remains 1 SOL');
   const r4 = await F.mint(ctx, W(e4), { tier: 'mythic', requestId: id(104) }, PUBLIC);
   assert.deepEqual([r4.purchase.serial, r4.purchase.price, paid(r4.purchase.wire), r4.founders.tiers.mythic.price], [4, 1, SOL, 1], 'Mythic #4 pays exactly 1 SOL');
   // #2's blockhash can no longer land (rejected in the wallet / abandoned): the next buyer gets #2 at the early price.
   await pool.query('UPDATE ryo_founder_purchases SET last_height=$3 WHERE scope=$1 AND request_id=$2', [store.scope, id(102), height - 1]);
   const r5 = await F.mint(ctx, W(e5), { tier: 'mythic', requestId: id(105) }, PUBLIC);
-  assert.deepEqual([r5.purchase.serial, r5.purchase.price, paid(r5.purchase.wire)], [2, 0.5, SOL / 2], 'a freed early serial is re-offered at 0.5 SOL');
+  assert.deepEqual([r5.purchase.serial, r5.purchase.price, paid(r5.purchase.wire)], [2, 1, SOL], 'a freed serial uses current public pricing');
   assert.equal((await pool.query('SELECT status FROM ryo_founder_purchases WHERE scope=$1 AND request_id=$2', [store.scope, id(102)])).rows[0].status, 'expired');
   assert.equal((await F.mint(ctx, W(e2), { tier: 'mythic', requestId: id(102) }, PUBLIC).catch(e => e)).status, 409, 'the expired early reservation cannot be replayed');
-  ok('Mythic early bird: #1-#3 at exactly 0.5 SOL, #4+ at 1 SOL; info shows the current price and early boxes left; a freed early serial returns at 0.5 SOL');
+  ok('Public launch: all Mythic serials pay 1 SOL, including a released serial; no old early-bird offer returns.');
 
   // Supply under parallel demand: 33 Mythic + 30 Legacy (63 in total), unique serials, prices fixed by serial.
   const rush = async (tier, list, base) => Promise.allSettled(list.map((k, i) => F.mint(ctx, W(k), { tier, requestId: id(base + i) }, PUBLIC)));
@@ -280,10 +337,10 @@ const ok = label => pass.push(label);
   const live = (await pool.query("SELECT tier,COUNT(*) AS n,COUNT(DISTINCT serial) AS s,MAX(serial) AS m FROM ryo_founder_purchases WHERE scope=$1 AND status IN ('pending','confirmed') GROUP BY tier ORDER BY tier", [store.scope])).rows;
   assert.deepEqual(live.map(x => [x.tier, Number(x.n), Number(x.s), Number(x.m)]), [['legacy', 30, 30, 30], ['mythic', 33, 33, 33]]);
   const prices = (await pool.query("SELECT tier,serial,price_lamports FROM ryo_founder_purchases WHERE scope=$1 AND status IN ('pending','confirmed')", [store.scope])).rows;
-  assert(prices.every(x => Number(x.price_lamports) === (x.tier === 'mythic' && x.serial <= 3 ? SOL / 2 : x.tier === 'mythic' ? SOL : SOL / 2)), 'every live row is priced by its serial');
+  assert(prices.every(x => Number(x.price_lamports) === (x.tier === 'mythic' ? SOL : SOL / 2)), 'every live row is priced by its serial');
   assert(mythicRush.filter(x => x.status === 'fulfilled').every(x => paid(x.value.purchase.wire) === SOL), 'every rushed Mythic (#5-#33) pays exactly 1 SOL');
   const all = (await F.info(store, null, PUBLIC)).founders.tiers;
-  assert.deepEqual([all.mythic.remaining, all.legacy.remaining, all.mythic.soldOut, all.legacy.soldOut, all.mythic.earlyBird.left], [0, 0, true, true, 0]);
+  assert.deepEqual([all.mythic.remaining, all.legacy.remaining, all.mythic.soldOut, all.legacy.soldOut, all.mythic.prelaunchOffer], [0, 0, true, true, false]);
   await assert.rejects(F.mint(ctx, W(wallets[75]), { tier: 'mythic', requestId: id(3000) }, PUBLIC), e => e.code === 'FOUNDERS_SOLD_OUT');
   ok('parallel demand never oversells: exactly 33 Mythic + 30 Legacy (63 total), unique serials, each priced by its serial');
 

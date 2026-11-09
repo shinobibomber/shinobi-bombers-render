@@ -115,12 +115,12 @@
       const t = f?.tiers?.[tier], s = stateFor(tier), btn = $('#fdBuy-' + tier), left = $('#fdLeft-' + tier), early = $('#fdEarly-' + tier);
       const price = t?.price, usdText = usd && price ? money(price * usd) : '';
       if (left) left.textContent = t ? fill('supply', { n: t.remaining, of: t.supply }) + (usdText ? ' · ' + fill('usd', { price, usd: usdText }) : '') : '';
-      // Early-bird banner (server-decided): shown only while one of the cheap serials is still free.
-      const eb = t?.earlyBird, showEarly = !!eb && eb.left > 0 && !t.soldOut;
-      if (early) { early.hidden = !showEarly; early.textContent = showEarly ? fill('early', { price: eb.price, left: eb.left, total: eb.total, regular: t.regularPrice }) : ''; }
+      // Both offer banners follow server pricing and disappear at public game launch or sellout.
+      const showEarly = t?.prelaunchOffer === true && !t.soldOut;
+      if (early) { early.hidden = !showEarly; early.textContent = showEarly ? fill('early', { price: t.price, regular: t.regularPrice }) : ''; }
       let text = label('state.' + s);
       if (s === 'eligible' && price) text = fill(usdText ? 'state.buyPrice' : 'state.buySol', { price, usd: usdText });
-      // Resuming our own reservation: show the price that reservation was made at (fixed by its serial).
+      // Resuming our own reservation: show the price that reservation was made at (fixed when reserved).
       const resumePrice = f?.mine?.tier === tier && f.mine.price ? f.mine.price : price;
       if (s === 'resume' && resumePrice) text = fill('state.resume', { price: resumePrice });
       if (btn) { btn.textContent = text; btn.disabled = !['eligible', 'connect', 'resume'].includes(s) || !!busy; btn.dataset.state = s; }
@@ -151,9 +151,9 @@
       const r = await api('founders-mint', { tier, requestId: p.requestId });
       if (r.purchase.status !== 'pending' || !r.purchase.wire) { write(null); state = remember(r); return; }
       state = remember(r);
-      // Someone took the last early-bird box first: the reservation costs MORE than the button showed. Never open the
+      // Public launch can raise the price after this page loaded. Never open the
       // wallet at a higher price than the buyer saw; the button now offers "Approve in wallet · <new price>". A lower
-      // price (a released early-bird box) continues: the wallet still shows the exact amount before approval.
+      // price continues: the wallet still shows the exact amount before approval.
       // Fail closed: an unknown shown price (NaN) never opens the wallet either.
       if (!(Number(r.purchase.price) <= Number(shown))) { note = fill('err.priceChanged', { price: r.purchase.price }); return; }
       const wire = fromB64(r.purchase.wire); review(wire, owner, r.purchase.price, tier);
