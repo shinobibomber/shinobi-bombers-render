@@ -55,3 +55,17 @@ Rollback: turn public sale off; submitted transactions can still settle. Turn re
 redemption off to pause claims. Prior disabled release:
 `6e87d991a80b1493600afa005b544d1ce36f9838`. Initial backup evidence and full-suite
 validation are in [the disabled release record](FOUNDERS_DISABLED_RELEASE.md).
+
+## Mythic early bird (owner decision, 2026-11-09)
+
+Activated live on 2026-11-09 (sale public, revenue `6vfgh…WhXQ`). Then the Mythic supply became 33:
+Mythic #1-#3 cost 0.5 SOL and #4-#33 the regular 1 SOL. Legacy is unchanged at 30 boxes for 0.5 SOL (63 in total).
+The price is set by the serial reserved under the sale lock and is bound into the buyer-signed transaction;
+a released early-bird reservation is re-offered at 0.5 SOL. Schema: the idempotent `-- Founders v2` migration replaces
+the three v1 serial/price CHECKs (by their PostgreSQL names, verified on the live database before release) with
+`ryo_founder_serial_range` and `ryo_founder_price_rule`. v1 rows and v1 code satisfy both rules. Reverting the code is
+safe only while no Mythic #31-#33 exists: the v1 metadata route serves serials 1-30 only. After #31 is sold, roll back
+by pausing the sale instead. The landing poster still shows "30 NFTs / 1 SOL"; a banner above it states the early-bird
+offer until the three early boxes are taken. Expired reservations are released by founders-info (at most every 30 s).
+Known limit: an unpaid early-bird reservation can be repeated by a buyer who never pays; watch the expired count in the
+Command Center and pause if it is abused.

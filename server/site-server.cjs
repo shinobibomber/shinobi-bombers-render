@@ -180,9 +180,12 @@ async function serveSite(req, res, name) {
 const FOUNDERS_DIR = path.join(ROOT, 'founders', 'public');
 async function foundersRoute(req, res, url, name) {
   if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
-  const m = name.match(/^\/founders\/metadata\/(mythic|legacy)-([1-9]|[12][0-9]|30)\.json$/);
+  // Serial must exist in its tier (founders.cjs TIERS supply: Mythic #1-#33, Legacy #1-#30).
+  const m = name.match(/^\/founders\/metadata\/(mythic|legacy)-([1-9][0-9]?)\.json$/);
   if (m) {
-    const body = JSON.stringify(require(path.join(GAME_DIR, 'server', 'founders.cjs')).metadata(process.env.RYO_SITE_ORIGIN, m[1], Number(m[2])));
+    const F = require(path.join(GAME_DIR, 'server', 'founders.cjs'));
+    if (Number(m[2]) > F.TIERS[m[1]].supply) return sendSite(req, res, 404, 'Not found.');
+    const body = JSON.stringify(F.metadata(process.env.RYO_SITE_ORIGIN, m[1], Number(m[2])));
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'Access-Control-Allow-Origin': '*', ...SITE_HEADERS });
     return res.end(req.method === 'HEAD' ? undefined : body);
   }

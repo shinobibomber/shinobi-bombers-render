@@ -49,7 +49,8 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
     restart({});
     // Public state without a session; closed by default.
     let r = await call('founders-info'); assert.equal(r.status, 200);
-    assert.deepEqual([r.body.founders.mode, r.body.founders.eligible, r.body.founders.tiers.mythic.price, r.body.founders.tiers.legacy.price, r.body.founders.tiers.mythic.remaining], ['off', false, 1, 0.5, 30]);
+    assert.deepEqual([r.body.founders.mode, r.body.founders.eligible, r.body.founders.tiers.mythic.price, r.body.founders.tiers.legacy.price, r.body.founders.tiers.mythic.remaining], ['off', false, 0.5, 0.5, 33]);
+    assert.deepEqual([r.body.founders.tiers.mythic.regularPrice, r.body.founders.tiers.mythic.earlyBird, r.body.founders.tiers.legacy.earlyBird, r.body.founders.tiers.legacy.supply, r.body.founders.totalSupply], [1, { price: 0.5, total: 3, left: 3 }, undefined, 30, 63], 'Mythic early bird #1-#3 at 0.5 SOL, then 1 SOL');
     assert.equal((await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000001' })).status, 401, 'buying needs sign-in');
     assert.equal(r.body.founders.wallet, null, 'signed out: no wallet');
     const alice = key(), aliceCookie = await cookieOf(alice);
@@ -95,10 +96,11 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
     // Buy → the page reviews → wallet signs → server checks bytes and broadcasts → confirmed.
     r = await call('founders-mint', { tier: 'mythic', requestId: 'fb-0000000000000001' }, aliceCookie); assert.equal(r.status, 200, JSON.stringify(r.body));
     const wire = Buffer.from(r.body.purchase.wire, 'base64'), page = loadPage();
-    assert.equal(page.review(new Uint8Array(wire), alice.wallet, 1, 'mythic'), true, 'the page accepts the exact server transaction');
-    assert.throws(() => page.review(new Uint8Array(wire), alice.wallet, 0.5, 'mythic'), /price/);
-    assert.throws(() => page.review(new Uint8Array(wire), key().wallet, 1, 'mythic'), /payer|paid/);
-    assert.throws(() => page.review(new Uint8Array(wire), alice.wallet, 1, 'legacy'), /instruction/i);
+    assert.equal(r.body.purchase.price, 0.5, 'Mythic #1 is an early-bird box');
+    assert.equal(page.review(new Uint8Array(wire), alice.wallet, 0.5, 'mythic'), true, 'the page accepts the exact server transaction');
+    assert.throws(() => page.review(new Uint8Array(wire), alice.wallet, 1, 'mythic'), /price/);
+    assert.throws(() => page.review(new Uint8Array(wire), key().wallet, 0.5, 'mythic'), /payer|paid/);
+    assert.throws(() => page.review(new Uint8Array(wire), alice.wallet, 0.5, 'legacy'), /instruction/i);
     const tx = web3.Transaction.from(wire); tx.partialSign(alice.kp);
     const signed = tx.serialize().toString('base64'), sig = bs58.encode(tx.signatures.find(s => s.publicKey.equals(alice.kp.publicKey)).signature);
     assert(JSON.stringify({ action: 'founders-confirm', requestId: 'fb-0000000000000001', signed }).length < 4096, 'fits the portal request limit');
@@ -128,7 +130,8 @@ const ORIGIN = 'https://portal.example', SCOPE = 'solana-devnet:founders-portal-
     let r = await get('/founders/metadata/mythic-1.json'); assert.equal(r.status, 200);
     const md = await r.json(); assert.equal(md.name, 'Shinobi Bombers Founder Mythic #1'); assert.equal(md.image, siteOrigin + '/founders/art/mythic.png');
     assert.equal((await get('/founders/metadata/legacy-30.json')).status, 200);
-    for (const p of ['/founders/metadata/mythic-31.json', '/founders/metadata/mythic-0.json', '/founders/metadata/gold-1.json', '/founders/art/../server.cjs', '/founders/art/%2e%2e/server.cjs', '/founders/build-assets.cjs', '/founders/server.cjs', '/founders/assets/source/mythic.png'])
+    r = await get('/founders/metadata/mythic-33.json'); assert.equal(r.status, 200); assert.equal((await r.json()).name, 'Shinobi Bombers Founder Mythic #33');
+    for (const p of ['/founders/metadata/mythic-34.json', '/founders/metadata/mythic-39.json', '/founders/metadata/legacy-31.json', '/founders/metadata/legacy-33.json', '/founders/metadata/mythic-0.json', '/founders/metadata/gold-1.json', '/founders/art/../server.cjs', '/founders/art/%2e%2e/server.cjs', '/founders/build-assets.cjs', '/founders/server.cjs', '/founders/assets/source/mythic.png'])
       assert.equal((await get(p)).status, 404, p);
     // Both approved images must be present in a clean release and match their public metadata URLs.
     for (const tier of ['mythic', 'legacy']) {

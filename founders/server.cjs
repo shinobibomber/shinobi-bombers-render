@@ -1,11 +1,14 @@
-/* Founder's NFT Boxes — Mythic (1 SOL) and Legacy (0.5 SOL), 30 each, one Founder NFT per wallet across both tiers.
+/* Founder's NFT Boxes — Mythic (33: #1-#3 early bird 0.5 SOL, then 1 SOL) and Legacy (30 at 0.5 SOL), one Founder NFT
+ * per wallet across both tiers. The price is fixed by the serial reserved under the sale lock and bound into the signed
+ * transaction, so the price a buyer approves is the price recorded and paid.
  *
  * Minting reuses the proven Limited Mythic Box design (mythic-box.cjs): ONE transaction, built here and signed last by
  * the buyer, pays the exact tier price to the revenue wallet AND mints a 1-of-1 Token-2022 NFT (on-chain metadata,
  * mint authority removed, memo). Payment and NFT land together or not at all. There is no public mint program: an
  * NFT can only exist if this server co-signs with the dedicated Founder mint authority, and it only co-signs inside
  * the serialized reservation below. Supply and the cross-tier wallet limit are therefore enforced at the only minting
- * point, and again by database constraints (one pending/confirmed purchase per wallet; serial 1..30 unique per tier).
+ * point, and again by database constraints (one pending/confirmed purchase per wallet; serial unique per tier within
+ * its supply; price allowed only by the serial/price rule below).
  * One NFT per wallet is not one NFT per person: a person can control several wallets.
  *
  * Benefits are bound to the ORIGINAL BUYER wallet (owner decision 2026-11-09). Selling or moving the NFT moves no
@@ -30,12 +33,17 @@ const MEMO_PROGRAM = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
 
 // Fixed by the approved offer. Never read from the environment or a request.
 const TIERS = Object.freeze({
-  mythic: Object.freeze({ key: 'mythic', name: 'Mythic', lamports: 1000000000, supply: 30, discountBps: 1000, premiumEveryWeeks: 2,
+  // Early bird (owner decision 2026-11-09): Mythic serials #1-#3 cost 0.5 SOL, #4-#33 the regular 1 SOL. A rejected or
+  // expired early reservation frees its serial, which is re-offered at the early price (lowest free serial first).
+  mythic: Object.freeze({ key: 'mythic', name: 'Mythic', lamports: 1000000000, supply: 33, discountBps: 1000, premiumEveryWeeks: 2,
+    earlyBird: Object.freeze({ count: 3, lamports: 500000000 }),
     council: 'full', missionPass: 'full', privileges: 'full', tsukiyomi: true, sensei: 'permanent' }),
   legacy: Object.freeze({ key: 'legacy', name: 'Legacy', lamports: 500000000, supply: 30, discountBps: 500, premiumEveryWeeks: 4,
     council: 'community', missionPass: 'basic', privileges: 'selected', tsukiyomi: false, sensei: 'trial' }),
 });
-const TOTAL_SUPPLY = 60, LIMITED_PASSES = 10, MAX_HEROES = 500;
+const TOTAL_SUPPLY = 63, LIMITED_PASSES = 10, MAX_HEROES = 500;
+/** Price of one serial of a tier, in lamports. The only place the early-bird rule is decided. */
+const priceFor = (t, serial) => t.earlyBird && serial >= 1 && serial <= t.earlyBird.count ? t.earlyBird.lamports : t.lamports;
 const RANKS = Object.freeze(['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic']);
 // Weighted pools out of 10,000. Excluded ranks are simply absent, so the draw happens on the filtered pool:
 // nothing is ever rolled as Genin/Mythic and then replaced.
@@ -45,6 +53,34 @@ const FOUNDER_CHEST_COOLDOWN_MS = 12 * HOUR, REGULAR_CHEST_COOLDOWN_MS = 24 * HO
 const SENSEI_LAMPORTS = 400000000, SENSEI_LEGACY_LAMPORTS = 200000000, SENSEI_TRIAL_MS = 7 * DAY;
 const DISCOUNTED = Object.freeze(['summon', 'training', 'dojo', 'sensei', 'sensei-rental', 'fusion']);
 
+/* v2 (Mythic early bird, 33 supply). Replaces exactly the three v1 serial/price CHECKs — PostgreSQL's deterministic names
+ * for the unnamed v1 constraints, verified on the live database before release — with two named rules. Any other
+ * constraint is never touched. Idempotent: re-running finds nothing to drop and adds only missing constraints. Existing
+ * v1 rows (Mythic 1 SOL #1-#30, Legacy 0.5 SOL #1-#30) satisfy both rules, and v1 code also stays within them. */
+const MIGRATION_V2 = `DO $$ BEGIN
+ -- Only touch the table when a v1 constraint is still there: a no-op re-run takes no table lock.
+ IF EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'ryo_founder_purchases'::regclass
+   AND conname IN ('ryo_founder_purchases_serial_check', 'ryo_founder_purchases_price_lamports_check', 'ryo_founder_purchases_check')) THEN
+  ALTER TABLE ryo_founder_purchases DROP CONSTRAINT IF EXISTS ryo_founder_purchases_serial_check,
+   DROP CONSTRAINT IF EXISTS ryo_founder_purchases_price_lamports_check, DROP CONSTRAINT IF EXISTS ryo_founder_purchases_check;
+ END IF;
+ IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'ryo_founder_purchases'::regclass AND conname = 'ryo_founder_serial_range') THEN
+  ALTER TABLE ryo_founder_purchases ADD CONSTRAINT ryo_founder_serial_range
+   CHECK ((tier = 'mythic' AND serial BETWEEN 1 AND 33) OR (tier = 'legacy' AND serial BETWEEN 1 AND 30));
+ END IF;
+ IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'ryo_founder_purchases'::regclass AND conname = 'ryo_founder_price_rule') THEN
+  ALTER TABLE ryo_founder_purchases ADD CONSTRAINT ryo_founder_price_rule
+   CHECK ((tier = 'mythic' AND (price_lamports = 1000000000 OR (price_lamports = 500000000 AND serial BETWEEN 1 AND 3)))
+     OR (tier = 'legacy' AND price_lamports = 500000000));
+ END IF;
+ -- Fail the build (db:init) instead of shipping code the database would contradict: if the live table carries any other
+ -- CHECK (e.g. a v1 constraint under an unexpected name), stop here and the running release stays unchanged.
+ -- A later version that adds a CHECK must add its name to this list.
+ IF EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'ryo_founder_purchases'::regclass AND contype = 'c'
+   AND conname NOT IN ('ryo_founder_purchases_tier_check', 'ryo_founder_purchases_status_check', 'ryo_founder_serial_range', 'ryo_founder_price_rule')) THEN
+  RAISE EXCEPTION 'Founders v2 migration: unexpected CHECK constraint on ryo_founder_purchases; review before release';
+ END IF;
+END $$;`;
 const SCHEMA = `CREATE TABLE IF NOT EXISTS ryo_founder_purchases(
  scope TEXT NOT NULL, request_id TEXT NOT NULL, wallet TEXT NOT NULL, tier TEXT NOT NULL CHECK(tier IN ('mythic','legacy')),
  serial INTEGER NOT NULL CHECK(serial BETWEEN 1 AND 30), mint TEXT NOT NULL, price_lamports BIGINT NOT NULL CHECK(price_lamports IN (1000000000,500000000)),
@@ -141,8 +177,9 @@ function metadata(origin, tier, serial) {
     properties: { category: 'image', files: [{ uri: base + 'art/' + tier + '.png', type: 'image/png' }] } };
 }
 
-async function buildMint({ connection, revenueAddress, origin, authority }, wallet, tier, serial, requestId, mintKeypair) {
+async function buildMint({ connection, revenueAddress, origin, authority }, wallet, tier, serial, requestId, mintKeypair, lamports) {
   const { PublicKey, SystemProgram, Transaction, TransactionInstruction } = web3(), T = spl(), M = meta(), t = TIERS[tier];
+  if (lamports !== priceFor(t, serial)) fail('Founder box price mismatch.', 500);
   const player = new PublicKey(wallet), mint = mintKeypair.publicKey, program = T.TOKEN_2022_PROGRAM_ID;
   const fields = { mint, name: 'Shinobi Bombers Founder ' + t.name + ' #' + serial, symbol: 'SBFNDR', uri: metadataUri(origin, tier, serial), additionalMetadata: [], updateAuthority: authority.publicKey };
   const mintLen = T.getMintLen([T.ExtensionType.MetadataPointer]), metaLen = T.TYPE_SIZE + T.LENGTH_SIZE + M.pack(fields).length;
@@ -150,7 +187,7 @@ async function buildMint({ connection, revenueAddress, origin, authority }, wall
   const ata = T.getAssociatedTokenAddressSync(mint, player, false, program);
   const block = await connection.getLatestBlockhash('finalized');
   const tx = new Transaction({ feePayer: player, blockhash: block.blockhash, lastValidBlockHeight: block.lastValidBlockHeight }).add(
-    SystemProgram.transfer({ fromPubkey: player, toPubkey: new PublicKey(revenueAddress), lamports: t.lamports }),
+    SystemProgram.transfer({ fromPubkey: player, toPubkey: new PublicKey(revenueAddress), lamports }),
     SystemProgram.createAccount({ fromPubkey: player, newAccountPubkey: mint, space: mintLen, lamports: rent, programId: program }),
     T.createInitializeMetadataPointerInstruction(mint, authority.publicKey, mint, program),
     T.createInitializeMintInstruction(mint, 0, authority.publicKey, null, program),
@@ -208,11 +245,16 @@ async function broadcast(connection, raw) {
 /* ---------------- Sale ---------------- */
 const pubPurchase = row => row && { requestId: row.request_id, tier: row.tier, serial: row.serial, mint: row.mint, status: row.status, price: sol(row.price_lamports), signature: row.signature || null };
 async function counts(db, scope) {
-  const rows = (await db.query("SELECT tier,status,COUNT(*) AS n FROM ryo_founder_purchases WHERE scope=$1 AND status IN ('pending','confirmed') GROUP BY tier,status", [scope])).rows;
+  const rows = (await db.query("SELECT tier,status,serial FROM ryo_founder_purchases WHERE scope=$1 AND status IN ('pending','confirmed')", [scope])).rows;
   const out = {};
-  for (const t of Object.keys(TIERS)) {
-    const sold = Number(rows.find(r => r.tier === t && r.status === 'confirmed')?.n || 0), reserved = Number(rows.find(r => r.tier === t && r.status === 'pending')?.n || 0);
-    out[t] = { sold, reserved, remaining: Math.max(0, TIERS[t].supply - sold - reserved) };
+  for (const t of Object.values(TIERS)) {
+    const mine = rows.filter(r => r.tier === t.key), used = new Set(mine.map(r => Number(r.serial)));
+    const sold = mine.filter(r => r.status === 'confirmed').length, reserved = mine.filter(r => r.status === 'pending').length;
+    let next = 1; while (used.has(next)) next++;   // the serial the next buyer gets (same rule as mint())
+    const remaining = Math.max(0, t.supply - sold - reserved);
+    out[t.key] = { sold, reserved, remaining, priceLamports: priceFor(t, next),
+      ...(t.earlyBird ? { earlyBird: { price: sol(t.earlyBird.lamports), total: t.earlyBird.count,
+        left: Array.from({ length: t.supply }, (_, i) => i + 1).filter(n => !used.has(n) && priceFor(t, n) < t.lamports).length } } : {}) };
   }
   return out;
 }
@@ -221,7 +263,9 @@ async function info(store, wallet = null, env = process.env) {
   const c = await counts(store.pool, store.scope), s = switches(env), mode = saleMode(env), isPaused = await paused(store.pool, store.scope);
   const mine = wallet ? (await store.pool.query("SELECT * FROM ryo_founder_purchases WHERE scope=$1 AND wallet=$2 AND status IN ('pending','confirmed')", [store.scope, wallet])).rows[0] : null;
   const eligible = !!wallet && !mine && !isPaused && (mode === 'public' || (mode === 'private' && s.testers.has(wallet)));
-  const tiers = Object.fromEntries(Object.values(TIERS).map(t => [t.key, { key: t.key, name: t.name, price: sol(t.lamports), supply: t.supply, ...c[t.key], soldOut: c[t.key].remaining === 0 }]));
+  // price: what the next buyer of this tier pays now (early bird while a #1-#3 serial is free); regularPrice: list price.
+  const tiers = Object.fromEntries(Object.values(TIERS).map(t => { const { priceLamports, ...rest } = c[t.key];
+    return [t.key, { key: t.key, name: t.name, price: sol(priceLamports), regularPrice: sol(t.lamports), supply: t.supply, ...rest, soldOut: rest.remaining === 0 }]; }));
   return { founders: { network: live() ? 'solana-mainnet' : 'solana-devnet', mode, paused: isPaused, perWallet: 1, totalSupply: TOTAL_SUPPLY, tiers,
     mine: pubPurchase(mine), eligible, tester: !!wallet && s.testers.has(wallet) } };
 }
@@ -253,10 +297,10 @@ async function mint(ctx, wallet, body, env = process.env) {
     const used = new Set((await c.query("SELECT serial FROM ryo_founder_purchases WHERE scope=$1 AND tier=$2 AND status IN ('pending','confirmed')", [store.scope, t.key])).rows.map(r => Number(r.serial)));
     let serial = 1; while (used.has(serial)) serial++;
     if (serial > t.supply) fail('All ' + t.supply + ' ' + t.name + ' Founder boxes are taken.', 409, 'FOUNDERS_SOLD_OUT');
-    const mintKeypair = web3().Keypair.generate();
-    const built = await buildMint({ ...ctx, authority }, wallet, t.key, serial, requestId, mintKeypair);
+    const mintKeypair = web3().Keypair.generate(), lamports = priceFor(t, serial);
+    const built = await buildMint({ ...ctx, authority }, wallet, t.key, serial, requestId, mintKeypair, lamports);
     return (await c.query(`INSERT INTO ryo_founder_purchases(scope,request_id,wallet,tier,serial,mint,price_lamports,status,message,wire,last_height,created)
-      VALUES($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10,$11) RETURNING *`, [store.scope, requestId, wallet, t.key, serial, mintKeypair.publicKey.toBase58(), t.lamports, built.message, built.wire, built.lastHeight, nowOf(store)])).rows[0];
+      VALUES($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10,$11) RETURNING *`, [store.scope, requestId, wallet, t.key, serial, mintKeypair.publicKey.toBase58(), lamports, built.message, built.wire, built.lastHeight, nowOf(store)])).rows[0];
   });
   return { purchase: { ...pubPurchase(row), wire: row.wire }, ...await info(store, wallet, env) };
 }
@@ -631,9 +675,9 @@ async function adminRevoke(store, actor, wallet, revoke, reason) {
   });
 }
 
-module.exports = { SCHEMA, TIERS, TOTAL_SUPPLY, LIMITED_PASSES, LIMITED_POOL, PREMIUM_POOL, RANKS, FOUNDER_CHEST_COOLDOWN_MS, REGULAR_CHEST_COOLDOWN_MS,
+module.exports = { SCHEMA, MIGRATION_V2, priceFor, TIERS, TOTAL_SUPPLY, LIMITED_PASSES, LIMITED_POOL, PREMIUM_POOL, RANKS, FOUNDER_CHEST_COOLDOWN_MS, REGULAR_CHEST_COOLDOWN_MS,
   SENSEI_LAMPORTS, SENSEI_LEGACY_LAMPORTS, SENSEI_TRIAL_MS, DISCOUNTED, GAME_ACTIONS,
   switches, saleMode, rankFor, weekStart, metadata, metadataUri, mintAuthority, buildMint, signedBy,
-  info, mint, confirm, settle, sweep, entitlement, chestCooldownMs, discount, assertRyoProduct,
+  info, mint, confirm, settle, sweep, sweepExpired, entitlement, chestCooldownMs, discount, assertRyoProduct,
   activate, summon, recordActivity, qualifyingWeeks, senseiTrial, senseiInfo, senseiBuy, senseiConfirm, settleSensei,
   status, syncProfile, handleGame, adminOverview, adminPause, adminRevoke };

@@ -297,6 +297,8 @@ dialog::backdrop { background: rgba(3, 1, 10, .78); backdrop-filter: blur(3px); 
 .fd-card h3 { margin: 6px 0 0; color: var(--gold); letter-spacing: .02em; }
 .fd-card.fd-legacy h3 { color: #8fd3ff; }
 .fd-tag { margin: 0; color: var(--muted); font-weight: 600; }
+.fd-early { margin: 0; padding: 10px 12px; border-radius: 12px; background: linear-gradient(90deg, rgba(255, 173, 46, .22), rgba(197, 140, 255, .18)); border: 1px solid var(--amber); color: var(--gold); font-weight: 800; letter-spacing: .02em; line-height: 1.35; text-align: center; overflow-wrap: anywhere; }
+.fd-early[hidden] { display: none; }
 .fd-card .ticks { margin: 4px 0; }
 .fd-left { margin: 0; min-height: 1.4em; color: var(--text); font-weight: 700; }
 .fd-card .btn { margin-top: auto; width: 100%; }

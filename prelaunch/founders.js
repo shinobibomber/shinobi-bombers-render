@@ -91,6 +91,8 @@
   let state = null, busy = '', note = '', usd = null, signedIn = null;
   const remember = s => { const r = Number(s?.founders?.usdPerSol); if (Number.isFinite(r) && r > 0) usd = r; if (s?.founders && 'wallet' in s.founders) signedIn = s.founders.wallet || null; return s; };
   const ownerOf = () => window.SBWallet?.active?.address || signedIn;
+  // Fill every [name] token of a label (a token may appear more than once); unknown tokens are left visible.
+  const fill = (key, vars) => label(key).replace(/\[(\w+)\]/g, (m, k) => Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m);
   const money = x => { try { return new Intl.NumberFormat(document.documentElement?.lang || 'en-US', { style: 'currency', currency: 'USD' }).format(x); } catch { return '$' + x.toFixed(2); } };
   // Our own reservation for this tier that the buyer has not approved yet (e.g. they rejected it in the wallet).
   const ownPending = (tier, owner) => { const p = read(); return !!owner && p?.account === owner && p?.tier === tier; };
@@ -110,12 +112,17 @@
   function render() {
     const f = state?.founders;
     for (const tier of ['mythic', 'legacy']) {
-      const t = f?.tiers?.[tier], s = stateFor(tier), btn = $('#fdBuy-' + tier), left = $('#fdLeft-' + tier);
+      const t = f?.tiers?.[tier], s = stateFor(tier), btn = $('#fdBuy-' + tier), left = $('#fdLeft-' + tier), early = $('#fdEarly-' + tier);
       const price = t?.price, usdText = usd && price ? money(price * usd) : '';
-      if (left) left.textContent = t ? label('supply').replace('[n]', t.remaining).replace('[of]', t.supply) + (usdText ? ' · ' + label('usd').replace('[price]', price).replace('[usd]', usdText) : '') : '';
+      if (left) left.textContent = t ? fill('supply', { n: t.remaining, of: t.supply }) + (usdText ? ' · ' + fill('usd', { price, usd: usdText }) : '') : '';
+      // Early-bird banner (server-decided): shown only while one of the cheap serials is still free.
+      const eb = t?.earlyBird, showEarly = !!eb && eb.left > 0 && !t.soldOut;
+      if (early) { early.hidden = !showEarly; early.textContent = showEarly ? fill('early', { price: eb.price, left: eb.left, total: eb.total, regular: t.regularPrice }) : ''; }
       let text = label('state.' + s);
-      if (s === 'eligible' && price) text = label(usdText ? 'state.buyPrice' : 'state.buySol').replace('[price]', price).replace('[usd]', usdText);
-      if (s === 'resume' && price) text = label('state.resume').replace('[price]', price);
+      if (s === 'eligible' && price) text = fill(usdText ? 'state.buyPrice' : 'state.buySol', { price, usd: usdText });
+      // Resuming our own reservation: show the price that reservation was made at (fixed by its serial).
+      const resumePrice = f?.mine?.tier === tier && f.mine.price ? f.mine.price : price;
+      if (s === 'resume' && resumePrice) text = fill('state.resume', { price: resumePrice });
       if (btn) { btn.textContent = text; btn.disabled = !['eligible', 'connect', 'resume'].includes(s) || !!busy; btn.dataset.state = s; }
     }
     const msg = $('#fdStatus'); if (msg) { msg.textContent = note; msg.hidden = !note; }
@@ -136,12 +143,19 @@
     const owner = ownerOf();
     if (!owner) { document.querySelector('#connectBtn')?.click(); return; }
     const t = state?.founders?.tiers?.[tier]; if (!t) return;
+    // The price the button showed: a fresh press shows the tier's current price; a resumed reservation its own price.
+    const resuming = stateFor(tier) === 'resume', shown = resuming && state.founders.mine?.price ? state.founders.mine.price : t.price;
     busy = tier; note = label('step.reserve'); render();
     try {
       let p = read(); if (!p || p.account !== owner || p.tier !== tier) { p = { account: owner, tier, requestId: 'fb-' + crypto.randomUUID() }; write(p); }
       const r = await api('founders-mint', { tier, requestId: p.requestId });
       if (r.purchase.status !== 'pending' || !r.purchase.wire) { write(null); state = remember(r); return; }
       state = remember(r);
+      // Someone took the last early-bird box first: the reservation costs MORE than the button showed. Never open the
+      // wallet at a higher price than the buyer saw; the button now offers "Approve in wallet · <new price>". A lower
+      // price (a released early-bird box) continues: the wallet still shows the exact amount before approval.
+      // Fail closed: an unknown shown price (NaN) never opens the wallet either.
+      if (!(Number(r.purchase.price) <= Number(shown))) { note = fill('err.priceChanged', { price: r.purchase.price }); return; }
       const wire = fromB64(r.purchase.wire); review(wire, owner, r.purchase.price, tier);
       note = label('step.sign'); render();
       let signed;

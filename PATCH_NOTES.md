@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 9, 2026 — Mythic early bird
+
+- The Mythic Founder box now has 33 boxes instead of 30.
+- Early bird: the first 3 Mythic boxes cost 0.5 SOL. After those 3, Mythic boxes go back to the regular 1 SOL. Legacy boxes are unchanged at 0.5 SOL.
+- A banner on the Mythic card shows how many early-bird boxes are left. Your wallet always shows the exact price before you approve, and if the last early-bird box is taken just before you buy, the page tells you the new price before your wallet opens.
+
 ## November 9, 2026 — New official address: shinobibombers.fun
 
 - Shinobi Bombers now lives at https://shinobibombers.fun. Old shinobibombers.onrender.com links open the same page on the new address.

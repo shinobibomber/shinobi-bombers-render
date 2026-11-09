@@ -21,7 +21,7 @@ This checklist is for the owner and their legal adviser. It is **not legal advic
 
 ## Product facts the terms must match (as implemented)
 
-- **Prices and supply:** Mythic 1 SOL, Legacy 0.5 SOL, 30 each, 60 in total, one per wallet across both tiers. Payment is in SOL on Solana.
+- **Prices and supply:** Mythic 33 boxes at 1 SOL, except Mythic #1-#3 at an early-bird 0.5 SOL (owner decision 2026-11-09; a released early-bird reservation is re-offered at 0.5 SOL); Legacy 30 boxes at 0.5 SOL; 63 in total, one per wallet across both tiers. Payment is in SOL on Solana.
 - **12-hour Chest cooldown:**
   - Applies to verified Founders (both tiers) while Founder rewards are enabled.
   - Regular players stay at 24 hours.

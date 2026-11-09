@@ -54,6 +54,9 @@ function applyFounders(appDir = path.join(__dirname, 'app')) {
   fs.copyFileSync(path.join(src, 'server.cjs'), path.join(server, 'founders.cjs'));
   const schema = path.join(server, 'schema.sql');
   if (!fs.readFileSync(schema, 'utf8').includes('-- Founders v1')) fs.appendFileSync(schema, '\n-- Founders v1 (apply-founders.cjs). Additive; existing data untouched.\n' + require('./founders/server.cjs').SCHEMA + '\n');
+  // v2 after v1: Mythic early bird #1-#3 at 0.5 SOL and 33 Mythic serials. app/ is rebuilt from the archive on every build, so
+  // schema.sql always carries the current MIGRATION_V2; db:init re-runs it each deploy (idempotent, keeps existing rows).
+  if (!fs.readFileSync(schema, 'utf8').includes('-- Founders v2')) fs.appendFileSync(schema, '\n-- Founders v2 (apply-founders.cjs): Mythic early bird and 33 supply. Idempotent; existing rows kept.\n' + require('./founders/server.cjs').MIGRATION_V2 + '\n');
   patch(path.join(server, 'economy.cjs'), economyHooks, 'economy');
   patch(path.join(server, 'service.cjs'), serviceHooks, 'service');
   patch(path.join(server, 'hero-upgrades.cjs'), salvageHooks, 'salvage');
@@ -67,7 +70,7 @@ function applyFounders(appDir = path.join(__dirname, 'app')) {
     html = html.replace('</head>', marker + '\n<link rel="stylesheet" href="assets/founders/founders-game.css">\n' + script + '\n</head>');
   }
   fs.writeFileSync(index, html);
-  console.log("Founder's NFT Boxes applied: Mythic 1 SOL / Legacy 0.5 SOL, 30 each, 1 per wallet across tiers; buyer-bound benefits; switches fail closed.");
+  console.log("Founder's NFT Boxes applied: Mythic 33 (#1-#3 0.5 SOL, then 1 SOL) / Legacy 30 at 0.5 SOL, 1 per wallet across tiers; buyer-bound benefits; switches fail closed.");
 }
 module.exports = { applyFounders, economyHooks, serviceHooks, salvageHooks, clientHooks };
 if (require.main === module) applyFounders();

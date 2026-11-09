@@ -7,7 +7,7 @@
  * their databases, or any real wallet. Buyers are funded by a Devnet airdrop, or from --funder (a Devnet keypair file
  * the owner provides). Prints public addresses and signatures only — never a secret key or the RPC URL.
  *
- * Verifies on chain: Mythic (1 SOL) and Legacy (0.5 SOL) purchases land atomically (exact SOL to revenue, 1 NFT in the
+ * Verifies on chain: Mythic (early bird #1-#3 0.5 SOL, then 1 SOL) and Legacy (0.5 SOL) purchases land atomically (exact SOL to revenue, 1 NFT in the
  * buyer's Token-2022 account, mint authority removed); a second purchase by the same wallet is refused for both tiers;
  * the NFT transfer moves no benefit (buyer-bound); activation + Limited/Premium pools on the same database. */
 'use strict';
@@ -67,9 +67,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   step('Mythic purchase confirmed (1-of-1 NFT, mint authority removed)', { mint: pm.mint, signature: pm.signature });
   const pl = await buy(b, 'legacy', 'e2e-legacy-' + Date.now()); await verifyNft(b, pl.mint);
   step('Legacy purchase confirmed', { mint: pl.mint, signature: pl.signature });
+  // Prices are fixed by serial (Mythic early bird #1-#3 at 0.5 SOL): a fresh scope buys Mythic #1, so 0.5 + 0.5 SOL.
+  const expected = F.priceFor(F.TIERS.mythic, pm.serial) + F.priceFor(F.TIERS.legacy, pl.serial);
+  if (Math.round(pm.price * SOL) !== F.priceFor(F.TIERS.mythic, pm.serial) || Math.round(pl.price * SOL) !== F.priceFor(F.TIERS.legacy, pl.serial)) throw Error('Recorded price does not match the serial price.');
   const after = await connection.getBalance(revenue.publicKey, 'finalized');
-  if (after - before !== 1.5 * SOL) throw Error('Revenue received ' + (after - before) / SOL + ' SOL, expected exactly 1.5.');
-  step('revenue wallet received exactly 1.5 SOL');
+  if (after - before !== expected) throw Error('Revenue received ' + (after - before) / SOL + ' SOL, expected exactly ' + expected / SOL + '.');
+  step('revenue wallet received exactly ' + expected / SOL + ' SOL (Mythic #' + pm.serial + ' ' + pm.price + ' SOL + Legacy #' + pl.serial + ' ' + pl.price + ' SOL)');
   for (const [k, tier] of [[a, 'legacy'], [a, 'mythic'], [b, 'mythic']]) {
     try { await F.mint(ctx, k.publicKey.toBase58(), { tier, requestId: 'e2e-again-' + tier + Date.now() }, env); throw Error('second purchase was allowed'); }
     catch (e) { if (e.code !== 'FOUNDERS_WALLET_LIMIT') throw e; }

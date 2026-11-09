@@ -236,6 +236,17 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     return (foundersCtx = { store, connection, revenueAddress: revenue, origin });
   }
 
+  /* Release abandoned Founder reservations (blockhash can no longer land) so the public counts and the Mythic early-bird
+   * price are current, not only after the next purchase. Runs in the background (never delays a response), at most once
+   * per 30 s and 10 rows, one at a time, only while sales are open; failures are ignored (the next purchase sweeps again).
+   * Settlement still needs on-chain evidence, as in mint(). */
+  let lastFounderSweep = -Infinity, founderSweeping = false;
+  function releaseExpiredFounders() {
+    if (founderSweeping || now() - lastFounderSweep < 30000) return; lastFounderSweep = now(); founderSweeping = true;
+    (async () => { const F = need('founders.cjs'); if (F.saleMode(env) === 'off') return; await F.sweepExpired(await foundersContext(), 10); })()
+      .catch(() => {}).finally(() => { founderSweeping = false; });
+  }
+
   /* Display-only SOL → USD rate for the Founder buttons. Never used for pricing: buyers always pay the exact SOL
    * amount. Two independent keyless sources (Jupiter, CoinGecko) must agree within 2%, else no USD is shown.
    * Cached 60 s (failures too), 2.5 s timeout per source, Mainnet only unless a test enables it. */
@@ -289,7 +300,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     const action = body.action; limit(ip, action);
     if (action === 'status') return { data: status() };
     if (action === 'leaderboard') return { data: await leaderboard(body) };
-    if (action === 'founders-info') { let w = null; if (sessionToken(req)) { try { w = (await authenticated(req)).wallet; } catch {} } const [data, usd] = await Promise.all([need('founders.cjs').info(store, w, env), solUsd()]); if (usd) data.founders.usdPerSol = usd; data.founders.wallet = w; return { data }; }
+    if (action === 'founders-info') { let w = null; if (sessionToken(req)) { try { w = (await authenticated(req)).wallet; } catch {} } releaseExpiredFounders(); const [data, usd] = await Promise.all([need('founders.cjs').info(store, w, env), solUsd()]); if (usd) data.founders.usdPerSol = usd; data.founders.wallet = w; return { data }; }
     if (action === 'challenge') {
       const w = wallet(body.wallet), nonce = crypto.randomBytes(16).toString('hex'), t = now();
       const message = siwsMessage(w, nonce, t);

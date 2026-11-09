@@ -308,7 +308,11 @@
     async founders(view) {
       const d = (await api('cc-founders')).data, sol = v => (Number(v) || 0).toLocaleString(undefined, { maximumFractionDigits: 3 }) + ' SOL';
       const mono = v => h('span', { class: 'mono', text: v }), manage = can('founders.manage');
-      const supply = k => card(h('div', { class: 'eyebrow', text: k === 'mythic' ? 'Mythic (1 SOL)' : 'Legacy (0.5 SOL)' }), h('strong', { text: d.tiers[k].sold + ' sold · ' + d.tiers[k].reserved + ' reserved · ' + d.tiers[k].remaining + ' left of 30' }));
+      // Supply and the Mythic early bird come from the server (founders.cjs TIERS); each purchase row shows its own price.
+      const supply = k => { const t = d.tiers[k], of = t.sold + t.reserved + t.remaining, eb = t.earlyBird;
+        return card(h('div', { class: 'eyebrow', text: k === 'mythic' ? 'Mythic (1 SOL' + (eb ? ' · #1-#' + eb.total + ' ' + eb.price + ' SOL' : '') + ')' : 'Legacy (0.5 SOL)' }),
+          h('strong', { text: t.sold + ' sold · ' + t.reserved + ' reserved · ' + t.remaining + ' left of ' + of }),
+          eb ? h('p', { class: 'muted', text: 'Early bird: ' + eb.left + ' of ' + eb.total + ' left at ' + eb.price + ' SOL' }) : null); };
       const rows = (list, cols, map) => scroll('table-wide', cols, list.length ? list.map(r => h('tr', {}, map(r).map(v => h('td', {}, v == null ? '—' : v)))) : empty(cols.length));
       const pauseBtn = manage ? h('button', { class: 'small' + (d.paused ? '' : ' danger'), type: 'button', text: d.paused ? 'Resume sales' : 'Pause sales', onclick: () => run(async () => {
         if (await guarded({ title: d.paused ? 'Resume Founder sales' : 'Pause Founder sales', detail: 'Reservations already sent can still settle.', confirm: d.paused ? 'Resume' : 'Pause', danger: !d.paused, submit: v => write('cc-founders-pause', { paused: !d.paused, reason: v.reason }) })) RENDER.founders(view);
