@@ -49,7 +49,7 @@ function readAnnouncements(file) {
 /* privateAccess (only when RELEASE_STAGE=private, see network/network.cjs): { allowed(wallet) -> boolean }.
  * The "private-access" action then hands an allowlisted, signed-in wallet the same session token in a second
  * cookie (PRIVATE_COOKIE, Path=/) that the site host checks on every game path. Without it the action does not exist. */
-function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null, privateAccess = null } = {}) {
+function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null, privateAccess = null, foundersConnection = null } = {}) {
   const server = path.join(gameDir, 'server'), need = name => require(path.join(server, name));
   const fromApp = name => require(require.resolve(name, { paths: [server] }));
   const { Store } = need('store.cjs'), { verifySignature } = need('service.cjs'), cp = need('creators-portal.cjs'), players = need('player-referrals.cjs');
@@ -220,6 +220,22 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     return { ...base, applicable: true, verification, ledgers: { serviceRevenue: count(revenue), replenishments: count(topups), withdrawalDeductions: count(fees), proposals: proposals ? { pending: Number(proposals.n), total: Number(proposals.raw) } : null } };
   }
 
+  /* Founder's NFT Boxes (founders.cjs): public sale state, and — only when FOUNDERS_PUBLIC_SALE_ENABLED, or
+   * FOUNDERS_PRIVATE_TESTING_ENABLED for RYO_PRIVATE_TEST_WALLETS — a reservation the buyer's wallet signs. The signed
+   * transaction comes back here and is broadcast through the private server-side RPC (SOLANA_RPC_URL), so no RPC key
+   * reaches the browser. Nothing here opens the game. */
+  let foundersCtx = null;
+  async function foundersContext() {
+    if (foundersCtx) return foundersCtx;
+    const rpc = env.SOLANA_RPC_URL || (net.key === 'devnet' ? env.SOLANA_DEVNET_RPC_URL || net.rpc : '');
+    const revenue = String(env.RYO_REVENUE_WALLET || '').trim();
+    let validRevenue = false; try { validRevenue = new PublicKey(revenue).toBase58() === revenue; } catch {}
+    if (!rpc || !validRevenue) fail('Founder box sales are not configured.', 503, 'FOUNDERS_NOT_CONFIGURED');
+    const connection = foundersConnection || new (fromApp('@solana/web3.js').Connection)(rpc, 'finalized');
+    if (await connection.getGenesisHash() !== net.genesis) fail('Founder box sales are temporarily offline.', 503, 'FOUNDERS_NETWORK');
+    return (foundersCtx = { store, connection, revenueAddress: revenue, origin });
+  }
+
   function status() {
     return { prelaunch: true, network: net.label, launchAt, registrationEnabled: flags.registration, referralsEnabled: flags.referrals,
       links, announcements: readAnnouncements(announcementsFile),
@@ -246,6 +262,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     const action = body.action; limit(ip, action);
     if (action === 'status') return { data: status() };
     if (action === 'leaderboard') return { data: await leaderboard(body) };
+    if (action === 'founders-info') { let w = null; if (sessionToken(req)) { try { w = (await authenticated(req)).wallet; } catch {} } return { data: await need('founders.cjs').info(store, w, env) }; }
     if (action === 'challenge') {
       const w = wallet(body.wallet), nonce = crypto.randomBytes(16).toString('hex'), t = now();
       const message = siwsMessage(w, nonce, t);
@@ -282,6 +299,8 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     if (action === 'creator-admin') return { data: await creatorAdmin(w, body) };
     if (action === 'creator-admin-action') return { data: await creatorAdminAction(w, body) };
     if (action === 'treasury-admin') return { data: await treasuryAdmin(w) };
+    if (action === 'founders-mint') { limit(ip, 'register'); return { data: await need('founders.cjs').mint(await foundersContext(), w, body, env) }; }
+    if (action === 'founders-confirm') return { data: await need('founders.cjs').confirm(await foundersContext(), w, body, env) };
     fail('Unknown action.', 404, 'UNKNOWN_ACTION');
   }
 

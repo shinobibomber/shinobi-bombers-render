@@ -1,5 +1,13 @@
 # Shinobi Bombers patch notes
 
+## November 9, 2026 — Founder package preview
+
+- Preview the Mythic and Legacy Founder packages on the landing page.
+- Founder sales, reward activation, and SOL Sensei purchases remain closed.
+- Previous Mythic Box minting and Mainnet Ryo Sensei hire/rental purchases are retired. Existing memberships remain unchanged.
+- Founder purchase confirmation now requires successful finalized payment verification.
+
+
 Player-facing notes, newest first. Each entry is ready to paste into Discord (under 2,000
 characters). Add a new entry at the top whenever an update is deployed.
 

@@ -124,7 +124,12 @@ const registryModule = require('../app/server/treasury-registry.cjs');
   await store.settlePurchase(wallet, legacyId, 'confirmed'); assert.equal((await router.summary(ctx, pool)).transactions, 2, 'v1 pending order recovers under its original quote');
   assert.equal(Number((await router.income(store, pool)).n), 7500, 'a v1 quote retains its original (custody-retained) interpretation');
   assert.equal(require('../app/server/market.cjs').split(100000).adventureEligible, false, 'new Market fee pool is explicitly separate');
-  await assert.rejects(router.instructions(ctx, economy.quote(economy.initialProfile(), 'sensei'), crypto.randomUUID(), transfer, memo), /not approved/);
+  { // Sensei is not an approved SR route. Live now refuses Ryo Sensei before quoting (founders.cjs); bypass only that
+    // guard for this one quote so the router's own refusal is still proven.
+    const founders = require('../app/server/founders.cjs'), guard = founders.assertRyoProduct; founders.assertRyoProduct = () => {};
+    let senseiQuote; try { senseiQuote = economy.quote(economy.initialProfile(), 'sensei'); } finally { founders.assertRyoProduct = guard; }
+    await assert.rejects(router.instructions(ctx, senseiQuote, crypto.randomUUID(), transfer, memo), /not approved/); }
+  assert.throws(() => economy.quote(economy.initialProfile(), 'sensei'), e => e.status === 410, 'live: Sensei is bought with SOL, not Ryo (Founder decision 2026-11-09)');
   assert.equal(economy.quote(economy.initialProfile(), 'hunt').revenueDistribution, undefined, 'Boss Hunt remains a separate prize budget');
   await pool.query(`INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,status,created)
     VALUES($1,$2,'market-separate','market','{}',$3,'{}','{}',100000,'market-separate-signature','wire',1,'confirmed',$4)`, [store.scope, wallet, JSON.stringify({ operations: 10000, adventureEligible: false }), store.now()]);

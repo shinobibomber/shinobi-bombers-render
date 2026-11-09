@@ -288,3 +288,29 @@ dialog::backdrop { background: rgba(3, 1, 10, .78); backdrop-filter: blur(3px); 
 .admin-item .acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .pill.s-PENDING { color: var(--gold); border-color: rgba(255, 207, 74, .5); } .pill.s-APPROVED { color: var(--ok); border-color: rgba(111, 227, 161, .5); }
 .pill.s-REJECTED, .pill.s-SUSPENDED { color: var(--red); border-color: rgba(255, 107, 107, .5); }
+
+/* ---------- Founder's NFT Boxes (founders.js) ---------- */
+.founders .fd-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 28px 0 18px; }
+.fd-card { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 18px; background: rgba(20, 8, 40, .78); border: 1px solid rgba(197, 140, 255, .55); box-shadow: var(--glow-violet); }
+.fd-card.fd-legacy { border-color: rgba(110, 196, 255, .65); box-shadow: 0 0 22px rgba(80, 170, 255, .28); }
+.fd-card img { width: 100%; height: auto; border-radius: 12px; }
+.fd-card h3 { margin: 6px 0 0; color: var(--gold); letter-spacing: .02em; }
+.fd-card.fd-legacy h3 { color: #8fd3ff; }
+.fd-tag { margin: 0; color: var(--muted); font-weight: 600; }
+.fd-card .ticks { margin: 4px 0; }
+.fd-left { margin: 0; min-height: 1.4em; color: var(--text); font-weight: 700; }
+.fd-card .btn { margin-top: auto; width: 100%; }
+.fd-status { margin: 0 0 18px; padding: 12px 16px; border-radius: 12px; background: rgba(110, 196, 255, .1); border: 1px solid rgba(110, 196, 255, .45); }
+.fd-table-wrap { overflow-x: auto; margin: 10px 0 26px; border-radius: 14px; border: 1px solid rgba(255, 207, 74, .45); }
+.fd-table { width: 100%; min-width: 560px; border-collapse: collapse; background: rgba(14, 6, 28, .82); }
+.fd-table caption { text-align: left; padding: 14px 16px 6px; color: var(--gold); font-weight: 700; font-size: 1.1rem; }
+.fd-table th, .fd-table td { padding: 10px 14px; text-align: left; vertical-align: top; border-top: 1px solid rgba(255, 255, 255, .08); }
+.fd-table thead th { color: var(--gold); background: rgba(124, 77, 255, .18); }
+.fd-table thead th:nth-child(3) { color: #8fd3ff; background: rgba(80, 170, 255, .14); }
+.fd-table tbody th { color: var(--muted); font-weight: 600; }
+.fd-terms { margin: 8px 0 24px; padding-left: 1.2em; color: var(--muted); }
+.fd-terms li { margin: 6px 0; }
+.fd-poster { margin: 0 auto; max-width: 620px; }
+.fd-poster img { width: 100%; height: auto; border-radius: 14px; }
+.fd-poster figcaption { margin-top: 8px; color: var(--muted); font-size: .92rem; text-align: center; }
+@media (max-width: 760px) { .founders .fd-cards { grid-template-columns: 1fr; } }

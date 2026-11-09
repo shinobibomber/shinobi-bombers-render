@@ -59,13 +59,24 @@ async function lastClaim(store, c, wallet) {
   return t == null ? null : Number(t);
 }
 /**
+ * Chest claim interval for one wallet: 24 h for every player, 12 h for a verified Founder (Mythic or Legacy) while
+ * Founder redemption is enabled (founders.cjs, buyer-bound entitlement). Read inside the same transaction as the
+ * claim. Only the interval changes: the reward pool, per-claim maximum and global daily budget stay the same.
+ * A lookup failure refuses the claim (fail closed) instead of falling back to a shorter interval.
+ */
+async function claimCooldownFor(store, c, wallet) {
+  let founders; try { founders = require('./founders.cjs'); } catch (e) { if (e.code === 'MODULE_NOT_FOUND') return CLAIM_COOLDOWN_MS; throw e; }
+  const ms = await founders.chestCooldownMs(store, c, wallet);
+  return ms === founders.FOUNDER_CHEST_COOLDOWN_MS ? ms : CLAIM_COOLDOWN_MS;
+}
+/**
  * Called inside the claim transaction after the global reward-pool row lock, so budget use is serialized.
  * Returns the maximum whole Ryo this claim may credit (Infinity on beta). Throws to refuse the claim.
  */
 async function claimLimit(store, c, wallet) {
   if (!live()) return Infinity;
-  const now = store.now(), last = await lastClaim(store, c, wallet);
-  if (last !== null && now < last + CLAIM_COOLDOWN_MS) fail('Chest rewards can be claimed once every 24 hours. Next claim: ' + new Date(last + CLAIM_COOLDOWN_MS).toISOString() + '. Your earnings stay in your Chest.', 429);
+  const now = store.now(), last = await lastClaim(store, c, wallet), cooldown = await claimCooldownFor(store, c, wallet);
+  if (last !== null && now < last + cooldown) fail('Chest rewards can be claimed once every ' + cooldown / 3600000 + ' hours. Next claim: ' + new Date(last + cooldown).toISOString() + '. Your earnings stay in your Chest.', 429);
   const budget = await rewardBudget(store, c);
   if (!budget) fail('Chest claims await an approved reward budget. Your earnings stay in your Chest.', 503);
   const used = Number((await c.query('SELECT COALESCE(SUM(amount),0) AS n FROM ryo_reward_claims WHERE scope=$1 AND created>$2', [store.scope, now - DAY])).rows[0].n);
@@ -77,7 +88,13 @@ async function claimLimit(store, c, wallet) {
 async function nextClaimAt(store, c, wallet) {
   if (!live()) return null;
   const last = await lastClaim(store, c, wallet);
-  return last === null ? 0 : last + CLAIM_COOLDOWN_MS;
+  return last === null ? 0 : last + await claimCooldownFor(store, c, wallet);
+}
+/** Live only: this wallet's next claim time and interval for the Chest UI (beta: null, fields omitted). */
+async function claimInfo(store, c, wallet) {
+  if (!live()) return null;
+  const last = await lastClaim(store, c, wallet), cooldown = await claimCooldownFor(store, c, wallet);
+  return { nextClaimAt: last === null ? 0 : last + cooldown, claimCooldownMs: cooldown, founderCooldown: cooldown < CLAIM_COOLDOWN_MS };
 }
 
 /** Fields merged into the public `config` action on live (beta: none, so its payload is unchanged). */
@@ -152,4 +169,4 @@ async function summary(store, c = store.pool) {
     rewardBudget: { configured: !!budget, ...(budget || {}), claimedLast24h: used, remainingLast24h: budget ? Math.max(0, budget.dailyCapRyo - used) : 0, claimCooldownHours: 24 } };
 }
 
-module.exports = { UNIT, DAY, CLAIM_COOLDOWN_MS, live, claimFunding, claimFundingNotConfigured, withdrawalPlan, withdrawalsAnytime, withdrawalColumns, withdrawalSettled, validateBudget, rewardBudget, claimLimit, nextClaimAt, publicConfig, assertCustody, summary };
+module.exports = { UNIT, DAY, CLAIM_COOLDOWN_MS, live, claimFunding, claimFundingNotConfigured, withdrawalPlan, withdrawalsAnytime, withdrawalColumns, withdrawalSettled, validateBudget, rewardBudget, claimLimit, claimCooldownFor, nextClaimAt, claimInfo, publicConfig, assertCustody, summary };

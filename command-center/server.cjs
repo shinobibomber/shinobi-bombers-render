@@ -39,6 +39,8 @@ const PERMISSIONS = Object.freeze({
   'audit.read': ['owner', 'approver', 'operator', 'viewer'],
   'audit.own': ['moderator', 'support'],
   'roles.manage': ['owner'],
+  'founders.read': ['owner', 'approver', 'operator'],   // Founder NFT management (founders.cjs); full wallets, so not viewers
+  'founders.manage': ['owner'],
 });
 const envList = name => String(process.env[name] || '').split(',').map(s => s.trim()).filter(Boolean);
 async function rolesOf(store, db, wallet) {
@@ -473,6 +475,9 @@ async function handle(ctx, wallet, action, body = {}) {
     case 'cc-roles': need(roles, 'roles.manage'); return roleList(ctx);
     case 'cc-role-grant': need(roles, 'roles.manage'); return changeRole(ctx, wallet, body, true);
     case 'cc-role-revoke': need(roles, 'roles.manage'); return changeRole(ctx, wallet, body, false);
+    case 'cc-founders': need(roles, 'founders.read'); return envelope(store, (await require('./founders.cjs').adminOverview(store)).founders);
+    case 'cc-founders-pause': need(roles, 'founders.manage'); return envelope(store, await require('./founders.cjs').adminPause(store, wallet, body.paused === true, body.reason));
+    case 'cc-founders-revoke': need(roles, 'founders.manage'); return envelope(store, await require('./founders.cjs').adminRevoke(store, wallet, body.wallet, body.revoke === true, body.reason));
     default: fail('Unknown Command Center action.', 404);
   }
 }

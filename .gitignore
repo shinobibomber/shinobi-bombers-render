@@ -27,3 +27,7 @@ shrine-fusion-design/fusion-menu.png
 # Local Claude Code session checkpoints (task context, machine-specific) - never commit.
 .claude/session-checkpoints/
 .claude/settings.local.json
+
+# Local unapproved Devnet NFT images. Approve and explicitly add final artwork before enabling Mainnet sales.
+/founders/public/art/mythic.png
+/founders/public/art/legacy.png

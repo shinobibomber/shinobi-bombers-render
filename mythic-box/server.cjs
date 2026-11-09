@@ -4,7 +4,10 @@
  * name/symbol/uri metadata) is minted into the player's wallet with its mint authority then removed.
  * Payment and NFT land together or not at all. Supply 20, at most 2 per wallet. Holding a box NFT
  * grants Tsukiyomi (mythic-hero.cjs) and the 10% purchase discount (economy quote, profile.mythicPerk).
- * Serials are reserved while a transaction can still land and freed when its blockhash expires. */
+ * Serials are reserved while a transaction can still land and freed when its blockhash expires.
+ * RETIRED (owner decision 2026-11-09): replaced by the Founder's NFT Boxes (founders/server.cjs). box-mint is refused;
+ * box-info and box-confirm stay for recovery of reservations already sent, and confirmed box NFTs keep granting
+ * Tsukiyomi and the 10% discount exactly as before. */
 'use strict';
 const crypto = require('node:crypto');
 const LAMPORTS = 1000000000, MEMO_PROGRAM = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
@@ -67,7 +70,7 @@ async function info(store, wallet, env = process.env) {
   const remaining = Math.max(0, cfg.supply - c.sold - c.pending);
   return { box: { network: 'solana-devnet', supply: cfg.supply, sold: c.sold, reserved: c.pending, remaining, perWallet: cfg.perWallet, owned: c.mine,
     price: c.mine < cfg.perWallet ? sol(priceFor(cfg, c.mine)) : null, firstPrice: sol(cfg.first), secondPrice: sol(cfg.second), perks: PERKS, mine,
-    soldOut: remaining === 0, limitReached: c.mine >= cfg.perWallet } };
+    soldOut: true, retired: true, replacedBy: 'founders', limitReached: c.mine >= cfg.perWallet } };
 }
 
 // Reserve a serial and return the transaction for the player's wallet to sign.
@@ -146,7 +149,7 @@ async function stats(store) {
 }
 async function handle(ctx, wallet, action, body = {}) {
   if (action === 'box-info') { await sweep(ctx, wallet); return info(ctx.store, wallet); }
-  if (action === 'box-mint') return mint(ctx, wallet, body);
+  if (action === 'box-mint') fail("The Limited Mythic NFT Box has been replaced by the Founder's NFT Boxes.", 410);
   if (action === 'box-confirm') return confirm(ctx, wallet, body);
   fail('Unknown Mythic Box action.', 404);
 }

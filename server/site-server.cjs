@@ -175,6 +175,22 @@ async function serveSite(req, res, name) {
 // Live server only: the public, read-only Chapter 04 treasury transparency page and its JSON (pre-launch and
 // launched). Public addresses + finalized chain observations from a process-wide 60 s cache (bounded RPC load).
 // No wallet, session, signature or transaction is involved. The beta/Devnet server answers 404.
+/* Founder's NFT Boxes public files, mounted in every release stage: NFT metadata JSON (the URI written into each NFT),
+ * the NFT artwork, and links to the sale terms on the portal. No account, wallet or sale data is served here. */
+const FOUNDERS_DIR = path.join(ROOT, 'founders', 'public');
+async function foundersRoute(req, res, url, name) {
+  if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
+  const m = name.match(/^\/founders\/metadata\/(mythic|legacy)-([1-9]|[12][0-9]|30)\.json$/);
+  if (m) {
+    const body = JSON.stringify(require(path.join(GAME_DIR, 'server', 'founders.cjs')).metadata(process.env.RYO_SITE_ORIGIN, m[1], Number(m[2])));
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'Access-Control-Allow-Origin': '*', ...SITE_HEADERS });
+    return res.end(req.method === 'HEAD' ? undefined : body);
+  }
+  if (name.startsWith('/founders/art/')) return serveFrom(FOUNDERS_DIR, req, res, name.slice('/founders'.length), new Set(['.png']));
+  if (['/founders', '/founders/', '/founders/terms'].includes(name)) { res.writeHead(302, { Location: '/#founders', 'Cache-Control': 'no-store' }); return res.end(); }
+  return sendSite(req, res, 404, 'Not found.');
+}
+
 const TREASURY_DIR = path.join(ROOT, 'treasury', 'public');
 const TREASURY_FILES = { '/treasury': 'index.html', '/treasury/treasury.js': 'treasury.js', '/treasury/treasury.css': 'treasury.css' };
 const TREASURY_CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
@@ -239,6 +255,7 @@ const server = http.createServer((req, res) => {
       return res.end(req.method==='HEAD'?'':JSON.stringify({...policy,prelaunch:PRELAUNCH,monetaryEndpointsMounted:!PRELAUNCH}));
     }catch{return sendSite(req,res,503,'Economy policy is unavailable until the game build is installed.');}
   }
+  if (name === '/founders' || name.startsWith('/founders/')) return foundersRoute(req, res, url, name).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   if (name === '/treasury' || name.startsWith('/treasury/') || name === '/treasury-registry.json') return treasuryRoute(req, res, url, name).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   if (PRIVATE && gamePath(name)) {
     const fail = () => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); };

@@ -39,7 +39,7 @@ const serverHooks = [
   ['service.cjs', "if(action==='creator-public')return require('./creators-portal.cjs').handle({store,origin},null,action,body);",
    "if(action==='treasury-claim-funding')return " + TR + ".claimFunding({store,connection,mint,treasuryAddress,checkNetwork});if(action==='creator-public')return require('./creators-portal.cjs').handle({store,origin},null,action,body);"],
   // Live: report when the next claim opens (beta: field omitted, payload unchanged).
-  ['service.cjs', 'return {chest,...(claim?await state(wallet):{})}', 'const nextClaimAt=await ' + TR + '.nextClaimAt(store,store.pool,wallet);if(nextClaimAt!==null)Object.assign(chest,{nextClaimAt,claimCooldownMs:' + TR + '.CLAIM_COOLDOWN_MS});return {chest,...(claim?await state(wallet):{})}'],
+  ['service.cjs', 'return {chest,...(claim?await state(wallet):{})}', 'const claimInfo=await ' + TR + '.claimInfo(store,store.pool,wallet);if(claimInfo)Object.assign(chest,claimInfo);return {chest,...(claim?await state(wallet):{})}'],
 ];
 
 // Live (Mainnet build) game-page wording, applied by apply-network.cjs before its Mainnet text rules.

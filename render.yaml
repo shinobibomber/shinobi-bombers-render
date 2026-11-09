@@ -88,3 +88,7 @@ services:
       # SR service routing has a fifth, separate switch: SR_REVENUE_ROUTING_ENABLED (default OFF, refused while
       # PRELAUNCH_MODE is on). It also needs the committed treasury registry activation and a two-wallet admin approval.
       # RYO_TOKEN_MINT must equal srMintAddress in treasury/treasury-registry.json. See docs/treasury/ACTIVATION_CHECKLIST.md.
+      # Founder's NFT Boxes (docs/founders-deploy-manifest.md). Every switch is OFF unless set to on, each needs its own
+      # explicit approval, and none of them opens the game: FOUNDERS_PRIVATE_TESTING_ENABLED (RYO_PRIVATE_TEST_WALLETS only),
+      # FOUNDERS_PUBLIC_SALE_ENABLED, FOUNDERS_REWARD_REDEMPTION_ENABLED, SENSEI_SOL_ENABLED. Minting also needs
+      # FOUNDERS_MINT_AUTHORITY_SECRET (a NEW dedicated keypair, never the custody/revenue/registry wallets).

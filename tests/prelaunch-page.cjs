@@ -16,7 +16,7 @@ const used = new Set();
 for (const f of ['index.html', 'rules.html', 'privacy.html', 'terms.html']) {
   const html = fs.readFileSync(path.join(ROOT, 'prelaunch', f), 'utf8');
   const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
-  assert.deepEqual(scripts.map(m=>m[1].match(/\bsrc="([^"]+)"/)?.[1]),f==='index.html'?['/pl/wallet.js','/pl/prelaunch.js']:['/pl/prelaunch.js'],'portal script inventory: '+f);
+  assert.deepEqual(scripts.map(m=>m[1].match(/\bsrc="([^"]+)"/)?.[1]),f==='index.html'?['/pl/wallet.js','/pl/prelaunch.js','/pl/founders.js']:['/pl/prelaunch.js'],'portal script inventory: '+f);
   assert(scripts.every(m=>!m[2].trim()),'portal has no inline scripts: '+f);
   for (const m of html.matchAll(/data-i18n(?:-list)?="([^"]+)"/g)) used.add(m[1]);
   for (const m of html.matchAll(/data-i18n-attr="([^"]+)"/g)) m[1].split(';').forEach(p => used.add(p.split(':')[1]));
@@ -108,7 +108,8 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     assert.equal(await p.getAttribute('#demoLink', 'href'), 'https://demo.example/'); assert.equal(await p.getAttribute('#demoLink', 'target'), '_blank');
     assert.match(await p.textContent('#demo'), /test server \(Solana Devnet\)[\s\S]*do not carry over to the official launch/);
     assert.equal(await p.locator('#demo li').count(), 5);
-    assert.equal(await p.locator('#newsList article').count(), 1);
+    assert.equal(await p.locator('#newsList article').count(), 2);
+    assert.match(await p.locator('#newsList article').first().innerText(), /Founder packages: preview available[\s\S]*not open yet/);
     assert.equal(await p.locator('[data-i18n]').evaluateAll(els => els.filter(e => /^[a-z]+\.[a-zA-Z0-9.]+$/.test(e.textContent.trim())).length), 0, 'no raw keys on screen');
     await p.screenshot({ path: path.join(OUT, 'prelaunch-desktop.png'), fullPage: true });
     await p.close();

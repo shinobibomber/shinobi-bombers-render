@@ -15,7 +15,7 @@
       'locked.body': 'Sign in with an authorized Phantom wallet. Every view and action is authorized again on the server; this page only shows what your role allows.',
       'locked.p1': 'Wallet-signed session', 'locked.p2': 'Server-enforced roles', 'locked.p3': 'Hash-chained audit', 'locked.p4': 'No money movement',
       'nav.ops': 'OPERATIONS', 'nav.planned': 'PLANNED', 'nav.overview': 'Overview', 'nav.players': 'Player lookup', 'nav.chat': 'Chat moderation',
-      'nav.announcements': 'Announcements', 'nav.health': 'Server health', 'nav.audit': 'Audit logs', 'nav.roles': 'Staff roles', 'nav.observatory': 'Ryo Observatory ↗',
+      'nav.announcements': 'Announcements', 'nav.health': 'Server health', 'nav.audit': 'Audit logs', 'nav.roles': 'Staff roles', 'nav.founders': 'Founder NFTs', 'nav.observatory': 'Ryo Observatory ↗',
       'state.loading': 'Loading…', 'state.readonly': 'Read only', 'state.denied': 'Your role does not include this area.', 'state.deniedTitle': 'Permission required',
       'state.unavailable': 'Unavailable', 'state.notImplemented': 'Not implemented', 'state.planned': 'Planned', 'state.empty': 'Nothing to show.',
       'action.cancel': 'Cancel', 'action.refresh': 'Refresh', 'action.confirm': 'Confirm', 'action.loadMore': 'Load more',
@@ -34,7 +34,7 @@
       'locked.body': 'Entre com uma carteira Phantom autorizada. Cada tela e ação é autorizada novamente no servidor; esta página mostra apenas o que sua função permite.',
       'locked.p1': 'Sessão assinada pela carteira', 'locked.p2': 'Funções aplicadas no servidor', 'locked.p3': 'Auditoria encadeada por hash', 'locked.p4': 'Sem movimentação de fundos',
       'nav.ops': 'OPERAÇÕES', 'nav.planned': 'PLANEJADO', 'nav.overview': 'Visão geral', 'nav.players': 'Busca de jogadores', 'nav.chat': 'Moderação do chat',
-      'nav.announcements': 'Anúncios', 'nav.health': 'Saúde do servidor', 'nav.audit': 'Registros de auditoria', 'nav.roles': 'Funções da equipe', 'nav.observatory': 'Observatório Ryo ↗',
+      'nav.announcements': 'Anúncios', 'nav.health': 'Saúde do servidor', 'nav.audit': 'Registros de auditoria', 'nav.roles': 'Funções da equipe', 'nav.founders': 'NFTs de Fundador', 'nav.observatory': 'Observatório Ryo ↗',
       'state.loading': 'Carregando…', 'state.readonly': 'Somente leitura', 'state.denied': 'Sua função não inclui esta área.', 'state.deniedTitle': 'Permissão necessária',
       'state.unavailable': 'Indisponível', 'state.notImplemented': 'Não implementado', 'state.planned': 'Planejado', 'state.empty': 'Nada para mostrar.',
       'action.cancel': 'Cancelar', 'action.refresh': 'Atualizar', 'action.confirm': 'Confirmar', 'action.loadMore': 'Carregar mais',
@@ -123,11 +123,11 @@
   const VIEWS = [
     ['overview', 'nav.overview', 'overview.read'], ['players', 'nav.players', 'player.read'], ['chat', 'nav.chat', 'moderation.read'],
     ['announcements', 'nav.announcements', ['announcement.read', 'announcement.propose', 'announcement.review']], ['health', 'nav.health', 'ops.read'],
-    ['audit', 'nav.audit', ['audit.read', 'audit.own']], ['roles', 'nav.roles', 'roles.manage'],
+    ['audit', 'nav.audit', ['audit.read', 'audit.own']], ['roles', 'nav.roles', 'roles.manage'], ['founders', 'nav.founders', 'founders.read'],
   ];
   // Modules from the specification that have no backend yet. They are listed, never simulated.
   const PLANNED = [
-    ['nft', 'Founder NFT management', 2], ['pass', 'Weekly Mission Pass', 2], ['early', 'Early access', 2], ['economy', 'Economy & treasury', 3],
+['pass', 'Weekly Mission Pass', 2], ['early', 'Early access', 2], ['economy', 'Economy & treasury', 3],
     ['creators', 'Creators & marketing', 3], ['events', 'Events', 4], ['config', 'Game configuration', 4], ['support', 'Support center', 4], ['security', 'Security center', 4],
     ['guild', 'Guild / Team / DM / Trade chat', null],
   ];
@@ -304,6 +304,30 @@
     },
 
     /* ---------- Staff roles (Owner) ---------- */
+    /* ---------- Founder NFTs (founders.cjs) ---------- */
+    async founders(view) {
+      const d = (await api('cc-founders')).data, sol = v => (Number(v) || 0).toLocaleString(undefined, { maximumFractionDigits: 3 }) + ' SOL';
+      const mono = v => h('span', { class: 'mono', text: v }), manage = can('founders.manage');
+      const supply = k => card(h('div', { class: 'eyebrow', text: k === 'mythic' ? 'Mythic (1 SOL)' : 'Legacy (0.5 SOL)' }), h('strong', { text: d.tiers[k].sold + ' sold · ' + d.tiers[k].reserved + ' reserved · ' + d.tiers[k].remaining + ' left of 30' }));
+      const rows = (list, cols, map) => scroll('table-wide', cols, list.length ? list.map(r => h('tr', {}, map(r).map(v => h('td', {}, v == null ? '—' : v)))) : empty(cols.length));
+      const pauseBtn = manage ? h('button', { class: 'small' + (d.paused ? '' : ' danger'), type: 'button', text: d.paused ? 'Resume sales' : 'Pause sales', onclick: () => run(async () => {
+        if (await guarded({ title: d.paused ? 'Resume Founder sales' : 'Pause Founder sales', detail: 'Reservations already sent can still settle.', confirm: d.paused ? 'Resume' : 'Pause', danger: !d.paused, submit: v => write('cc-founders-pause', { paused: !d.paused, reason: v.reason }) })) RENDER.founders(view);
+      }) }) : null;
+      const revokeBtn = e => manage ? h('button', { class: 'small' + (e.revoked ? '' : ' danger'), type: 'button', text: e.revoked ? 'Restore' : 'Suspend', onclick: () => run(async () => {
+        if (await guarded({ title: (e.revoked ? 'Restore' : 'Suspend') + ' Founder benefits', detail: e.wallet, confirm: e.revoked ? 'Restore' : 'Suspend', danger: !e.revoked, submit: v => write('cc-founders-revoke', { wallet: e.wallet, revoke: !e.revoked, reason: v.reason }) })) RENDER.founders(view);
+      }) }) : null;
+      fill(view, h('div', { class: 'view-head' }, h('div', {}, h('h1', { text: 'Founder NFTs' }), h('p', { class: 'muted', text: 'Founder box supply, purchases, entitlements, summons and SOL Sensei. Benefits are bound to the original buyer.' })), refreshBtn(() => RENDER.founders(view))),
+        h('div', { class: 'grid kpis' }, supply('mythic'), supply('legacy'),
+          card(h('div', { class: 'eyebrow', text: 'Sale' }), h('strong', { text: d.mode + (d.paused ? ' · PAUSED' : '') }), pauseBtn),
+          card(h('div', { class: 'eyebrow', text: 'Switches' }), h('strong', { text: 'Redemption ' + (d.redemption ? 'on' : 'off') + ' · SOL Sensei ' + (d.senseiSol ? 'on' : 'off') }))),
+        card(h('h3', { text: 'Purchases (' + d.failures + ' expired)' }), rows(d.purchases, ['When', 'Wallet', 'Tier', 'Serial', 'Price', 'Status', 'Mint'], r => [when(r.created), mono(r.wallet), r.tier, String(r.serial), sol(r.price), r.status, mono(r.mint)])),
+        card(h('h3', { text: 'Entitlements' }), rows(d.entitlements, ['Wallet', 'Tier', 'Activated', 'Passes left', 'Trial ends', 'Status', ''], e => [mono(e.wallet), e.tier, e.activated ? when(e.activated) : 'not yet', String(e.limited_passes), e.trial_ends ? when(e.trial_ends) : null, e.revoked ? 'suspended: ' + e.revoked_reason : 'valid', revokeBtn(e)])),
+        card(h('h3', { text: 'Founder summons' }), rows(d.summons, ['When', 'Wallet', 'Kind', 'Period', 'Rank'], r => [when(r.created), mono(r.wallet), r.kind, r.period == null ? null : String(r.period), ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'][r.rank]])),
+        card(h('h3', { text: 'SOL Sensei' }), rows(d.sensei, ['When', 'Wallet', 'Price', 'Founder price', 'Status'], r => [when(r.created), mono(r.wallet), sol(r.price), r.founder_discount ? 'yes' : 'no', r.status])),
+        card(h('h3', { text: 'Wallets with 3+ expired reservations' }), rows(d.repeatedExpiries, ['Wallet', 'Expired'], r => [mono(r.wallet), String(r.n)])),
+        card(h('h3', { text: 'Founder audit' }), rows(d.audit, ['When', 'Actor', 'Action', 'Target'], r => [when(r.created), mono(r.actor), r.action, r.target])));
+    },
+
     async roles(view) {
       const d = (await api('cc-roles')).data;
       const envRows = Object.entries(d.environment).flatMap(([role, list]) => list.map(w => h('tr', {}, h('td', { text: role }), h('td', { class: 'mono', text: w }), h('td', { class: 'muted', text: 'Hosting environment' }))));
