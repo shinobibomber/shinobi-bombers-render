@@ -83,7 +83,7 @@ const registryModule = require('../app/server/treasury-registry.cjs');
   assert.equal((await router.preview(store, wallet, q)).revenueDistribution.ready, false);
   await assert.rejects(router.instructions(ctx, q, crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted && /SR_REVENUE_ROUTING_ENABLED is off/.test(e.message));
   process.env.SR_REVENUE_ROUTING_ENABLED = 'on';
-  { const raw = JSON.parse(fs.readFileSync(registryModule.FILE, 'utf8')); raw.srMintAddress = mint.toBase58(); registryModule.useForIsolatedTest(raw); }
+  { const raw = JSON.parse(fs.readFileSync(registryModule.FILE, 'utf8')); raw.srMintAddress = mint.toBase58(); raw.srMintProgram = 'spl-token'; raw.activation = { approved: false, reference: null }; registryModule.useForIsolatedTest(raw); }
   await assert.rejects(router.instructions(ctx, q, crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted && /activation approval/.test(e.message));
   fixture.activate(web3.Keypair.generate().publicKey);
   await assert.rejects(router.instructions(ctx, q, crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted && /does not match the registered SR mint/.test(e.message));
@@ -156,7 +156,7 @@ const registryModule = require('../app/server/treasury-registry.cjs');
   await assert.rejects(router.verifyReplenishment(ctx, await router.config(store), { ...topup, signature: sig3 }), /balance changes/);
 
   // 9. Registry change after approval: configuration is stale and routing fails closed.
-  { const raw = JSON.parse(fs.readFileSync(registryModule.FILE, 'utf8')); raw.destinations.find(d => d.role === 'communityRewards').address = address(); raw.srMintAddress = mint.toBase58(); raw.activation = { approved: true, reference: 'Isolated changed registry' }; registryModule.useForIsolatedTest(raw); }
+  { const raw = JSON.parse(fs.readFileSync(registryModule.FILE, 'utf8')); raw.destinations.find(d => d.role === 'communityRewards').address = address(); raw.srMintAddress = mint.toBase58(); raw.srMintProgram = 'spl-token'; raw.activation = { approved: true, reference: 'Isolated changed registry' }; registryModule.useForIsolatedTest(raw); }
   const stale = await router.config(store); assert.equal(stale.enabled, false); assert.equal(stale.stale, true);
   assert.match((await router.preview(store, wallet, q)).revenueDistribution.note, /no longer matches/);
   await assert.rejects(router.instructions(ctx, q, crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted);

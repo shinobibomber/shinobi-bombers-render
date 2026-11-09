@@ -59,7 +59,7 @@ const passed = [];
     const store = { now: () => Date.now(), pool: { query: async () => ({ rows: [] }) } };
     const mintData = Buffer.alloc(spl.MINT_SIZE); spl.MintLayout.encode({ mintAuthorityOption: 0, mintAuthority: web3.PublicKey.default, supply: 1000000000n * 1000000n, decimals: 6, isInitialized: true, freezeAuthorityOption: 0, freezeAuthority: web3.PublicKey.default }, mintData);
     const connection = { async getGenesisHash() { return GENESIS; }, async getAccountInfo() { return { owner: spl.TOKEN_PROGRAM_ID, data: mintData }; } };
-    const raw = JSON.parse(require('node:fs').readFileSync(require('../app/server/treasury-registry.cjs').FILE, 'utf8')); delete raw.gameCustody;
+    const raw = JSON.parse(require('node:fs').readFileSync(require('../app/server/treasury-registry.cjs').FILE, 'utf8')); delete raw.gameCustody; raw.srMintAddress = null; delete raw.srMintProgram; raw.activation = { approved: false, reference: null };
     require('../app/server/treasury-registry.cjs').useForIsolatedTest(raw);   // throw-away custody key in this process only
     const service = createService({ store, connection, treasury, mint: mint.toBase58(), origin: 'https://live.example', studioAddress: undefined, revenueAddress: undefined });
     const cfg = await service.handle('config', {});
@@ -70,7 +70,7 @@ const passed = [];
 
     // ---- SR token program: the registry decides on live; the test server stays classic; only metadata extensions pass.
     { const regMod = require('../app/server/treasury-registry.cjs'), V = require('../app/server/treasury-verify.cjs'), fx = require('./sr-revenue-fixture.cjs');
-      const saved = JSON.parse(require('node:fs').readFileSync(regMod.FILE, 'utf8')); delete saved.gameCustody;
+      const saved = JSON.parse(require('node:fs').readFileSync(regMod.FILE, 'utf8')); delete saved.gameCustody; saved.srMintAddress = null; delete saved.srMintProgram; saved.activation = { approved: false, reference: null };
       const T22 = spl.TOKEN_2022_PROGRAM_ID, m2022 = web3.Keypair.generate().publicKey, accounts = new Map();
       const chain = { async getAccountInfo(k) { return accounts.get(k.toBase58()) ?? null; } };
       const mintWith = names => ({ owner: T22, data: fx.token2022(mintData, 'mint', names), lamports: 1, executable: false });
@@ -107,7 +107,7 @@ const passed = [];
 
     // The startup guard (custody + token required together, studio/revenue optional) is covered in network-guard.cjs on a real Mainnet build.
     // ---- Founder offer prices stay after the automatic release (owner decision 2026-11-09), until each tier sells out.
-    { const regMod = require('../app/server/treasury-registry.cjs'), F = require('../app/server/founders.cjs'), saved = JSON.parse(require('node:fs').readFileSync(regMod.FILE, 'utf8')); delete saved.gameCustody;
+    { const regMod = require('../app/server/treasury-registry.cjs'), F = require('../app/server/founders.cjs'), saved = JSON.parse(require('node:fs').readFileSync(regMod.FILE, 'utf8')); delete saved.gameCustody; saved.srMintAddress = null; delete saved.srMintProgram; saved.activation = { approved: false, reference: null };
       const MINT = addr(), pre = { SOLANA_NETWORK: 'mainnet', PRELAUNCH_MODE: 'on', RELEASE_STAGE: 'private' };
       regMod.useForIsolatedTest({ ...saved, srMintAddress: MINT });
       try {

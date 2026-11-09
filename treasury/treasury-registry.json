@@ -56,10 +56,11 @@
     "purpose": "Game claim and custody hot wallet: player deposits and the approved reward float. Its key is held only in Render as RYO_TREASURY_SECRET.",
     "created": "2026-11-08"
   },
-  "srMintAddress": null,
+  "srMintAddress": "8Azsv23uZnZdmeyA6Vg6BagkT1SHEdiK4QqV3vycpump",
+  "srMintProgram": "token-2022",
   "withdrawalTreasuryFeeBps": 500,
   "activation": {
-    "approved": false,
-    "reference": null
+    "approved": true,
+    "reference": "Owner approved SR activation of mint 8Azsv23uZnZdmeyA6Vg6BagkT1SHEdiK4QqV3vycpump (Token-2022) on 2026-11-09"
   }
 }

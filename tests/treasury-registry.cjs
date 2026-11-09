@@ -13,12 +13,12 @@ const reject = (mutate, pattern, label) => { const r = raw(); mutate(r); assert.
  assert.deepEqual(reg.addresses, { lockedTreasury: '5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn', activeRewards: '3Rzz25x1BhGAawL8DkBKmJpmKw7CMcJ9TfgxCvenTi56', communityRewards: 'FZnW5DvUHer724sJzVr2Z8REEjK4EJeEnK9uDCekvDyL', economicReserve: 'B2aGUT7xVA8ZRzoa2XaTKUinNbyoV4VvgAvWBn1dSN8M' });
  assert.deepEqual(Object.values(reg.destinations).map(d => d.bps), [5000, 3000, 1000, 1000]);
  assert.equal(reg.squads.multisig, '38chAaSbcA4Stdg7EhCzzyVAbhz2BuKtHDfD6thsZSjX'); assert.equal(reg.squads.threshold, 2); assert.equal(reg.squads.members.length, 3);
- assert.equal(reg.srMintAddress, null, 'the SR token has not launched');
+ assert.equal(reg.srMintAddress, '8Azsv23uZnZdmeyA6Vg6BagkT1SHEdiK4QqV3vycpump', 'the released SR mint is registered (owner approval 2026-11-09)'); assert.equal(reg.srMintProgram, 'token-2022');
  assert.equal(reg.gameCustody.address, 'CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT', 'the created game custody wallet is recorded (public address only)');
- assert(!R.reservedAddresses().includes(reg.gameCustody.address), 'custody is checked separately from reserved addresses'); assert.equal(reg.activation.approved, false, 'financial routing is not activated');
+ assert(!R.reservedAddresses().includes(reg.gameCustody.address), 'custody is checked separately from reserved addresses'); assert.equal(reg.activation.approved, true, 'activation approved by the owner'); assert.match(reg.activation.reference, /Owner approved SR activation of mint 8Azsv23uZnZdmeyA6Vg6BagkT1SHEdiK4QqV3vycpump/);
  assert(Object.isFrozen(reg) && Object.isFrozen(reg.addresses) && Object.isFrozen(reg.squads.members));
  for (const a of [...Object.values(reg.addresses), reg.squads.multisig, ...reg.squads.members]) assert.equal(new web3.PublicKey(a).toBase58(), a, 'SDK agrees: ' + a);
- const view = R.publicView(); assert.equal(view.srMint.address, null); assert.equal(view.destinations.reduce((n, d) => n + d.percent, 0), 100); assert.equal(view.withdrawalDeduction.percent, 5);
+ const view = R.publicView(); assert.equal(view.srMint.address, '8Azsv23uZnZdmeyA6Vg6BagkT1SHEdiK4QqV3vycpump'); assert.equal(view.destinations.reduce((n, d) => n + d.percent, 0), 100); assert.equal(view.withdrawalDeduction.percent, 5);
  // The registry file holds public keys only.
  assert.doesNotMatch(fs.readFileSync(R.FILE, 'utf8'), /"[^"]*(secret|private|seed|keypair|mnemonic)[^"]*"\s*:/i, 'no key-like field names');
 
@@ -51,10 +51,11 @@ const reject = (mutate, pattern, label) => { const r = raw(); mutate(r); assert.
  reject(r => { r.gameCustody.secretKey = [1, 2]; }, /not allowed/);
  { const r = raw(); delete r.gameCustody; assert.equal(R.validate(r).gameCustody, null, 'gameCustody is optional'); }
  reject(r => { r.withdrawalTreasuryFeeBps = 200; }, /500/);
- reject(r => { r.activation = { approved: true, reference: 'Approved by owner on 2027-01-01' }; }, /before srMintAddress/);
+ reject(r => { r.srMintAddress = null; r.activation = { approved: true, reference: 'Approved by owner on 2027-01-01' }; }, /before srMintAddress/);
  reject(r => { r.srMintAddress = web3.Keypair.generate().publicKey.toBase58(); r.activation = { approved: true, reference: '' }; }, /approval reference/);
  { const r = raw(); r.srMintAddress = web3.Keypair.generate().publicKey.toBase58(); r.activation = { approved: true, reference: 'Owner approval reference #1' }; assert.equal(R.validate(r).activation.approved, true); }
- assert.deepEqual(R.reservedAddresses().length, 4 + 1 + 3);
+ assert.deepEqual(R.reservedAddresses().length, 4 + 1 + 3 + 1);   // 4 wallets, multisig, 3 members, the registered SR mint
+ assert(R.reservedAddresses().includes('8Azsv23uZnZdmeyA6Vg6BagkT1SHEdiK4QqV3vycpump'), 'custody can never be the SR mint');
 
  // 3. Squads v4 decoding of the real captured account.
  const data = Buffer.from(fixture.dataBase64, 'base64'), ms = V.decodeMultisig(data);
@@ -77,6 +78,8 @@ const reject = (mutate, pattern, label) => { const r = raw(); mutate(r); assert.
   async getAccountInfo(k) { if (fail) throw Error('down'); return accounts.has(k.toBase58()) ? accounts.get(k.toBase58()) : null; },
   async getParsedTokenAccountsByOwner(o) { return { value: (owned.get(o.toBase58()) || []).map(amount => ({ account: { owner: spl.TOKEN_PROGRAM_ID, data: { parsed: { info: { mint: mint.toBase58(), owner: o.toBase58(), tokenAmount: { amount: String(amount), decimals: 6 } } } } } })) }; },
  };
+ // Verifier checks run on an isolated pre-activation copy with a classic throw-away mint (the committed registry now has the released Token-2022 mint).
+ R.useForIsolatedTest({ ...JSON.parse(fs.readFileSync(R.FILE, 'utf8')), srMintAddress: null, srMintProgram: 'spl-token', activation: { approved: false, reference: null } });
  let snap = await V.snapshot(connection);
  assert.equal(snap.status, 'verified'); assert.equal(snap.squads.status, 'verified'); assert.equal(snap.mint.status, 'pending', 'no registered mint yet');
  assert.deepEqual(Object.fromEntries(Object.entries(snap.destinations).map(([r, d]) => [r, [d.verification.status, d.solLamports]])), { lockedTreasury: ['verified', 1000000], activeRewards: ['verified', 0], communityRewards: ['verified', 5e8], economicReserve: ['verified', 0] });

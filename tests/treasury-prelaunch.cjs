@@ -7,7 +7,10 @@ const { spawnSync } = require('node:child_process');
 const { PGlite } = require('@electric-sql/pglite'), web3 = require('../app/node_modules/@solana/web3.js');
 const root = path.resolve(__dirname, '..'), app = path.join(root, 'app');
 const { createPrelaunch } = require('../prelaunch/server.cjs'), fixture = require('./fixtures/squads-treasury-multisig.json');
-const V = require('../app/server/treasury-verify.cjs'), reg = require('../app/server/treasury-registry.cjs').registry();
+/* Pre-mint display: the committed registry now has the released mint (2026-11-09); this suite checks the 'mint pending'
+ * state on an isolated copy with the mint and activation reset, in this process only. */
+const pendingRegistry = RM => { const raw = JSON.parse(fs.readFileSync(RM.FILE, 'utf8')); raw.srMintAddress = null; delete raw.srMintProgram; raw.activation = { approved: false, reference: null }; return RM.useForIsolatedTest(raw); };
+const V = require('../app/server/treasury-verify.cjs'), reg = pendingRegistry(require('../app/server/treasury-registry.cjs'));
 const ORIGIN = 'https://portal.example';
 function keyPair() {
   const kp = web3.Keypair.generate(), priv = crypto.createPrivateKey({ key: Buffer.concat([Buffer.from('302e020100300506032b657004220420', 'hex'), Buffer.from(kp.secretKey.slice(0, 32))]), format: 'der', type: 'pkcs8' });

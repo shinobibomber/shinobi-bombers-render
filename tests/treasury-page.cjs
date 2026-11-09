@@ -5,7 +5,10 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const { chromium } = require('playwright'), web3 = require('../app/node_modules/@solana/web3.js');
 const R = require('../app/server/treasury-registry.cjs'), V = require('../app/server/treasury-verify.cjs'), fixture = require('./fixtures/squads-treasury-multisig.json');
-const reg = R.registry(), DIR = path.join(__dirname, '../treasury/public'), out = path.join(__dirname, 'out');
+/* Pre-mint display: the committed registry now has the released mint (2026-11-09); this suite checks the 'mint pending'
+ * state on an isolated copy with the mint and activation reset, in this process only. */
+const pendingRegistry = RM => { const raw = JSON.parse(fs.readFileSync(RM.FILE, 'utf8')); raw.srMintAddress = null; delete raw.srMintProgram; raw.activation = { approved: false, reference: null }; return RM.useForIsolatedTest(raw); };
+const reg = pendingRegistry(R), DIR = path.join(__dirname, '../treasury/public'), out = path.join(__dirname, 'out');
 (async () => {
   let mode = 'verified';
   const multisig = () => { const data = Buffer.from(fixture.dataBase64, 'base64'); if (mode === 'mismatch') data.writeUInt16LE(1, 72); return { owner: new web3.PublicKey(fixture.owner), data, lamports: 1 }; };

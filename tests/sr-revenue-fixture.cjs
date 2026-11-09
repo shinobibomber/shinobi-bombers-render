@@ -56,7 +56,7 @@ async function topUp(store, ryo, signature = 'fixture-topup-' + Math.random().to
 function activate(mint, { custody = null, program = null } = {}) {
  const raw = JSON.parse(fs.readFileSync(registryModule().FILE, 'utf8'));
  if (custody) raw.gameCustody = { address: custody, purpose: 'Isolated test custody' }; else delete raw.gameCustody;
- if (program) raw.srMintProgram = program;
+ raw.srMintProgram = program || 'spl-token';   // throw-away test mints are classic unless a test asks for Token-2022
  raw.srMintAddress = typeof mint === 'string' ? mint : mint.toBase58(); raw.activation = { approved: true, reference: 'Isolated test activation fixture' };
  return registryModule().useForIsolatedTest(raw);
 }
@@ -67,7 +67,10 @@ function liveEconomy({ routing = true } = {}) {
  for(const name of Object.values(require('../app/server/launch-gates.cjs').GATES))process.env[name]='on';
  if (routing) process.env.SR_REVENUE_ROUTING_ENABLED = 'on';
  // Throw-away custody keys in isolated tests: drop the recorded live custody address in this process only.
- const raw = JSON.parse(fs.readFileSync(registryModule().FILE, 'utf8')); delete raw.gameCustody; registryModule().useForIsolatedTest(raw);
+ // The committed registry has the released mint and activation (2026-11-09); isolated tests start from the pre-activation
+ // state and register their own throw-away mint with activate().
+ const raw = JSON.parse(fs.readFileSync(registryModule().FILE, 'utf8')); delete raw.gameCustody;
+ raw.srMintAddress = null; delete raw.srMintProgram; raw.activation = { approved: false, reference: null }; registryModule().useForIsolatedTest(raw);
 }
 /** Token-2022 account bytes in the real on-chain layout: the classic base (82-byte mint or 165-byte account), padding to
  * 165, the account-type byte (1 mint, 2 account) and TLV entries (u16 type, u16 length, value) for the named extensions. */
