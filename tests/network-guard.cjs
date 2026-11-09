@@ -109,6 +109,18 @@ const temps = [];
     assert.equal(problems({ ...pre, RELEASE_STAGE: 'portal' }), '');
     const priv = { ...pre, RELEASE_STAGE: 'private', RYO_PRIVATE_TEST_WALLETS: TESTER, SOLANA_RPC_URL: MAINNET_ENV.SOLANA_RPC_URL, SOLANA_PUBLIC_RPC_URL: MAINNET_ENV.SOLANA_PUBLIC_RPC_URL };
     assert.equal(problems(priv), '', 'private live testing starts with testers and the Mainnet RPCs');
+    // Founder receipts are independent of unlaunched game custody/token configuration.
+    const founderAuthority = JSON.stringify([...require(path.join(app, 'node_modules/@solana/web3.js')).Keypair.generate().secretKey]);
+    for (const stageEnv of [pre, priv]) {
+      const founder = { ...stageEnv, RYO_REVENUE_WALLET: TESTER, FOUNDERS_MINT_AUTHORITY_SECRET: founderAuthority };
+      for (const sale of ['on', 'off']) assert.equal(problems({ ...founder, FOUNDERS_PUBLIC_SALE_ENABLED: sale }), '', 'Founder receipts and paused sale can start without game custody');
+      assert.notEqual(problems({ ...founder, FOUNDERS_MINT_AUTHORITY_SECRET: '' }), '', 'a public revenue destination alone does not bypass the money guard');
+      assert.notEqual(problems({ ...founder, RYO_REVENUE_WALLET: 'invalid' }), '', 'invalid Founder revenue destination refused');
+      for (const key of ['RYO_TREASURY_SECRET', 'RYO_TOKEN_MINT', 'RYO_STUDIO_WALLET'])
+        assert.notEqual(problems({ ...founder, [key]: TESTER }), '', key + ' still requires complete game money configuration');
+      assert.match(problems({ ...founder, SR_REVENUE_ROUTING_ENABLED: 'on' }), /SR_REVENUE_ROUTING_ENABLED must be off/);
+      assert.match(problems({ ...founder, RELEASE_STAGE: 'public' }), /RELEASE_STAGE must be/);
+    }
     assert.equal(network.privateTesting(priv), true); assert.deepEqual([...network.privateTesters(priv)], [TESTER]);
     assert.match(problems({ ...priv, RYO_PRIVATE_TEST_WALLETS: '' }), /needs RYO_PRIVATE_TEST_WALLETS/);
     assert.match(problems({ ...priv, RYO_PRIVATE_TEST_WALLETS: TESTER + ',not-a-wallet' }), /valid Solana wallet addresses only/);

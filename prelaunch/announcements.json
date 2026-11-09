@@ -1,19 +1,25 @@
 [
   {
-    "id": "founders-preview-2026-11-09",
+    "id": "founders-sale-2026-11-09",
     "date": "2026-11-09",
     "kind": "community",
-    "title": { "en": "Founder packages: preview available", "pt-BR": "Pacotes Founder: prévia disponível" },
+    "title": {
+      "en": "Founder SOL purchases",
+      "pt-BR": "Compras Founder com SOL"
+    },
     "body": {
-      "en": "Explore the Mythic and Legacy Founder packages. Purchases, Founder reward activation and SOL Sensei purchases are not open yet. Previous Mythic Box minting and Mainnet Ryo Sensei hire/rental purchases are retired; existing memberships remain unchanged. We will announce availability separately.",
-      "pt-BR": "Conheça os pacotes Founder Mythic e Legacy. As compras, a ativação de recompensas Founder e as compras de Sensei com SOL ainda não estão abertas. A emissão anterior de Mythic Boxes e as compras e aluguéis de Sensei com Ryo na Mainnet foram encerrados; as assinaturas existentes permanecem inalteradas. A disponibilidade será anunciada separadamente."
+      "en": "Mythic Founder boxes cost 1 SOL and Legacy boxes cost 0.5 SOL on Solana Mainnet: 30 of each tier, one purchase per wallet across both tiers. Check the Founder section for current sale availability. Claim your benefits inside the game when the game opens; purchasing a box does not unlock game access today. Standalone SOL Sensei purchases remain closed.",
+      "pt-BR": "As caixas Founder Mythic custam 1 SOL e as Legacy custam 0,5 SOL na Solana Mainnet: 30 de cada categoria, com uma compra por carteira entre ambas. Consulte a seção Founder para verificar a disponibilidade atual. Resgate seus benefícios dentro do jogo quando ele abrir; comprar uma caixa não libera o acesso ao jogo hoje. As compras avulsas de Sensei com SOL permanecem fechadas."
     }
   },
   {
     "id": "prelaunch-open",
     "date": "2026-11-07",
     "kind": "referral",
-    "title": { "en": "Pre-launch registration is open", "pt-BR": "O cadastro de pré-lançamento está aberto" },
+    "title": {
+      "en": "Pre-launch registration is open",
+      "pt-BR": "O cadastro de pré-lançamento está aberto"
+    },
     "body": {
       "en": "Connect your Solana wallet, register your username and get your personal referral link. The official launch date will be announced here.",
       "pt-BR": "Conecte sua carteira Solana, cadastre seu nome de usuário e receba seu link de indicação pessoal. A data oficial de lançamento será anunciada aqui."

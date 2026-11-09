@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 9, 2026 — Founder SOL purchases
+
+- Mythic Founder boxes cost 1 SOL and Legacy boxes cost 0.5 SOL on Solana Mainnet, with 30 of each tier and one purchase per wallet across both tiers.
+- Claim Founder benefits inside the game when it opens. Buying a box does not open game access today.
+- Standalone SOL Sensei purchases remain closed.
+
 ## November 9, 2026 — Founder package preview
 
 - Preview the Mythic and Legacy Founder packages on the landing page.

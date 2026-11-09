@@ -23,17 +23,28 @@ game-access restrictions and release stage. Standalone SOL Sensei sales stay off
 
 ## Remaining activation steps
 
-1. Deploy the reviewed preparation update and verify both public NFT URLs.
-2. Install a dedicated Mainnet mint authority securely in the live Render service.
-   No Mainnet key has been generated in this session. Browser automation and the
-   secure Node tool were unavailable; never paste a secret into chat. If no authority
-   exists, `powershell -NoProfile -File tools/founders-authority-clipboard.ps1` generates
-   a new key locally and puts its secret only in the clipboard for the Render
-   `FOUNDERS_MINT_AUTHORITY_SECRET` field. Clear the clipboard after saving. Do not
-   use this helper to replace an existing configured authority.
-3. Verify live Mainnet RPC, existing revenue destination, deployed commit, purchase
-   readiness and game-access restrictions. Restore the Render connection, which
-   became unavailable during this session. No real Mainnet payment has been made.
+The preparation commit `64741a23b7f15c8f3fc28d2e6b781f579c5fc772` was deployed and
+both live NFT image hashes and metadata URLs verified. Anonymous game API, admin and
+game-page restrictions passed. The owner saved a dedicated mint authority in Render;
+authenticated API validation confirmed its public address:
+`8EfEXodGH52bUC19TNQJ58k8R417d8UCpnTadiD9DdTi`.
+
+The owner authorized the Founder SOL revenue destination:
+`6vfgh2RuH3MnbYjpye7Kfc5sJAHgQmMFfGcAw4RrWhXQ`.
+No revenue variable was previously configured. The existing private RPC was verified
+against the Mainnet genesis hash. Render access was restored with its official CLI
+and owner-completed browser authorization; credentials remain in the CLI's local
+configuration, outside the repository.
+
+Activation additionally requires the reviewed startup exception in `network/network.cjs`:
+the public revenue destination plus a separate Founder key can exist without game
+custody, studio or token settings. Adding any game money setting retains the original
+complete-private-configuration requirements. This exception stays valid when sales
+are paused, and never relaxes the stage, tester allowlist or SR-routing restrictions.
+
+Deploy that tested exception before saving the approved revenue destination and
+final switches, then deploy and verify their live behavior. No real Mainnet payment
+has been made by this session; the successful payment exercise was on Devnet.
 
 Authorized final settings: public sale **on**, private testing **off**, reward
 redemption **on**, standalone SOL Sensei **off**. Until readiness is verified all four

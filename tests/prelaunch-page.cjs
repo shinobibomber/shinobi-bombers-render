@@ -109,7 +109,7 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     assert.match(await p.textContent('#demo'), /test server \(Solana Devnet\)[\s\S]*do not carry over to the official launch/);
     assert.equal(await p.locator('#demo li').count(), 5);
     assert.equal(await p.locator('#newsList article').count(), 2);
-    assert.match(await p.locator('#newsList article').first().innerText(), /Founder packages: preview available[\s\S]*not open yet/);
+    assert.match(await p.locator('#newsList article').first().innerText(), /Founder SOL purchases[\s\S]*when the game opens/);
     assert.equal(await p.locator('[data-i18n]').evaluateAll(els => els.filter(e => /^[a-z]+\.[a-zA-Z0-9.]+$/.test(e.textContent.trim())).length), 0, 'no raw keys on screen');
     await p.screenshot({ path: path.join(OUT, 'prelaunch-desktop.png'), fullPage: true });
     await p.close();

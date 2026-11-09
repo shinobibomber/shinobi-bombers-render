@@ -58,7 +58,7 @@ function privateTesters(env = process.env) {
 }
 /** True only when the portal is public and the game is loaded for allowlisted testers. */
 const privateTesting = (env = process.env) => prelaunch(env) && releaseStage(env) === 'private';
-// Money settings that must not exist while only the pre-launch portal runs.
+// Game money settings normally require the complete private-game configuration.
 const MONEY_SETTINGS = ['RYO_TREASURY_SECRET', 'RYO_TOKEN_MINT', 'RYO_STUDIO_WALLET', 'RYO_REVENUE_WALLET'];
 /** The account scope must be fixed before players register, so it survives creating the mint/treasury. */
 const scopeOk = (env, net) => new RegExp('^' + net.id + ':[A-Za-z0-9_-]{1,64}$').test(String(env.RYO_SCOPE || ''));
@@ -93,12 +93,19 @@ function startupProblems(env = process.env, dir = __dirname) {
     if (build.key === 'mainnet') { try { treasuryRegistry(dir); } catch (e) { problems.push(e.message); } }
     if (on(env.STARTER_PACK)) problems.push('STARTER_PACK must be off while PRELAUNCH_MODE is on.');
     const money = MONEY_SETTINGS.filter(k => String(env[k] || '').trim());
+    // Founder SOL sales need only a public payment destination and their separate mint key.
+    // Keep that receive-only configuration valid when sales are paused. Adding any custody,
+    // studio or token setting still invokes the original complete private-game requirements.
+    const founderRevenueOnly = money.length === 1 && money[0] === 'RYO_REVENUE_WALLET'
+      && WALLET_RE.test(String(env.RYO_REVENUE_WALLET).trim())
+      && !!String(env.FOUNDERS_MINT_AUTHORITY_SECRET || '').trim();
     // Owner-approved (2026-11-09): money settings may exist only in private live testing, where every game/money
     // path is closed by the server to all but RYO_PRIVATE_TEST_WALLETS. They must be complete (all or none).
-    // The portal-only stage still refuses them. Mainnet launch gates stay closed unless set explicitly.
+    // The portal-only stage still refuses game custody settings; Founder receipts are the exception above.
+    // Mainnet launch gates stay closed unless set explicitly.
     const testers = privateTesters(env).size > 0;
-    if (money.length && !(releaseStage(env) === 'private' && testers)) problems.push('PRELAUNCH_MODE=on must not hold money settings (' + money.join(', ') + '). Add them only when the game launches, or for private live testing (RELEASE_STAGE=private with RYO_PRIVATE_TEST_WALLETS).');
-    else if (money.length && money.length !== MONEY_SETTINGS.length) problems.push('Private live testing needs all money settings or none (missing ' + MONEY_SETTINGS.filter(k => !money.includes(k)).join(', ') + ').');
+    if (money.length && !founderRevenueOnly && !(releaseStage(env) === 'private' && testers)) problems.push('PRELAUNCH_MODE=on must not hold money settings (' + money.join(', ') + '). Add them only when the game launches, or for private live testing (RELEASE_STAGE=private with RYO_PRIVATE_TEST_WALLETS).');
+    else if (money.length && !founderRevenueOnly && money.length !== MONEY_SETTINGS.length) problems.push('Private live testing needs all money settings or none (missing ' + MONEY_SETTINGS.filter(k => !money.includes(k)).join(', ') + ').');
     // The same reviewed treasury-registry locks as a launched Mainnet server (e.g. RYO_TOKEN_MINT must match the registry).
     if (money.length && build.key === 'mainnet') problems.push(...treasuryProblems(env, dir));
     if (!String(env.DATABASE_URL || '').trim()) problems.push('DATABASE_URL is required to store pre-launch registrations.');
