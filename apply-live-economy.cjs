@@ -48,6 +48,9 @@ const handlerHooks = [
 ];
 // Wallet deposit: studioAddress === null means "fee-free" (one transfer of the whole amount to custody, no studio account).
 const clientPatches = [
+  // Live players can have no heroes (no free starters): the original hero drawing must skip a missing hero, or the
+  // start-up go(5) throws before requestAnimationFrame(frame) and the game loop never starts.
+  ['function sprite(c,h,cx,cy,sc,now,moving){const col=R[h.r][1];', 'function sprite(c,h,cx,cy,sc,now,moving){if(!h)return;const col=R[h.r][1];', 1],
   ['!valid(studioAddress)||treasuryAddress===studioAddress||', '(studioAddress!==null&&(!valid(studioAddress)||treasuryAddress===studioAddress))||', 1],
   ['const studioFee=Math.ceil(amount/50),net=amount-studioFee;', 'const studioFee=studioAddress===null?0:Math.ceil(amount/50),net=amount-studioFee;', 1],
   ["return run('Deposit '+amount.toLocaleString()+' tokens: '+studioFee.toLocaleString()+' studio fee, '+net.toLocaleString()+' deposited Ryo.',",
