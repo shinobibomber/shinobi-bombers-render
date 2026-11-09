@@ -300,7 +300,7 @@
   const gal = (arr, cap) => `<div class="gal">${arr.map(x => `<button class="gt" type="button" data-src="${BASE + x.src}" data-t="${esc(cap(x))}"><img src="${BASE + x.src}" alt="" loading="lazy"><span>${esc(cap(x))}</span></button>`).join('')}</div>`;
   function cxHtml(i) {
     const R2 = D.ref; switch (i) {
-      case 0: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Heroes nap and recover – faster in the Dojo.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
+      case 0: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Deployed heroes nap until full – faster in a better Dojo. Battle-ready heroes recover on the bench; Reserve heroes do not.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
       case 1: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Genin 1/1 · Chunin 2/2 · Jonin 3/3 · Elite 4/4 · Legend 5/5 · Mythic 7/7</p>${CombatRules.PERKS.map(p=>'<h4>'+esc(p.name)+'</h4><p>'+esc(p.description)+'</p>').join('')}`;
       case 2: return `<p>Element and rarity are independent: an element changes a hero's jutsu and aura colour, never their rank.</p><h4>Hero models · four directions</h4>${gal([R2.models], () => 'All 12 hero models')}`;
       case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin </b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin </b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin </b><span>3 perks</span></div><div><b style="color:#b45cff">Elite </b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend </b><span>Top summon rank · 5 perks</span></div><div><b style="color:#c98bff">Mythic</b><span>Tsukiyomi · NFT only · 7 perks</span></div></div><p>Genin 1/1 · Chunin 2/2 · Jonin 3/3 · Elite 4/4 · Legend 5/5 · Mythic 7/7</p><p>Fusion combines three heroes of the same rank. Legend is the highest rank you can summon or fuse and stays tradable. Mythic Tsukiyomi comes only with the Limited NFT Box and moves with that NFT.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
@@ -316,7 +316,7 @@
     const panel=(cls,x,y,w,h,html)=>{const e=place(mk('div',cls,b.st,html),x,y,w,h);Object.assign(e.style,{position:'absolute',zIndex:'15',background:'linear-gradient(135deg,#111329,#030916)',color:'#dde5f7',borderRadius:'8px',boxShadow:'inset 0 0 12px #020610',padding:'9px 12px',boxSizing:'border-box',fontSize:'17px',lineHeight:'1.4'});return e;};
     panel('sbw-codex-ranks',1247,478,397,187,RNAME.map((name,i)=>'<div style="display:flex;justify-content:space-between;line-height:28px"><b style="color:'+RCOL[i]+'">'+name+'</b><span>'+[1,2,3,4,5,7][i]+' unique perk'+(i?'s':'')+'</span></div>').join(''));
     panel('sbw-codex-elements',1247,373,397,44,'Elements change cosmetic effects.').style.padding='3px 12px';
-    panel('sbw-codex-tips',1247,727,397,177,'<p style="margin:0 0 12px">One attack spends one chakra.</p><p style="margin:0 0 12px">Skill effects add no damage or cost.</p><p style="margin:0">Rest or rotate to recover chakra.</p>');
+    panel('sbw-codex-tips',1247,727,397,177,'<p style="margin:0 0 12px">One attack spends one chakra.</p><p style="margin:0 0 12px">Skill effects add no damage or cost.</p><p style="margin:0">Battle-ready heroes recover chakra on the bench; Reserve heroes do not.</p>');
 
     b.cx = place(mk('div', 'cxp', b.st), 306, 212, 896, 698); b.cx.hidden = false; b.cx.style.animation='none';
     b.cx.addEventListener('click', e => { if (e.target.closest('[data-cx=chest]')) openChest(); });
@@ -506,6 +506,9 @@
     b.lvl = place(mk('div', 'sbw-dval', b.st), 466, 581, 70, 34);
     b.rowhl = place(mk('div', 'sbw-drowhl', b.st), 606, 0, 1012, 80);
     b.stat = DROWY.map(y => place(mk('div', 'sbw-dstat', b.st), 1306, y - 17, 108, 34));
+    // The artwork prints the original tier prices; each paid row's price is covered (artwork-matched background from
+    // the empty gap left of the prices) and redrawn from the game's live prices (GameBalance.dojoPrices).
+    b.price = DROWY.map((y, i) => { if (!i) return null; const e = place(mk('span', 'sbw-cover sbw-dprice', b.st), 1440, y - 21, 165, 42); e.dataset.mapped = '1'; artMatch(b, e, 1432); return e; });
     b.up = place(mk('button', 'sbw-dup', b.st), 78, 760, 480, 70); b.up.type = 'button'; b.up.onclick = () => MODS.dojo.upgrade();
   };
   PAINT['dojo-upg'] = b => {
@@ -513,6 +516,7 @@
     setText(b.tier, 'TIER ' + (ROMAN[tier] === '–' ? '0' : ROMAN[tier])); setText(b.name, (DOJO_NAMES[tier] || '').toUpperCase());
     b.rate.innerHTML = `<b>${rec[tier] || 1}/min</b>`; b.lvl.innerHTML = `<b>${tier}/6</b>`;
     b.rowhl.style.top = (DROWY[tier] - 41) + 'px';
+    b.price.forEach((e, i) => { if (!e) return; const v = Number(prices[i]), t = v > 0 ? fmt(v) + ' Ryo' : prices[i] === 0 ? 'Free' : ''; if (e.textContent !== t) e.textContent = t; });
     b.stat.forEach((e, i) => { const [t, c] = i < tier ? ['Unlocked', 'own'] : i === tier ? ['Active', 'act'] : i === next ? ['Next', 'nxt'] : ['—', 'lck']; if (e.textContent !== t) e.textContent = t; e.className = 'sbw-dstat ' + c; });
     const k = next <= 6 ? `<i>⌂</i><span>UPGRADE - ${fmt(prices[next])} Ryo</span>` : '<i></i><span>MAX TIER REACHED</span>'; if (b.up.dataset.k !== k) { b.up.dataset.k = k; b.up.innerHTML = k; } b.up.disabled = next > 6;
   };
@@ -533,16 +537,56 @@
     if (b.sel.disabled !== !hired) { b.sel.disabled = !hired; b.sel.title = hired ? '' : 'Hire or rent a Sensei to choose when rested heroes return'; }
     setText(b.svc, `${DOJO_NAMES[tier]} ✓`); setText(b.cnt, hired ? '1' : '0');
     b.tg.classList.toggle('on', hired && on); b.tg.setAttribute('aria-checked', String(hired && on)); b.tg.innerHTML = `<span>${hired && on ? 'ON' : 'OFF'}</span><i></i>`;
-    const k = hired + '|' + on + '|' + rental;
+    const k = hired + '|' + on + '|' + rental + '|' + !!(window.FounderPanel && FounderPanel.sensei && FounderPanel.sensei.mode());
     if (b.st2.dataset.k !== k) { b.st2.dataset.k = k;
       b.st2.innerHTML = hired ? `<b class="ok">✓</b><strong>${rental ? 'RENTED' : 'HIRED'}</strong><small>${rental ? 'Rental active until ' + new Date(rental).toLocaleString() + '.' : 'Permanent automatic rotation and up to 12 hours of offline earnings.'}</small>`
-        : `<b class="no">!</b><strong>NOT HIRED</strong><small>Hire permanently or rent for 7 days to keep your team rotating.</small>`;
+        : `<b class="no">!</b><strong>NOT HIRED</strong><small>${window.FounderPanel && FounderPanel.sensei && FounderPanel.sensei.mode() ? 'Hire permanently with a one-time SOL payment to keep your team rotating.' : 'Hire permanently or rent for 7 days to keep your team rotating.'}</small>`;
       b.btn.textContent = !hired ? 'HIRE SENSEI' : on ? 'TURN OFF' : 'TURN ON'; }
   };
   function senseiPane() { if (window.DojoServices) DojoServices.open('sensei'); }
+  // Live: the Sensei is a one-time SOL purchase (owner decision 2026-11-09); no Ryo hire and no Ryo rental.
+  // The price comes from the server (Legacy Founder price included); the USD value is an estimate, shown when known.
+  function hireSenseiSol(sol) {
+    // The dialog element is shared with other screens: reset its style, and redraw later only while this exact Sensei
+    // dialog is still the one shown (its heading carries this opening's token).
+    const token = 'ss' + Date.now() + Math.random().toString(36).slice(2);
+    dlg.className = 'sbw-dialog';
+    const ours = () => dlg.open && !!dlg.querySelector(`h2[data-sensei="${token}"]`);
+    const draw = (o, problem) => {
+      // Before the price has loaded the button still works: the server prices the payment and the wallet shows it.
+      const label = o && o.mythicIncluded ? 'Open Founder benefits' : o ? `Hire permanently · ${o.price} SOL${o.usd ? ` (≈ $${o.usd.toFixed(2)})` : ''}` : 'Hire permanently with SOL';
+      dlg.innerHTML = `<h2 data-sensei="${token}">Hire a Sensei</h2><p>A Sensei swaps rested heroes back into battle and keeps Adventure earning while you are away (up to 12 hours).</p><p class="sbw-small" data-r="note"></p><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Cancel</button><button type="button" class="sbw-btn" data-k="sol"></button></div><p class="sbw-small">One-time payment in SOL from your wallet; your wallet shows the exact amount before you approve. The $ value is an estimate.</p>`;
+      const buy = dlg.querySelector('[data-k="sol"]'); buy.textContent = label; buy.disabled = !!o && !o.mythicIncluded && !o.enabled;
+      dlg.querySelector('[data-r="note"]').textContent = problem || (o && o.mythicIncluded ? 'Included free with your Mythic Founder box: activate it in Founder benefits.' : o && o.founderDiscount ? `Legacy Founder price (regular ${o.regularPrice} SOL) until ${new Date(o.trialEnds).toLocaleString()}.` : o && !o.enabled ? 'SOL Sensei purchases are paused right now.' : '');
+    };
+    // The purchase runs right here on the Sensei tab (owner decision 2026-11-10: not in the Founder panel); each step is
+    // shown in the dialog and the buttons stay locked until it ends. Closing the dialog never cancels a signed payment.
+    let busy = false;
+    const status = text => { if (!ours()) return; const n = dlg.querySelector('[data-r="note"]'); n.textContent = text; };
+    const lock = on => { busy = on; if (!ours()) return; dlg.querySelector('[data-k="sol"]').disabled = on; };
+    draw(sol.cached());
+    dlg.onclick = e => {
+      const k = e.target.dataset && e.target.dataset.k; if (!k) return;
+      if (k === 'x') { dlg.close(); return; }
+      if (k !== 'sol' || busy) return;
+      const o = sol.cached();
+      if (o && o.mythicIncluded) { dlg.close(); sol.buy(); return; }
+      lock(true);
+      sol.buy(status, o ? o.price : null).then(r => {
+        lock(false); status(r.message);
+        if (r.status === 'confirmed') { toast('Permanent Sensei unlocked.'); setTimeout(() => { if (ours()) dlg.close(); }, 1500); }
+      }, err => { lock(false); status((err && err.message) || 'The payment did not go through. Nothing was charged.'); });
+    };
+    if (!dlg.open) dlg.showModal();
+    if (sol.due() || !sol.cached()) sol.offer().then(o => { if (ours() && !busy) draw(o); }, err => { if (ours() && !busy) draw(sol.cached(), ((err && err.message) || 'Could not load the Sensei price.') + ' You can still hire: your wallet shows the exact price.'); });
+  }
+  // The Dojo scene's Sensei pane uses this same dialog, so there is one place to buy the Sensei.
+  window.SbwHireSensei = () => hireSensei();
   function hireSensei() {
     const perm = (window.GameBalance && GameBalance.senseiCost) || 0;
     if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    const sol = window.FounderPanel && FounderPanel.sensei;
+    if (sol && sol.mode()) return hireSenseiSol(sol);
     dlg.innerHTML = `<h2>Hire a Sensei</h2><p>A Sensei swaps rested heroes back into battle and keeps Adventure earning while you are away (up to 12 hours).</p><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Cancel</button><button type="button" class="sbw-btn sbw-alt" data-k="rent">Rent 7 days</button><button type="button" class="sbw-btn" data-k="hire">Hire permanently · ${fmt(perm)} Ryo</button></div><p class="sbw-small">Prices and confirmation come from the game's checkout.</p>`;
     dlg.onclick = e => { const k = e.target.dataset && e.target.dataset.k; if (!k) return; dlg.close(); senseiPane(); if (k === 'hire') { if (!pressOnclick('#p4', 'DojoServices.hire()')) window.DojoServices && DojoServices.hire(); } if (k === 'rent') { if (!pressOnclick('#p4', "TokenCheckout.request('sensei-rental')") && window.TokenCheckout) TokenCheckout.request('sensei-rental'); } };
     if (!dlg.open) dlg.showModal();
@@ -890,7 +934,7 @@
   };
   MODS.adventure = {
     stage: () => notice('Stages', 'Stages advance automatically as your team clears each map. Eight battlefields rotate as you progress.'),
-    stageinfo: () => { const a = advInfo(); notice(`Stage ${a.stage || 1} · ${a.name}`, `Enemies remaining: ${a.enemies || '—'}. Ryo earned this session: ${a.gained || '+0'}. Deployed heroes fight automatically and spend chakra; rest them in the Dojo to recover.`); },
+    stageinfo: () => { const a = advInfo(); notice(`Stage ${a.stage || 1} · ${a.name}`, `Enemies remaining: ${a.enemies || '—'}. Ryo earned this session: ${a.gained || '+0'}. Deployed heroes fight automatically and spend chakra; out of chakra, they nap until full – faster in a better Dojo.`); },
     work: () => { if (!pressOnclick('#p0', 'Experience.workAll()')) toast('No rested heroes to send to work.'); },
     rest: () => { if (!pressOnclick('#p0', 'Experience.restAll()')) toast('No deployed heroes to rest.'); },
     hero: () => go(1)

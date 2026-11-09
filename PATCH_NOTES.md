@@ -1,5 +1,19 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Chakra recovery rules
+
+- Deployed heroes that run out of chakra now nap until their chakra is full, then fight again. A better Dojo makes the nap shorter. (Before, they recovered only 1 chakra at a time at the slowest rate.)
+- Battle-ready heroes waiting on the bench recover chakra at your Dojo's rate, and the game now shows that recovery correctly instead of resetting to an old value.
+- Heroes in Reserve no longer recover chakra. Time spent in Reserve is not credited later.
+- The Codex explains the new rules.
+
+## November 10, 2026 — Sensei with SOL, Dojo prices
+
+- Hire a Sensei now shows the real offer: a permanent Sensei for a one-time payment of 0.4 SOL (shown with an estimated dollar value), paid from your wallet. The old Ryo price and the Ryo rental are gone from the Dojo screens. Legacy Founders see their 0.2 SOL price during their trial, and Mythic Founders get their Sensei free with their box. Rentals already running keep their remaining time.
+- The Sensei is now bought only on the Dojo › Sensei tab, where you can follow the payment step by step. The Founder button no longer sells it and is shown only to Founders.
+- The Dojo Upgrades list now shows the current prices: Apprentice Dojo 3,000,000 Ryo, Shinobi Dojo 7,200,000, Veteran Dojo 14,700,000, Master Dojo 25,200,000, Grandmaster Dojo 38,700,000, Legendary Dojo 55,200,000 (it still showed the old prices).
+- The Dojo is open: you can upgrade it now.
+
 ## November 10, 2026 — Adventure reward funding
 
 - The Adventure reward pool can now be funded from the Locked Treasury through its Squads multisig vote. The game counts each top-up exactly once, and only after it has been checked on-chain and approved by the team.

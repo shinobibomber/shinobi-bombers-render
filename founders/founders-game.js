@@ -54,25 +54,40 @@
   const activate = () => act(async () => { const r = await api('founder-activate'); data = r; message = 'Founder benefits activated: ' + r.activation.heroes.map(h => h.name).join(', ') + ' joined your roster.'; });
   const summon = kind => act(async () => { const r = await api('founder-summon', { kind, requestId: rid('fs') }); message = (kind === 'limited' ? 'Limited' : 'Premium') + ' summon: ' + r.summon.rankName + ' — ' + r.summon.hero.name; });
   const trial = () => act(async () => { const r = await api('founder-sensei-trial'); message = 'Sensei trial active until ' + fmtTime(r.trial.ends) + '.'; });
-  const buySensei = () => act(async () => {
-    const owner = account(); if (!owner) throw Error('Sign in first.');
-    let p = read(); if (!p || p.account !== owner) { p = { account: owner, requestId: rid('sensei') }; write(p); }
-    const r = await api('sensei-sol-buy', { requestId: p.requestId });
-    if (r.senseiPurchase.status !== 'pending') { write(null); return; }
-    if (!r.senseiPurchase.wire) { write(null); throw Error('That payment expired. Try again.'); }
-    const price = r.senseiPurchase.price;
-    if (!confirm('Pay ' + price + ' SOL for permanent Sensei? Your wallet will show the exact amount before you approve.')) return;
-    const signed = await sign(r.senseiPurchase.wire, owner, price);
-    let c = await api('sensei-sol-confirm', { requestId: p.requestId, signed });
-    for (let i = 0; i < 40 && c.senseiPurchase.status === 'pending'; i++) { await sleep(i < 5 ? 2000 : 4000); c = await api('sensei-sol-confirm', { requestId: p.requestId }); }
-    if (c.senseiPurchase.status !== 'pending') write(null);
-    message = c.senseiPurchase.status === 'confirmed' ? 'Permanent Sensei unlocked.' : c.senseiPurchase.status === 'expired' ? 'The payment expired; nothing was charged.' : 'Still confirming on Solana. Reopen this panel to finish.';
-  });
+  // Permanent Sensei for SOL, started from the Dojo › Sensei tab: the server builds the payment, review() checks it, the
+  // player's wallet signs it and the server verifies and broadcasts it. onStatus reports each step to the Sensei tab.
+  // A purchase still pending (page closed mid-way) resumes with the same request id; nothing is ever paid twice.
+  let buying = null;
+  function purchaseSensei(onStatus = () => {}, shownPrice = null) {
+    if (buying) return buying;
+    buying = (async () => {
+      const owner = account(); if (!owner) throw Error('Sign in first.');
+      let p = read(); if (!p || p.account !== owner) { p = { account: owner, requestId: rid('sensei') }; write(p); }
+      onStatus('Preparing your payment…');
+      const r = await api('sensei-sol-buy', { requestId: p.requestId });
+      if (r.senseiPurchase.status !== 'pending') { write(null); return { status: r.senseiPurchase.status, message: r.senseiPurchase.status === 'confirmed' ? 'Permanent Sensei unlocked.' : 'The payment expired; nothing was charged. Try again.' }; }
+      if (!r.senseiPurchase.wire) { write(null); throw Error('That payment expired. Try again.'); }
+      const price = r.senseiPurchase.price;
+      // The price shown on the button is the one the player agreed to; ask again only if the server's price differs.
+      if (shownPrice != null && Number(shownPrice) !== Number(price) && !confirm('The Sensei price is now ' + price + ' SOL. Continue? Your wallet shows the exact amount before you approve.')) return { status: 'cancelled', message: 'Nothing was charged.' };
+      onStatus('Approve the ' + price + ' SOL payment in your wallet…');
+      const signed = await sign(r.senseiPurchase.wire, owner, price);
+      onStatus('Confirming on Solana…');
+      let c = await api('sensei-sol-confirm', { requestId: p.requestId, signed });
+      for (let i = 0; i < 40 && c.senseiPurchase.status === 'pending'; i++) { await sleep(i < 5 ? 2000 : 4000); c = await api('sensei-sol-confirm', { requestId: p.requestId }); }
+      if (c.senseiPurchase.status !== 'pending') write(null);
+      offer = null;
+      const status = c.senseiPurchase.status;
+      return { status, message: status === 'confirmed' ? 'Permanent Sensei unlocked.' : status === 'expired' ? 'The payment expired; nothing was charged.' : 'Still confirming on Solana. Open Hire a Sensei again to finish.' };
+    })().finally(() => { buying = null; });
+    return buying;
+  }
 
   function row(label, value) { return $('div', { class: 'fd-row' }, $('dt', {}, label), $('dd', {}, value)); }
   function updateButton() {
     const st = window.RyoPayments?.state;
-    if (button) button.hidden = !account() || !(data?.founder || data?.senseiSol?.enabled || st?.profile?.founderTier || st?.configuration?.senseiSol);
+    // Founders only: the Sensei is no longer sold here, so non-Founders have nothing in this panel.
+    if (button) button.hidden = !account() || !(data?.founder || st?.profile?.founderTier);
   }
   function render() {
     const f = data?.founder, s = data?.senseiSol;
@@ -107,10 +122,10 @@
     }
     // Mythic Founders get permanent Sensei free on activation: never offer them the SOL purchase.
     if (s && f?.sensei === 'permanent' && f.valid) body.append($('h3', {}, 'Permanent Sensei'), $('p', {}, f.activated ? 'Included with your Mythic Founder box.' : 'Included free with your Mythic Founder box: press Activate Founder benefits.'));
-    else if (s) {
+    // The permanent Sensei is bought only on the Dojo › Sensei tab (owner decision 2026-11-10), never in this panel.
+    else if (s && f?.valid) {
       const owned = s.owned || s.purchase?.status === 'confirmed';
-      body.append($('h3', {}, 'Permanent Sensei'), $('p', {}, owned ? 'Permanent Sensei owned.' : s.founderDiscount ? 'Legacy Founder price: ' + s.price + ' SOL (regular ' + s.regularPrice + ' SOL) until ' + fmtTime(s.trialEnds) + '.' : 'Price: ' + s.price + ' SOL.'));
-      if (!owned) body.append($('button', { type: 'button', onclick: buySensei, ...(s.enabled && !busy ? {} : { disabled: '' }) }, s.enabled ? 'Buy permanent Sensei (' + s.price + ' SOL)' : 'SOL Sensei opens later'));
+      body.append($('h3', {}, 'Permanent Sensei'), $('p', {}, owned ? 'Permanent Sensei owned.' : 'Hire it on the Dojo › Sensei tab.' + (s.founderDiscount ? ' Your Legacy Founder price there: ' + s.price + ' SOL (regular ' + s.regularPrice + ' SOL) until ' + fmtTime(s.trialEnds) + '.' : '')));
     }
     if (message) body.append($('p', { class: 'fd-msg', role: 'status' }, message));
   }
@@ -130,9 +145,50 @@
     // No Founder request until the panel is opened: visibility comes from the server-written profile flag
     // (founderTier) or the server config (senseiSol), both already in the game state.
     let last = null;
-    setInterval(() => { const a = account(); if (a !== last) { last = a; data = null; if (dialog?.open) dialog.close(); } updateButton(); }, 1500);
+    setInterval(() => { const a = account(); if (a !== last) { last = a; data = null; offer = null; if (dialog?.open) dialog.close(); } updateButton(); }, 1500);
     addEventListener('focus', () => { if (account() && dialog?.open) refresh(); });
   }
-  window.FounderPanel = Object.freeze({ open, refresh, review });
+  // SOL Sensei offer for the Dojo screens (live): the server's price for this wallet (Legacy Founder price included) and,
+  // when the /founders price check publishes one, an estimated USD value. The page never sets a price.
+  // One cached offer per wallet: refreshed after 60 s (the Legacy price and the switch can change), one request at a
+  // time, a 30 s pause after a failure; the USD rate (an estimate only) is refreshed every 5 minutes.
+  let usd = { at: 0, value: null }, offer = null, pending = null, failedAt = 0;
+  const OFFER_TTL = 60000;
+  async function usdPerSol() {
+    if (Date.now() - usd.at < 300000) return usd.value;
+    let value = null;
+    try {
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 4000);
+      const r = await fetch('/api/prelaunch', { method: 'POST', credentials: 'same-origin', signal: ctl.signal, headers: { 'Content-Type': 'application/json', 'X-SB-Prelaunch': '1' }, body: JSON.stringify({ action: 'founders-info' }) });
+      clearTimeout(timer); const v = Number((await r.json())?.data?.founders?.usdPerSol); if (Number.isFinite(v) && v > 0) value = v;
+    } catch {}
+    usd = { at: Date.now(), value }; return value;
+  }
+  function senseiOffer() {
+    if (pending) return pending;
+    const owner = account();
+    pending = (async () => {
+      try {
+        const [info, rate] = await Promise.all([api('sensei-sol-info').then(r => r.senseiSol), usdPerSol()]);
+        // profile.founderTier is written by the server only while the Founder entitlement is valid.
+        const mythicIncluded = window.RyoPayments?.state?.profile?.founderTier === 'mythic';
+        offer = { ...info, mythicIncluded, usd: rate ? Math.round(Number(info.price) * rate * 100) / 100 : null, account: owner, at: Date.now() };
+        failedAt = 0; return offer;
+      } catch (e) { failedAt = Date.now(); throw e; } finally { pending = null; }
+    })();
+    return pending;
+  }
+  const cachedOffer = () => (offer && offer.account === account() ? offer : null);
+  const offerDue = () => !pending && Date.now() - failedAt > 30000 && (!cachedOffer() || Date.now() - offer.at > OFFER_TTL);
+  // Mythic Founders get the Sensei free: open their panel to activate it, never a payment. Everyone else pays on the
+  // Sensei tab itself (no Founder panel).
+  function buySenseiFromDojo(onStatus, shownPrice) {
+    if (window.RyoPayments?.state?.profile?.founderTier === 'mythic') { open(); return Promise.resolve({ status: 'founder', message: 'Activate your free Sensei in Founder benefits.' }); }
+    return purchaseSensei(onStatus, shownPrice);
+  }
+  // Live (Mainnet) always sells the Sensei for SOL: the server refuses the Ryo hire and rental there even while the SOL
+  // switch is off, so the Dojo screens then show the SOL offer as paused instead of Ryo buttons that cannot work.
+  const senseiSolMode = () => { const c = window.RyoPayments?.state?.configuration; return c?.senseiSol === true || c?.network === 'solana-mainnet'; };
+  window.FounderPanel = Object.freeze({ open, refresh, review, sensei: Object.freeze({ mode: senseiSolMode, offer: senseiOffer, cached: cachedOffer, due: offerDue, buy: buySenseiFromDojo }) });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

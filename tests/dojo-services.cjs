@@ -40,6 +40,14 @@ const { withGame } = require('./harness.cjs');
     await p.waitForFunction(() => document.querySelector('.sbw-scr.on .sbw-drot')?.textContent === 'OFF');
     const top = await read();
     assert.equal(top.tier, 'TIER VI'); assert.equal(top.name, 'LEGENDARY DOJO'); assert.equal(top.lvl, '6/6'); assert.equal(top.fit, true, 'long names still fit their slot');
+    // Dojo Upgrades: every row's price is the game's live price (the artwork's printed originals are covered), so a
+    // price change (live: Apprentice 3,000,000, +1,200,000 per tier) shows everywhere, and each price fits its slot.
+    await p.evaluate(() => GameBalance.dojoPrices.splice(0, 7, 0, 3000000, 7200000, 14700000, 25200000, 38700000, 55200000));
+    await p.locator('.sbw-scr.on [data-sbwid="enter"]').click(); await p.waitForFunction(() => WebsiteDesign.current() === 'dojo-upg');
+    await p.waitForFunction(() => document.querySelectorAll('.sbw-scr.on .sbw-dprice')[0]?.textContent === '3,000,000 Ryo');
+    const rows = await p.evaluate(() => [...document.querySelectorAll('.sbw-scr.on .sbw-dprice')].map(e => ({ text: e.textContent, fits: e.scrollWidth <= e.clientWidth + 1 })));
+    assert.deepEqual(rows.map(r => r.text), ['3,000,000 Ryo', '7,200,000 Ryo', '14,700,000 Ryo', '25,200,000 Ryo', '38,700,000 Ryo', '55,200,000 Ryo'], 'every Dojo row shows the live price');
+    assert(rows.every(r => r.fits), 'every price fits its slot');
     assert.deepEqual(errors, []);
   });
   console.log('PASS: Dojo Services shows the server tier, rented Sensei time, live rental expiry and rotation state, all within their artwork slots.');

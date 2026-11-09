@@ -39,6 +39,14 @@ const clientHooks = [
   ["get state(){return {...state,account,configuration:configuration?{...configuration}:null}}};", "get state(){return {...state,account,configuration:configuration?{...configuration}:null}},founders:(action,body={})=>{if(!/^(founder-(status|activate|summon|sensei-trial)|sensei-sol-(info|buy|confirm))$/.test(action))throw Error('Unknown Founder action.');return api(action,body).then(data=>{accept(data);return data})}};"],
 ];
 
+// Live: the Sensei is a one-time SOL purchase (owner decision 2026-11-09). The Dojo Sensei pane (pinned scene file, so a
+// reversible build hook on the copied asset) shows the server's SOL price via FounderPanel.sensei and offers no Ryo hire
+// or Ryo rental. Without SOL mode (test server) the pane is unchanged.
+const dojoSenseiHooks = [
+  ["box('strong','sensei-purchase-title',permanent?'HIRED':hired?'RENTED':fmt(GameBalance.senseiCost)+' Ryo',909,708,470,48);\n    box('p','sensei-purchase-copy',permanent?'Permanent automatic rotation and up to 12 hours of offline earnings.':hired?'Rental active until '+new Date(rentalUntil).toLocaleString()+'.':'Hire permanently or rent for 7 days. Up to 12 hours of offline earnings.',900,766,469,52);\n    const hire=button(hired?(on?'TURN OFF':'TURN ON'):'HIRE SENSEI',1399,713,233,69,()=>{if(hired)V2.toggleButler();else DojoServices.hire();render()},true);hire.classList.add('sensei-primary-action');hire.disabled=!hired&&!GameCurrency.canAfford(GameBalance.senseiCost);","const sol=window.FounderPanel&&FounderPanel.sensei&&FounderPanel.sensei.mode()?FounderPanel.sensei:null,offer=sol&&sol.cached();if(sol&&sol.due())sol.offer().then(()=>{lastSignature='';render()},()=>{});const solPrice=offer?(offer.mythicIncluded?'FREE WITH MYTHIC':offer.price+' SOL'+(offer.usd?' ≈ $'+offer.usd.toFixed(2):'')):'PAID IN SOL';\n    box('strong','sensei-purchase-title',permanent?'HIRED':hired?'RENTED':sol?solPrice:fmt(GameBalance.senseiCost)+' Ryo',909,708,470,48);\n    box('p','sensei-purchase-copy',permanent?'Permanent automatic rotation and up to 12 hours of offline earnings.':hired?'Rental active until '+new Date(rentalUntil).toLocaleString()+'.':sol?'One-time payment in SOL: permanent rotation and up to 12 hours of offline earnings.':'Hire permanently or rent for 7 days. Up to 12 hours of offline earnings.',900,766,469,52);\n    const hire=button(hired?(on?'TURN OFF':'TURN ON'):'HIRE SENSEI',1399,713,233,69,()=>{if(hired)V2.toggleButler();else if(sol){if(window.SbwHireSensei)SbwHireSensei()}else DojoServices.hire();render()},true);hire.classList.add('sensei-primary-action');hire.disabled=!hired&&(sol?!!(offer&&!offer.enabled&&!offer.mythicIncluded):!GameCurrency.canAfford(GameBalance.senseiCost));"],
+  ["if(!permanent){const rental=","if(!permanent&&sol&&hired){const permanentHire=button('Hire permanently · '+(offer?offer.price+' SOL':'SOL'),902,816,466,20,()=>{if(window.SbwHireSensei)SbwHireSensei()},true);permanentHire.classList.add('sensei-permanent-action');}else if(!permanent&&!sol){const rental="],
+];
+
 function replaceOnce(text, [before, after], label) {
   if (text.split(after).length - 1 === 1 && !text.split(after).join('').includes(before)) return text; // already applied
   const n = text.split(before).length - 1;
@@ -64,6 +72,8 @@ function applyFounders(appDir = path.join(__dirname, 'app')) {
   const assets = path.join(appDir, 'public/assets/founders');
   fs.rmSync(assets, { recursive: true, force: true }); fs.mkdirSync(assets, { recursive: true });
   for (const f of ['founders-game.js', 'founders-game.css']) fs.copyFileSync(path.join(src, f), path.join(assets, f));
+  const dojoScene = path.join(appDir, 'public/assets/dojo-design/dojo-design.js');
+  if (fs.existsSync(dojoScene)) patch(dojoScene, dojoSenseiHooks, 'dojo sensei');
   const index = path.join(appDir, 'public/index.html');
   let html = clientHooks.reduce((t, h, i) => replaceOnce(t, h, 'client ' + i), fs.readFileSync(index, 'utf8'));
   if (!html.includes(marker)) {
@@ -73,5 +83,5 @@ function applyFounders(appDir = path.join(__dirname, 'app')) {
   fs.writeFileSync(index, html);
   console.log("Founder's NFT Boxes applied: Mythic 33 / Legacy 30; prelaunch 0.7 / 0.25 SOL, public game 1 / 0.5 SOL; 1 per wallet across tiers; buyer-bound benefits; switches fail closed.");
 }
-module.exports = { applyFounders, economyHooks, serviceHooks, salvageHooks, clientHooks };
+module.exports = { applyFounders, economyHooks, serviceHooks, salvageHooks, clientHooks, dojoSenseiHooks };
 if (require.main === module) applyFounders();
