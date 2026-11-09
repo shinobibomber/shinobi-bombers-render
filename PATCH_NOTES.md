@@ -5,6 +5,7 @@
 - Founder box prices stay at 0.7 SOL (Mythic) and 0.25 SOL (Legacy) until each tier sells out. They no longer return to 1 SOL / 0.5 SOL when the game opens.
 - After the game opens, the Founder boxes are sold at https://shinobibombers.fun/founders.
 - The game now supports the released SR token (a Token-2022 token): deposits, balances and payouts use it directly.
+- The login screen now shows Solana Mainnet, and its Discord, X and Pump.fun buttons open our official pages.
 
 ## November 9, 2026 — Feature schedule control
 
