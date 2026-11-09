@@ -68,19 +68,54 @@ const passed = [];
     assert.throws(() => createService({ store, connection, treasury, mint: mint.toBase58(), origin: 'https://beta.example', studioAddress: undefined, revenueAddress: undefined }), /Invalid Solana address/, 'Devnet still requires both');
     passed.push('game service: starts on live without studio/revenue wallets and reports fee-free deposits; Devnet still requires them');
 
+    // ---- SR token program: the registry decides on live; the test server stays classic; only metadata extensions pass.
+    { const regMod = require('../app/server/treasury-registry.cjs'), V = require('../app/server/treasury-verify.cjs'), fx = require('./sr-revenue-fixture.cjs');
+      const saved = JSON.parse(require('node:fs').readFileSync(regMod.FILE, 'utf8')); delete saved.gameCustody;
+      const T22 = spl.TOKEN_2022_PROGRAM_ID, m2022 = web3.Keypair.generate().publicKey, accounts = new Map();
+      const chain = { async getAccountInfo(k) { return accounts.get(k.toBase58()) ?? null; } };
+      const mintWith = names => ({ owner: T22, data: fx.token2022(mintData, 'mint', names), lamports: 1, executable: false });
+      try {
+        assert.throws(() => regMod.validate({ ...saved, srMintProgram: 'token-2023' }), /srMintProgram/, 'unknown token programs are refused by the registry');
+        regMod.useForIsolatedTest({ ...saved, srMintProgram: 'token-2022' });
+        mainnet(); assert(E.programId().equals(T22), 'live: the registry program');
+        devnet(); assert(E.programId().equals(spl.TOKEN_PROGRAM_ID), 'test server: always classic'); mainnet();
+        accounts.set(m2022.toBase58(), mintWith(['MetadataPointer', 'TokenMetadata']));
+        const value = await E.getMint(chain, m2022.toBase58()); assert.equal(value.decimals, 6); assert.equal(value.mintAuthority, null);
+        for (const bad of [['TransferFeeConfig'], ['MetadataPointer', 'TransferHook'], ['PermanentDelegate'], ['NonTransferable'], ['DefaultAccountState']]) {
+          accounts.set(m2022.toBase58(), mintWith(bad));
+          await assert.rejects(E.getMint(chain, m2022.toBase58()), e => e.status === 503 && /unsupported Token-2022 extensions/.test(e.message), bad.join('+') + ' refused');
+        }
+        accounts.set(m2022.toBase58(), { owner: spl.TOKEN_PROGRAM_ID, data: mintData });
+        await assert.rejects(E.getMint(chain, m2022.toBase58()), /registered SR token program/, 'a classic mint is refused when Token-2022 is registered');
+        accounts.delete(m2022.toBase58()); await assert.rejects(E.getMint(chain, m2022.toBase58()), /registered SR token program/, 'a missing mint is refused');
+        // Treasury verifier (the /treasury page and SR routing locks).
+        accounts.set(m2022.toBase58(), mintWith(['MetadataPointer', 'TokenMetadata']));
+        let v = await V.verifyMint(chain, m2022.toBase58(), 'token-2022'); assert.equal(v.status, 'verified', JSON.stringify(v)); assert.deepEqual(v.extensions, ['MetadataPointer', 'TokenMetadata']);
+        v = await V.verifyMint(chain, m2022.toBase58(), 'spl-token'); assert.equal(v.status, 'mismatch'); assert.match(v.blocking.join(' '), /Token-2022 mint but the registry declares classic/);
+        accounts.set(m2022.toBase58(), mintWith(['TransferFeeConfig'])); v = await V.verifyMint(chain, m2022.toBase58(), 'token-2022'); assert.match(v.blocking.join(' '), /unsupported extensions: TransferFeeConfig/);
+        const vault = web3.Keypair.generate().publicKey, ata = spl.getAssociatedTokenAddressSync(m2022, vault, true, T22), base = Buffer.alloc(spl.ACCOUNT_SIZE);
+        spl.AccountLayout.encode({ mint: m2022, owner: vault, amount: 0n, delegateOption: 0, delegate: web3.PublicKey.default, state: 1, isNativeOption: 0, isNative: 0n, delegatedAmount: 0n, closeAuthorityOption: 0, closeAuthority: web3.PublicKey.default }, base);
+        accounts.set(ata.toBase58(), { owner: T22, data: fx.token2022(base, 'account', ['ImmutableOwner']) });
+        v = await V.verifyTokenAccount(chain, m2022.toBase58(), vault.toBase58(), 'token-2022'); assert.equal(v.status, 'verified', JSON.stringify(v)); assert.equal(v.address, ata.toBase58());
+        accounts.set(ata.toBase58(), { owner: T22, data: fx.token2022(base, 'account', ['ImmutableOwner', 'PermanentDelegate']) });
+        v = await V.verifyTokenAccount(chain, m2022.toBase58(), vault.toBase58(), 'token-2022'); assert.match(v.problems.join(' '), /unsupported extensions: PermanentDelegate/);
+        accounts.set(ata.toBase58(), { owner: spl.TOKEN_PROGRAM_ID, data: base });
+        v = await V.verifyTokenAccount(chain, m2022.toBase58(), vault.toBase58(), 'token-2022'); assert.equal(v.status, 'mismatch', 'a classic account at the Token-2022 address is refused');
+      } finally { regMod.useForIsolatedTest(saved); mainnet(); }
+      assert(E.programId().equals(spl.TOKEN_PROGRAM_ID), 'without srMintProgram the registry means classic SPL Token');
+      passed.push('SR token program: registry-decided on live (classic on the test server); Token-2022 mint accepted only with MetadataPointer/TokenMetadata; transfer fee/hook, permanent delegate, non-transferable, default-frozen and wrong-program mints refused; Token-2022 treasury account checks'); }
+
     // The startup guard (custody + token required together, studio/revenue optional) is covered in network-guard.cjs on a real Mainnet build.
-    // ---- Founder pre-launch prices end with the automatic release (released mint) and come back under GAME_LAUNCH_HOLD.
+    // ---- Founder offer prices stay after the automatic release (owner decision 2026-11-09), until each tier sells out.
     { const regMod = require('../app/server/treasury-registry.cjs'), F = require('../app/server/founders.cjs'), saved = JSON.parse(require('node:fs').readFileSync(regMod.FILE, 'utf8')); delete saved.gameCustody;
       const MINT = addr(), pre = { SOLANA_NETWORK: 'mainnet', PRELAUNCH_MODE: 'on', RELEASE_STAGE: 'private' };
       regMod.useForIsolatedTest({ ...saved, srMintAddress: MINT });
       try {
-        assert.equal(F.prelaunchPricing(pre), true, 'pre-launch: promotional prices');
-        assert.equal(F.prelaunchPricing({ ...pre, RYO_TOKEN_MINT: MINT }), false, 'released mint: regular prices');
-        assert.equal(F.priceFor(F.TIERS.mythic, 5, { ...pre, RYO_TOKEN_MINT: MINT }), F.TIERS.mythic.lamports);
-        assert.equal(F.prelaunchPricing({ ...pre, RYO_TOKEN_MINT: MINT, GAME_LAUNCH_HOLD: 'on' }), true, 'held: pre-launch prices again');
-        assert.equal(F.prelaunchPricing({ ...pre, RYO_TOKEN_MINT: addr() }), true, 'an unregistered mint changes nothing');
+        for (const env of [pre, { ...pre, RYO_TOKEN_MINT: MINT }, { ...pre, RYO_TOKEN_MINT: MINT, GAME_LAUNCH_HOLD: 'on' }, {}]) {
+          assert.equal(F.prelaunchPricing(env), true); assert.equal(F.priceFor(F.TIERS.mythic, 5, env), 700000000); assert.equal(F.priceFor(F.TIERS.legacy, 5, env), 250000000);
+        }
       } finally { regMod.useForIsolatedTest(saved); }
-      passed.push('Founder pre-launch prices end automatically with the released mint and return under GAME_LAUNCH_HOLD'); }
+      passed.push('Founder offer prices (0.7 / 0.25 SOL) stay before and after the released mint; no return to 1 / 0.5 SOL'); }
   } finally { network.built = realBuilt; }
   console.log('PASS: live economy —\n  - ' + passed.join('\n  - '));
 })().catch(e => { console.error(e); process.exit(1); });

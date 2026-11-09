@@ -41,15 +41,13 @@ const TIERS = Object.freeze({
     council: 'community', missionPass: 'basic', privileges: 'selected', tsukiyomi: false, sensei: 'trial' }),
 });
 const TOTAL_SUPPLY = 63, LIMITED_PASSES = 10, MAX_HEROES = 500;
-/** The game release controls, not the public NFT sale switch, end promotional pricing.
- * Missing/invalid release configuration never grants a discount. Existing reservations keep their stored price. */
-// The same release rule as the server (network.cjs): the released SR mint ends pre-launch automatically, so the
-// promotional prices end with it. If the rule cannot be read, no discount is granted (fail closed).
-const prelaunchPricing = (env = process.env) => {
-  try { const n = require('./network.cjs'); return n.prelaunch(env) && ['portal', 'private'].includes(n.releaseStage(env)); }
-  catch { return false; }
-};
-const priceFor = (t, serial, env = process.env) => prelaunchPricing(env) ? t.prelaunchLamports : t.lamports;
+/** Founder offer pricing (owner decision 2026-11-09): the offer price (Mythic 0.7 SOL, Legacy 0.25 SOL) stays until
+ * each tier sells out, before and after the public game launch. It never returns to the regular price (`lamports`,
+ * still published as regularPrice and allowed by the database price rule for older reservations).
+ * Existing reservations keep their stored price. */
+// Kept as a function for the published prelaunchOffer flag: always true now (the offer runs until sold out).
+const prelaunchPricing = () => true;
+const priceFor = t => t.prelaunchLamports;
 const RANKS = Object.freeze(['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic']);
 // Weighted pools out of 10,000. Excluded ranks are simply absent, so the draw happens on the filtered pool:
 // nothing is ever rolled as Genin/Mythic and then replaced.
@@ -143,8 +141,10 @@ const live = () => { try { return require('./network.cjs').built(__dirname).key 
 /** Fail-closed switches. Anything but an explicit on/true/yes/1 is off. */
 function switches(env = process.env) {
   const testers = String(env.RYO_PRIVATE_TEST_WALLETS || '').split(/[\s,]+/).filter(Boolean);
-  return { publicSale: on(env.FOUNDERS_PUBLIC_SALE_ENABLED), privateTesting: on(env.FOUNDERS_PRIVATE_TESTING_ENABLED),
-    redemption: on(env.FOUNDERS_REWARD_REDEMPTION_ENABLED), senseiSol: on(env.SENSEI_SOL_ENABLED),
+  // Control panel value when set, otherwise the environment (fail closed). See feature-switches.cjs.
+  const sw = key => { try { return require('./feature-switches.cjs').effective(key, env); } catch { return false; } };
+  return { publicSale: sw('foundersPublicSale'), privateTesting: sw('foundersPrivateTesting'),
+    redemption: sw('foundersRedemption'), senseiSol: sw('senseiSol'),
     testers: testers.length && testers.every(w => WALLET_RE.test(w)) ? new Set(testers) : new Set() };
 }
 function saleMode(env = process.env) { const s = switches(env); return s.publicSale ? 'public' : s.privateTesting ? 'private' : 'off'; }
@@ -286,7 +286,7 @@ async function info(store, wallet = null, env = process.env) {
   const c = await counts(store.pool, store.scope, env), s = switches(env), mode = saleMode(env), isPaused = await paused(store.pool, store.scope);
   const mine = wallet ? (await store.pool.query("SELECT * FROM ryo_founder_purchases WHERE scope=$1 AND wallet=$2 AND status IN ('pending','confirmed')", [store.scope, wallet])).rows[0] : null;
   const eligible = !!wallet && !mine && !isPaused && (mode === 'public' || (mode === 'private' && s.testers.has(wallet)));
-  // price: the current release-stage offer; regularPrice: the price once the game opens to the public.
+  // price: the Founder offer (until sold out); regularPrice: the regular price, shown for reference only.
   const tiers = Object.fromEntries(Object.values(TIERS).map(t => { const { priceLamports, ...rest } = c[t.key];
     return [t.key, { key: t.key, name: t.name, price: sol(priceLamports), regularPrice: sol(t.lamports), supply: t.supply, ...rest, soldOut: rest.remaining === 0 }]; }));
   return { founders: { network: live() ? 'solana-mainnet' : 'solana-devnet', mode, paused: isPaused, perWallet: 1, totalSupply: TOTAL_SUPPLY, tiers,

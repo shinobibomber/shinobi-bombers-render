@@ -3,7 +3,7 @@
  const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.ShinobiGasSafety=api;
 })(globalThis,function(){
  'use strict';
- const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+ const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',TOKEN_2022='TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
  function error(code,message){return Object.assign(new Error(message),{code,status:503,paymentNotSubmitted:true})}
  function lamports(value){if(typeof value==='bigint'){if(value>=0n&&value<=BigInt(Number.MAX_SAFE_INTEGER))return value}else if(Number.isSafeInteger(value)&&value>=0)return BigInt(value);throw error('SOL_GAS_UNAVAILABLE','SOL network fees or balance could not be verified. No new payment was submitted. Refresh and retry.')}
  function sol(value){return (Number(value)/1e9).toLocaleString('en-US',{minimumFractionDigits:9,maximumFractionDigits:9})}
@@ -11,9 +11,10 @@
  async function assertGas(connection,sdk,tx,{label='Your wallet',commitment='confirmed',timeoutMs=8000}={}){
   try{
    if(!tx.feePayer)throw Error('Missing fee payer');
-   const payer=tx.feePayer,atas=new Map();let nativeSpend=0n;
+   // A Token-2022 associated account (ImmutableOwner extension) is 170 bytes, a classic one 165: price the larger one.
+   const payer=tx.feePayer,atas=new Map();let nativeSpend=0n,ataSize=165;
    for(const ix of tx.instructions){
-    if(ix.programId.toString()===ATA_PROGRAM&&ix.keys[0]?.pubkey.equals(payer))atas.set(ix.keys[1].pubkey.toBase58(),ix.keys[1].pubkey);
+    if(ix.programId.toString()===ATA_PROGRAM&&ix.keys[0]?.pubkey.equals(payer)){atas.set(ix.keys[1].pubkey.toBase58(),ix.keys[1].pubkey);if(ix.keys[5]?.pubkey?.toString()===TOKEN_2022)ataSize=170}
     if(ix.programId.equals(sdk.SystemProgram.programId)){
      const kind=sdk.SystemInstruction.decodeInstructionType(ix);
      if(kind==='Create'){const data=sdk.SystemInstruction.decodeCreateAccount(ix);if(data.fromPubkey.equals(payer))nativeSpend+=lamports(data.lamports)}
@@ -24,7 +25,7 @@
    const [feeResult,balanceValue,reserveValue,ataRentValue,infos]=await deadline(Promise.all([
     connection.getFeeForMessage(tx.compileMessage(),commitment),connection.getBalance(payer,commitment),
     connection.getMinimumBalanceForRentExemption(0,commitment),
-    atas.size?connection.getMinimumBalanceForRentExemption(165,commitment):Promise.resolve(0),
+    atas.size?connection.getMinimumBalanceForRentExemption(ataSize,commitment):Promise.resolve(0),
     Promise.all([...atas.values()].map(ata=>connection.getAccountInfo(ata,commitment)))
    ]),timeoutMs);
    if(feeResult?.value===null||feeResult?.value===undefined)throw Error('Fee estimate unavailable');

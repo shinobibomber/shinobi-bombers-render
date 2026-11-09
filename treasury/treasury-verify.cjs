@@ -7,8 +7,8 @@
  *              exact member set, no config authority (autonomous), time lock reported, member permissions,
  *              and no member/vault overlap with the game custody signer or other destinations.
  *   Wallets    Phantom destinations must be System-owned (or not yet created — "unfunded").
- *   SR mint    classic SPL Token program and 6 decimals (Token-2022 or other decimals = blocking), with
- *              mint/freeze authority reported.
+ *   SR mint    the registry's token program (classic SPL Token, or Token-2022 with only the MetadataPointer/
+ *              TokenMetadata extensions; anything else = blocking) and 6 decimals, with mint/freeze authority reported.
  *   Balances   SOL lamports and, once the mint is registered, SR base units.
  *
  * Copied to app/server/treasury-verify.cjs by apply-treasury.cjs.
@@ -23,6 +23,12 @@ const SYSTEM_PROGRAM = '11111111111111111111111111111111';
 const PERMISSIONS = { initiate: 1, vote: 2, execute: 4 };
 const TIMEOUT_MS = 8000, CACHE_MS = 60000;
 const web3 = () => require('@solana/web3.js'), spl = () => require('@solana/spl-token');
+/* Token-2022 extensions the game accepts on the SR mint (name/metadata only) and on token accounts (ImmutableOwner, which
+ * every Token-2022 associated account carries). Transfer fees/hooks, permanent delegates, default-frozen, non-transferable,
+ * confidential or interest-bearing tokens are refused. */
+const MINT_EXTENSIONS = ['MetadataPointer', 'TokenMetadata'], ACCOUNT_EXTENSIONS = ['ImmutableOwner'];
+const programKey = program => program === 'token-2022' ? spl().TOKEN_2022_PROGRAM_ID : spl().TOKEN_PROGRAM_ID;
+const extensionNames = data => { const t = spl(); return t.getExtensionTypes(data).map(x => t.ExtensionType[x] || String(x)); };
 
 /** Decode a Squads v4 `Multisig` account. Throws on a malformed buffer. */
 function decodeMultisig(data) {
@@ -91,8 +97,8 @@ async function verifyWallet(connection, address) {
   return { kind: 'wallet', status: 'verified', address, state: 'system-account', lamports: info.lamports, problems: [], note: 'Single-key wallet: no on-chain spending restriction.' };
 }
 
-/** SR mint compatibility with the game (classic SPL Token, 6 decimals). */
-async function verifyMint(connection, mint) {
+/** SR mint compatibility with the game: owned by the registry's token program (`expected`), 6 decimals, allowed extensions only. */
+async function verifyMint(connection, mint, expected = registryModule.registry().srMintProgram) {
   if (!mint) return { kind: 'mint', status: 'pending', address: null, blocking: ['The SR mint is not registered yet (token not launched).'], problems: [] };
   const { PublicKey } = web3(), t = spl();
   let info; try { info = await withTimeout(connection.getAccountInfo(new PublicKey(mint), 'finalized')); } catch (e) { return { ...unverified('mint', e), address: mint, blocking: ['Mint could not be verified.'] }; }
@@ -100,40 +106,48 @@ async function verifyMint(connection, mint) {
   const owner = info.owner.toBase58(), program = owner === t.TOKEN_PROGRAM_ID.toBase58() ? 'spl-token' : owner === t.TOKEN_2022_PROGRAM_ID.toBase58() ? 'token-2022' : 'unknown';
   const blocking = [], problems = [];
   if (program === 'unknown' || info.data.length < t.MINT_SIZE) { blocking.push('Mint is owned by an unknown program.'); return { kind: 'mint', status: 'mismatch', address: mint, program, owner, blocking, problems: blocking }; }
-  const m = t.MintLayout.decode(info.data.subarray(0, t.MINT_SIZE));
-  if (program === 'token-2022') blocking.push('Token-2022 mint: the game transfers, ATAs and checks support only the classic SPL Token program. Rework + review required.');
+  const label = p => p === 'token-2022' ? 'Token-2022' : 'classic SPL Token';
+  if (program !== expected) { blocking.push('Mint is a ' + label(program) + ' mint but the registry declares ' + label(expected) + '.'); return { kind: 'mint', status: 'mismatch', address: mint, program, owner, blocking, problems: blocking }; }
+  let m, extensions = [];
+  try { const u = t.unpackMint(new PublicKey(mint), info, info.owner); extensions = program === 'token-2022' ? extensionNames(u.tlvData) : []; m = t.MintLayout.decode(info.data.subarray(0, t.MINT_SIZE)); }
+  catch (e) { blocking.push('Mint account could not be decoded (' + e.name + ').'); return { kind: 'mint', status: 'mismatch', address: mint, program, owner, blocking, problems: blocking }; }
+  const unsupported = extensions.filter(x => !MINT_EXTENSIONS.includes(x));
+  if (unsupported.length) blocking.push('Token-2022 mint uses unsupported extensions: ' + unsupported.join(', ') + '.');
   if (m.decimals !== 6) blocking.push('Mint has ' + m.decimals + ' decimals; the game requires 6.');
   if (!m.isInitialized) blocking.push('Mint is not initialized.');
   if (m.mintAuthorityOption) problems.push('Mint authority is still set (' + m.mintAuthority.toBase58() + '): supply can grow. The game refuses such a mint.');
   if (m.freezeAuthorityOption) problems.push('Freeze authority is set (' + m.freezeAuthority.toBase58() + '): accounts can be frozen. The game refuses such a mint.');
-  return { kind: 'mint', status: blocking.length || problems.length ? 'mismatch' : 'verified', address: mint, program, owner, decimals: m.decimals, supplyRaw: String(m.supply),
+  return { kind: 'mint', status: blocking.length || problems.length ? 'mismatch' : 'verified', address: mint, program, owner, extensions, decimals: m.decimals, supplyRaw: String(m.supply),
     mintAuthority: m.mintAuthorityOption ? m.mintAuthority.toBase58() : null, freezeAuthority: m.freezeAuthorityOption ? m.freezeAuthority.toBase58() : null, blocking, problems };
 }
 
 /** The token account (ATA) the Treasury vault would receive SR in: no delegate, no foreign close authority. */
-async function verifyTokenAccount(connection, mint, owner) {
-  const { PublicKey } = web3(), t = spl(), ata = t.getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(owner), true);
+async function verifyTokenAccount(connection, mint, owner, program = 'spl-token') {
+  const { PublicKey } = web3(), t = spl(), P = programKey(program), ata = t.getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(owner), true, P);
   let info; try { info = await withTimeout(connection.getAccountInfo(ata, 'finalized')); } catch (e) { return { ...unverified('token-account', e), address: ata.toBase58() }; }
   if (!info) return { kind: 'token-account', status: 'verified', address: ata.toBase58(), state: 'absent', problems: [], note: 'Created on first transfer.' };
   const problems = [];
-  if (!info.owner.equals(t.TOKEN_PROGRAM_ID) || info.data.length !== t.ACCOUNT_SIZE) problems.push('Token account is not a classic SPL token account.');
-  else {
-    const a = t.AccountLayout.decode(info.data);
+  let a = null;
+  if (!info.owner.equals(P) || (program === 'spl-token' ? info.data.length !== t.ACCOUNT_SIZE : info.data.length < t.ACCOUNT_SIZE)) problems.push('Token account is not a ' + program + ' token account.');
+  else { try { a = t.unpackAccount(ata, info, P); } catch { problems.push('Token account could not be decoded.'); } }
+  if (a) {
     if (!a.mint.equals(new PublicKey(mint)) || !a.owner.equals(new PublicKey(owner))) problems.push('Token account mint/owner mismatch.');
-    if (a.delegateOption) problems.push('Token account has a delegate that could move funds.');
-    if (a.state !== 1) problems.push('Token account is frozen or uninitialized.');
-    if (a.closeAuthorityOption && !a.closeAuthority.equals(new PublicKey(owner))) problems.push('Token account has a foreign close authority.');
+    if (a.delegate) problems.push('Token account has a delegate that could move funds.');
+    if (!a.isInitialized || a.isFrozen) problems.push('Token account is frozen or uninitialized.');
+    if (a.closeAuthority && !a.closeAuthority.equals(new PublicKey(owner))) problems.push('Token account has a foreign close authority.');
+    const odd = program === 'token-2022' ? extensionNames(a.tlvData).filter(x => !ACCOUNT_EXTENSIONS.includes(x)) : [];
+    if (odd.length) problems.push('Token account uses unsupported extensions: ' + odd.join(', ') + '.');
   }
   return { kind: 'token-account', status: problems.length ? 'mismatch' : 'verified', address: ata.toBase58(), state: 'initialized', problems };
 }
 
-async function srBalance(connection, owner, mint) {
-  const { PublicKey } = web3(), t = spl();
+async function srBalance(connection, owner, mint, program = 'spl-token') {
+  const { PublicKey } = web3(), P = programKey(program).toBase58();
   const reply = await withTimeout(connection.getParsedTokenAccountsByOwner(new PublicKey(owner), { mint: new PublicKey(mint) }, 'finalized'));
   let raw = 0n;
   for (const item of reply.value) {
     const info = item.account.data?.parsed?.info;
-    if (item.account.owner.toString() !== t.TOKEN_PROGRAM_ID.toBase58() || info?.mint !== mint || info.owner !== owner) throw Error('Unexpected token account response');
+    if (item.account.owner.toString() !== P || info?.mint !== mint || info.owner !== owner) throw Error('Unexpected token account response');
     raw += BigInt(info.tokenAmount.amount);
   }
   return String(raw);
@@ -153,7 +167,7 @@ async function snapshot(connection, { reg = registryModule.registry(), custody =
   const forbidden = [custody, studio].filter(Boolean);
   const [squads, mintStatus, ...wallets] = await Promise.all([
     verifySquads(connection, reg, { forbidden: [...forbidden, reg.addresses.activeRewards, reg.addresses.communityRewards, reg.addresses.economicReserve] }),
-    verifyMint(connection, mint),
+    verifyMint(connection, mint, reg.srMintProgram),
     ...['activeRewards', 'communityRewards', 'economicReserve'].map(r => verifyWallet(connection, reg.addresses[r])),
   ]);
   const destinations = {};
@@ -163,9 +177,9 @@ async function snapshot(connection, { reg = registryModule.registry(), custody =
     const d = destinations[r];
     if (forbidden.includes(d.address)) { d.verification = { ...d.verification, status: 'mismatch', problems: [...(d.verification.problems || []), 'Destination equals a game-controlled wallet.'] }; }
     d.solLamports = r === 'lockedTreasury' ? (squads.status === 'unverified' ? null : squads.vaultLamports ?? null) : (d.verification.status === 'unverified' ? null : d.verification.lamports ?? null);
-    if (mintStatus.address && mintStatus.program === 'spl-token') {
-      try { d.srRaw = await srBalance(connection, d.address, mintStatus.address); } catch { d.srRaw = null; }
-      if (r === 'lockedTreasury') d.tokenAccount = await verifyTokenAccount(connection, mintStatus.address, d.address);
+    if (mintStatus.address && mintStatus.program === reg.srMintProgram) {
+      try { d.srRaw = await srBalance(connection, d.address, mintStatus.address, mintStatus.program); } catch { d.srRaw = null; }
+      if (r === 'lockedTreasury') d.tokenAccount = await verifyTokenAccount(connection, mintStatus.address, d.address, mintStatus.program);
     } else d.srRaw = null;
   }
   out.destinations = destinations; out.squads = squads; out.mint = mintStatus;
@@ -173,7 +187,7 @@ async function snapshot(connection, { reg = registryModule.registry(), custody =
   // never presented as claimable; "available for claims" is computed separately from the game ledger.
   if (reg.gameCustody) {
     const w = await verifyWallet(connection, reg.gameCustody.address), gc = { address: reg.gameCustody.address, purpose: reg.gameCustody.purpose, verification: w, solLamports: w.status === 'unverified' ? null : w.lamports ?? null, srRaw: null };
-    if (mintStatus.address && mintStatus.program === 'spl-token') { try { gc.srRaw = await srBalance(connection, gc.address, mintStatus.address); } catch { gc.srRaw = null; } }
+    if (mintStatus.address && mintStatus.program === reg.srMintProgram) { try { gc.srRaw = await srBalance(connection, gc.address, mintStatus.address, mintStatus.program); } catch { gc.srRaw = null; } }
     if (w.status === 'mismatch') out.alerts.push({ severity: 'critical', signal: 'Game custody wallet mismatch', detail: w.problems.join(' ') });
     out.gameCustody = gc;
   }

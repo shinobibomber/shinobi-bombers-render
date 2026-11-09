@@ -6,6 +6,10 @@
  *   SOL_DEPOSITS_ENABLED     deposit (Ryo token deposits) and box-mint (Mythic Box SOL payment)
  *   SOL_WITHDRAWALS_ENABLED  withdraw
  *   BOSS_HUNT_ENABLED        hunt-enter (Boss Hunt entry; closed on live until the owner configures it, 2026-11-09)
+ *   CHAT_ENABLED, FUSION_ENABLED, DOJO_ENABLED, TRAINING_ENABLED   gameplay screens (default ON everywhere)
+ *
+ * Every gate's state is feature-switches.cjs effective(): the admin Control panel value when one is set, otherwise the
+ * environment rule above (unchanged). FEATURE_PANEL_DISABLED=on ignores the panel.
  *
  * Defaults: on for a devnet (test server) build, so it behaves exactly as before; OFF for a mainnet (live) build.
  * Turning the game on never turns money features on by itself. Browsing, cancelling, recovery and
@@ -16,25 +20,27 @@
 const GATES = Object.freeze({
   summoning: 'SUMMONING_ENABLED', marketplace: 'MARKETPLACE_ENABLED', rewardClaims: 'REWARD_CLAIMS_ENABLED',
   solDeposits: 'SOL_DEPOSITS_ENABLED', solWithdrawals: 'SOL_WITHDRAWALS_ENABLED', bossHunt: 'BOSS_HUNT_ENABLED',
+  chat: 'CHAT_ENABLED', fusion: 'FUSION_ENABLED', dojo: 'DOJO_ENABLED', training: 'TRAINING_ENABLED',
 });
+// Gate → Control panel switch (feature-switches.cjs CATALOG).
+const SWITCH = Object.freeze({ summoning: 'summoning', marketplace: 'market', rewardClaims: 'rewardClaims', solDeposits: 'srDeposits',
+  solWithdrawals: 'withdrawals', bossHunt: 'bossHunt', chat: 'chat', fusion: 'fusion', dojo: 'dojo', training: 'training' });
 const MESSAGES = Object.freeze({
   summoning: 'Hero summoning opens at the official launch.', marketplace: 'The Market opens at the official launch.',
   rewardClaims: 'Reward claims open at the official launch.', solDeposits: 'Deposits are not open yet.',
   solWithdrawals: 'Withdrawals are not open yet.', bossHunt: 'Boss Hunt opens soon.',
+  chat: 'Chat is paused right now.', fusion: 'Fusion is closed right now.', dojo: 'The Dojo is closed right now.', training: 'Training is closed right now.',
 });
 
-function defaultOn() {
-  try { return require('./network.cjs').built(__dirname).key !== 'mainnet'; } catch { return true; }
-}
 function isOn(gate, env = process.env) {
-  const raw = String(env[GATES[gate]] ?? '').trim();
-  if (/^(1|on|true|yes)$/i.test(raw)) return true;
-  if (/^(0|off|false|no)$/i.test(raw)) return false;
-  return defaultOn();
+  if (!GATES[gate]) return false;
+  return require('./feature-switches.cjs').effective(SWITCH[gate], env);
 }
 function gateFor(action, body = {}) {
   if (action === 'purchase' && body && body.product === 'summon') return 'summoning';
   if (action === 'purchase' && body && body.product === 'hunt') return 'bossHunt';
+  if (action === 'purchase' && body && ['fusion', 'dojo', 'training'].includes(body.product)) return body.product;
+  if (action === 'chat-send') return 'chat';
   if (['market-post', 'market-buy', 'market-offer', 'market-accept'].includes(action)) return 'marketplace';
   if (['claim-adventure', 'creator-player-claim', 'creator-redeem'].includes(action)) return 'rewardClaims';
   if (['deposit', 'box-mint'].includes(action)) return 'solDeposits';

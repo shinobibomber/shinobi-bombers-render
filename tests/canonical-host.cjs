@@ -46,6 +46,16 @@ function start(extra) {
     const r = await new Promise((resolve, reject) => { const q = http.request({ host: '127.0.0.1', port: c.port, path: '/founders/terms', headers: { host: 'new.example' } }, res => { let t = ''; res.on('data', d => t += d); res.on('end', () => resolve({ status: res.statusCode, text: t })); }); q.on('error', reject); q.end(); });
     assert.equal(r.status, 200); assert.match(r.text, /One Founder box per wallet/); assert.doesNotMatch(r.text, /<script/i, 'read-only page, no scripts');
     passed.push('after the release /founders/terms serves the Founder sale terms (no portal needed)');
+    // The Founder sale continues at /founders after launch (owner decision 2026-11-09): the portal page in founders mode.
+    const get = p => new Promise((resolve, reject) => { const q = http.request({ host: '127.0.0.1', port: c.port, path: p, headers: { host: 'new.example' } }, res => { let t = ''; res.on('data', d => t += d); res.on('end', () => resolve({ status: res.statusCode, text: t, headers: res.headers })); }); q.on('error', reject); q.end(); });
+    const page = await get('/founders'); assert.equal(page.status, 200); assert.match(page.text, /<body data-page="founders">/); assert.match(page.text, /id="founders"/);
+    assert.match(page.headers['content-security-policy'], /default-src 'none'/, 'portal CSP on the Founder page');
+    assert.equal((await get('/founders/')).status, 308); assert.equal((await get('/pl/founders.js')).status, 200); assert.equal((await get('/pl/prelaunch.css')).status, 200);
+    for (const p of ['/terms', '/privacy', '/rules']) assert.equal((await get(p)).status, 200, p + ' readable after launch');
+    const api = (action, extra = {}) => new Promise((resolve, reject) => { const body = JSON.stringify({ action, ...extra }), q = http.request({ host: '127.0.0.1', port: c.port, path: '/api/prelaunch', method: 'POST', headers: { host: 'new.example', origin: 'https://new.example', 'x-sb-prelaunch': '1', 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } }, res => { let t = ''; res.on('data', d => t += d); res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(t || '{}') })); }); q.on('error', reject); q.end(body); });
+    const st = await api('status'); assert.equal(st.status, 200); assert.equal(st.body.prelaunch, false, 'founders mode reports the game as launched');
+    for (const action of ['referrals', 'creator', 'creator-apply', 'creator-admin', 'creator-admin-action', 'treasury-admin', 'private-access']) assert.deepEqual([(await api(action)).status, (await api(action)).body.code], [404, 'UNKNOWN_ACTION'], action + ' is not mounted after launch');
+    passed.push('after the release /founders serves the Founder sale (portal page in founders mode, legal pages readable); only sign-in and Founder actions are mounted');
   } finally { c.child.kill(); }
 
   const b = start({});

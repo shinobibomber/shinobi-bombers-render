@@ -316,3 +316,7 @@ dialog::backdrop { background: rgba(3, 1, 10, .78); backdrop-filter: blur(3px); 
 .fd-poster img { width: 100%; height: auto; border-radius: 14px; }
 .fd-poster figcaption { margin-top: 8px; color: var(--muted); font-size: .92rem; text-align: center; }
 @media (max-width: 760px) { .founders .fd-cards { grid-template-columns: 1fr; } }
+/* /founders after the public launch (server/site-server.cjs marks the page data-page="founders"): the Founder sale only. */
+body[data-page="founders"] #main > section:not(#founders), body[data-page="founders"] #navLinks, body[data-page="founders"] .menu-toggle,
+body[data-page="founders"] .foot a[href="/rules"], body[data-page="founders"] .demo-nav { display: none !important; }
+body[data-page="founders"] #founders { padding-top: 32px; }

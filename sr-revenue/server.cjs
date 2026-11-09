@@ -86,7 +86,7 @@ async function verifyVaults(ctx, cfg) {
   const w = await v.verifyWallet(ctx.connection, cfg.destinations[name]);
   if (w.status !== 'verified') fail('The ' + name + ' destination could not be verified as a plain wallet. ' + (w.problems || []).join(' '), 503);
  }
- const ata = await v.verifyTokenAccount(ctx.connection, ctx.mint, cfg.destinations.lockedTreasury);
+ const ata = await v.verifyTokenAccount(ctx.connection, ctx.mint, cfg.destinations.lockedTreasury, reg.srMintProgram);
  if (ata.status !== 'verified') fail('Locked Treasury token account has a delegate, invalid owner or unsupported authority.', 503);
  return { kind: 'squads-v4', multisig: reg.squads.multisig, required: squads.threshold, members: squads.members.length, timeLockSeconds: squads.timeLockSeconds, commitment: 'finalized', verified: true,
    note: 'Squads ' + squads.threshold + '-of-' + squads.members.length + ' approval verified; no timelock or vesting schedule is claimed.' };
@@ -141,10 +141,11 @@ async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
  await ctx.checkNetwork();
  const tx = await ctx.connection.getParsedTransaction(payload.signature, { commitment: 'finalized', maxSupportedTransactionVersion: 0 });
  if (!tx?.meta || tx.meta.err || tx.transaction?.signatures?.[0] !== payload.signature) fail('The replenishment transaction has not finalized successfully.', 409);
- const source = spl.getAssociatedTokenAddressSync(new PublicKey(ctx.mint), new PublicKey(cfg.destinations[payload.source]), true).toBase58();
- const target = spl.getAssociatedTokenAddressSync(new PublicKey(ctx.mint), new PublicKey(ctx.treasuryAddress), true).toBase58();
+ const program = require('./live-economy.cjs').programId();
+ const source = spl.getAssociatedTokenAddressSync(new PublicKey(ctx.mint), new PublicKey(cfg.destinations[payload.source]), true, program).toBase58();
+ const target = spl.getAssociatedTokenAddressSync(new PublicKey(ctx.mint), new PublicKey(ctx.treasuryAddress), true, program).toBase58();
  const keys = tx.transaction.message.accountKeys;
- const transfer = tx.transaction.message.instructions.filter(i => i.programId.toString() === spl.TOKEN_PROGRAM_ID.toBase58() && i.parsed?.type === 'transferChecked');
+ const transfer = tx.transaction.message.instructions.filter(i => i.programId.toString() === program.toBase58() && i.parsed?.type === 'transferChecked');
  if (transfer.length !== 1) fail('Replenishment must contain one explicit approved SR transfer.', 409);
  const info = transfer[0].parsed.info;
  if (info.source !== source || info.destination !== target || info.mint !== ctx.mint || info.tokenAmount?.amount !== payload.amountRaw || info.tokenAmount?.decimals !== 6) fail('Replenishment source, destination, token or amount does not match the approved request.', 409);

@@ -151,7 +151,7 @@
       const r = await api('founders-mint', { tier, requestId: p.requestId });
       if (r.purchase.status !== 'pending' || !r.purchase.wire) { write(null); state = remember(r); return; }
       state = remember(r);
-      // Public launch can raise the price after this page loaded. Never open the
+      // The price can differ from what this page loaded (e.g. a resumed reservation). Never open the
       // wallet at a higher price than the buyer saw; the button now offers "Approve in wallet · <new price>". A lower
       // price continues: the wallet still shows the exact amount before approval.
       // Fail closed: an unknown shown price (NaN) never opens the wallet either.

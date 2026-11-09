@@ -1,5 +1,15 @@
 # Shinobi Bombers patch notes
 
+## November 9, 2026 — Founder prices stay, SR token support
+
+- Founder box prices stay at 0.7 SOL (Mythic) and 0.25 SOL (Legacy) until each tier sells out. They no longer return to 1 SOL / 0.5 SOL when the game opens.
+- After the game opens, the Founder boxes are sold at https://shinobibombers.fun/founders.
+- The game now supports the released SR token (a Token-2022 token): deposits, balances and payouts use it directly.
+
+## November 9, 2026 — Feature schedule control
+
+- Game features now open and close on our roadmap schedule. If a feature shows "opens soon" or "closed right now", it will open in a later phase.
+
 ## November 9, 2026 — Launch rules, no deposit fee and Boss Hunt update
 
 - The game opens to the public automatically when the SR token is released.

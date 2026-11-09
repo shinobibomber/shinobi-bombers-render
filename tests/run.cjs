@@ -18,7 +18,7 @@ suites.push('combat-rules.cjs','combat-identity.cjs','combat-native.cjs','combat
 suites.push('hero-upgrades-server.cjs','hero-upgrades-ui.cjs');
 suites.push('founders-server.cjs','founders-prelaunch.cjs','founders-pricing-ui.cjs');
 suites.push('canonical-host.cjs');
-suites.push('live-economy.cjs');
+suites.push('live-economy.cjs','financial-server-2022.cjs');
 if(fs.existsSync(path.join(__dirname,'archive.cjs')))suites.unshift('archive.cjs');
 suites.unshift('archive-download.cjs');
 suites.push('adventure-hero-size.cjs','mythic-vfx-v6.cjs');

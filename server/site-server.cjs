@@ -204,6 +204,8 @@ async function foundersRoute(req, res, url, name) {
   }
   if (name.startsWith('/founders/art/')) return serveFrom(FOUNDERS_DIR, req, res, name.slice('/founders'.length), new Set(['.png']));
   if (name === '/founders/terms' && !PRELAUNCH) return founderTermsPage(req, res);
+  if (founderSale && name === '/founders/') { res.writeHead(308, { Location: '/founders' + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
+  if (founderSale && name === '/founders') return founderSalePage(req, res);
   if (['/founders', '/founders/', '/founders/terms'].includes(name)) { res.writeHead(302, { Location: '/#founders', 'Cache-Control': 'no-store' }); return res.end(); }
   return sendSite(req, res, 404, 'Not found.');
 }
@@ -258,6 +260,23 @@ async function treasuryRoute(req, res, url, name) {
 }
 
 const prelaunch = PRELAUNCH ? loadPrelaunch() : null;
+/* After the public launch the Founder sale continues at /founders (owner decision 2026-11-09: 0.7 / 0.25 SOL until each
+ * tier sells out). The portal page is served there showing only its Founder section, and its API is mounted in
+ * 'founders' mode (sign-in, own profile and the Founder sale; referrals/creators/treasury-admin/private access answer 404).
+ * Only with the database and the site identity configured; otherwise /founders keeps redirecting to /#founders. */
+const founderSale = (() => {
+  if (PRELAUNCH || !process.env.DATABASE_URL || !process.env.RYO_SCOPE || !process.env.RYO_SITE_ORIGIN || !fs.existsSync(path.join(GAME_DIR, 'server', 'founders.cjs'))) return null;
+  try { return require(path.join(PRELAUNCH_DIR, 'server.cjs')).createPrelaunch({ gameDir: GAME_DIR, mode: 'founders' }); }
+  catch (e) { console.warn('[site] Founder sale page unavailable: ' + e.message); return null; }
+})();
+/** The portal page at /founders, marked data-page="founders" (prelaunch.css then shows only the Founder section). */
+function founderSalePage(req, res) {
+  if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
+  let html; try { html = fs.readFileSync(path.join(PRELAUNCH_DIR, 'index.html'), 'utf8'); } catch { return sendSite(req, res, 503, 'Service is temporarily unavailable.'); }
+  if (html.split('<body>').length !== 2) return sendSite(req, res, 503, 'Service is temporarily unavailable.');
+  res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-cache', ...SITE_HEADERS, ...PRELAUNCH_HEADERS });
+  return res.end(req.method === 'HEAD' ? undefined : html.replace('<body>', '<body data-page="founders">'));
+}
 const game = loadGame();
 
 /* Canonical host. Wallet sign-in, CSRF checks and Founder NFT links are bound to ONE origin (RYO_SITE_ORIGIN), so a
@@ -292,6 +311,14 @@ const server = http.createServer((req, res) => {
       res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...SITE_HEADERS});
       return res.end(req.method==='HEAD'?'':JSON.stringify({...policy,prelaunch:PRELAUNCH,monetaryEndpointsMounted:!PRELAUNCH}));
     }catch{return sendSite(req,res,503,'Economy policy is unavailable until the game build is installed.');}
+  }
+  if (founderSale && name === '/api/prelaunch') return founderSale.handle(req, res);
+  if (founderSale && name.startsWith('/pl/')) return serveFrom(PRELAUNCH_DIR, req, res, name.slice(3), new Set(['.css', '.js', '.json', '.webp', '.png', '.svg', '.ico'])).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
+  // The legal pages the Founder page and its sign-up link to (Terms, Privacy, Referral rules) stay readable after launch.
+  if (founderSale && /^\/(terms|privacy|rules)(\.html)?$/.test(name)) {
+    const doc = name.replace(/\.html$/, '');
+    if (doc !== name) { res.writeHead(308, { Location: doc + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
+    return serveFrom(PRELAUNCH_DIR, req, res, PRELAUNCH_PAGES[doc] ? '/' + PRELAUNCH_PAGES[doc] : '/missing').catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   }
   if (name === '/founders' || name.startsWith('/founders/')) return foundersRoute(req, res, url, name).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   if (name === '/treasury' || name.startsWith('/treasury/') || name === '/treasury-registry.json') return treasuryRoute(req, res, url, name).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });

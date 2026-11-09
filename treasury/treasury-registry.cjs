@@ -62,6 +62,9 @@ function scanForSecrets(node, at = 'registry') {
 }
 
 /** Validate a parsed registry object. Returns a deeply frozen, normalized copy. */
+/** Token programs a registered SR mint may use (program IDs in live-economy.cjs / treasury-verify.cjs). */
+const MINT_PROGRAMS = Object.freeze(['spl-token', 'token-2022']);
+
 function validate(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) bad('must be a JSON object.');
   scanForSecrets(raw);
@@ -105,6 +108,9 @@ function validate(raw) {
     gameCustody = { address: custody, purpose: String(raw.gameCustody.purpose || '').slice(0, 300), created: String(raw.gameCustody.created || '').slice(0, 20) };
   }
   if (mint && (seen.has(mint) || members.includes(mint))) bad('srMintAddress must not equal a wallet.');
+  // Token program of the SR mint (owner decision 2026-11-09: the released Pump.fun mint is Token-2022). Default classic.
+  const mintProgram = raw.srMintProgram == null ? 'spl-token' : raw.srMintProgram;
+  if (!MINT_PROGRAMS.includes(mintProgram)) bad('srMintProgram must be one of ' + MINT_PROGRAMS.join(', ') + '.');
   if (!Number.isSafeInteger(raw.withdrawalTreasuryFeeBps) || raw.withdrawalTreasuryFeeBps !== 500) bad('withdrawalTreasuryFeeBps must be 500 (5%, approved policy).');
   const a = raw.activation || {};
   if (typeof a.approved !== 'boolean') bad('activation.approved must be true or false.');
@@ -115,7 +121,7 @@ function validate(raw) {
     schema: raw.schema, policy: String(raw.policy || ''), network: 'mainnet', destinations,
     addresses: Object.fromEntries(ROLES.map(r => [r, destinations[r].address])),
     squads: { programId: SQUADS_V4, multisig, vaultIndex: s.vaultIndex, threshold: s.threshold, timeLockSeconds: s.timeLockSeconds, members, observed: String(s.observed || '').slice(0, 400) },
-    srMintAddress: mint, gameCustody, withdrawalTreasuryFeeBps: raw.withdrawalTreasuryFeeBps,
+    srMintAddress: mint, srMintProgram: mintProgram, gameCustody, withdrawalTreasuryFeeBps: raw.withdrawalTreasuryFeeBps,
     activation: { approved: a.approved, reference: a.approved ? a.reference.trim() : null },
   });
 }
@@ -149,4 +155,4 @@ function publicView(reg = registry()) {
   };
 }
 
-module.exports = { ROLES, RATES, SQUADS_V4, RegistryError, base58, isPublicKey, validate, registry, useForIsolatedTest, reservedAddresses, publicView, FILE };
+module.exports = { MINT_PROGRAMS, ROLES, RATES, SQUADS_V4, RegistryError, base58, isPublicKey, validate, registry, useForIsolatedTest, reservedAddresses, publicView, FILE };

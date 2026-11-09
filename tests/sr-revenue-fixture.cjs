@@ -34,7 +34,8 @@ function chainAccount(pubkey, mint, overrides = {}) {
  if (key === reg.squads.multisig) return squadsAccount();
  if (key === reg.addresses.lockedTreasury) return { owner: new PublicKey('11111111111111111111111111111111'), data: Buffer.alloc(0), lamports: squadsFixture.vault.lamports, executable: false };
  if ([reg.addresses.activeRewards, reg.addresses.communityRewards, reg.addresses.economicReserve].includes(key)) return null;
- if (mint && key === spl.getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(reg.addresses.lockedTreasury), true).toBase58()) return null;
+ const program = reg.srMintProgram === 'token-2022' ? spl.TOKEN_2022_PROGRAM_ID : spl.TOKEN_PROGRAM_ID;
+ if (mint && key === spl.getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(reg.addresses.lockedTreasury), true, program).toBase58()) return null;
  return undefined;
 }
 async function configure(store) {
@@ -52,9 +53,10 @@ async function topUp(store, ryo, signature = 'fixture-topup-' + Math.random().to
 }
 /** Model an activated live registry (throw-away mint, committed approval) inside this test process only.
  * Isolated tests sign with throw-away custody keys, so the recorded game custody address is replaced (or removed). */
-function activate(mint, { custody = null } = {}) {
+function activate(mint, { custody = null, program = null } = {}) {
  const raw = JSON.parse(fs.readFileSync(registryModule().FILE, 'utf8'));
  if (custody) raw.gameCustody = { address: custody, purpose: 'Isolated test custody' }; else delete raw.gameCustody;
+ if (program) raw.srMintProgram = program;
  raw.srMintAddress = typeof mint === 'string' ? mint : mint.toBase58(); raw.activation = { approved: true, reference: 'Isolated test activation fixture' };
  return registryModule().useForIsolatedTest(raw);
 }
@@ -67,4 +69,17 @@ function liveEconomy({ routing = true } = {}) {
  // Throw-away custody keys in isolated tests: drop the recorded live custody address in this process only.
  const raw = JSON.parse(fs.readFileSync(registryModule().FILE, 'utf8')); delete raw.gameCustody; registryModule().useForIsolatedTest(raw);
 }
-module.exports = { stamp, multisig, squadsAccount, chainAccount, configure, budget, topUp, activate, liveEconomy, destinations, squadsFixture, owner };
+/** Token-2022 account bytes in the real on-chain layout: the classic base (82-byte mint or 165-byte account), padding to
+ * 165, the account-type byte (1 mint, 2 account) and TLV entries (u16 type, u16 length, value) for the named extensions. */
+const EXTENSION_LENGTHS = { ImmutableOwner: 0, MetadataPointer: 64, TokenMetadata: 96, TransferFeeConfig: 108, TransferHook: 64, PermanentDelegate: 32, NonTransferable: 0, DefaultAccountState: 1 };
+function token2022(base, kind, names) {
+ const parts = [Buffer.alloc(spl.ACCOUNT_SIZE), Buffer.from([kind === 'mint' ? 1 : 2])];
+ Buffer.from(base).copy(parts[0]);
+ for (const name of names) {
+  const len = EXTENSION_LENGTHS[name], head = Buffer.alloc(4);
+  if (len == null || spl.ExtensionType[name] == null) throw Error('Unknown test extension ' + name);
+  head.writeUInt16LE(spl.ExtensionType[name], 0); head.writeUInt16LE(len, 2); parts.push(head, Buffer.alloc(len, 3));
+ }
+ return Buffer.concat(parts);
+}
+module.exports = { stamp, multisig, squadsAccount, chainAccount, configure, budget, topUp, activate, liveEconomy, destinations, squadsFixture, owner, token2022 };

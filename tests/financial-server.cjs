@@ -1,9 +1,14 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
-const {PGlite}=require('@electric-sql/pglite'),web3=require('../app/node_modules/@solana/web3.js'),spl=require('../app/node_modules/@solana/spl-token'),bs58=require('../app/node_modules/bs58');
+const {PGlite}=require('@electric-sql/pglite'),web3=require('../app/node_modules/@solana/web3.js'),splBase=require('../app/node_modules/@solana/spl-token'),bs58=require('../app/node_modules/bs58');
+// --token-2022: the same live run with a Token-2022 SR mint (registry srMintProgram token-2022, MetadataPointer +
+// TokenMetadata extensions). Every program default in this file becomes Token-2022; explicit program arguments are kept.
+const T22=process.argv.includes('--token-2022'),T22ID=splBase.TOKEN_2022_PROGRAM_ID;
+const spl=!T22?splBase:{...splBase,TOKEN_PROGRAM_ID:T22ID,getAssociatedTokenAddressSync:(m,o,off=false,p=T22ID)=>splBase.getAssociatedTokenAddressSync(m,o,off,p),
+ decodeTransferCheckedInstruction:(i,p=T22ID)=>splBase.decodeTransferCheckedInstruction(i,p),decodeBurnCheckedInstruction:(i,p=T22ID)=>splBase.decodeBurnCheckedInstruction(i,p)};
 const LIVE=!process.argv.includes('--beta-economy');if(LIVE)require('./sr-revenue-fixture.cjs').liveEconomy();
 const {Store}=require('../app/server/store.cjs'),{createService,GENESIS,verifyDeposit}=require('../app/server/service.cjs'),economy=require('../app/server/economy.cjs');
 const player=web3.Keypair.generate(),treasury=web3.Keypair.generate(),studio=web3.Keypair.generate().publicKey,revenue=web3.Keypair.generate().publicKey,mint=web3.Keypair.generate().publicKey,origin='https://shinobi-beta.example';
-if(LIVE)require('./sr-revenue-fixture.cjs').activate(mint);
+if(LIVE)require('./sr-revenue-fixture.cjs').activate(mint,T22?{program:'token-2022'}:{});
 // The live Market needs both optional wallets configured (live-economy.marketConfigured reads the server environment).
 if(LIVE){process.env.RYO_STUDIO_WALLET=studio.toBase58();process.env.RYO_REVENUE_WALLET=revenue.toBase58()}
 const wallet=player.publicKey.toBase58(),scope='solana-devnet:'+mint+':'+treasury.publicKey,UNIT=1000000n,key=x=>new web3.PublicKey(x),receipts=new Map(),statuses=new Map(),wireByHash=new Map(),wires=[];
@@ -23,7 +28,7 @@ const connection={
  async getBalance(){if(gasRpcError)throw Error('RPC balance unavailable');return solLamports},async getFeeForMessage(){return {value:feeUnavailable?null:5000}},async getMinimumBalanceForRentExemption(size){return size===0?890880:2039280},
  async getGenesisHash(){return genesis},async getBlockHeight(){return height},async getParsedTransaction(hash){return receipts.get(hash)||null},async getSignatureStatuses(hashes){return {value:hashes.map(h=>statuses.get(h)||null)}},
  async getLatestBlockhash(){return {blockhash:web3.Keypair.generate().publicKey.toBase58(),lastValidBlockHeight:50}},async getTokenAccountBalance(){return {value:{amount:(1000000000n*UNIT).toString()}}},
- async getAccountInfo(pubkey){if(LIVE){const known=require('./sr-revenue-fixture.cjs').chainAccount(pubkey,mint);if(known!==undefined)return known}if(pubkey.equals(revenue))return require('./sr-revenue-fixture.cjs').multisig();if(pubkey.equals(spl.getAssociatedTokenAddressSync(mint,revenue)))return null;const data=Buffer.alloc(spl.MINT_SIZE);spl.MintLayout.encode({mintAuthorityOption:0,mintAuthority:web3.PublicKey.default,supply:1000000000n*UNIT,decimals:6,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:web3.PublicKey.default},data);return {owner:spl.TOKEN_PROGRAM_ID,data}},
+ async getAccountInfo(pubkey){if(LIVE){const known=require('./sr-revenue-fixture.cjs').chainAccount(pubkey,mint);if(known!==undefined)return known}if(pubkey.equals(revenue))return require('./sr-revenue-fixture.cjs').multisig();if(pubkey.equals(spl.getAssociatedTokenAddressSync(mint,revenue)))return null;const data=Buffer.alloc(spl.MINT_SIZE);spl.MintLayout.encode({mintAuthorityOption:0,mintAuthority:web3.PublicKey.default,supply:1000000000n*UNIT,decimals:6,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:web3.PublicKey.default},data);return {owner:spl.TOKEN_PROGRAM_ID,data:T22?require('./sr-revenue-fixture.cjs').token2022(data,'mint',['MetadataPointer','TokenMetadata']):data}},
  async sendRawTransaction(wire){const tx=web3.Transaction.from(wire);assert.ok(tx.verifySignatures());assert.ok(wire.length<=1232);assert.equal(tx.feePayer.toBase58(),treasury.publicKey.toBase58());const hash=bs58.encode(tx.signature);wires.push({hash,wire:Buffer.from(wire).toString('base64')});wireByHash.set(hash,tx);if(autoFinalize)statuses.set(hash,{confirmationStatus:'finalized',err:null});if(networkError)throw Error('ambiguous connection failure');return hash}
 };
 function transfers(hash){return wireByHash.get(hash).instructions.filter(i=>i.programId.equals(spl.TOKEN_PROGRAM_ID)&&i.data[0]===spl.TokenInstruction.TransferChecked).map(i=>spl.decodeTransferCheckedInstruction(i))}

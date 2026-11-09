@@ -6,7 +6,7 @@ const owner=web3.Keypair.generate(),tester=web3.Keypair.generate(),other=web3.Ke
 let genesis=GENESIS,reject=false,changeAfterSend=false,failNext=false,tamper=false,walletPriority=false,rpcFetchMode='ok',capturedRpcFetch;
 let solLamports=1000000000,feeUnavailable=false,gasRpcError=false,signCalls=0,solAfterSign=null;
 const storage=new Map(),localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v))};
-function mintInfo(mint){const value=mints.get(mint.toBase58());if(!value)return null;const data=Buffer.alloc(spl.MINT_SIZE);spl.MintLayout.encode({...value,mintAuthorityOption:value.authority?1:0,mintAuthority:value.authority||web3.PublicKey.default,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:web3.PublicKey.default},data);return {data,owner:spl.TOKEN_PROGRAM_ID,lamports:1000000,executable:false};}
+function mintInfo(mint){const value=mints.get(mint.toBase58());if(!value)return null;const data=Buffer.alloc(spl.MINT_SIZE);spl.MintLayout.encode({...value,mintAuthorityOption:value.authority?1:0,mintAuthority:value.authority||web3.PublicKey.default,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:web3.PublicKey.default},data);if(value.program)return {data:require('./sr-revenue-fixture.cjs').token2022(data,'mint',['MetadataPointer','TokenMetadata']),owner:value.program,lamports:1000000,executable:false};return {data,owner:spl.TOKEN_PROGRAM_ID,lamports:1000000,executable:false};}
 class Connection {
  constructor(url,options){capturedRpcFetch=options?.fetch}
  async getGenesisHash(){if(rpcFetchMode!=='ok')await capturedRpcFetch('https://example.test',{method:'POST'});return genesis}
@@ -26,12 +26,12 @@ class Connection {
    if(ix.programId.equals(web3.ComputeBudgetProgram.programId)){instructions.push({programId:ix.programId,accounts:[],data:bs58.encode(ix.data)});continue}
    if(ix.programId.equals(web3.SystemProgram.programId)){assert.equal(web3.SystemInstruction.decodeInstructionType(ix),'Create');continue}
    if(ix.programId.equals(spl.ASSOCIATED_TOKEN_PROGRAM_ID)){const [,ata,recipient,mint]=ix.keys;if(!accounts.has(ata.pubkey.toBase58()))accounts.set(ata.pubkey.toBase58(),{owner:recipient.pubkey.toBase58(),mint:mint.pubkey.toBase58(),amount:0n});continue}
-   if(ix.programId.equals(spl.TOKEN_PROGRAM_ID)){
+   if(ix.programId.equals(spl.TOKEN_PROGRAM_ID)||ix.programId.equals(spl.TOKEN_2022_PROGRAM_ID)){const P=ix.programId;
     switch(ix.data[0]){
      case spl.TokenInstruction.InitializeMint2:{const d=spl.decodeInitializeMint2Instruction(ix);assert.equal(d.data.freezeAuthority,null);mints.set(d.keys.mint.pubkey.toBase58(),{decimals:d.data.decimals,authority:d.data.mintAuthority,supply:0n});break}
      case spl.TokenInstruction.MintToChecked:{const d=spl.decodeMintToCheckedInstruction(ix),mint=mints.get(d.keys.mint.pubkey.toBase58());assert.ok(mint.authority.equals(d.keys.authority.pubkey));mint.supply+=d.data.amount;accounts.get(d.keys.destination.pubkey.toBase58()).amount+=d.data.amount;break}
      case spl.TokenInstruction.SetAuthority:{const d=spl.decodeSetAuthorityInstruction(ix);assert.equal(d.data.authorityType,spl.AuthorityType.MintTokens);assert.equal(d.data.newAuthority,null);mints.get(d.keys.account.pubkey.toBase58()).authority=null;break}
-     case spl.TokenInstruction.TransferChecked:{const d=spl.decodeTransferCheckedInstruction(ix),from=accounts.get(d.keys.source.pubkey.toBase58()),to=accounts.get(d.keys.destination.pubkey.toBase58());assert.equal(from.owner,d.keys.owner.pubkey.toBase58());assert.ok(from.amount>=d.data.amount);from.amount-=d.data.amount;to.amount+=d.data.amount;break}
+     case spl.TokenInstruction.TransferChecked:{const d=spl.decodeTransferCheckedInstruction(ix,P),from=accounts.get(d.keys.source.pubkey.toBase58()),to=accounts.get(d.keys.destination.pubkey.toBase58());assert.equal(from.owner,d.keys.owner.pubkey.toBase58());assert.ok(from.amount>=d.data.amount);from.amount-=d.data.amount;to.amount+=d.data.amount;break}
      case spl.TokenInstruction.BurnChecked:{const d=spl.decodeBurnCheckedInstruction(ix),ata=d.keys.account.pubkey.toBase58(),account=accounts.get(ata),mint=d.keys.mint.pubkey.toBase58(),index=keys.findIndex(k=>k.pubkey.equals(d.keys.account.pubkey));assert.equal(account.owner,d.keys.owner.pubkey.toBase58());assert.equal(d.data.decimals,6);assert.ok(account.amount>=d.data.amount);pre.push({accountIndex:index,mint,owner:account.owner,uiTokenAmount:{amount:account.amount.toString(),decimals:6}});account.amount-=d.data.amount;mints.get(mint).supply-=d.data.amount;post.push({accountIndex:index,mint,owner:account.owner,uiTokenAmount:{amount:account.amount.toString(),decimals:6}});instructions.push({programId:ix.programId,parsed:{type:'burnChecked',info:{account:ata,mint,authority:account.owner,tokenAmount:{amount:d.data.amount.toString(),decimals:6}}}});break}
      default:throw Error('Unexpected SPL instruction '+ix.data[0]);
     }
@@ -76,6 +76,22 @@ const html=fs.readFileSync(require('node:path').join(__dirname,'../app/public/in
   assert.deepEqual(transfers.map(t=>[t.data.amount,t.keys.destination.pubkey.toBase58()]),[[50000n*UNIT,custodyAta]],'fee-free: the whole amount to custody in one transfer');
   assert.deepEqual(atas.map(i=>i.keys[1].pubkey.toBase58()),[custodyAta],'only the custody token account is created');assert.deepEqual(memos.map(i=>i.data.toString()),['shinobi-deposit-v2:'+id]);
   assert.equal(r.record.studioFee,0);client.acknowledge(r.record.hash);}
+ // Token-2022 SR mint (as released on Mainnet): the wallet reads the mint's owner program on-chain and uses it for the
+ // balance account, the custody account creation and the transfer. Other programs never reach a signature.
+ {const P22=spl.TOKEN_2022_PROGRAM_ID,m22=web3.Keypair.generate().publicKey,me=new web3.PublicKey(client.state.account);
+  mints.set(m22.toBase58(),{decimals:6,authority:null,supply:mints.get(mint).supply,program:P22});
+  const mine=spl.getAssociatedTokenAddressSync(m22,me,false,P22).toBase58(),custodyAta=spl.getAssociatedTokenAddressSync(m22,other.publicKey,false,P22).toBase58();
+  accounts.set(mine,{owner:me.toBase58(),mint:m22.toBase58(),amount:300000n*UNIT});
+  await client.installConfig(m22.toBase58());assert.equal(client.state.tokenAddress,m22.toBase58());assert.equal(client.state.tokenBalance,(300000n*UNIT).toString(),'balance read from the Token-2022 account');
+  const before=submitted.length,id=crypto.randomUUID(),r=await client.deposit(40000,other.publicKey.toBase58(),id,null),tx=submitted[submitted.length-1];assert.equal(submitted.length,before+1);
+  assert(!tx.instructions.some(i=>i.programId.equals(spl.TOKEN_PROGRAM_ID)),'no classic token instruction for a Token-2022 mint');
+  const transfers=tx.instructions.filter(i=>i.programId.equals(P22)).map(i=>spl.decodeTransferCheckedInstruction(i,P22)),atas=tx.instructions.filter(i=>i.programId.equals(spl.ASSOCIATED_TOKEN_PROGRAM_ID));
+  assert.deepEqual(transfers.map(t=>[t.data.amount,t.keys.source.pubkey.toBase58(),t.keys.destination.pubkey.toBase58(),t.keys.mint.pubkey.toBase58()]),[[40000n*UNIT,mine,custodyAta,m22.toBase58()]]);
+  assert.deepEqual(atas.map(i=>[i.keys[1].pubkey.toBase58(),i.keys[5].pubkey.toBase58()]),[[custodyAta,P22.toBase58()]],'custody account created under Token-2022');
+  assert.equal(accounts.get(custodyAta).amount,40000n*UNIT);assert.equal(accounts.get(mine).amount,260000n*UNIT);client.acknowledge(r.record.hash);
+  mints.set(m22.toBase58(),{decimals:6,authority:null,supply:mints.get(mint).supply,program:web3.Keypair.generate().publicKey});
+  await assert.rejects(client.installConfig(m22.toBase58()),'a mint owned by any other program is refused');
+  await client.installConfig(mint);assert.equal(client.state.tokenAddress,mint);}
  await client.recoverPending();assert.match(client.state.message,/No pending/);assert.equal(client.state.busy,false);
  const preserved=JSON.stringify([deposits[0].record]);storage.set('shinobi-solana-pending-v1',preserved);rpcFetchMode='rate';await assert.rejects(client.recoverPending(),/rate-limit/);assert.equal(client.state.busy,false);assert.equal(storage.get('shinobi-solana-pending-v1'),preserved);rpcFetchMode='timeout';await assert.rejects(client.recoverPending(),/timed out/);assert.equal(client.state.busy,false);assert.equal(storage.get('shinobi-solana-pending-v1'),preserved);rpcFetchMode='ok';assert.equal(client.pendingDeposits,1,'failed status refresh never erases native pending record');await client.recoverPending();client.acknowledge(deposits[0].record.hash);
  console.log(JSON.stringify({wallets:'Phantom + Solflare',mainnetRpc:'blocked before signing',mint:'1b total: 980m issuer + 20m studio; authority revoked; signatures verified',distribution:'1m gross: 980k tester + 20k studio',burn:'finalized receipt + memo + balance delta verified',rejection:'no burn',walletMutation:'blocked',failedTransaction:'no burn/credit',accountChange:'recover once after reconnect',deposit:'SPL transfer and unique memo; pending recovery',invalidMintAndReceipt:'rejected',pendingDepositGetter:'owner/mint/network/kind scoped; empty or failed receipt recovery preserves count; acknowledgement clears count',validation:'SDK signatures/serialization with simulated RPC; no validator/public deployment'},null,2));

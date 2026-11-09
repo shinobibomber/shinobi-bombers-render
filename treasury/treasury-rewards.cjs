@@ -138,7 +138,7 @@ async function claimFunding({ store, connection, mint, treasuryAddress, checkNet
     try {
       await checkNetwork();
       const { PublicKey } = require('@solana/web3.js'), spl = require('@solana/spl-token');
-      const ata = spl.getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(treasuryAddress));
+      const ata = spl.getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(treasuryAddress), false, require('./live-economy.cjs').programId());
       custody = Number((await connection.getTokenAccountBalance(ata, 'finalized')).value.amount) / Number(UNIT);
     } catch { custody = null; }
     const budget = await rewardBudget(store, c), used = Number((await c.query('SELECT COALESCE(SUM(amount),0) AS n FROM ryo_reward_claims WHERE scope=$1 AND created>$2', [store.scope, store.now() - DAY])).rows[0].n);

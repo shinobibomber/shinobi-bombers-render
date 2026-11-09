@@ -49,7 +49,11 @@ function readAnnouncements(file) {
 /* privateAccess (only when RELEASE_STAGE=private, see network/network.cjs): { allowed(wallet) -> boolean }.
  * The "private-access" action then hands an allowlisted, signed-in wallet the same session token in a second
  * cookie (PRIVATE_COOKIE, Path=/) that the site host checks on every game path. Without it the action does not exist. */
-function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null, privateAccess = null, foundersConnection = null, priceFetch = null, usdPrices = null } = {}) {
+/* mode 'founders' (after the public launch, owner decision 2026-11-09): only what the /founders page needs stays
+ * mounted (status, leaderboard, sign-in, the player's own profile and the Founder sale). Referrals, creators, the
+ * treasury admin view and private access answer 404 there; the game has its own screens for them. */
+const FOUNDERS_ACTIONS = new Set(['status', 'leaderboard', 'founders-info', 'challenge', 'login', 'logout', 'me', 'register', 'preferences', 'founders-mint', 'founders-confirm']);
+function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null, privateAccess = null, mode = 'portal', foundersConnection = null, priceFetch = null, usdPrices = null } = {}) {
   const server = path.join(gameDir, 'server'), need = name => require(path.join(server, name));
   const fromApp = name => require(require.resolve(name, { paths: [server] }));
   const { Store } = need('store.cjs'), { verifySignature } = need('service.cjs'), cp = need('creators-portal.cjs'), players = need('player-referrals.cjs');
@@ -275,7 +279,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
   }
 
   function status() {
-    return { prelaunch: true, network: net.label, launchAt, registrationEnabled: flags.registration, referralsEnabled: flags.referrals,
+    return { prelaunch: mode !== 'founders', network: net.label, launchAt, registrationEnabled: flags.registration, referralsEnabled: flags.referrals,
       links, announcements: readAnnouncements(announcementsFile),
       referralProgram: { paidHeroes: 15, clearedStage: 5, heroesPerReferral: 2, bound: true } };
   }
@@ -298,6 +302,7 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
 
   async function dispatch(req, body, ip) {
     const action = body.action; limit(ip, action);
+    if (mode === 'founders' && !FOUNDERS_ACTIONS.has(action)) fail('Unknown action.', 404, 'UNKNOWN_ACTION');
     if (action === 'status') return { data: status() };
     if (action === 'leaderboard') return { data: await leaderboard(body) };
     if (action === 'founders-info') { let w = null; if (sessionToken(req)) { try { w = (await authenticated(req)).wallet; } catch {} } releaseExpiredFounders(); const [data, usd] = await Promise.all([need('founders.cjs').info(store, w, env), solUsd()]); if (usd) data.founders.usdPerSol = usd; data.founders.wallet = w; return { data }; }
@@ -376,4 +381,4 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
   }
   return { handle, store, pool, status, close: () => pool.end?.() };
 }
-module.exports = { createPrelaunch, COOKIE, PRIVATE_COOKIE, readAnnouncements };
+module.exports = { createPrelaunch, COOKIE, PRIVATE_COOKIE, FOUNDERS_ACTIONS, readAnnouncements };

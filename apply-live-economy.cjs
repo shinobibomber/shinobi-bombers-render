@@ -18,7 +18,16 @@ const serviceHooks = [
   // reports studioAddress null and studioFeeBps 0 without editing another step's output.
   ["...require('./treasury-rewards.cjs').publicConfig(),", "...require('./treasury-rewards.cjs').publicConfig(),..." + L + ".depositConfig(studioAddress),"],
   ["...(q.treasury>0?transferTo(revenueAddress,BigInt(q.treasury)*UNIT):[]),spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6),memo('shinobi-hunt-v1:'",
-   "...(q.treasury>0?transferTo(" + L + ".huntTreasury(revenueAddress),BigInt(q.treasury)*UNIT):[]),spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6),memo('shinobi-hunt-v1:'"],
+   "...(q.treasury>0?transferTo(" + L + ".huntTreasury(revenueAddress),BigInt(q.treasury)*UNIT):[]),spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6,[]," + L + ".programId()),memo('shinobi-hunt-v1:'"],
+  // SR token program (classic SPL Token or Token-2022, from the reviewed registry on live; classic on the test server):
+  // the mint check, the custody account, payouts and burns all use it. Applied after the Boss Hunt hook above.
+  ["const value=await spl.getMint(connection,key(mint),'finalized');", 'const value=await ' + L + '.getMint(connection,mint);'],
+  ['spl.getAssociatedTokenAddressSync(key(mint),treasury.publicKey)', 'spl.getAssociatedTokenAddressSync(key(mint),treasury.publicKey,false,' + L + '.programId())'],
+  // Payouts: the classic `ata` computed by the original (and apply-sr-revenue's text) is left as is; the instructions use
+  // the registered program's account. Only text after "return [" is replaced, so every earlier step stays re-runnable.
+  ['spl.createAssociatedTokenAccountIdempotentInstruction(treasury.publicKey,ata,owner,key(mint)),spl.createTransferCheckedInstruction(treasuryAta,key(mint),ata,treasury.publicKey,raw,6)]}',
+   'spl.createAssociatedTokenAccountIdempotentInstruction(treasury.publicKey,' + L + '.ata(key(mint),owner),owner,key(mint),' + L + '.programId()),spl.createTransferCheckedInstruction(treasuryAta,key(mint),' + L + '.ata(key(mint),owner),treasury.publicKey,raw,6,[],' + L + '.programId())]}'],
+  ["spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6)]:[]),memo('shinobi-purchase-v2:'", "spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,BigInt(q.burn)*UNIT,6,[]," + L + ".programId())]:[]),memo('shinobi-purchase-v2:'"],
 ];
 // /beta-config.json: on live the token config is ready with the mint alone and publishes no studio destination.
 const renderHooks = [
@@ -39,9 +48,18 @@ const clientPatches = [
   ['const studio=key(studioAddress),studioAta=sdk.getAssociatedTokenAddressSync(mint,studio);',
    'const feeFree=studioAddress===null,studio=feeFree?null:key(studioAddress),studioAta=feeFree?null:sdk.getAssociatedTokenAddressSync(mint,studio);', 1],
   ['sdk.createAssociatedTokenAccountIdempotentInstruction(owner,destination,treasury,mint),sdk.createAssociatedTokenAccountIdempotentInstruction(owner,studioAta,studio,mint),sdk.createTransferCheckedInstruction(source,mint,destination,owner,BigInt(net)*UNIT,DECIMALS),sdk.createTransferCheckedInstruction(source,mint,studioAta,owner,BigInt(studioFee)*UNIT,DECIMALS),',
-   'sdk.createAssociatedTokenAccountIdempotentInstruction(owner,destination,treasury,mint),...(feeFree?[]:[sdk.createAssociatedTokenAccountIdempotentInstruction(owner,studioAta,studio,mint)]),sdk.createTransferCheckedInstruction(source,mint,destination,owner,BigInt(net)*UNIT,DECIMALS),...(feeFree?[]:[sdk.createTransferCheckedInstruction(source,mint,studioAta,owner,BigInt(studioFee)*UNIT,DECIMALS)]),', 1],
+   'sdk.createAssociatedTokenAccountIdempotentInstruction(owner,destination,treasury,mint,tokenProgram),...(feeFree?[]:[sdk.createAssociatedTokenAccountIdempotentInstruction(owner,studioAta,studio,mint)]),sdk.createTransferCheckedInstruction(source,mint,destination,owner,BigInt(net)*UNIT,DECIMALS,[],tokenProgram),...(feeFree?[]:[sdk.createTransferCheckedInstruction(source,mint,studioAta,owner,BigInt(studioFee)*UNIT,DECIMALS)]),', 1],
   ["notify('Deposit finalized: '+(amount-Math.ceil(amount/50)).toLocaleString()+' Ryo credited after the 2% studio fee.')",
    "notify(result.record?.studioFee===0?'Deposit finalized: '+amount.toLocaleString()+' Ryo credited (no deposit fee).':'Deposit finalized: '+(amount-Math.ceil(amount/50)).toLocaleString()+' Ryo credited after the 2% studio fee.')", 1],
+  // SR token program: verifyMint reads the mint account's owner on-chain and accepts only classic SPL Token or Token-2022
+  // (anything else fails in getMint); the balance account and the deposit then use that program. A classic mint behaves
+  // exactly as before (tokenProgram undefined -> the library default). The server verifies the registered program anyway.
+  ['provider=null,listeners=null;', 'provider=null,listeners=null,tokenProgram;', 1],
+  ["const mint=await sdk.getMint(connection,key(address),'confirmed',sdk.TOKEN_PROGRAM_ID);",
+   "const owner=(await connection.getAccountInfo(key(address),'confirmed'))?.owner?.toBase58(),program=owner==='TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'?key(owner):sdk.TOKEN_PROGRAM_ID;const mint=await sdk.getMint(connection,key(address),'confirmed',program);tokenProgram=program.equals(sdk.TOKEN_PROGRAM_ID)?undefined:program;", 1],
+  ['const ata=sdk.getAssociatedTokenAddressSync(key(state.tokenAddress),key(account));', 'const ata=sdk.getAssociatedTokenAddressSync(key(state.tokenAddress),key(account),false,tokenProgram);', 1],
+  ['source=sdk.getAssociatedTokenAddressSync(mint,owner),destination=sdk.getAssociatedTokenAddressSync(mint,treasury);',
+   'source=sdk.getAssociatedTokenAddressSync(mint,owner,false,tokenProgram),destination=sdk.getAssociatedTokenAddressSync(mint,treasury,false,tokenProgram);', 1],
 ];
 // Live (Mainnet build) wording, applied by apply-network.cjs after apply-treasury's live text.
 // (The fee-free notice and the deposit fee line are part of apply-treasury's live patches, which own those strings.)

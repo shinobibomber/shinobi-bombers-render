@@ -13,6 +13,33 @@ function fail(message, status = 400) { throw Object.assign(Error(message), { sta
 const live = () => { try { return require('./network.cjs').built(__dirname).key === 'mainnet'; } catch { return false; } };
 const present = v => typeof v === 'string' && v.trim() !== '';
 
+/* ---------- SR token program (classic SPL Token or Token-2022), decided by the reviewed registry ---------- */
+const TOKEN_2022 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+/** The SR mint's token program: the registry's srMintProgram on the live build, the classic program on the test server. */
+function programId() {
+  const spl = require('@solana/spl-token');
+  if (!live()) return spl.TOKEN_PROGRAM_ID;
+  return require('./treasury-registry.cjs').registry().srMintProgram === 'token-2022' ? spl.TOKEN_2022_PROGRAM_ID : spl.TOKEN_PROGRAM_ID;
+}
+/** The associated SR token account of `owner` (off-curve allowed, e.g. a Squads vault) under the registered program. */
+function ata(mint, owner) { return require('@solana/spl-token').getAssociatedTokenAddressSync(mint, owner, true, programId()); }
+/* Token-2022 mint extensions the game accepts: name/metadata only. Anything that changes transfers or balances (transfer
+ * fee, transfer hook, permanent delegate, default frozen state, non-transferable, confidential, interest) is refused. */
+const ALLOWED_EXTENSIONS = ['MetadataPointer', 'TokenMetadata'];
+/** Reads the SR mint with the registered program; fails closed on an unexpected owner program or extension. */
+async function getMint(connection, mint) {
+  const spl = require('@solana/spl-token'), { PublicKey } = require('@solana/web3.js'), program = programId(), key = new PublicKey(mint);
+  const info = await connection.getAccountInfo(key, 'finalized');
+  if (!info || !info.owner.equals(program)) fail('Server token mint does not match the registered SR token program.', 503);
+  const value = spl.unpackMint(key, info, program);
+  if (program.equals(spl.TOKEN_2022_PROGRAM_ID)) {
+    const names = spl.getExtensionTypes(value.tlvData).map(t => spl.ExtensionType[t]);
+    const bad = names.filter(n => !ALLOWED_EXTENSIONS.includes(n));
+    if (bad.length) fail('The SR token uses unsupported Token-2022 extensions (' + bad.join(', ') + ').', 503);
+  }
+  return value;
+}
+
 /** Validates the studio/revenue wallets: required on the test server; on live validated only when configured. */
 function wallets(address, studioAddress, revenueAddress) {
   for (const value of [studioAddress, revenueAddress]) if (!live() || present(value)) address(value);
@@ -43,10 +70,10 @@ function verifyFeeFreeDeposit(receipt, { wallet, mint, treasury, signature: hash
   if (!receipt?.meta || receipt.meta.err || receipt.transaction?.signatures?.[0] !== hash) fail('Deposit is failed or does not match the signature.');
   const message = receipt.transaction.message, keys = message.accountKeys, feePayer = keys?.[0];
   if (!feePayer?.signer || feePayer.pubkey.toString() !== wallet) fail('Deposit must be signed by your connected wallet.');
-  const source = spl.getAssociatedTokenAddressSync(key(mint), key(wallet)).toBase58(), vault = spl.getAssociatedTokenAddressSync(key(mint), key(treasury)).toBase58();
+  const P = programId(), source = spl.getAssociatedTokenAddressSync(key(mint), key(wallet), false, P).toBase58(), vault = spl.getAssociatedTokenAddressSync(key(mint), key(treasury), false, P).toBase58();
   let instructions; try { instructions = stripComputeBudgetInstructions(message.instructions, { enforcePriorityCap: false }); } catch { fail('Invalid wallet network-fee instructions.'); }
   if (!Array.isArray(instructions) || instructions.length < 2 || instructions.length > 3) fail('Unexpected deposit instructions.');
-  const TOKEN = spl.TOKEN_PROGRAM_ID.toBase58(), ATA = spl.ASSOCIATED_TOKEN_PROGRAM_ID.toBase58(), MEMO_ID = MEMO.toBase58();
+  const TOKEN = P.toBase58(), ATA = spl.ASSOCIATED_TOKEN_PROGRAM_ID.toBase58(), MEMO_ID = MEMO.toBase58();
   if (instructions.some(i => ![TOKEN, MEMO_ID, ATA].includes(i.programId.toString()))) fail('Unexpected program in deposit.');
   const transfers = instructions.filter(i => i.programId.toString() === TOKEN), memos = instructions.filter(i => i.programId.toString() === MEMO_ID);
   if (transfers.length !== 1 || memos.length !== 1 || memos[0].parsed !== 'shinobi-deposit-v2:' + id) fail('Missing deposit transfer or memo.');
@@ -81,4 +108,4 @@ function assertPurchase(action, body) {
   if (live() && action === 'purchase' && body && body.product === 'hunt') throw Object.assign(Error('Enter Boss Hunt from the Boss Hunt screen.'), { status: 403, code: 'LAUNCH_GATE_CLOSED', gate: 'bossHunt' });
 }
 
-module.exports = { live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };
+module.exports = { TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };
