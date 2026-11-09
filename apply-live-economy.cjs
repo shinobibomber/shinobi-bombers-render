@@ -22,6 +22,8 @@ const serviceHooks = [
   // SR token program (classic SPL Token or Token-2022, from the reviewed registry on live; classic on the test server):
   // the mint check, the custody account, payouts and burns all use it. Applied after the Boss Hunt hook above.
   ["const value=await spl.getMint(connection,key(mint),'finalized');", 'const value=await ' + L + '.getMint(connection,mint);'],
+  // RPC load: the RPC's genesis hash is read once per process (live-economy genesis), not on every game action.
+  ["async function checkNetwork(){if(await connection.getGenesisHash()!==GENESIS)", "async function checkNetwork(){if(await " + L + ".genesis(connection)!==GENESIS)"],
   ['spl.getAssociatedTokenAddressSync(key(mint),treasury.publicKey)', 'spl.getAssociatedTokenAddressSync(key(mint),treasury.publicKey,false,' + L + '.programId())'],
   // Payouts: the classic `ata` computed by the original (and apply-sr-revenue's text) is left as is; the instructions use
   // the registered program's account. Only text after "return [" is replaced, so every earlier step stays re-runnable.

@@ -26,8 +26,28 @@ function ata(mint, owner) { return require('@solana/spl-token').getAssociatedTok
 /* Token-2022 mint extensions the game accepts: name/metadata only. Anything that changes transfers or balances (transfer
  * fee, transfer hook, permanent delegate, default frozen state, non-transferable, confidential, interest) is refused. */
 const ALLOWED_EXTENSIONS = ['MetadataPointer', 'TokenMetadata'];
+/* RPC load (launch night 2026-11-09: "429 Connection rate limits exceeded"). Two reads repeated on every game action are
+ * cached per process: the RPC's genesis hash (a network's genesis never changes; only a successful read is kept) and the
+ * verified SR mint (no mint or freeze authority, fixed extensions: it cannot change in a way that matters; re-read every
+ * 10 minutes). A failed check is never cached. */
+const genesisSeen = new WeakMap(), mintSeen = new Map(), MINT_CACHE_MS = 10 * 60000;
+async function genesis(connection) {
+  if (!live()) return connection.getGenesisHash();   // the test server keeps checking on every call
+  if (genesisSeen.has(connection)) return genesisSeen.get(connection);
+  const g = await connection.getGenesisHash(); genesisSeen.set(connection, g); return g;
+}
 /** Reads the SR mint with the registered program; fails closed on an unexpected owner program or extension. */
 async function getMint(connection, mint) {
+  // Only the registered SR mint on the live build is cached.
+  let registered = false; try { registered = live() && require('./treasury-registry.cjs').registry().srMintAddress === String(mint); } catch {}
+  if (!registered) return readMint(connection, mint);
+  const cacheKey = String(mint) + ':' + programId().toBase58(), hit = mintSeen.get(cacheKey);
+  if (hit && hit.connection === connection && Date.now() - hit.at < MINT_CACHE_MS) return hit.value;
+  const value = await readMint(connection, mint);
+  mintSeen.set(cacheKey, { connection, value, at: Date.now() });
+  return value;
+}
+async function readMint(connection, mint) {
   const spl = require('@solana/spl-token'), { PublicKey } = require('@solana/web3.js'), program = programId(), key = new PublicKey(mint);
   const info = await connection.getAccountInfo(key, 'finalized');
   if (!info || !info.owner.equals(program)) fail('Server token mint does not match the registered SR token program.', 503);
@@ -121,4 +141,4 @@ function cleanStarterProfile(profile) {
   return profile;
 }
 
-module.exports = { initialProfile, cleanStarterProfile, TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };
+module.exports = { genesis, initialProfile, cleanStarterProfile, TOKEN_2022, ALLOWED_EXTENSIONS, programId, ata, getMint, live, wallets, required, feeFree, depositConfig, huntTreasury, verifyFeeFreeDeposit, verifier, marketConfigured, tokenConfigReady, publicStudio, assertPurchase };

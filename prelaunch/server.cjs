@@ -235,7 +235,14 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     // The SOL receipt wallet is checked where a payment is built (founders.cjs founderRevenue), never here: confirming
     // an already-paid reservation must keep working even if FOUNDERS_REVENUE_WALLET is later removed or mistyped.
     if (!rpc) fail('Founder box sales are not configured.', 503, 'FOUNDERS_NOT_CONFIGURED');
-    const connection = foundersConnection || new (fromApp('@solana/web3.js').Connection)(rpc, 'finalized');
+    const base = foundersConnection || new (fromApp('@solana/web3.js').Connection)(rpc, 'finalized');
+    // RPC load (launch night 2026-11-09): rent-exemption amounts depend only on the account size, so each size is read
+    // once an hour instead of up to three times per Founder box (build + gas preflight). Everything else is unchanged.
+    const rent = new Map(), connection = Object.create(base);
+    connection.getMinimumBalanceForRentExemption = async (size, commitment) => {
+      const hit = rent.get(size); if (hit && now() - hit.at < 3600000) return hit.value;
+      const value = await base.getMinimumBalanceForRentExemption(size, commitment); rent.set(size, { value, at: now() }); return value;
+    };
     if (await connection.getGenesisHash() !== net.genesis) fail('Founder box sales are temporarily offline.', 503, 'FOUNDERS_NETWORK');
     return (foundersCtx = { store, connection, origin });
   }

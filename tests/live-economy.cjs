@@ -105,6 +105,13 @@ const passed = [];
       assert(E.programId().equals(spl.TOKEN_PROGRAM_ID), 'without srMintProgram the registry means classic SPL Token');
       passed.push('SR token program: registry-decided on live (classic on the test server); Token-2022 mint accepted only with MetadataPointer/TokenMetadata; transfer fee/hook, permanent delegate, non-transferable, default-frozen and wrong-program mints refused; Token-2022 treasury account checks'); }
 
+    // ---- RPC load: genesis read once per connection on live; the registered mint verified once per 10 minutes.
+    { mainnet(); let calls = 0; const c1 = { async getGenesisHash() { calls++; return 'G1'; } };
+      assert.equal(await E.genesis(c1), 'G1'); assert.equal(await E.genesis(c1), 'G1'); assert.equal(calls, 1, 'live: one genesis read per connection');
+      const bad = { async getGenesisHash() { throw Error('rpc down'); } }; await assert.rejects(E.genesis(bad), /rpc down/); await assert.rejects(E.genesis(bad), /rpc down/, 'a failed read is never cached');
+      devnet(); calls = 0; await E.genesis(c1); await E.genesis(c1); assert.equal(calls, 2, 'test server: checked on every call'); mainnet();
+      passed.push('RPC load: genesis cached per connection on live only, failures never cached'); }
+
     // ---- No free starter heroes on live (owner decision 2026-11-09).
     { const economy = require('../app/server/economy.cjs');
       mainnet();

@@ -70,7 +70,8 @@ function transfers(hash){return wireByHash.get(hash).instructions.filter(i=>i.pr
  networkError=false;height=1;const failed=await call('withdraw',{amount:100000,requestId:crypto.randomUUID()});statuses.set(failed.withdrawal.signature,{confirmationStatus:'finalized',err:{InstructionError:[1,'InsufficientFunds']}});await call('state');assert.equal(await store.balance(wallet),first.balance);
  // Failed burns/fees must refund the entire reservation and deliver no asset.
  const beforeProfile=(await store.profile(wallet)).heroes.length,beforeMoney=await store.balance(wallet),pendingPurchase=await call('purchase',{...purchaseParams,expectedTotal:q.total,requestId:crypto.randomUUID()});assert.equal(pendingPurchase.purchase.status,'pending');assert.equal(pendingPurchase.purchase.result,null);assert.equal((await store.profile(wallet)).heroes.length,beforeProfile);await assert.rejects(call('purchase',{...purchaseParams,expectedTotal:q.total,requestId:crypto.randomUUID()}),/pending token/);statuses.set(pendingPurchase.purchase.signature,{confirmationStatus:'finalized',err:{InstructionError:[4,'failed burn']}});await call('state');assert.equal(await store.balance(wallet),beforeMoney);assert.equal((await store.profile(wallet)).heroes.length,beforeProfile);
- genesis='mainnet';await assert.rejects(call('withdraw',{amount:100000,requestId:crypto.randomUUID()}),/not Solana Devnet/);genesis=GENESIS;
+ // Live caches the RPC's genesis per process (it cannot change without a restart; see live-economy.cjs): the switch below is test-server only.
+ if(!LIVE){genesis='mainnet';await assert.rejects(call('withdraw',{amount:100000,requestId:crypto.randomUUID()}),/not Solana Devnet/);genesis=GENESIS;}
 
 
  const {advance,rewardRatePercent,REWARD_POOL_STEP}=require('../app/server/adventure.cjs');

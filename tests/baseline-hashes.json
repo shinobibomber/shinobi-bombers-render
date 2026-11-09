@@ -295,7 +295,7 @@
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "a7def6ebbab2c4c6361a68ad7ca7eb57d7ca44c939b26f7ad7a035d9e10d1c1c"
+      "sha256": "e7c99a09c6ab9a16e330f4d483da4f248e03f7bf2c30ac8d13b1f28c8cea8708"
     },
     {
       "path": "app/server/store.cjs",
