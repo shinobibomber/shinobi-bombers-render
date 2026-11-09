@@ -362,7 +362,14 @@
   MODS.summon = {
     qty: a => { if (QTY.includes(+a) && window.Combat) Combat.quantity(+a); refresh(); },
     pick: a => { if (QTY.includes(+a) && window.Combat) Combat.quantity(+a); refresh(); },
-    summon: () => { if (!pressOnclick('#p2', 'Combat.summonBatch()')) toast(account() ? 'Summon is busy – try again in a moment.' : 'Sign in with your wallet to summon.'); },
+    summon: () => {
+      if (pressOnclick('#p2', 'Combat.summonBatch()')) return;
+      if (!account()) return toast('Sign in with your wallet to summon.');
+      // The native button is disabled when the game balance cannot pay the total: say so and open the Chest to deposit.
+      const total = nativeText('#p2', /Total\s+[\d,]+\s*Ryo/i).replace(/^Total\s+/i, ''), price = Number(total.replace(/[^\d]/g, ''));
+      if (window.GameCurrency && price > 0 && !GameCurrency.canAfford(price)) { toast('Not enough Ryo for this summon (' + total + '). Deposit SR from your Chest first.'); return openChest(); }
+      toast('Summon is busy – try again in a moment.');
+    },
     gallery: () => go(1), history: () => summonHistory(),
     flashRates: () => { const r = $('.hs[data-sbwid="rates"]', built.summon.st); if (r) { r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash'); } toast('Rates: Genin 60% · Chunin 25% · Jonin 10% · Elite 4% · Legend 1%'); },
     legend: () => notice('Legend rate-up', 'No limited-time rate-up is active. Every summon uses the fixed rates: Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1%.'),

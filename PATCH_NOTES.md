@@ -8,6 +8,7 @@
 - The login screen now shows Solana Mainnet, and its Discord, X and Pump.fun buttons open our official pages.
 - New accounts no longer receive free Genin heroes: every hero comes from the Summoning Shrine. Unused free starter Genin were removed from accounts that had not played with them yet.
 - Founder rewards are open: Founder box buyers can sign in with their buying wallet and press the FOUNDER button (bottom-left) to activate their benefits. The button is now visible on every screen.
+- Summoning without enough Ryo now tells you so and opens your Chest to deposit SR (it used to say "Summon is busy").
 - The Founder panel now explains that the 10 Limited Summon Passes arrive when you press Activate Founder benefits. Mythic Founders are no longer offered the paid Sensei: it is included free with the box.
 
 ## November 9, 2026 — Feature schedule control
