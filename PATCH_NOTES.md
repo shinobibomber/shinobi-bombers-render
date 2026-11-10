@@ -1,5 +1,14 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Rescued prisoners now join your collection
+
+- Freeing a prisoner in Adventure (the cage that comes with every 25th-stage commander, or a rare random cage) now gives you a real hero that is saved to your account and shows up in your Heroes collection. Before, the rescued hero only existed in your browser and disappeared a few seconds later.
+- Every prison cage you free counts: there is no daily limit. You only need to be signed in and playing Adventure.
+- Rescued heroes use the Summoning Shrine odds: Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1% (never Mythic).
+- Rescued heroes are account-bound: they can't be listed on the Market or salvaged for Upgrade Shards, and a hero fused from one stays bound.
+- The "Hero rescued" reveal plays when your new hero arrives.
+- Fair-play rule: rescue heroes are spaced by real battle. If you free two prisoners very close together, the second hero is kept and joins you automatically after a bit more fighting (up to 3 can wait, even if you reload the page).
+
 ## November 10, 2026 — Referral links with a typo still work
 
 - A referral link that was copied with extra characters on the end (for example `...?referral=RP009D06A47C922627AA2AMythic`) is now recognised as the original referral link, so new sign-ups through it count for the right player. Before, such a link was refused and the sign-up was not attributed to anyone.

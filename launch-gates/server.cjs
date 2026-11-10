@@ -42,7 +42,7 @@ function gateFor(action, body = {}) {
   if (action === 'purchase' && body && ['fusion', 'dojo', 'training'].includes(body.product)) return body.product;
   if (action === 'chat-send') return 'chat';
   if (['market-post', 'market-buy', 'market-offer', 'market-accept'].includes(action)) return 'marketplace';
-  if (['claim-adventure', 'creator-player-claim', 'creator-redeem'].includes(action)) return 'rewardClaims';
+  if (['claim-adventure', 'creator-player-claim', 'creator-redeem', 'prison-rescue'].includes(action)) return 'rewardClaims';
   if (['deposit', 'box-mint'].includes(action)) return 'solDeposits';
   if (action === 'withdraw') return 'solWithdrawals';
   if (action === 'hunt-enter') return 'bossHunt';

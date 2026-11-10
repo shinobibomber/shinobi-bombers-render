@@ -291,11 +291,11 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "2bdcc580d904ba4b2a1ec926f575a4abb7bbda18e33ac19891548d47ddbe4953"
+      "sha256": "a8f8fdf5ead1c1f1d228b3c32a599cf2626aeee46948668cecc84c61d3ed0865"
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "89b08f19f153109aaf1455cc8130e4afe64dcd774a77b17eaacf8d58eebd2e5e"
+      "sha256": "c7f15b7e80e9e770ea32d78633e11ccd54d6510f0f7801a8f77b1a64b7608fa8"
     },
     {
       "path": "app/server/store.cjs",
