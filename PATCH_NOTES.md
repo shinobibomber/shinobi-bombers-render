@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Referral links and Founder boxes
+
+- Referral and creator links are for new players. From now on, buying a Founder box counts as your first order, so a referral link can no longer be added to your account after you buy one.
+- If you joined through a broken or mistyped referral link, contact the team: staff can now link your account to the right referrer by hand.
+
 ## November 10, 2026 — Creator discount
 
 - Approved creators now pay 5% less for their own Summon, Fusion, Dojo, Sensei and Training.

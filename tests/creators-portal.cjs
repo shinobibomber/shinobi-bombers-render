@@ -101,7 +101,21 @@ async function fixture(p, f, account, snapshot) {
      await p.waitForFunction(() => WebsiteDesign.current() === 'heroes' && document.querySelectorAll('.sbw-scr.on .sbw-hcard').length >= 1, null, { timeout: 15000 });
      await p.evaluate(() => CreatorsPortal.open()); await p.waitForFunction(() => !document.querySelector('#creatorsPanel').hasAttribute('aria-busy') && CreatorsPortal.snapshot?.marker === 'shinobi-creators-portal-v1');
      await p.locator('#creatorsPanel [data-tab="history"]').click(); assert.match(await p.locator('.cp-table').innerText(), /not an NFT/);
+     // Owner request 2026-11-10: staff link a player who used a mistyped link (listed sign-ups without a referrer, "Use", link).
+     const uiFan = require('../app/node_modules/@solana/web3.js').Keypair.generate().publicKey.toBase58();
+     await store.pool.query("INSERT INTO ryo_players(scope,wallet,player_id,username,username_key,created,last_login) VALUES($1,$2,$3,'UiFan','uifan',$4,$4)", [store.scope, uiFan, crypto.randomUUID(), Date.now()]);
      await p.locator('#creatorsPanel [data-tab="admin"]').click();
+     await p.waitForSelector('[data-admin="link-referral"]');
+     await p.locator('[data-admin="link-referral"] summary').click();
+     await p.locator('[data-fill-player="UiFan"]').click();
+     assert.equal(await p.locator('[data-form="attribute"] [name="player"]').inputValue(), 'UiFan', '"Use" fills the player');
+     const creatorCode = await p.evaluate(() => CreatorsPortal.snapshot.creator.code);
+     await p.locator('[data-form="attribute"] [name="code"]').fill(new URL(p.url()).origin + '/?creator=' + creatorCode);
+     await p.locator('[data-form="attribute"] [name="reason"]').fill('Fixture: player used a broken link');
+     await p.locator('[data-form="attribute"] button').click();
+     await p.waitForFunction(() => /UiFan is now linked/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
+     assert.equal((await store.pool.query('SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [store.scope, uiFan])).rows[0].n * 1, 1, 'the staff link creates the referral');
+     assert.equal(await p.locator('[data-fill-player="UiFan"]').count(), 0, 'the linked player leaves the list');
      await p.screenshot({ path: path.join(root, 'tests/out/creators-admin-desktop.png') });
      await p.locator('#creatorsPanel [data-cp="close"]').click();
      await p.locator('[data-sbwid="nav-guild"]').click(); await p.waitForFunction(() => WebsiteDesign.current() === 'guild');

@@ -128,6 +128,13 @@ No endpoint transfers CP, withdraws it, swaps it or converts it into Ryo/SOL/USD
   delta = floor(SR x 10%) - the original CP, credited in the same transaction; original rows are never edited. It runs when the
   creator dashboard or a redemption loads, when staff open the admin view, and after each new commission for that referral.
   Read-only preview: `node tools/creator-founder-topup-report.cjs`.
+- New players only: a referral link attaches a player only before their first order (including a pending or confirmed
+  Founder box, since 2026-11-10) or Adventure progress.
+- Staff link by hand (owner request 2026-11-10): the approver-only admin section "Link a player to a referrer by hand" takes a
+  username or wallet, a referral link or code (a mistyped link resolves) and a reason. It runs the same attribute() with
+  opts.staff: the new-player rule and the enrollment pause are skipped; permanence (an existing referrer is never changed), self,
+  cycles, creator identities and the enrollment limit still apply. Each link is in the admin audit (admin.attribute-referral).
+  The section lists recent registered sign-ups without a referrer (filtered by the admin search box).
 - Creator discount (owner decision 2026-11-10): an APPROVED creator pays 5% less for their own Summon, Fusion, Dojo, Sensei and
   Training, or 10% once any of their referrals (creator or player link) has a CONFIRMED Founder box. It is applied after the
   Founder discount or the Mythic Box 10% (those two never stack with each other), one after the other. Store.profileLocked

@@ -157,8 +157,31 @@ const codeFor = () => 'SB' + crypto.randomBytes(7).toString('hex').toUpperCase()
 async function assertNewPlayer(store, c, wallet) {
   const [used] = await query(c, `SELECT EXISTS(SELECT 1 FROM ryo_purchases WHERE scope=$1 AND wallet=$2) OR EXISTS(SELECT 1 FROM ryo_spends WHERE scope=$1 AND wallet=$2)
     OR EXISTS(SELECT 1 FROM ryo_adventures WHERE scope=$1 AND wallet=$2 AND (COALESCE((data->>'kills')::numeric,0)>0 OR COALESCE((data->>'pending')::numeric,0)>0)) AS used`, [store.scope, wallet]);
-  if (used.used) fail('Referral links are for new players before their first order or Adventure progress.', 409);
+  // A Founder box (pending or confirmed) is a paid order too: it raises the creator to 10% (discount and commission), so a
+  // buyer can no longer be attached to a creator afterwards by a link (owner decision 2026-11-10; staff can still link by hand).
+  const founder = !used.used && await hasFounderTable(c) && (await query(c, "SELECT 1 FROM ryo_founder_purchases WHERE scope=$1 AND wallet=$2 AND status IN ('pending','confirmed') LIMIT 1", [store.scope, wallet])).length > 0;
+  if (used.used || founder) fail('Referral links are for new players before their first order or Adventure progress.', 409);
 }
+/** Staff tool: the referral link or code from a pasted link (?referral= / ?creator=) or a bare code. */
+function referralCodeOf(input) {
+  const v = text(input, 300), m = v.match(/[?&](?:referral|creator)=([A-Za-z0-9]{4,32})/i) || v.match(/^([A-Za-z0-9]{4,32})$/);
+  if (!m) fail('Enter a referral link or code.');
+  return m[1].toUpperCase();
+}
+/** Staff tool: a registered player by wallet or by username (the pre-launch / game username). */
+async function resolvePlayer(store, input) {
+  const v = text(input, 80);
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v)) {
+    const wallet = walletAddress(v), row = await hasTable(store.pool, 'ryo_players') ? (await query(store.pool, 'SELECT username FROM ryo_players WHERE scope=$1 AND wallet=$2', [store.scope, wallet]))[0] : null;
+    if (!row && !(await query(store.pool, 'SELECT 1 FROM ryo_profiles WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('No registered player or game account has that wallet.', 404);
+    return { wallet, username: row?.username || null };
+  }
+  if (!await hasTable(store.pool, 'ryo_players')) fail('Usernames are unavailable here. Enter the player wallet.', 404);
+  const row = (await query(store.pool, 'SELECT wallet,username FROM ryo_players WHERE scope=$1 AND username_key=$2', [store.scope, v.toLowerCase()]))[0];
+  if (!row) fail('No registered player has that username.', 404);
+  return { wallet: row.wallet, username: row.username };
+}
+const hasTable = async (db, name) => !!(await query(db, 'SELECT to_regclass($1) IS NOT NULL AS t', [name]))[0]?.t;
 function paidSummonQuantity(row) {
   if (row.product !== 'summon' || row.quote?.funding === 'bonus' || String(row.signature).startsWith('bonus:') || !row.signature || !row.wire) return 0;
   const outputs = row.result?.outputs || [], quantity = row.params?.quantity;
@@ -170,7 +193,9 @@ function advanceProof(store, profile, proof, active, report, verified) {
   const kills=Math.max(number(proof?.kills),number(verified?.kills));
   return {kills,map:Math.floor(kills/20)+1,last:store.now(),verifier:'settled-combat-v1'};
 }
-async function attribute(store, wallet, body) {
+// opts.staff (the approver-only admin tool): skips the new-player rule and the enrollment pause; permanence, self, cycles,
+// creator identities and the enrollment limit still apply.
+async function attribute(store, wallet, body, opts = {}) {
   let code = text(body.code, 32).toUpperCase();
   // A player link is "RP" + 20 hex characters, always 22 long. A pasted link with extra trailing characters (owner report
   // 2026-11-10: "...AA2AMythic") is the same link with a typo: if its first 22 characters are a real player code, use that code.
@@ -182,7 +207,7 @@ async function attribute(store, wallet, body) {
   if (code.startsWith('RP')) {
     // An approved creator's player link enrolls new players in the Creator Program; every other RP link is unchanged.
     const owner = (await query(store.pool, "SELECT c.code FROM ryo_player_referrers p JOIN ryo_creators c ON c.scope=p.scope AND c.wallet=p.wallet WHERE p.scope=$1 AND p.code=$2 AND c.status='APPROVED'", [store.scope, code]))[0];
-    if (!owner || await require('./player-referrals.cjs').referral(store, store.pool, wallet, false)) return require('./player-referrals.cjs').attribute(store, wallet, code);
+    if (!owner || await require('./player-referrals.cjs').referral(store, store.pool, wallet, false)) return require('./player-referrals.cjs').attribute(store, wallet, code, opts);
     code = owner.code;
   }
   return store.transaction(async c => {
@@ -190,8 +215,8 @@ async function attribute(store, wallet, body) {
     await store.locked(c, wallet);
     if (await require('./player-referrals.cjs').referral(store, c, wallet)) fail('Your referral attribution is permanent and cannot be overwritten.', 409);
     const old = await referral(store, c, wallet);
-    if (old) { const cr = (await query(c, 'SELECT code FROM ryo_creators WHERE scope=$1 AND id=$2', [store.scope, old.creator_id]))[0]; if (cr.code !== code) fail('Your referral attribution is permanent and cannot be overwritten.', 409); return { ok: true, existing: true }; }
-    if (config.enrollmentPaused) fail('New referral enrollment is paused. Previously accepted referrals keep their rewards.', 409);
+    if (old) { const cr = (await query(c, 'SELECT code FROM ryo_creators WHERE scope=$1 AND id=$2', [store.scope, old.creator_id]))[0]; if (cr.code !== code) fail('Your referral attribution is permanent and cannot be overwritten.', 409); if (opts.onLinked) await opts.onLinked(c, true); return { ok: true, existing: true }; }
+    if (config.enrollmentPaused && !opts.staff) fail('New referral enrollment is paused. Previously accepted referrals keep their rewards.', 409);
     const [n] = await query(c, 'SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1', [store.scope]);
     if (number(n.n) + await require('./player-referrals.cjs').count(store, c) >= config.enrollmentLimit) fail('The public referral enrollment limit has been reached.', 409);
     const creator = (await query(c, "SELECT * FROM ryo_creators WHERE scope=$1 AND code=$2 AND status='APPROVED'", [store.scope, code]))[0];
@@ -199,9 +224,10 @@ async function attribute(store, wallet, body) {
     if (!creator.application?.termsAt) fail('This creator must accept the program terms before enrolling referrals.', 409);
     if ((await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('Creator identities cannot refer themselves or other creator accounts.', 409);
     if ((await query(c, 'SELECT 1 FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2', [store.scope, wallet])).length) fail('An existing referrer cannot become a newly referred player.', 409);
-    await assertNewPlayer(store, c, wallet);
+    if (!opts.staff) await assertNewPlayer(store, c, wallet);
     await c.query('INSERT INTO ryo_creator_referrals(scope,wallet,creator_id,attributed) VALUES($1,$2,$3,$4)', [store.scope, wallet, creator.id, store.now()]);
     await recordEvent(store, c, 'attributed:' + wallet, wallet, 'attributed', { creatorId: creator.id });
+    if (opts.onLinked) await opts.onLinked(c, false);   // staff audit in the same transaction as the link
     return { ok: true };
   });
 }
@@ -452,14 +478,27 @@ async function adminSnapshot(store, wallet, body) {
     (SELECT COUNT(*) FROM ryo_creator_referrals WHERE scope=$1 AND qualified IS NULL) AS potential_milestones,
     (SELECT COUNT(*) FROM ryo_creator_redemptions WHERE scope=$1 AND status='fulfilled') AS redemptions`, [store.scope]);
   const audits = await query(store.pool, 'SELECT * FROM ryo_creator_audit WHERE scope=$1 ORDER BY sequence DESC LIMIT 40 OFFSET $2', [store.scope, offset]);
+  // Registered players with no referrer in either program (newest first), for the manual referral tool.
+  const unreferred = role === 'approver' && await hasTable(store.pool, 'ryo_players') ? await query(store.pool, `SELECT p.username,p.wallet,p.created FROM ryo_players p WHERE p.scope=$1 AND (p.username ILIKE $2 OR p.wallet ILIKE $2)
+    AND NOT EXISTS(SELECT 1 FROM ryo_player_referrals r WHERE r.scope=p.scope AND r.wallet=p.wallet) AND NOT EXISTS(SELECT 1 FROM ryo_creator_referrals r WHERE r.scope=p.scope AND r.wallet=p.wallet)
+    AND NOT EXISTS(SELECT 1 FROM ryo_creator_wallets w WHERE w.scope=p.scope AND w.wallet=p.wallet) ORDER BY p.created DESC,p.wallet LIMIT 20 OFFSET $3`, [store.scope, '%' + search + '%', offset]) : [];
   const entries = body.creatorId ? await query(store.pool, 'SELECT * FROM ryo_creator_ledger WHERE scope=$1 AND creator_id=$2 ORDER BY sequence DESC LIMIT 40 OFFSET $3', [store.scope, text(body.creatorId, 80), offset]) : [];
   const signals = await query(store.pool, `SELECT creator_id,COUNT(*) AS recent_referrals FROM ryo_creator_referrals WHERE scope=$1 AND attributed>=$2 GROUP BY creator_id HAVING COUNT(*)>=10 ORDER BY COUNT(*) DESC LIMIT 20`, [store.scope, store.now() - DAY]);
   return { role, creators: creators.map(r => ({ ...publicCreator(r), wallet: r.wallet, application: r.application, reviewedBy: r.reviewed_by })), referrals: refs.map(r => ({ ...r, proof: { kills: r.proof?.kills || 0, verifiedStage: r.proof?.map || 1 } })), capacity,
-    program: await program(store), shop: await query(store.pool, "SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id='hero-pass' ORDER BY id", [store.scope]), audits, ledger: entries, signals: signals.map(r => ({ ...r, signal: 'High referral enrollment in 24 hours; review, not proof of abuse' })), page: page(body) };
+    program: await program(store), shop: await query(store.pool, "SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id='hero-pass' ORDER BY id", [store.scope]), audits, unreferred, ledger: entries, signals: signals.map(r => ({ ...r, signal: 'High referral enrollment in 24 hours; review, not proof of abuse' })), page: page(body) };
 }
 async function adminAction(store, wallet, body) {
   const access = adminRole(wallet, true), action = text(body.operation, 40), reason = text(body.reason, 500);
-  if (['adjust', 'config', 'shop', 'manual-add'].includes(action) && access !== 'approver') fail('An approver role is required for CP, inventory and program changes.', 403);
+  if (['adjust', 'config', 'shop', 'manual-add', 'attribute-referral'].includes(action) && access !== 'approver') fail('An approver role is required for CP, inventory and program changes.', 403);
+  // Owner request 2026-11-10: staff link a player to a referrer by hand (e.g. players who used a mistyped link). The game's own
+  // attribute() runs with opts.staff (new-player rule and enrollment pause skipped; permanence, self, cycles, creator identities
+  // and the enrollment limit kept), then the audit record is written.
+  if (action === 'attribute-referral') {
+    const player = await resolvePlayer(store, body.player), code = referralCodeOf(body.code);
+    const result = await attribute(store, player.wallet, { code }, { staff: true, onLinked: async (c, existing) => audit(store, c, wallet, 'admin.attribute-referral', privateId(player.wallet), reason,
+      { code, username: player.username, wallet: player.wallet, existing, staffOverride: true, founderBuyer: await founderBuyer(store, c, player.wallet) }) });
+    return { ok: true, existing: !!result?.existing, player: privateId(player.wallet), username: player.username };
+  }
   return store.transaction(async c => {
     const p = await program(store, c, true); let target = body.creatorId || 'program', detail = {};
     if (action === 'manual-add') {

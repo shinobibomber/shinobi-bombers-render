@@ -21,20 +21,20 @@ async function identity(store, wallet) {
     return { wallet, code };
   });
 }
-async function attribute(store, wallet, code) {
+async function attribute(store, wallet, code, opts = {}) {   // opts.staff: see creators-portal attribute()
   return store.transaction(async c => {
     const { config } = await cp().program(store, c, true); await store.locked(c, wallet);
     if ((await query(c, 'SELECT 1 FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('Your referral attribution is permanent and cannot be overwritten.', 409);
     const old = await referral(store, c, wallet);
-    if (old) { const owner = (await query(c, 'SELECT code FROM ryo_player_referrers WHERE scope=$1 AND wallet=$2', [store.scope, old.referrer]))[0]; if (owner.code !== code) fail('Your referral attribution is permanent and cannot be overwritten.', 409); return { ok: true, existing: true }; }
-    if (config.enrollmentPaused) fail('New referral enrollment is paused. Accepted referral rewards remain available.', 409);
+    if (old) { const owner = (await query(c, 'SELECT code FROM ryo_player_referrers WHERE scope=$1 AND wallet=$2', [store.scope, old.referrer]))[0]; if (owner.code !== code) fail('Your referral attribution is permanent and cannot be overwritten.', 409); if (opts.onLinked) await opts.onLinked(c, true); return { ok: true, existing: true }; }
+    if (config.enrollmentPaused && !opts.staff) fail('New referral enrollment is paused. Accepted referral rewards remain available.', 409);
     const creatorCount = Number((await query(c, 'SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1', [store.scope]))[0].n);
     if (creatorCount + await count(store, c) >= config.enrollmentLimit) fail('The public referral enrollment limit has been reached.', 409);
     const owner = (await query(c, 'SELECT * FROM ryo_player_referrers WHERE scope=$1 AND code=$2', [store.scope, code]))[0];
     if (!owner) fail('That referral link is unavailable.', 404);
     if (owner.wallet === wallet) fail('You cannot refer yourself.', 409);
     if ((await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('Creator identities cannot become referred players.', 409);
-    await cp().assertNewPlayer(store, c, wallet);
+    if (!opts.staff) await cp().assertNewPlayer(store, c, wallet);
     // Follow both programs, including a creator's reserved wallets after migration.
     // A referred player may now become a creator; RP-only traversal would miss mixed loops.
     const cycle = await query(c, `WITH RECURSIVE edges(wallet,referrer) AS (
@@ -46,6 +46,7 @@ async function attribute(store, wallet, code) {
     if (cycle.length) fail('Circular referral chains are not allowed.', 409);
     await c.query('INSERT INTO ryo_player_referrals(scope,wallet,referrer,attributed) VALUES($1,$2,$3,$4)', [store.scope, wallet, owner.wallet, store.now()]);
     await cp().recordEvent(store, c, 'player-attributed:' + wallet, wallet, 'player-referral-attributed', { referrer: owner.wallet });
+    if (opts.onLinked) await opts.onLinked(c, false);   // staff audit in the same transaction as the link
     return { ok: true };
   });
 }
