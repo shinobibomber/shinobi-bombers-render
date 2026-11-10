@@ -114,6 +114,9 @@ async function apply(store, wallet, mints) {
       await c.query(`INSERT INTO ryo_mythic_heroes(scope,mint,wallet,hero,updated) VALUES($1,$2,$3,$4,$5)
         ON CONFLICT(scope,mint) DO UPDATE SET wallet=EXCLUDED.wallet,hero=EXCLUDED.hero,updated=EXCLUDED.updated`, [store.scope, mint, wallet, JSON.stringify(hero), now]);
     }
+    // A previous holder that lost its box hero also loses the Mythic Box 10% perk, unless it still has another box hero (review
+    // 2026-11-11: the perk otherwise stayed on the old wallet until its own next sync, e.g. while its RPC check was failing).
+    for (const p of others.values()) if (p.mythicPerk && !p.heroes.some(h => isMythic(h) && h.nft?.mint)) p.mythicPerk = false;
     for (const [w, p] of others) await save(c, store, w, p);
     if (changed) await save(c, store, wallet, profile);
     return { changed, waiting };

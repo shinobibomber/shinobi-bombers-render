@@ -116,6 +116,8 @@ const observeKills = (p, details=false) => p.evaluate(details => {
     f.profile = economy.normalizeProfile({ ...f.profile, heroes, battleReady: heroes.map(h => h.tokenId), sensei: true, senseiEnabled: true });
     const signIn = async () => { await p.locator('#loginPhantom').click(); await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready); };
     await observeKills(p);
+    // Diagnostics for the rare 'in-flight defeat' mismatch: report and defeat timeline, printed only when it happens.
+    await p.evaluate(()=>{window.__rep=[];window.__kt=[];const of=window.fetch;window.fetch=async(u,o)=>{try{const b=JSON.parse(o?.body||'{}');if(b.action==='adventure')__rep.push({t:Math.round(performance.now()),active:b.active,seq:b.combatSeq,heroes:(b.combatHeroes||[]).map(h=>h.id+':'+h.attacks+'/'+h.kills.join(''))})}catch{}return of(u,o)};addEventListener('shinobi-enemy-defeated',e=>__kt.push({t:Math.round(performance.now()),hero:e.detail.heroId,kind:e.detail.kind}));});
     await signIn();
     assert.equal(await p.locator('.sbw-walletbtn').textContent(), 'GO OFFLINE');
     await deployFixture(p);
@@ -133,7 +135,7 @@ const observeKills = (p, details=false) => p.evaluate(details => {
     await p.waitForFunction(() => !RyoPayments.state.authenticated && LoginScreen.active, null, { timeout: 10000 });
     const final = f.requests.filter(r => r.action === 'adventure').slice(before);
     assert(final.some(r => r.active === false && Array.isArray(r.killTotals)), 'going offline sends the final kill totals as offline');
-    const finalKills=await p.evaluate(()=>__k);assert(finalKills>=kills);assert.equal(f.advData.reportedKills,finalKills,'all in-flight defeats are saved before disconnect');
+    const finalKills=await p.evaluate(()=>__k);assert(finalKills>=kills);if(f.advData.reportedKills!==finalKills){const t=await p.evaluate(()=>({rep:__rep.slice(-4),kills:__kt.slice(-8)}));const sess=Object.entries(f.advData.combatSessions||{}).map(([id,v])=>({id,heroes:Object.fromEntries(Object.entries(v.heroes).map(([h,x])=>[h,x.seen+'/'+x.accepted+'/'+x.kills.join('')]))}));console.error('DIAG',JSON.stringify({reported:f.advData.reportedKills,finalKills,timeline:t,server:sess},null,1));}assert.equal(f.advData.reportedKills,finalKills,'all in-flight defeats are saved before disconnect');
     assert.equal(f.advData.active, false, 'the server marks the player offline right away');
     // Two hours away, then sign in again.
     f.advData.last -= 2 * 3600000;

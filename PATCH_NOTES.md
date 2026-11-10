@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Going offline keeps your last kill
+
+- Fixed: when you pressed Go offline while a bomb was still flying, the defeat it caused a moment later could be missed. Every defeat that lands before you go offline is now saved to your Chest.
+- Mythic Box discount: when a Mythic Box NFT moves to another wallet, the 10% Mythic Box discount now moves with it right away.
+
 ## November 11, 2026 — Mythic heroes shine red
 
 - Mythic heroes now have their own red look: when you reveal a Mythic (like the Founder's Tsukiyomi) the card, frame, label and announcement are red instead of Legend gold, and the reveal summary counts your Mythic.
