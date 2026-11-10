@@ -945,7 +945,15 @@
       const c = cards[i], h = c && heroAt(c.idx);
       if (!c || !h) { if (e.dataset.k !== 'empty') { e.dataset.k = 'empty'; e.className = 'sbw-at-card empty'; e.style.removeProperty('--rc'); e.innerHTML = `<b>+</b><div><strong>Empty slot ${i + 1}</strong><span>Deploy a battle-ready hero</span></div>`; } return; }
       const a2 = c.a, meta = ((a2.querySelector('.roster-hero-meta') || {}).textContent || '').replace(/\s+/g, ' ').trim(), bar = ((a2.querySelector('.bar i') || {}).style || {}).width || '0%', btn = a2.querySelector('.roster-team-action'), el = a2.querySelector('.roster-element-icon');
-      const k = [c.idx, h.id, h.r, h.lv, meta, bar, btn && btn.textContent, btn && btn.disabled, c.deployed].join('|');
+      // Structure key: a slot's markup is rebuilt only when the hero, level, button or deployed state changes. The live numbers
+      // (chakra text and bar), which change on nearly every paint while heroes fight, are updated in place below; rebuilding
+      // all ten slots each time re-parsed their HTML and forced a style recalculation (performance, owner request 2026-11-10).
+      const k = [c.idx, h.id, h.r, h.lv, btn && btn.textContent, btn && btn.disabled, c.deployed].join('|');
+      if (e.dataset.k === k) {
+        const small = e.querySelector('.sbw-at-info small'), fill = e.querySelector('.sbw-bar i');
+        if (small && small.textContent !== meta) small.textContent = meta;
+        if (fill && fill.style.width !== bar) fill.style.width = bar;
+      }
       if (e.dataset.k !== k) {
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
         e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);

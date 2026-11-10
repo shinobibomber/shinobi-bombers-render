@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Smoother Adventure
+
+- Adventure runs noticeably smoother, especially on phones and older laptops, when many heroes are fighting and many skills and effects are on screen. In our tests on a slowed-down device the screen now draws about 40% faster and the worst stutters were cut roughly in half.
+- Under the hood: damage numbers and reward pop-ups are drawn more efficiently, the team panel updates its numbers without rebuilding itself, and the glowing buttons (Chest, Work All, the red notification dot) and the ambient lantern and petal effects now use lighter effects. The look stays the same, with slightly softer lantern glows.
+- Combat, chakra and rewards are unchanged: every kill still reaches your Chest as it happens.
+
 ## November 10, 2026 — Glowing Elite, Legend and Mythic heroes
 
 - Heroes Collection: Elite, Legend and Mythic portraits now glow with their own animated energy. Elite heroes get slowly turning purple rays, Legend heroes get faster golden rays with a light sweep, and Mythic heroes get violet and gold rays turning in opposite directions, a crescent moon and twinkling stars. The selected hero's detail portrait glows too.
