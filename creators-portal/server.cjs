@@ -500,6 +500,11 @@ async function adminAction(store, wallet, body) {
   const access = adminRole(wallet, true), action = text(body.operation, 40), reason = text(body.reason, 500);
   if (['adjust', 'config', 'shop', 'manual-add', 'attribute-referral', 'grant-rescue-hero'].includes(action) && access !== 'approver') fail('An approver role is required for CP, inventory and program changes.', 403);
   // Owner request 2026-11-11: promotional Hero Pass campaigns (hero-passes.cjs). Approver only; every change is audited.
+  // Owner request 2026-11-11: Starter Activation launch schedule (starter-activation.cjs). Approver only; audited.
+  if (action.startsWith('starter-')) {
+    if (access !== 'approver') fail('An approver role is required for the Starter Activation launch.', 403);
+    return require('./starter-activation.cjs').admin(store, wallet, { ...body, operation: action }, (c, act, target, detail) => audit(store, c, wallet, act, target, reason || 'Starter Activation', detail));
+  }
   if (action.startsWith('pass-')) {
     if (access !== 'approver') fail('An approver role is required for Hero Pass campaigns.', 403);
     return require('./hero-passes.cjs').admin(store, wallet, { ...body, operation: action }, (c, act, target, detail) => audit(store, c, wallet, act, target, reason || 'Hero Pass campaign', detail));

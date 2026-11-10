@@ -20,6 +20,9 @@ function advance(data,profile,now,active,ratePercent=50,report=null,onReward=nul
  const d=data||{map:1,target:0,hp:100,kills:0,pending:0,claimed:0,last:now,active:false,energy:{}};
  // chest-overflow.window() hands its window over on the Chest data (never stored: removed here before anything is saved).
  if(!overflow&&d.overflowWindow&&typeof d.overflowWindow==='object')overflow=d.overflowWindow;delete d.overflowWindow;
+ // Starter Activation (starter-activation.cjs): 50% enemy rewards until 15 paid summons; never stacked with Chest Overflow
+ // (the larger penalty applies). Handed over on the Chest data like the overflow window and never stored.
+ const starterBps=d.starterWindow&&Number.isSafeInteger(d.starterWindow.bps)&&d.starterWindow.bps>0&&d.starterWindow.bps<10000?d.starterWindow.bps:10000;delete d.starterWindow;
  const last=Number.isFinite(d.last)?Math.min(d.last,now):now,gap=Math.max(0,now-last),rate=Math.max(50,Math.min(100,Number(ratePercent)||50))/100;
  const ready=new Set(profile.battleReady),roster=profile.heroes.filter(h=>ready.has(h.tokenId)),byId=new Map(roster.map(h=>[h.tokenId,h])),tally=parse(report);
  if(d.combatVersion!==1){d.combatVersion=1;d.combatSessions={};d.combatDamage=0;for(const h of profile.heroes)C.state(h,last,d.energy?.[h.tokenId]);}
@@ -34,7 +37,7 @@ function advance(data,profile,now,active,ratePercent=50,report=null,onReward=nul
  let team=(Array.isArray(d.team)?d.team:roster.slice().sort((a,b)=>R.damage(b)/R.cooldown(b)-R.damage(a)/R.cooldown(a)).slice(0,10).map(h=>h.tokenId)).map(id=>byId.get(id)).filter(Boolean).slice(0,10);
  const teamRate=team.reduce((n,h)=>n+1/R.cooldown(h),0);
  d.actionBudget=d.active?Math.min(10+600*teamRate,(Number(d.actionBudget)||0)+Math.min(gap,600000)/1000*teamRate):10;
- const pay=(kind,h,at)=>{let earned=Math.floor(PAY[kind]*Math.max(.35,1-.1*Math.floor(d.map/100))*rate*R.rewardMultiplier(h));if(overflow&&at>=overflow.activeFrom){const bps=overflowBps(d.pending);if(bps<10000)earned=Math.floor(earned*bps/10000)}d.pending+=earned;d.kills++;if(onReward&&earned)onReward(earned,at)};
+ const pay=(kind,h,at)=>{let earned=Math.floor(PAY[kind]*Math.max(.35,1-.1*Math.floor(d.map/100))*rate*R.rewardMultiplier(h));{const bps=Math.min(starterBps,overflow&&at>=overflow.activeFrom?overflowBps(d.pending):10000);if(bps<10000)earned=Math.floor(earned*bps/10000)}d.pending+=earned;d.kills++;if(onReward&&earned)onReward(earned,at)};
  d.offlineSeconds=0;
  if(online){
   const record=d.combatSessions[tally.id],previous=new Set(team.map(h=>h.tokenId));

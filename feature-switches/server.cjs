@@ -42,6 +42,13 @@ const CATALOG = Object.freeze({
   heroPassDistribution: { env: 'HERO_PASS_DISTRIBUTION_ENABLED', group: 'rewards', label: 'Hero Pass bulk distribution (Send to all)', default: 'off' },
   heroPassClaimUi:      { env: 'HERO_PASS_CLAIM_UI_ENABLED', group: 'rewards', label: 'Main-menu CLAIM button and Reward Center', default: 'off' },
   heroPassClaims:       { env: 'HERO_PASS_CLAIMS_ENABLED', group: 'rewards', label: 'Claiming and using Hero Passes', default: 'off' },
+  // Starter Activation (starter-activation/server.cjs, owner request 2026-11-11): ON by default, but nothing happens until an
+  // approver schedules the launch; each part can be switched off here. Gameplay group: while switch values are still loading
+  // they keep their default (ON) instead of failing closed, so a new account never silently misses its starter pack.
+  starterPack:          { env: 'STARTER_PACK_ENABLED', group: 'gameplay', label: 'Starter Activation: 10 free Genin for new accounts', default: 'on' },
+  starterRewardRate:    { env: 'STARTER_REWARD_RATE_ENABLED', group: 'gameplay', label: 'Starter Activation: 50% enemy rewards until 15 paid summons', default: 'on' },
+  starterTracking:      { env: 'STARTER_TRACKING_ENABLED', group: 'gameplay', label: 'Starter Activation: paid-summon tracking', default: 'on' },
+  starterUi:            { env: 'STARTER_UI_ENABLED', group: 'gameplay', label: 'Starter Activation: activation panel', default: 'on' },
 });
 const KEYS = Object.freeze(Object.keys(CATALOG));
 

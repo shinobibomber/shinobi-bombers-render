@@ -151,6 +151,18 @@ async function fixture(p, f, account, snapshot) {
      assert.match(await p.locator('[data-hp-result="history"]').innerText(), /pending 1 \(3 passes\)/);
      assert.equal(await p.locator('[data-form="hp-rules"] [data-hp="edit"]').count(), 0, 'rules locked after Send');
      delete process.env.HERO_PASS_ADMIN_ENABLED; delete process.env.HERO_PASS_DISTRIBUTION_ENABLED;
+     // Owner request 2026-11-11: Starter Activation launch schedule (next 12:00 PM PHT), audited, cancellable before launch.
+     await p.locator('[data-admin="starter-activation"] summary').click();
+     await p.locator('[data-sa="load"]').click();
+     await p.waitForFunction(() => /Not scheduled \(dormant\)/.test(document.querySelector('[data-admin="starter-activation"]')?.textContent || ''));
+     await p.locator('[data-form="sa-schedule"] [name="reason"]').fill('Fixture: schedule the starter launch');
+     await p.locator('[data-form="sa-schedule"] button', { hasText: 'SCHEDULE LAUNCH' }).click();
+     await p.waitForFunction(() => /Starter Activation scheduled for .* 12:00 PHT \(.* 04:00 UTC\)/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
+     assert.equal((await store.pool.query("SELECT config->'starterActivation'->>'timezone' AS tz FROM ryo_admin_control WHERE scope=$1", [store.scope])).rows[0]?.tz, 'Asia/Manila', 'the launch is stored on the server');
+     await p.locator('[data-sa="cancel"]').click();
+     await p.locator('dialog.cp-modal [name="reason"]').fill('Fixture: cancel');
+     await p.locator('dialog.cp-modal button[value="confirm"]').click();
+     await p.waitForFunction(() => /Starter Activation schedule cancelled/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
      await p.screenshot({ path: path.join(root, 'tests/out/creators-admin-desktop.png') });
      await p.locator('#creatorsPanel [data-cp="close"]').click();
      await p.locator('[data-sbwid="nav-guild"]').click(); await p.waitForFunction(() => WebsiteDesign.current() === 'guild');

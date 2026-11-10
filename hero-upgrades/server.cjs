@@ -25,6 +25,7 @@ function salvageProfile(profile,heroId,now){
  R.normalize(profile);const hero=profile.heroes.find(h=>h.tokenId===heroId);
  if(!hero)fail('Choose an owned in-game hero.');
  if(hero.nft)fail('NFT-bound heroes cannot be salvaged. Their ownership and NFT remain intact.',409);
+ if(hero.starterGrant)fail('Free starter heroes are account-bound and cannot be salvaged.',409);   // Starter Activation (owner 2026-11-11)
  if(hero.chakra?.lockUntil>now)fail('Finish the Boss Hunt before salvaging this hero.',409);
  const amount=R.shards(hero.rank);if(!amount||!Number.isSafeInteger(profile.upgradeShards+amount))fail('Invalid shard balance.',409);
  profile.heroes=profile.heroes.filter(h=>h.tokenId!==heroId);profile.battleReady=profile.battleReady.filter(id=>id!==heroId);profile.upgradeShards+=amount;

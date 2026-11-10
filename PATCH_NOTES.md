@@ -1,5 +1,13 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Shinobi Starter Activation (starts at the announced launch time)
+
+- New players who join from the launch time on get **10 FREE GENIN HEROES**. They start at Level 1 with Power 1, Speed 1 and Stamina 1, and you can make them stronger with Training.
+- Starter heroes are **account-bound**: they can't be sold, traded, transferred or salvaged, and heroes fused from them stay bound.
+- New accounts start at a **50% enemy reward rate**. Complete **15 paid Summoning Shrine summons** (game balance or Chest rewards) to unlock the normal **100% rate permanently**. There's no deadline and no extra charge.
+- The **SHINOBI ACTIVATION** card on the main menu and the Summoning Shrine shows your progress. The Chest shows it too.
+- Existing accounts are not affected. Ryo you've already earned is never reduced, and claiming and spending your Chest work as usual.
+
 ## November 11, 2026 — Chest Overflow update
 
 - The Chest Overflow penalty now applies **whenever** your unclaimed Chest holds 500,000 Ryo or more: 500,000+ −10%, 750,000+ −20%, 1,000,000+ −30% on **new** enemy defeats.
