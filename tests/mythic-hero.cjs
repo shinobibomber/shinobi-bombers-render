@@ -36,7 +36,13 @@ const MINT = 'TsuKiYoMiBox1111111111111111111111111111111';
     assert.equal(det.rank, 'MYTHIC');
     assert.match(det.text, /FIRST GENERATION NFT/); assert.equal((det.text.match(/★/g)||[]).length,0);
     assert.match(det.text, /NFT verified · TsuK…1111/, 'the box NFT is shown');
-    for (const skill of ['Dragon Slash', 'Void Shuriken', 'Raijin Field', 'Mythic Dragon Ascension']) assert(det.text.includes(skill), skill + ' listed');
+    // Owner decision 2026-11-10: the skill list (Dragon Slash, Void Shuriken, Raijin Field, Mythic Dragon Ascension and the
+    // "All four rotate" note) is removed from the collection detail; the NFT line, Check NFT and the Aura switch stay.
+    for (const text of ['Dragon Slash', 'Void Shuriken', 'Raijin Field', 'Mythic Dragon Ascension', 'All four rotate', 'testing cooldown', 'Melee Attack', 'Ranged Attack']) assert(!det.text.includes(text), text + ' is no longer listed');
+    assert.equal(await p.locator('.sbw-scr.on .sbw-myth-skills').count(), 0, 'no skill list element');
+    assert.equal(await p.locator('.sbw-scr.on .sbw-myth [data-k="mcheck"]').count(), 1, 'Check NFT stays');
+    assert.equal(await p.locator('.sbw-scr.on .sbw-myth [data-k="maura"]').count(), 1, 'the Aura switch stays');
+    assert.match(det.text, /TSUKIYOMI/, 'the hero title stays');
     assert.match(det.text, /PERKS 7 \/ 7/, 'seven perks');
     const energyView = await p.evaluate(() => { const h=S.h.find(h=>h.r===5); window.__mythicPanel=document.querySelector('.sbw-scr.on .sbw-myth'); h.en-=2; return {count:h.pk.length,capacity:CombatRules.maxChakra(h),expected:h.st*55}; });
     assert.equal(energyView.count,7); assert.equal(energyView.capacity,energyView.expected);

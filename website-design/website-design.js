@@ -648,6 +648,11 @@
       if (rank && !port.querySelector('.sbw-portrait-energy')) {
         const energy = mk('i', 'sbw-portrait-energy', port); energy.setAttribute('aria-hidden', 'true');
       }
+      // Elite / Legend / Mythic glow of the Heroes Collection (cards + detail): decorative, CSS-only, created once per portrait.
+      if (rank && !port.matches('.sbw-at-port') && !port.querySelector('.sbw-portrait-rim')) {
+        const rim = mk('i', 'sbw-portrait-rim', port); rim.setAttribute('aria-hidden', 'true');
+        if (rank === '5') mk('b', 'sbw-rim-moon', rim);
+      }
     }
     const surface = portraitSurface(c), PM = window.PlayerModels;
     if (!surface) return;
@@ -789,26 +794,14 @@
         tog: tg, up: btn(/^up\(/), list: btn(/openListing/), mode: btn(/hero-mode-button/) };
     });
   }
-  // Tsukiyomi (Mythic, rank 5): his box NFT (or starter copy), the aura switch and his four skills.
+  // Tsukiyomi (Mythic, rank 5): his box NFT (or starter copy) and the aura switch.
   const shortMint = m => m ? m.slice(0, 4) + '…' + m.slice(-4) : '';
   function mythicBlock(h) {
-    const MH = window.MythicHero, aura = MH ? MH.auraEnabled : true, skills = MH ? MH.skills : [];
+    const MH = window.MythicHero, aura = MH ? MH.auraEnabled : true;
     return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC </b><span>FIRST GENERATION NFT</span></div>
       <div class="sbw-myth-nft"><span>${h.starter && !h.nft ? 'Starter Mythic · test server' : h.nft?.mint ? '✔ NFT verified · ' + esc(shortMint(h.nft.mint)) : 'NFT hero'}</span><button type="button" data-k="mcheck">Check NFT</button><button type="button" data-k="maura" aria-pressed="${aura}">Aura: ${aura ? 'On' : 'Off'}</button></div>
       <div class="sbw-myth-generation">TSUKIYOMI<small>Lunar / Celestial / Void</small></div>
-      <ul class="sbw-myth-skills" aria-label="Automatic abilities">${[{name:'Melee Attack',icon:'⚔',text:'Basic purple crescent attack.'},{name:'Ranged Attack',icon:'✧',text:'Basic celestial projectile.'},...skills].map((k,i) => `<li class="${k.ultimate ? 'ult' : ''}"><button type="button" data-k="mability${i}" title="${esc(k.text)}"><span aria-hidden="true">${esc(k.icon)}</span> ${esc(k.name)}${k.cooldownMs!=null?'<small class="sbw-myth-cooldown">'+k.cooldownMs/1000+'s testing cooldown</small>':''}</button></li>`).join('')}</ul><small class="sbw-myth-auto">All four rotate on melee or ranged attacks · Skill VFX add no damage or chakra cost</small></div>`;
-  }
-  function mythicAbility(index) {
-    const mh=window.MythicHero;if(!mh?.animationSource)return;
-    const basic=[{name:'Melee Attack',state:'ATTACK',text:'Basic purple crescent slash.'},{name:'Ranged Attack',state:'RANGED_ATTACK',text:'Basic celestial projectile.'}],skill=mh.skills[index-2];
-    const item=basic[index]||skill,definition=skill&&window.MythicAutomaticSkills.definitions[skill.key],state=basic[index]?.state||definition?.state;
-    if(!item||!state)return;
-    if(!dlg)dlg=mk('dialog','sbw-dialog',document.body);dlg.onclick=null;dlg.classList.add('sbw-myth-preview');
-    const cd=definition&&mh.automaticSkills?.rules[skill.key]?.cooldownMs;
-    dlg.innerHTML=`<h2>${esc(item.name)}</h2><p>${definition?.ultimate?'Ultimate':definition?'Signature skill':'Basic attack'} · Automatic activation</p><canvas width="420" height="260" aria-label="Cosmetic animation preview"></canvas><p>${esc(item.text)}</p><p>${definition?cd==null?'Extra skill cooldown: pending balance approval. Native attack timing applies.':'Beta testing cooldown: '+cd/1000+'s. Native attacks continue while it recharges.':'Uses native attack timing.'}</p><p>1 Attack = Hero Power Damage = 1 Chakra<br>Skill VFX = 0 Additional Chakra</p><small>Cosmetic preview only. No attacks, chakra use or rewards.</small><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`;
-    const canvas=$('canvas',dlg),c=canvas.getContext('2d'),hero={id:'mythic-menu-preview',r:5},start=performance.now();let frame;
-    const paint=time=>{if(!dlg.open||!canvas.isConnected)return;const clip=mh.animationSource.states[state],elapsed=(time-start)%(clip.durationMs+500),t=Math.min(.999,elapsed/clip.durationMs);c.clearRect(0,0,420,260);c.fillStyle='#100923';c.fillRect(0,0,420,260);const body=mh.renderFrame(hero,state,Math.floor(t*clip.frames),'front');ShinobiSprites.blit(c,body,210,235,3.5,false,1);if(skill)c.drawImage(mh.skillFrame(skill.key,Math.floor(t*definition.frames)),95,0,230,230);frame=requestAnimationFrame(paint)};
-    const close=()=>{cancelAnimationFrame(frame);dlg.classList.remove('sbw-myth-preview')};dlg.onclose=close;$('.sbw-btn',dlg).onclick=()=>dlg.close();dlg.showModal();mh.preload().then(()=>{if(dlg.open)frame=requestAnimationFrame(paint)}).catch(()=>{});
+    </div>`;
   }
   function heroPageButton(previous) { return document.querySelector('#p1 .heroes-pagination button[aria-label="' + (previous ? 'Previous page' : 'Next page') + '"]'); }
   INIT.heroes = b => {
@@ -897,7 +890,6 @@
     drawCentered($('.sbw-h2-port canvas', b.det), c && c.h, now, 6);
   };
   MODS.heroes = {
-    mability0:()=>mythicAbility(0),mability1:()=>mythicAbility(1),mability2:()=>mythicAbility(2),mability3:()=>mythicAbility(3),mability4:()=>mythicAbility(4),mability5:()=>mythicAbility(5),
     tab: a => { const v = HF[+a]; if (v != null) window.HeroFilters && HeroFilters.choose(v); built.heroes.sel = 0; built.heroes.sig = ''; },
     search: () => { const inp = document.querySelector('#p1 .heroes-search'); if (!inp) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.onclick = null; dlg.innerHTML = '<h2>Search heroes</h2><form><input type="search" placeholder="Hero name"><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt">Clear</button><button class="sbw-btn">Search</button></div></form>'; const q = $('input', dlg); q.value = inp.value; const run = v => { inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); built.heroes.sig = ''; dlg.close(); }; $('.sbw-alt', dlg).onclick = () => run(''); $('form', dlg).onsubmit = e => { e.preventDefault(); run(q.value); }; dlg.showModal(); q.focus(); },
     sort: () => { const s = document.querySelector('#p1 .heroes-sort'); if (!s) return; s.selectedIndex = (s.selectedIndex + 1) % s.options.length; s.dispatchEvent(new Event('change', { bubbles: true })); toast('Sort: ' + s.options[s.selectedIndex].text); built.heroes.sig = ''; },

@@ -348,6 +348,42 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 @keyframes sbw-seal-orbit{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
 @keyframes sbw-energy-rise{0%,100%{opacity:.25;transform:scaleY(1.66) translateY(1px)}50%{opacity:.85;transform:scaleY(1.66) translateY(-12px)}}
 @media(prefers-reduced-motion:reduce){#sbwLayer [data-aura]::before,#sbwLayer .sbw-portrait-energy,#sbwLayer .sbw-portrait-energy::before,#sbwLayer .sbw-portrait-energy::after{animation:none}}
+/* Heroes Collection portrait glow (owner request 2026-11-10): Elite purple energy rays, Legend gold rays + light sweep, Mythic
+ * violet/gold counter-rotating rays + crescent moon + twinkling stars. Collection cards and the detail portrait only.
+ * Performance: every animation changes only transform or opacity (compositor-only); glows are static shadows/gradients;
+ * nothing is blurred, filtered or laid out per frame. Low quality = static rays; Off = no glow; paused/reduced motion = still. */
+#sbwLayer [data-aura="5"]{--aura:#b36bff;--aura-light:#f1dcff;--aura-cycle:3.2s;--aura2:#ffd257}
+#sbwLayer :is(.sbw-hc-portrait,.sbw-h2-port)[data-aura="5"]{isolation:isolate}
+#sbwLayer :is(.sbw-hc-portrait,.sbw-h2-port)[data-aura="5"]::before{content:"";position:absolute;z-index:0;pointer-events:none;inset:15% 3% 0;border-radius:50%;background:radial-gradient(ellipse at 50% 85%,color-mix(in srgb,var(--aura) 55%,transparent),transparent 69%);opacity:.7;animation:sbw-energy-breathe var(--aura-cycle) ease-in-out infinite}
+#sbwLayer :is(.sbw-hc-portrait,.sbw-h2-port)[data-aura="5"]>.sbw-portrait-energy{display:block;position:absolute;z-index:2;left:8%;right:8%;bottom:1%;height:26%;pointer-events:none;border-radius:50%;border:1px solid color-mix(in srgb,var(--aura-light) 70%,transparent);box-shadow:0 0 7px var(--aura),inset 0 0 6px color-mix(in srgb,var(--aura) 65%,transparent);transform:scaleY(.6);animation:sbw-seal-breathe var(--aura-cycle) ease-in-out infinite}
+#sbwLayer :is(.sbw-hc-portrait,.sbw-h2-port)[data-aura="5"]>.sbw-portrait-energy::after{border-radius:0;clip-path:polygon(45% 0,100% 0,66% 39%,100% 39%,0 100%,32% 51%,0 51%);width:6px;height:18px;animation-duration:3.4s}
+#sbwLayer .sbw-nft,#sbwLayer .sbw-bound{z-index:3}
+#sbwLayer .sbw-portrait-rim{display:none;position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;pointer-events:none;contain:strict}
+#sbwLayer :is([data-aura="3"],[data-aura="4"],[data-aura="5"])>.sbw-portrait-rim{display:block;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--aura-light) 55%,transparent),inset 0 0 16px color-mix(in srgb,var(--aura) 55%,transparent);animation:sbw-rim-pulse var(--aura-cycle) ease-in-out infinite}
+#sbwLayer .sbw-portrait-rim::before,#sbwLayer .sbw-portrait-rim::after{content:"";position:absolute;inset:-60%;pointer-events:none;will-change:transform}
+/* Elite: slow purple arcane rays */
+#sbwLayer [data-aura="3"]>.sbw-portrait-rim::before{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--aura) 34%,transparent) 0 9deg,transparent 9deg 36deg);animation:sbw-rim-spin 16s linear infinite}
+/* Legend: tighter, faster golden rays and a light sweep every few seconds */
+#sbwLayer [data-aura="4"]>.sbw-portrait-rim::before{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--aura) 40%,transparent) 0 7deg,transparent 7deg 24deg);animation:sbw-rim-spin 10s linear infinite}
+#sbwLayer [data-aura="4"]>.sbw-portrait-rim::after{inset:-20% auto -20% -60%;width:40%;background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--aura-light) 70%,transparent),transparent);transform:skewX(-18deg);opacity:0;animation:sbw-rim-sweep 4.4s ease-in-out infinite}
+/* Mythic: violet rays one way, gold rays the other, a moon behind the hero */
+#sbwLayer [data-aura="5"]>.sbw-portrait-rim::before{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--aura) 44%,transparent) 0 8deg,transparent 8deg 30deg);animation:sbw-rim-spin 14s linear infinite}
+#sbwLayer [data-aura="5"]>.sbw-portrait-rim::after{background:repeating-conic-gradient(from 15deg,color-mix(in srgb,var(--aura2) 30%,transparent) 0 5deg,transparent 5deg 30deg);animation:sbw-rim-spin 22s linear infinite reverse}
+#sbwLayer .sbw-rim-moon{position:absolute;top:9%;right:13%;width:21%;aspect-ratio:1;border-radius:50%;pointer-events:none;box-shadow:-5px 2px 0 0 var(--aura2),-8px 3px 11px 1px color-mix(in srgb,var(--aura2) 45%,transparent);animation:sbw-rim-moon 5s ease-in-out infinite}
+#sbwLayer .sbw-rim-moon::before,#sbwLayer .sbw-rim-moon::after{content:"";position:absolute;width:3px;height:3px;border-radius:50%;background:var(--aura-light);box-shadow:0 0 4px var(--aura-light)}
+#sbwLayer .sbw-rim-moon::before{left:-230%;top:70%;animation:sbw-rim-twinkle 2.6s ease-in-out infinite}
+#sbwLayer .sbw-rim-moon::after{left:-60%;top:230%;width:2px;height:2px;animation:sbw-rim-twinkle 3.4s ease-in-out -1.2s infinite}
+@keyframes sbw-rim-spin{to{transform:rotate(360deg)}}
+@keyframes sbw-rim-pulse{0%,100%{opacity:.72}50%{opacity:1}}
+@keyframes sbw-rim-sweep{0%,55%{transform:skewX(-18deg) translateX(0);opacity:0}65%{opacity:.85}100%{transform:skewX(-18deg) translateX(520%);opacity:0}}
+@keyframes sbw-rim-moon{0%,100%{opacity:.8;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+@keyframes sbw-rim-twinkle{0%,100%{opacity:.15}50%{opacity:1}}
+/* Low quality: static rays (no rotation, no sweep, no stars). Off: no glow. Paused (hidden tab) and reduced motion: still. */
+#sbwLayer[data-effects-quality="1"] .sbw-portrait-rim::before,#sbwLayer[data-effects-quality="1"] .sbw-portrait-rim::after,#sbwLayer[data-effects-quality="1"] .sbw-rim-moon{animation:none!important;will-change:auto}
+#sbwLayer[data-effects-quality="1"] [data-aura="4"]>.sbw-portrait-rim::after,#sbwLayer[data-effects-quality="1"] .sbw-rim-moon::before,#sbwLayer[data-effects-quality="1"] .sbw-rim-moon::after{display:none}
+#sbwLayer[data-effects-quality="0"] .sbw-portrait-rim{display:none!important}
+#sbwLayer[data-effects-paused="true"] .sbw-portrait-rim,#sbwLayer[data-effects-paused="true"] .sbw-portrait-rim::before,#sbwLayer[data-effects-paused="true"] .sbw-portrait-rim::after,#sbwLayer[data-effects-paused="true"] .sbw-rim-moon,#sbwLayer[data-effects-paused="true"] .sbw-rim-moon::before,#sbwLayer[data-effects-paused="true"] .sbw-rim-moon::after,#sbwLayer[data-effects-paused="true"] [data-aura="5"]::before,#sbwLayer[data-effects-paused="true"] [data-aura="5"]>.sbw-portrait-energy,#sbwLayer[data-effects-paused="true"] [data-aura="5"]>.sbw-portrait-energy::before,#sbwLayer[data-effects-paused="true"] [data-aura="5"]>.sbw-portrait-energy::after{animation-play-state:paused!important}
+@media(prefers-reduced-motion:reduce){#sbwLayer .sbw-portrait-rim,#sbwLayer .sbw-portrait-rim::before,#sbwLayer .sbw-portrait-rim::after,#sbwLayer .sbw-rim-moon,#sbwLayer .sbw-rim-moon::before,#sbwLayer .sbw-rim-moon::after,#sbwLayer [data-aura="5"]::before,#sbwLayer [data-aura="5"]>.sbw-portrait-energy,#sbwLayer [data-aura="5"]>.sbw-portrait-energy::before,#sbwLayer [data-aura="5"]>.sbw-portrait-energy::after{animation:none!important}#sbwLayer .sbw-rim-moon::before,#sbwLayer .sbw-rim-moon::after{opacity:.7}}
 /* Heroes: card buttons (Deploy/Rest hero + Make Battle-ready/Move to Reserve) and the big detail buttons */
 #sbwLayer .sbw-hb{height:28px;border-radius:7px;border:1px solid rgba(255,255,255,.18);font:800 13px Rajdhani,sans-serif;letter-spacing:.3px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 6px rgba(0,0,0,.45);transition:filter .15s,transform .15s}
@@ -833,7 +869,7 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 .sbw-rankdlg .sbw-btn.ghost{background:#0d1440;border:1px solid #3b4a8a;color:#dfe6ff}.sbw-rankdlg.weekly .sbw-btn.ghost{border-color:#ffd257;color:#ffd257}
 .sbw-rankdlg .sbw-acts{flex-wrap:wrap}
 #sbwLayer .sbw-bh-head.sbw-mflow .bh-h h3{font-size:20px}#sbwLayer .sbw-bh-head.sbw-mflow .bh-h small{font-size:12px}
-/* Mythic hero (Tsukiyomi): seven stars, NFT status, aura switch and skills */
+/* Mythic hero (Tsukiyomi): seven stars, NFT status and aura switch */
 #sbwLayer .sbw-stars{font-style:normal;letter-spacing:-1px;color:#ffd257;text-shadow:0 0 6px #c98bff}
 #sbwLayer .sbw-hc-top .sbw-stars{margin-left:5px;font-size:11px;vertical-align:1px}
 #sbwLayer .sbw-hcard.mythic{background:linear-gradient(180deg,#2a1150,#0c0624 60%);box-shadow:0 0 0 1px #c98bff,0 0 16px #9b4dff88}
@@ -846,12 +882,6 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-myth-nft span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-myth-nft button{min-height:28px;padding:2px 10px;border:1px solid #c98bff;border-radius:7px;background:#1d0d45;color:#efe4ff;font:800 12.5px Rajdhani,sans-serif;cursor:pointer}
 #sbwLayer .sbw-myth-nft button[aria-pressed="true"]{border-color:#ffd257;color:#ffd257}
-#sbwLayer .sbw-myth-skills{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0;padding:0;list-style:none}
-#sbwLayer .sbw-myth-skills li{display:flex;flex-direction:column;padding:4px 7px;border-left:3px solid #c98bff;border-radius:6px;background:rgba(150,80,255,.16);min-width:0}
-#sbwLayer .sbw-myth-skills li.ult{border-left-color:#ffd257}
-#sbwLayer .sbw-myth-skills b{font:800 13.5px/1.15 Rajdhani,sans-serif;color:#f1e4ff}
-#sbwLayer .sbw-myth-skills li.ult b{color:#ffd257}
-#sbwLayer .sbw-myth-skills span{font:600 11.5px/1.2 Rajdhani,sans-serif;color:#cfd0ee}
 #sbwLayer .sbw-at-card.aura-mythic{box-shadow:0 0 16px #b36bffaa,inset 0 0 14px #c98bff44;border-color:#c98bff}
 #sbwLayer .sbw-at-card.aura-mythic .sbw-at-info strong{color:#f1dcff}
 #sbwLayer .sbw-hc-portrait{position:relative}
@@ -860,8 +890,6 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-bound-note{display:flex;flex-direction:column;gap:2px;margin:6px 0 2px;padding:6px 10px;border:1px solid #6a5a9a;border-radius:8px;background:rgba(27,18,51,.85);font:600 12.5px Rajdhani,sans-serif;color:#d9d0f2}
 #sbwLayer .sbw-bound-note b{color:#ffe9a8;letter-spacing:.5px}
 #sbwLayer .sbw-myth{gap:5px;padding:7px 9px}
-#sbwLayer .sbw-myth-skills li{padding:3px 7px}
-#sbwLayer .sbw-myth-skills b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-h2 .sbw-perks2{min-height:84px}
 /* Limited Mythic NFT Box: home EVENT card and dialog */
 #sbwLayer .sbw-boxcard{display:flex;align-items:center;gap:10px;box-sizing:border-box;padding:8px 12px 8px 8px;border:1px solid #ffd257;border-radius:10px;background:linear-gradient(110deg,#3a1468,#1a0838 55%,#2a1a05);box-shadow:inset 0 0 18px #b36bff55,0 0 10px #ffb02a44;color:#fff;font:600 13px Rajdhani,'Arial Narrow',sans-serif;overflow:hidden;pointer-events:none}
@@ -910,14 +938,8 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-xbtn.train{gap:8px;padding:0 10px 0 8px}#sbwLayer .sbw-xbtn.train>i{width:30px;height:30px}#sbwLayer .sbw-xbtn.train>span{flex:1;white-space:normal}#sbwLayer .sbw-xbtn.train b{font-size:16px;letter-spacing:0}#sbwLayer .sbw-xbtn.train small{font-size:11px;line-height:1.1;letter-spacing:0}.hero-salvage-confirm{color:#fff!important}
 
 #sbwLayer .sbw-shard-balance{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 10px;margin-top:8px;background:#130d2d;border:1px solid #67419e;border-radius:7px;font-size:13px;color:#d5c7f4}#sbwLayer .sbw-shard-balance b{font-size:17px;color:#ffd781}
-/* Automatic Mythic abilities: retain the collection panel and open detail on demand. */
 #sbwLayer .sbw-myth-generation{font:800 13px Rajdhani,sans-serif;color:#f0d9ff}
-#sbwLayer .sbw-myth-cooldown{display:block;margin-top:2px;font:600 10px/1.2 system-ui;color:#c4aedb}
 #sbwLayer .sbw-myth-generation small{display:block;color:#c5b9db;font-weight:500}
-#sbwLayer .sbw-myth-skills button{width:100%;min-height:30px;padding:4px;border:0;background:transparent;color:inherit;font:700 12px Rajdhani,sans-serif;cursor:pointer;text-align:left;line-height:1.15}
-#sbwLayer .sbw-myth-skills button:focus-visible{outline:2px solid #ffe098;outline-offset:2px}
-#sbwLayer .sbw-myth-auto{font:600 11px/1.3 Rajdhani,sans-serif;color:#d8c5ed}
-.sbw-myth-preview{max-height:90dvh;overflow:auto}.sbw-myth-preview canvas{display:block;width:100%;max-width:420px;height:auto;margin:auto}.sbw-myth-preview small{display:block;line-height:1.5;color:#c4b8d9}
 /* ===== Chat screen (real DOM) ===== */
 #sbwLayer .sbw-chat{--cs-bg:#070420;--cs-panel:#0d0830;--cs-line:#b05cff;--cs-pink:#ff4fd8;--cs-gold:#ffd447;--cs-orange:#ff9a2e;--cs-cyan:#4fd8ff;--cs-green:#4be08a;--cs-ink:#f5efff;--cs-mut:#b9aee0;
   position:absolute;left:0;right:0;display:grid;grid-template-columns:260px minmax(0,1fr) 320px;grid-template-rows:auto minmax(0,1fr);gap:12px;padding:10px 14px 14px;box-sizing:border-box;overflow:hidden;background:var(--cs-bg);color:var(--cs-ink)}

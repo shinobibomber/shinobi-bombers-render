@@ -41,9 +41,8 @@ const descriptor=id=>({tokenId:id,name:'Tsukiyomi',rank:5,level:1,mythic:'tsukiy
   });
   assert.deepEqual(limits,[['ground','ground','front','front'],['ground','front'],[]],'cinematic caps: 2 standard, 1 low, 0 off across three Mythics');
   await p.evaluate(()=>{go(1)});await p.locator('.sbw-scr.on .sbw-hcard').first().click();
-  await p.locator('.sbw-scr.on [data-k="mability5"]').click();await p.waitForTimeout(400);
-  assert.match(await p.locator('.sbw-myth-preview').innerText(),/Mythic Dragon Ascension/);await p.screenshot({path:path.join(__dirname,'out/mythic-auto-ability-desktop.png')});
-  await p.setViewportSize({width:390,height:844});await p.screenshot({path:path.join(__dirname,'out/mythic-auto-ability-phone.png')});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.locator('.sbw-myth-preview .sbw-btn').click();
+  assert.equal(await p.locator('.sbw-scr.on .sbw-myth-skills, .sbw-scr.on [data-k^="mability"], .sbw-myth-preview').count(),0,'the Mythic skill list and its preview are gone from the collection');await p.screenshot({path:path.join(__dirname,'out/mythic-auto-ability-desktop.png')});
+  await p.setViewportSize({width:390,height:844});await p.screenshot({path:path.join(__dirname,'out/mythic-auto-ability-phone.png')});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   fs.writeFileSync(path.join(__dirname,'out/mythic-auto-native-results.json'),JSON.stringify(result,null,2));
   console.log('PASS: 16 native authorized-team Adventure attacks, preferred automatic rotation, one Power damage/one chakra, no redraw advancement, duplicate impact protection, zero-chakra/wall guards, independent heroes and cosmetic previews.');
  });

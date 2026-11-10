@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Glowing Elite, Legend and Mythic heroes
+
+- Heroes Collection: Elite, Legend and Mythic portraits now glow with their own animated energy. Elite heroes get slowly turning purple rays, Legend heroes get faster golden rays with a light sweep, and Mythic heroes get violet and gold rays turning in opposite directions, a crescent moon and twinkling stars. The selected hero's detail portrait glows too.
+- The glow follows your display settings: Low quality keeps the rays still, Off removes the glow, and Reduce motion shows a still glow. It uses only lightweight animations, so the Heroes screen keeps its smooth frame rate.
+- Mythic details: the list of skills and cooldowns under Tsukiyomi was removed to keep the panel clean. His four automatic skills still play in battle exactly as before.
+
 ## November 10, 2026 — Work All
 
 - Work All now sends out only heroes with at least 30% of their chakra (strongest first, up to 10), so freshly deployed heroes can really fight. If none are ready yet, the game tells you to let them rest first. You can still place heroes by hand.

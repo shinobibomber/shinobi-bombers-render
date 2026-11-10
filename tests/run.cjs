@@ -20,6 +20,7 @@ suites.push('founders-server.cjs','founders-prelaunch.cjs','founders-pricing-ui.
 suites.push('canonical-host.cjs');
 suites.push('live-economy.cjs','financial-server-2022.cjs');
 suites.push('control-panel.cjs');
+suites.push('hero-portrait-glow.cjs');
 if(fs.existsSync(path.join(__dirname,'archive.cjs')))suites.unshift('archive.cjs');
 suites.unshift('archive-download.cjs');
 suites.push('adventure-hero-size.cjs','mythic-vfx-v6.cjs');
