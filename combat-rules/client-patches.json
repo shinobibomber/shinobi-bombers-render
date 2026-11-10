@@ -238,5 +238,15 @@
     "h.en=Number.isFinite(descriptor.chakra?.value)?Math.min(CombatRules.maxChakra(h),descriptor.chakra.value):",
     "h.nap=descriptor.chakra?.napping?1:0;h.en=Number.isFinite(descriptor.chakra?.value)?Math.min(CombatRules.maxChakra(h),window.CombatClient?.projectChakra?CombatClient.projectChakra(h,descriptor.chakra,p):descriptor.chakra.value):",
     1
+  ],
+  [
+    "function workAll(){const best=BattleRoster.list().filter(h=>h.en>=1).sort(",
+    "function workAll(){const best=BattleRoster.list().filter(h=>CombatRules.workAllReady(h)).sort(",
+    1
+  ],
+  [
+    "toast(best.length?`${best.length} heroes deployed`:'All heroes need chakra. Let them rest first.')}",
+    "toast(best.length?`${best.length} heroes deployed`:'No hero has 30% chakra yet. Let them rest first.')}",
+    1
   ]
 ]
