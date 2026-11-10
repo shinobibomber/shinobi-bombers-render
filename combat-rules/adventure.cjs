@@ -9,9 +9,17 @@ function parse(r){
  if(r.deployed.some(id=>typeof id!=='string')||new Set(r.deployed).size!==r.deployed.length)return null;
  return {id:r.killSession,seq:Number.isSafeInteger(r.combatSeq)&&r.combatSeq>0&&r.combatSeq<=1e9?r.combatSeq:0,heroes:r.combatHeroes,deployed:r.deployed,stage:Number.isSafeInteger(r.killStage)&&r.killStage>=1&&r.killStage<=1e6?r.killStage:1};
 }
-function advance(data,profile,now,active,ratePercent=50,report=null,onReward=null){
+/* Chest Overflow (owner request 2026-11-11; chest-overflow/server.cjs decides WHEN it applies): from `overflow.activeFrom`
+ * on, a defeat pays less while the Chest already holds a lot of verified, unclaimed Ryo. The tier uses the Chest balance at
+ * that defeat, before it is added (milli-Ryo): < 500,000 Ryo 100%, < 750,000 90%, < 1,000,000 80%, from 1,000,000 70%.
+ * Already-earned Chest Ryo is never reduced. Without `overflow` (every other caller) the payout is exactly as before. */
+const OVERFLOW_TIERS=[[1000000000,7000],[750000000,8000],[500000000,9000]];
+function overflowBps(pendingMilli){const p=Number(pendingMilli)||0;for(const [from,bps] of OVERFLOW_TIERS)if(p>=from)return bps;return 10000}
+function advance(data,profile,now,active,ratePercent=50,report=null,onReward=null,overflow=null){
  require('./economy.cjs').normalizeProfile(profile);
  const d=data||{map:1,target:0,hp:100,kills:0,pending:0,claimed:0,last:now,active:false,energy:{}};
+ // chest-overflow.window() hands its window over on the Chest data (never stored: removed here before anything is saved).
+ if(!overflow&&d.overflowWindow&&typeof d.overflowWindow==='object')overflow=d.overflowWindow;delete d.overflowWindow;
  const last=Number.isFinite(d.last)?Math.min(d.last,now):now,gap=Math.max(0,now-last),rate=Math.max(50,Math.min(100,Number(ratePercent)||50))/100;
  const ready=new Set(profile.battleReady),roster=profile.heroes.filter(h=>ready.has(h.tokenId)),byId=new Map(roster.map(h=>[h.tokenId,h])),tally=parse(report);
  if(d.combatVersion!==1){d.combatVersion=1;d.combatSessions={};d.combatDamage=0;for(const h of profile.heroes)C.state(h,last,d.energy?.[h.tokenId]);}
@@ -26,7 +34,7 @@ function advance(data,profile,now,active,ratePercent=50,report=null,onReward=nul
  let team=(Array.isArray(d.team)?d.team:roster.slice().sort((a,b)=>R.damage(b)/R.cooldown(b)-R.damage(a)/R.cooldown(a)).slice(0,10).map(h=>h.tokenId)).map(id=>byId.get(id)).filter(Boolean).slice(0,10);
  const teamRate=team.reduce((n,h)=>n+1/R.cooldown(h),0);
  d.actionBudget=d.active?Math.min(10+600*teamRate,(Number(d.actionBudget)||0)+Math.min(gap,600000)/1000*teamRate):10;
- const pay=(kind,h,at)=>{const earned=Math.floor(PAY[kind]*Math.max(.35,1-.1*Math.floor(d.map/100))*rate*R.rewardMultiplier(h));d.pending+=earned;d.kills++;if(onReward&&earned)onReward(earned,at)};
+ const pay=(kind,h,at)=>{let earned=Math.floor(PAY[kind]*Math.max(.35,1-.1*Math.floor(d.map/100))*rate*R.rewardMultiplier(h));if(overflow&&at>=overflow.activeFrom){const bps=overflowBps(d.pending);if(bps<10000)earned=Math.floor(earned*bps/10000)}d.pending+=earned;d.kills++;if(onReward&&earned)onReward(earned,at)};
  d.offlineSeconds=0;
  if(online){
   const record=d.combatSessions[tally.id],previous=new Set(team.map(h=>h.tokenId));
@@ -62,4 +70,4 @@ function advance(data,profile,now,active,ratePercent=50,report=null,onReward=nul
  for(const h of profile.heroes){if(!(h.chakra?.lockUntil>now))C.setReserve(h,!ready.has(h.tokenId),now,profile.dojo);const s=C.recover(h,now,profile.dojo);if(!(s.lockUntil>now))C.setResting(h,!active||!fighters.has(h.tokenId),now,profile.dojo);d.energy[h.tokenId]=s.value;}
  d.team=team.map(h=>h.tokenId);d.last=now;d.active=!!active;return d;
 }
-module.exports={advance,parse,HP,PAY};
+module.exports={advance,parse,HP,PAY,OVERFLOW_TIERS,overflowBps};

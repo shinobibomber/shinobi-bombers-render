@@ -7,6 +7,8 @@ let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 html=require('../apply-performance.cjs').restoreReferences(html);
 // Live economy (applied after the Founders step): fee-free deposit wallet hooks.
 for(const [before,after,count]of require('../apply-live-economy.cjs').clientPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact live economy client hook: '+before.slice(0,50));html=html.split(after).join(before)}
+// Chest Overflow (applied after Fusion Shards): its own script only.
+assert.equal(html.split(require('../apply-chest-overflow.cjs').marker).length-1,1,'one chest overflow script marker');
 // Fusion Shards (applied after Shrine pity): RyoPayments.fusionShardCraft and the checkout note.
 for(const [before,after]of require('../apply-fusion-shards.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact fusion shards hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
 assert.equal(html.split('<!-- fusion-shards -->').length-1,1,'one fusion shards script marker');

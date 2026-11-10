@@ -1,5 +1,13 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Chest Overflow: claim your rewards
+
+- Very full Chests now earn less from **new** enemy defeats until you claim or spend: under 500,000 Ryo full rewards; 500,000–749,999 −10%; 750,000–999,999 −20%; 1,000,000 and up −30%.
+- Ryo already in your Chest is **never reduced**, and every defeat is still added to your Chest right away.
+- It's fair on timing: no penalty while your claim timer is running, a **12-hour grace period** once your claim is ready, and none while claiming is unavailable through no fault of yours (claims closed or paused, today's reward budget used up, or the reward pool empty). Nobody is penalised before November 11, 04:00 UTC.
+- Claiming or spending Chest rewards (Summon, Fusion, Dojo, Training) lowers the penalty immediately.
+- New alerts by the Chest tell you when it's getting full, when a penalty will start, when it's active, and when full rewards are back. The "+Ryo → Chest" numbers in battle show what you actually earn.
+
 ## November 11, 2026 — Fusion Shards
 
 - New in the Fusion tab: **Fusion Shards**. Craft them from your Upgrade Shards: **2 Upgrade Shards = 1 Fusion Shard**. Use Craft 1, Craft Max (an odd shard stays) or pick an amount. Crafting asks you to confirm first, because it's permanent.

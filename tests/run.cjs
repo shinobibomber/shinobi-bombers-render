@@ -29,6 +29,7 @@ suites.push('rescue-staff-grant.cjs');
 suites.push('offline-sync.cjs','mythic-perk-transfer.cjs');
 suites.push('shrine-pity.cjs','shrine-pity-ui.cjs');
 suites.push('fusion-shards.cjs','fusion-shards-ui.cjs');
+suites.push('chest-overflow.cjs','chest-overflow-ui.cjs');
 suites.push('canonical-host.cjs');
 suites.push('live-economy.cjs','financial-server-2022.cjs');
 suites.push('control-panel.cjs');
