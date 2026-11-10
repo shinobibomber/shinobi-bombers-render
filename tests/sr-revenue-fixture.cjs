@@ -44,7 +44,8 @@ async function configure(store) {
  return cfg;
 }
 /** Approve a reward budget directly (fixture shortcut for the two-person proposal flow). */
-async function budget(store, value = { dailyCapRyo: 1000000, perClaimMaxRyo: 1000000, evidence: 'Isolated reward budget fixture' }) {
+// minClaimRyo: 1 keeps the pre-minimum fixture scenarios (small Chests); the 100,000 minimum itself: tests/min-claim.cjs.
+async function budget(store, value = { dailyCapRyo: 1000000, perClaimMaxRyo: 1000000, minClaimRyo: 1, evidence: 'Isolated reward budget fixture' }) {
  await store.pool.query("INSERT INTO ryo_admin_control(scope,config,version,installed) VALUES($1,$2,1,$3) ON CONFLICT(scope) DO UPDATE SET config=ryo_admin_control.config||$2", [store.scope, JSON.stringify({ rewardBudget: value }), store.now()]);
 }
 /** Record a verified Active Reward Pool → custody top-up directly (fixture shortcut). */

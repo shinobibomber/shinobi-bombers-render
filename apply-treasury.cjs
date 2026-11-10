@@ -35,6 +35,9 @@ const serverHooks = [
   // Live: once-per-24 h Chest claim bounded by the approved reward budget (inside the pool-locked claim transaction).
   ['adventure.cjs', 'credited=Math.min(Math.floor(d.pending/1000),pool,Math.max(0,Math.floor(custodyTokens-Number(liabilities.n))));',
    'credited=Math.min(Math.floor(d.pending/1000),pool,Math.max(0,Math.floor(custodyTokens-Number(liabilities.n))),await ' + TR + '.claimLimit(store,c,wallet));'],
+  // Live: minimum Chest claim (owner request 2026-11-11), checked on the final credited amount inside the same transaction.
+  ['adventure.cjs', "if(credited<1)fail('No funded whole Ryo is available to claim yet. Earnings stay in your Chest.',409);",
+   "if(credited<1)fail('No funded whole Ryo is available to claim yet. Earnings stay in your Chest.',409);await " + TR + ".assertMinimumClaim(store,c,credited,Math.floor(d.pending/1000));"],
   // Public, read-only: SR available for player Chest claims (figures only; cached; no addresses, keys or writes).
   ['service.cjs', "if(action==='creator-public')return require('./creators-portal.cjs').handle({store,origin},null,action,body);",
    "if(action==='treasury-claim-funding')return " + TR + ".claimFunding({store,connection,mint,treasuryAddress,checkNetwork});if(action==='creator-public')return require('./creators-portal.cjs').handle({store,origin},null,action,body);"],

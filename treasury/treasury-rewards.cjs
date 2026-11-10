@@ -49,9 +49,27 @@ function validateBudget(p) {
   const perClaimMaxRyo = whole(p.perClaimMaxRyo, 1, dailyCapRyo, 'Per-claim maximum');
   // Optional (owner request 2026-11-11, Dojo Chest Claim Limit Bonus): a base personal allowance, at most the per-claim maximum.
   // Unset = no personal allowance: every claim is capped exactly as before (per-claim maximum and the daily budget).
+  // Optional (owner request 2026-11-11): the minimum Chest claim; unset = 100,000 Ryo. At most 500,000 (below the first Chest
+  // Overflow tier, so a player who cannot claim yet is never penalised) and never above the per-claim maximum.
+  const minClaim = p.minClaimRyo === undefined || p.minClaimRyo === null ? null : whole(p.minClaimRyo, 1, Math.min(MAX_MIN_CLAIM_RYO, perClaimMaxRyo), 'Minimum Chest claim');
   const base = p.basePersonalAllowanceRyo === undefined || p.basePersonalAllowanceRyo === null ? null : whole(p.basePersonalAllowanceRyo, 1, perClaimMaxRyo, 'Base personal claim allowance');
   if (typeof p.evidence !== 'string' || !p.evidence.trim() || p.evidence.length > 500) fail('Enter the approved reward-budget evidence reference.');
-  return { dailyCapRyo, perClaimMaxRyo, ...(base === null ? {} : { basePersonalAllowanceRyo: base }), evidence: p.evidence.trim() };
+  return { dailyCapRyo, perClaimMaxRyo, ...(minClaim === null ? {} : { minClaimRyo: minClaim }), ...(base === null ? {} : { basePersonalAllowanceRyo: base }), evidence: p.evidence.trim() };
+}
+/* Minimum Chest claim (owner request 2026-11-11): a live claim must credit at least 100,000 Ryo (or the budget's minClaimRyo),
+ * never more than the approved per-claim maximum, so a low maximum can never make every claim impossible. Below it the claim
+ * is refused and nothing moves: the Ryo stays in the Chest and the claim timer is not used (the transaction rolls back). */
+// Also never above an approved base personal allowance (Dojo bonus), so no allowance can fall below the minimum.
+const MIN_CLAIM_RYO = 100000, MAX_MIN_CLAIM_RYO = 500000;
+const minimumClaim = budget => budget ? Math.max(1, Math.min(Number.isSafeInteger(budget.minClaimRyo) ? budget.minClaimRyo : MIN_CLAIM_RYO, budget.perClaimMaxRyo,
+  Number.isSafeInteger(budget.basePersonalAllowanceRyo) ? budget.basePersonalAllowanceRyo : Infinity)) : MIN_CLAIM_RYO;
+/** Inside the claim transaction, after the credited amount is known (adventure.cjs hook). Live only. */
+async function assertMinimumClaim(store, c, credited, chestRyo) {
+  if (!live()) return;
+  const min = minimumClaim(await rewardBudget(store, c)), f = n => Math.floor(n).toLocaleString('en-US');
+  if (credited >= min) return;
+  if (chestRyo < min) fail('Chest claims start at ' + f(min) + ' Ryo. Your Chest holds ' + f(chestRyo) + ' Ryo; it stays safe and keeps growing.', 409);
+  fail("Today's reward budget or funding can't cover the minimum claim of " + f(min) + ' Ryo right now. Your earnings stay in your Chest; try again later.', 409);
 }
 /* Dojo Chest Claim Limit Bonus: every Dojo tier adds 100,000 Ryo to the personal claim allowance (Legendary, tier 6: +600,000),
  * derived from the saved profile in the claim transaction (never stored, never from the browser). Only when the approved
@@ -125,13 +143,14 @@ async function claimInfo(store, c, wallet) {
   if (!live()) return null;
   const last = await lastClaim(store, c, wallet), cooldown = await claimCooldownFor(store, c, wallet);
   // Display details only: never let them turn a committed claim (or a Chest refresh) into an error.
-  const allowance = await claimAllowance(store, c, wallet).catch(() => ({ active: false }));
-  return { nextClaimAt: last === null ? 0 : last + cooldown, claimCooldownMs: cooldown, founderCooldown: cooldown < CLAIM_COOLDOWN_MS, claimAllowance: allowance };
+  const budget = await rewardBudget(store, c).catch(() => null);
+  const allowance = await claimAllowance(store, c, wallet, budget).catch(() => ({ active: false }));
+  return { nextClaimAt: last === null ? 0 : last + cooldown, claimCooldownMs: cooldown, founderCooldown: cooldown < CLAIM_COOLDOWN_MS, minClaimRyo: minimumClaim(budget), claimAllowance: allowance };
 }
 /** Chest claim details for the UI (live, server values). `active` only when the approved budget sets a base allowance; without
  * one (the normal state) a single budget read answers, so the Chest poll stays cheap. */
-async function claimAllowance(store, c, wallet) {
-  const budget = await rewardBudget(store, c);
+async function claimAllowance(store, c, wallet, known) {
+  const budget = known === undefined ? await rewardBudget(store, c) : known;
   if (!budget || !Number.isSafeInteger(budget.basePersonalAllowanceRyo)) return { active: false };
   const tier = await dojoTier(store, c, wallet), bonus = tier * DOJO_CLAIM_BONUS_RYO;
   const remaining = Math.max(0, budget.dailyCapRyo - await budgetUsed(store, c, store.now())), personal = personalAllowance(budget, tier);
@@ -216,4 +235,4 @@ async function summary(store, c = store.pool) {
     rewardBudget: { configured: !!budget, ...(budget || {}), claimedLast24h: used, remainingLast24h: budget ? Math.max(0, budget.dailyCapRyo - used) : 0, claimCooldownHours: 24 } };
 }
 
-module.exports = { UNIT, DAY, CLAIM_COOLDOWN_MS, DOJO_CLAIM_BONUS_RYO, dojoTier, personalAllowance, claimAllowance, live, claimFunding, claimFundingNotConfigured, withdrawalPlan, withdrawalsAnytime, withdrawalColumns, withdrawalSettled, validateBudget, rewardBudget, claimLimit, chestLimit, budgetUsed, claimCooldownFor, nextClaimAt, claimInfo, publicConfig, assertCustody, summary };
+module.exports = { UNIT, DAY, CLAIM_COOLDOWN_MS, MIN_CLAIM_RYO, minimumClaim, assertMinimumClaim, DOJO_CLAIM_BONUS_RYO, dojoTier, personalAllowance, claimAllowance, live, claimFunding, claimFundingNotConfigured, withdrawalPlan, withdrawalsAnytime, withdrawalColumns, withdrawalSettled, validateBudget, rewardBudget, claimLimit, chestLimit, budgetUsed, claimCooldownFor, nextClaimAt, claimInfo, publicConfig, assertCustody, summary };

@@ -523,7 +523,7 @@ const ok = label => pass.push(label);
   const t0 = now;
   for (const w of [regular, mythicF, legacyF]) assert.equal((await claim(W(w))).credited, 5, 'same per-claim maximum for everyone');
   // Cooldown fields only: the Dojo claim allowance details (claimAllowance) are covered by tests/dojo-claim-bonus.cjs.
-  const cooldownInfo = async w => { const { claimAllowance, ...cooldown } = await T.claimInfo(store, pool, w); return cooldown; };
+  const cooldownInfo = async w => { const { claimAllowance, minClaimRyo, ...cooldown } = await T.claimInfo(store, pool, w); return cooldown; };
   assert.deepEqual(await cooldownInfo(W(regular)), { nextClaimAt: t0 + DAY, claimCooldownMs: DAY, founderCooldown: false });
   assert.deepEqual(await cooldownInfo(W(mythicF)), { nextClaimAt: t0 + 12 * HOUR, claimCooldownMs: 12 * HOUR, founderCooldown: true });
   assert.deepEqual(await cooldownInfo(W(legacyF)), { nextClaimAt: t0 + 12 * HOUR, claimCooldownMs: 12 * HOUR, founderCooldown: true });

@@ -1,5 +1,20 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Minimum Chest claim: 100,000 Ryo
+
+- Chest claims now start at **100,000 Ryo**. Until your Chest reaches 100,000 Ryo, the Claim button waits and your rewards keep adding up safely in your Chest.
+- A claim that can't reach 100,000 Ryo is refused rather than paid partly. That includes when today's reward budget or pool funding is short. Nothing is deducted and your claim timer isn't used, so you can claim as soon as it's possible.
+- The Chest shows the minimum under **Rewards Overview**. Per-claim maximum, claim timers (24 hours, Founders 12 hours) and paying with Chest rewards are unchanged.
+- Chest Overflow never penalizes you while a 100,000 Ryo claim isn't possible through no fault of yours.
+
+## November 11, 2026 — Reward Center and CLAIM button (switches on when announced)
+
+- A new **🎁 CLAIM** button sits where Support used to be on the main menu. A small badge shows when you have a reward waiting. Support is still available from ⚙ Tools and from the Reward Center's Help & Support.
+- Our loyalty rewards arrive here as **Standard Hero Passes**. Open CLAIM, review your reward and press **CLAIM N HERO PASSES**. The passes go into your Hero Passes balance.
+- Use your passes anytime from **Hero Passes**: each pass recruits one in-game hero at normal Summoning Shrine odds, with the usual reveal.
+- Promotional passes and the heroes they recruit are **account-bound**: they can't be sold, traded or transferred, and heroes fused from them stay bound. Using passes doesn't change your Shrine Legend pity or your Ryo.
+- Each reward can be claimed once, and your claim history is kept in the Reward Center.
+
 ## November 11, 2026 — Dojo Chest Claim Limit Bonus (switches on when announced)
 
 - Every Dojo tier raises the most you can claim from your Chest at once by **+100,000 Ryo**, up to **+600,000 Ryo** at Legendary Dojo (Tier VI). Dojo tiers you already own count automatically.

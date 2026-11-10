@@ -28,7 +28,7 @@ const DAY = 86400000, UNIT = 1000000n, LIVE = () => network.NETWORKS.mainnet, BE
   assert.throws(() => T.validateBudget({ dailyCapRyo: 10, perClaimMaxRyo: 1 }), /evidence/);
 
   // 2. Per-claim maximum and the rolling 24 h cadence (authoritative server clock, exact boundary).
-  await fixture.budget(store, { dailyCapRyo: 10, perClaimMaxRyo: 4, evidence: 'Isolated reward budget' });
+  await fixture.budget(store, { dailyCapRyo: 10, perClaimMaxRyo: 4, minClaimRyo: 1, evidence: 'Isolated reward budget' });
   assert.equal(await T.nextClaimAt(store, pool, a), 0, 'first claim available now');
   const first = await claim(a); assert.equal(first.credited, 4, 'per-claim maximum'); assert.equal(await store.balance(a), 4); assert.equal(await pending(a), 16);
   const claimedAt = now; assert.equal(await T.nextClaimAt(store, pool, a), claimedAt + DAY);
