@@ -15,8 +15,8 @@
  *   - progress is tracked per page session id for every session the combat accounting still keeps (the last 4), so page
  *     reloads lose nothing; the client checks in once per page load;
  *   - rank odds = the Summoning Shrine's: Genin 60 / Chunin 25 / Jonin 10 / Elite 4 / Legend 1 (never Mythic);
- *   - the hero is account-bound (referralReward: Market listing refused, fusion keeps the binding), flagged prisonRescue
- *     (salvage refused by the apply-prison-rescue hook, so it cannot be turned into Upgrade Shards).
+ *   - the hero is account-bound (referralReward: Market listing refused, fusion keeps the binding) and flagged prisonRescue;
+ *     like any hero it can be salvaged for Upgrade Shards (owner decision 2026-11-10).
  * Nothing here touches Ryo, the Chest, the reward pool or any token: the kill -> Chest path is unchanged.
  *
  * One action, `prison-rescue {requestId}`, at most ONE hero per request. Normal outcomes are answered with a status (no

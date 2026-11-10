@@ -1,5 +1,9 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Rescued heroes can be salvaged
+
+- Heroes you rescue from prison cages can now be salvaged for Upgrade Shards, like any other hero. They are still account-bound: they can't be listed on the Market, and a hero fused from one stays bound.
+
 ## November 10, 2026 — Rescued prisoners now join your collection
 
 - Freeing a prisoner in Adventure (the cage that comes with every 25th-stage commander, or a rare random cage) now gives you a real hero that is saved to your account and shows up in your Heroes collection. Before, the rescued hero only existed in your browser and disappeared a few seconds later.

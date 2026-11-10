@@ -1,7 +1,7 @@
 'use strict';
 /* Prison rescue grants (owner request 2026-11-10): a freed Adventure prisoner becomes a real, server-granted, account-bound hero.
  * Every prison cage counts (no daily limit); one hero per prison kill VERIFIED by the authoritative combat accounting; only while
- * actively playing; Shrine odds, never Mythic; no salvage; cheat guard: rescue heroes are 100,000 HP of verified enemy damage
+ * actively playing; Shrine odds, never Mythic; salvageable; cheat guard: rescue heroes are 100,000 HP of verified enemy damage
  * apart (labelling kills differently does not help), and a prisoner freed sooner waits (at most 3) instead of being lost, across
  * page reloads too. Isolated PGlite fixtures only. */
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
@@ -74,9 +74,10 @@ let seq = 0; const rid = () => 'rescue-request-' + String(++seq).padStart(6, '0'
   assert.equal((await heroes(e2e)).length, 1, 'a replay never adds a hero');
   assert.equal((await claim(e2e)).status, 'unverified', 'the same prison kill never grants twice');
   assert.equal((await rows('SELECT * FROM ryo_prison_rescues WHERE scope=$1 AND wallet=$2', [e2e])).length, 1);
-  // Account-bound: no salvage into Upgrade Shards.
-  const salvaged = economy.normalizeProfile(structuredClone(await store.profile(e2e)));
-  assert.throws(() => upgrades.salvageProfile(salvaged, first.hero.tokenId, now), /Rescued prisoner heroes are account-bound and cannot be salvaged/);
+  // Owner decision 2026-11-10: rescued heroes can be salvaged for Upgrade Shards like any other hero.
+  const salvaged = economy.normalizeProfile(structuredClone(await store.profile(e2e))), shardsBefore = salvaged.upgradeShards;
+  upgrades.salvageProfile(salvaged, first.hero.tokenId, now);
+  assert(!salvaged.heroes.some(h => h.tokenId === first.hero.tokenId) && salvaged.upgradeShards > shardsBefore, 'a rescued hero salvages into Upgrade Shards');
 
   /* ---------- Every cage counts (no daily limit), 100,000 verified HP apart, waiting prisoners are kept ---------- */
   const p = address(); await store.profile(p);
@@ -140,5 +141,5 @@ let seq = 0; const rid = () => 'rescue-request-' + String(++seq).padStart(6, '0'
   assert.equal(html.split('<script defer src="assets/prison-rescue/prison-rescue.js"></script>').length - 1, 1);
   assert(fs.existsSync(path.join(__dirname, '../app/public/assets/prison-rescue/prison-rescue.js')));
   await db.close();
-  console.log('PASS: prison rescue — every verified prison kill grants one server-side, account-bound hero (Shrine odds, never Mythic, no salvage), only while playing; fake kills, replays and parallel requests grant nothing extra; 100,000 verified HP apart with up to 3 waiting prisoners kept across page reloads; pending purchase / full collection wait; gates and client wiring.');
+  console.log('PASS: prison rescue — every verified prison kill grants one server-side, account-bound hero (Shrine odds, never Mythic, salvageable), only while playing; fake kills, replays and parallel requests grant nothing extra; 100,000 verified HP apart with up to 3 waiting prisoners kept across page reloads; pending purchase / full collection wait; gates and client wiring.');
 })().catch(e => { console.error(e); process.exitCode = 1; });
