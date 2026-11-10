@@ -31,6 +31,6 @@ This checklist is for the owner and their legal adviser. It is **not legal advic
   - Mythic includes free permanent Sensei.
   - Legacy gets a 7-day trial that starts when the buyer activates it. During that trial, permanent Sensei costs 0.2 SOL instead of 0.4 SOL.
   - On the live server, Sensei is no longer sold for Ryo.
-- **Game-service discount:** 10% (Mythic) or 5% (Legacy) on Summon, Fusion, Dojo, Sensei and Training. It doesn't stack with the old Mythic Box 10%.
+- **Game-service discount:** 10% (Mythic) or 5% (Legacy) on Summon, Fusion, Dojo, Sensei and Training. It doesn't stack with the old Mythic Box 10%. An approved creator's own creator discount (5%, or 10% with a Founder-box referral) applies after it, one after the other (since 2026-11-10).
 - **Premium Summon schedule:** counts completed Monday–Sunday (UTC) weeks with Adventure play after activation. Missed weeks are not made up.
 - **Early access:** eligibility only. It does not open the game until a separately approved stage.

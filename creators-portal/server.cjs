@@ -237,6 +237,37 @@ async function founderBuyer(store, c, wallet) {
   if (!await hasFounderTable(c)) return false;
   return (await query(c, "SELECT 1 FROM ryo_founder_purchases WHERE scope=$1 AND wallet=$2 AND status='confirmed' LIMIT 1", [store.scope, wallet])).length > 0;
 }
+// Creator discount (owner decision 2026-11-10): an APPROVED creator pays less for their OWN game services (the Founder discount's
+// products): 5%, or 10% once any of their referrals (creator link or player link) has a CONFIRMED Founder box, Mythic or Legacy.
+// economy.cjs applies it after the existing discount (Founder discount or Mythic Box 10%, which still never stack with each
+// other), one after the other. Store.profileLocked writes profile.creatorDiscountBps on every locked read (apply-founders store
+// hook), so the preview quote and the charged purchase always use the current value. Closed with the Creators Portal switch.
+const CREATOR_DISCOUNT_BPS = 500, CREATOR_FOUNDER_DISCOUNT_BPS = 1000;
+const CREATOR_DISCOUNTED = Object.freeze(['summon', 'training', 'dojo', 'sensei', 'sensei-rental', 'fusion']);
+let creatorTables = false;
+async function creatorDiscountBps(db, scope, wallet) {
+  if (!enabled() || typeof wallet !== 'string') return 0;
+  if (!creatorTables) { creatorTables = !!(await db.query("SELECT to_regclass('ryo_creators') IS NOT NULL AS t", [])).rows[0]?.t; if (!creatorTables) return 0; }
+  const creator = (await db.query("SELECT id FROM ryo_creators WHERE scope=$1 AND wallet=$2 AND status='APPROVED'", [scope, wallet])).rows[0];
+  if (!creator) return 0;
+  if (!await hasFounderTable(db)) return CREATOR_DISCOUNT_BPS;
+  const boosted = (await db.query(`SELECT 1 FROM ryo_founder_purchases f WHERE f.scope=$1 AND f.status='confirmed' AND f.wallet IN (
+      SELECT wallet FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2
+      UNION SELECT wallet FROM ryo_player_referrals WHERE scope=$1 AND referrer=$3) LIMIT 1`, [scope, creator.id, wallet])).rows.length > 0;
+  return boosted ? CREATOR_FOUNDER_DISCOUNT_BPS : CREATOR_DISCOUNT_BPS;
+}
+async function applyCreatorDiscount(db, scope, wallet, profile) {
+  if (!profile || typeof profile !== 'object') return profile;
+  const bps = await creatorDiscountBps(db, scope, wallet);
+  if (bps) profile.creatorDiscountBps = bps; else delete profile.creatorDiscountBps;
+  return profile;
+}
+/** Synchronous part used by economy.cjs quote(): only the server-written profile value counts. */
+function creatorDiscount(profile, product) {
+  const bps = profile?.creatorDiscountBps;
+  if ((bps !== CREATOR_DISCOUNT_BPS && bps !== CREATOR_FOUNDER_DISCOUNT_BPS) || !CREATOR_DISCOUNTED.includes(product) || !enabled()) return { bps: 0, label: '' };
+  return { bps, label: 'Creator −' + bps / 100 + '%' };
+}
 async function commission(store, c, r, source, kind, srMilli) {
   const founder = await founderBuyer(store, c, r.wallet), percent = founder ? FOUNDER_COMMISSION_PERCENT : COMMISSION_PERCENT;
   const cp = BigInt(srMilli) * percent / 100n;
@@ -361,7 +392,8 @@ async function summary(store, wallet, origin, body = {}) {
   const redemptions = await query(store.pool, 'SELECT id,item_id,price,status,result,created FROM ryo_creator_redemptions WHERE scope=$1 AND creator_id=$2 ORDER BY created DESC,id LIMIT 20 OFFSET $3', [...args, offset]);
   const shop = await query(store.pool, "SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id='hero-pass' ORDER BY price,id", [store.scope]);
   const [used] = await query(store.pool, "SELECT COUNT(*) AS n FROM ryo_creator_redemptions r JOIN ryo_creator_shop s ON s.scope=r.scope AND s.id=r.item_id WHERE r.scope=$1 AND s.kind='hero' AND r.season=$2 AND r.status='fulfilled'", [store.scope, result.rules.season]);
-  return { ...result, stats, points: { balanceMilli: String(creator.balance), earnedMilli: String(points.earned), redeemedMilli: String(points.redeemed), commissionMilli: String(points.commission), pendingMilli: String(BigInt(pending.n) * COMMISSION_PERCENT / 100n + BigInt(pending.founder) * FOUNDER_COMMISSION_PERCENT / 100n) },
+  const creatorDiscountPercent = await creatorDiscountBps(store.pool, store.scope, wallet) / 100;
+  return { ...result, stats, creatorDiscountPercent, points: { balanceMilli: String(creator.balance), earnedMilli: String(points.earned), redeemedMilli: String(points.redeemed), commissionMilli: String(points.commission), pendingMilli: String(BigInt(pending.n) * COMMISSION_PERCENT / 100n + BigInt(pending.founder) * FOUNDER_COMMISSION_PERCENT / 100n) },
     link: origin.replace(/\/$/, '') + '/?creator=' + creator.code, referrals: referrals.map(r => ({ ...r, wallet: undefined, player: privateId(r.wallet) })), ledger: entries.map(r => ({ ...r, detail: { referral: r.detail.referral, item: r.detail.item, version: r.detail.version, percent: r.detail.percent, base: r.detail.base, reasonCode: r.detail.reasonCode } })),
     redemptions, shop: shop.map(s => ({ ...s, price: String(s.price), remaining: s.supply - s.used, delivery: s.kind === 'hero' ? 'in-game hero' : 'cosmetic' })),
     seasonRemaining: Math.max(0, result.rules.promotionalSupply - number(used.n)), page: page(body) };
@@ -516,4 +548,4 @@ async function handle(ctx, wallet, action, body = {}) {
   if (action === 'creator-appeal') { const message = text(body.message, 1000); return store.transaction(async c => { await store.locked(c, wallet); const r = await referral(store, c, wallet); const creator = !r && await creatorByWallet(store, c, wallet, true); if (!r && !creator) fail('No creator application or referral attribution found.', 404); if (r?.appeal || creator?.application?.appeal) fail('An appeal is already recorded. An administrator will review it.', 409); if (r) await c.query('UPDATE ryo_creator_referrals SET appeal=$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, message]); else await c.query('UPDATE ryo_creators SET application=$3 WHERE scope=$1 AND id=$2', [store.scope, creator.id, JSON.stringify({ ...creator.application, appeal: { message, at: store.now() } })]); await audit(store, c, wallet, 'review.appeal', creator?.id || privateId(wallet), 'Player submitted an appeal', { message }); return { ok: true }; }); }
   fail('Unknown Creators Portal action.', 404);
 }
-module.exports = { convertPlayerReferrals, syncApprovedCreators, program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole, COMMISSION_PERCENT, FOUNDER_COMMISSION_PERCENT, TOPUP_KIND, founderBuyer, topUpFounderCommissions };
+module.exports = { convertPlayerReferrals, syncApprovedCreators, program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole, COMMISSION_PERCENT, FOUNDER_COMMISSION_PERCENT, TOPUP_KIND, founderBuyer, topUpFounderCommissions, creatorDiscountBps, applyCreatorDiscount, creatorDiscount, CREATOR_DISCOUNTED };

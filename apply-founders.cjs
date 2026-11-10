@@ -2,7 +2,8 @@
  *
  * Copies founders/server.cjs to app/server/founders.cjs, appends its additive schema, the game panel client, and
  * exact-string hooks (each must match exactly once, or the build stops):
- *   economy.cjs        Founder discount (10% Mythic / 5% Legacy, never stacked with the Mythic Box 10%) and, on the
+ *   economy.cjs        Founder discount (10% Mythic / 5% Legacy, never stacked with the Mythic Box 10%), then an approved
+ *                      creator's own discount (5%, 10% with a Founder-box referral; creators-portal.cjs) and, on the
  *                      live build, the removal of the Ryo Sensei products (Sensei is bought with SOL).
  *   store.cjs          every locked profile read carries the buyer's Founder tier from the entitlement (founders.applyTier),
  *                      so quotes and charged purchases get the discount from the very first purchase.
@@ -22,7 +23,8 @@ const economyHooks = [
   ["normalizeProfile(profile);if(product==='hunt')return require('./boss-hunt.cjs').quote(VERSION);",
    "normalizeProfile(profile);if(product==='hunt')return require('./boss-hunt.cjs').quote(VERSION);" + F + ".assertRyoProduct(product);"],
   ["if(profile.mythicPerk===true){base=Math.round(base*.9);title+=' · Mythic −10%'}",
-   "{const fd=" + F + ".discount(profile,product);if(profile.mythicPerk===true&&fd.bps<=1000){base=Math.round(base*.9);title+=' · Mythic −10%'}else if(fd.bps>0){base=Math.round(base*(10000-fd.bps)/10000);title+=' · '+fd.label}}"],
+   // Then an approved creator's own discount (5%, or 10% with a Founder-box referral), one after the other (owner decision 2026-11-10).
+   "{const fd=" + F + ".discount(profile,product);if(profile.mythicPerk===true&&fd.bps<=1000){base=Math.round(base*.9);title+=' · Mythic −10%'}else if(fd.bps>0){base=Math.round(base*(10000-fd.bps)/10000);title+=' · '+fd.label}const cd=require('./creators-portal.cjs').creatorDiscount(profile,product);if(cd.bps>0){base=Math.round(base*(10000-cd.bps)/10000);title+=' · '+cd.label}}"],
 ];
 const serviceHooks = [
   ["  if(['box-info','box-mint','box-confirm'].includes(action)){",
@@ -39,7 +41,8 @@ const serviceHooks = [
 // always agree, and no other build step's line is touched.
 const storeHooks = [
   ["const before=JSON.stringify(row.data),profile=require('./economy.cjs').normalizeProfile(row.data);",
-   "const before=JSON.stringify(row.data),profile=await " + F + ".applyTier(c,this.scope,wallet,require('./economy.cjs').normalizeProfile(row.data));"],
+   // ...and the approved creator's own discount (creators-portal.cjs creatorDiscountBps, owner decision 2026-11-10).
+   "const before=JSON.stringify(row.data),profile=await require('./creators-portal.cjs').applyCreatorDiscount(c,this.scope,wallet,await " + F + ".applyTier(c,this.scope,wallet,require('./economy.cjs').normalizeProfile(row.data)));"],
 ];
 const salvageHooks = [
   ["if(hero.nft)fail('NFT-bound heroes cannot be salvaged.", "if(hero.nft||hero.founderBound)fail('NFT-bound heroes cannot be salvaged."],

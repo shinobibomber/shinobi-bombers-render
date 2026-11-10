@@ -128,6 +128,10 @@ No endpoint transfers CP, withdraws it, swaps it or converts it into Ryo/SOL/USD
   delta = floor(SR x 10%) - the original CP, credited in the same transaction; original rows are never edited. It runs when the
   creator dashboard or a redemption loads, when staff open the admin view, and after each new commission for that referral.
   Read-only preview: `node tools/creator-founder-topup-report.cjs`.
+- Creator discount (owner decision 2026-11-10): an APPROVED creator pays 5% less for their own Summon, Fusion, Dojo, Sensei and
+  Training, or 10% once any of their referrals (creator or player link) has a CONFIRMED Founder box. It is applied after the
+  Founder discount or the Mythic Box 10% (those two never stack with each other), one after the other. Store.profileLocked
+  writes `profile.creatorDiscountBps` on every locked read (`applyCreatorDiscount`), so the quote and the charge always agree.
 - Fractional commission amounts round down to milli-CP per settlement; unclaimed fractional Ryo
   remains in its lot. The player's full legitimate Ryo claim is never reduced.
 - Totals, history, available CP, redeemed CP and provisional pending CP come from PostgreSQL.

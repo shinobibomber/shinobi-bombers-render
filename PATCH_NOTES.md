@@ -1,5 +1,12 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Creator discount
+
+- Approved creators now pay 5% less for their own Summon, Fusion, Dojo, Sensei and Training.
+- Once one of your referred players buys a Founder box (Mythic or Legacy), your creator discount rises to 10%.
+- It stacks with your Founder discount (or Mythic Box 10%), one after the other. Example: Mythic Founder + creator 10% = a 25,000 Ryo summon costs 20,250. The Mythic Box and Founder discounts still don't stack with each other.
+- Your current creator discount is shown on your Creators Portal dashboard. The price you see before paying is exactly what you are charged.
+
 ## November 10, 2026 — Creators earn 10% on Founder-box referrals
 
 - Creators now earn 10% Creator Points (instead of 5%) on the Adventure claims and eligible game purchases of every referred player who bought a Founder box. Other referrals stay at 5%.
