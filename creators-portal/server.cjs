@@ -44,7 +44,7 @@ async function initialize(store) {
 async function publicInfo(store, origin) {
   const p = await program(store), [n] = await query(store.pool, 'SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1', [store.scope]);
   return { marker: MARKER, enabled: enabled(), playerReferrals: { marker: 'shinobi-player-referrals-v1', passesPerReferral: 2, applicationRequired: false, paidHeroes: 15, clearedStage: 5 }, rules: { ...p.config, version: p.version, eligibleProducts: [...p.config.eligibleProducts],
-    milestone: 50000, paidHeroes: 15, clearedStage: 5, adventurePercent: 5, purchasePercent: 5,
+    milestone: 50000, paidHeroes: 15, clearedStage: 5, adventurePercent: 5, purchasePercent: 5, founderBoxPercent: 10,
     enrollmentRemaining: Math.max(0, p.config.enrollmentLimit - number(n.n) - await require('./player-referrals.cjs').count(store)), origin, cpWithdrawable: false,
     attribution: 'First valid referral link, accepted before any paid order or recorded Adventure progress. One referrer across both programs per verified wallet; attribution never changes. Local link expires after 7 days.',
     progression: 'Stage 5 must be cleared in the server combat verifier (100 server-simulated defeats). A client stage number is never evidence.',
@@ -224,11 +224,62 @@ async function settledPurchase(store, c, row) {
   if (wasQualified && number(row.created) > number(r.qualified) && settledAt < number(r.expires) && r.rules?.purchaseProducts?.includes(row.product))
     await commission(store, c, r, eventId, 'purchase', BigInt(row.amount) * UNIT);
 }
+// Commission rates (owner decision 2026-11-10): 5% normally, 10% on a referral who bought a Founder box (a CONFIRMED purchase in
+// ryo_founder_purchases). Commissions already earned from that referral at 5% (before or after the box) are raised to 10% once,
+// automatically, by topUpFounderCommissions. CP stays ledger-only: it never touches Ryo, the reward pool or any token.
+const COMMISSION_PERCENT = 5n, FOUNDER_COMMISSION_PERCENT = 10n, TOPUP_KIND = 'founder-commission-topup';
+const COMMISSION_KINDS = ['adventure-commission', 'purchase-commission', TOPUP_KIND];
+/** The Founder tables are added by a later build step; isolated schemas without them simply pay 5%. */
+async function hasFounderTable(c) {
+  return !!(await query(c, "SELECT to_regclass('ryo_founder_purchases') IS NOT NULL AS t", []))[0]?.t;
+}
+async function founderBuyer(store, c, wallet) {
+  if (!await hasFounderTable(c)) return false;
+  return (await query(c, "SELECT 1 FROM ryo_founder_purchases WHERE scope=$1 AND wallet=$2 AND status='confirmed' LIMIT 1", [store.scope, wallet])).length > 0;
+}
 async function commission(store, c, r, source, kind, srMilli) {
-  const cp = BigInt(srMilli) * 5n / 100n;
+  const founder = await founderBuyer(store, c, r.wallet), percent = founder ? FOUNDER_COMMISSION_PERCENT : COMMISSION_PERCENT;
+  const cp = BigInt(srMilli) * percent / 100n;
   const created = await query(c, `INSERT INTO ryo_creator_commissions(scope,source_id,creator_id,wallet,kind,sr_milli,cp_milli,created)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING RETURNING source_id`, [store.scope, source, r.creator_id, r.wallet, kind, String(srMilli), String(cp), store.now()]);
-  if (created.length) await ledger(store, c, r.creator_id, 'commission:' + source, kind + '-commission', cp, BigInt(srMilli), { referral: privateId(r.wallet), percent: 5 });
+  if (created.length) await ledger(store, c, r.creator_id, 'commission:' + source, kind + '-commission', cp, BigInt(srMilli), { referral: privateId(r.wallet), percent: Number(percent) });
+  // The referral's earlier 5% commissions (if any) are raised in the same transaction. A savepoint keeps any top-up error from
+  // failing the player's claim or purchase settlement; the dashboard / redemption / admin top-up then credits it later.
+  if (founder) {
+    await c.query('SAVEPOINT founder_topup');
+    try { await topUpFounderCommissions(store, c, { creatorId: r.creator_id, wallet: r.wallet }); await c.query('RELEASE SAVEPOINT founder_topup'); }
+    catch { await c.query('ROLLBACK TO SAVEPOINT founder_topup'); await c.query('RELEASE SAVEPOINT founder_topup'); }
+  }
+}
+/** Raises every commission earned at 5% from a Founder-box referral to exactly floor(SR x 10%): one extra ledger row per commission
+ *  (event 'topup:<source>', UNIQUE, so it is credited at most once), credited to the creator's balance in the same transaction.
+ *  Original commission rows are never edited. The creator row is locked FOR NO KEY UPDATE (the same lock the balance UPDATE
+ *  takes, so it never conflicts with the key-share locks of other referrals' commission inserts), one creator at a time in id
+ *  order, so concurrent settlements and top-ups cannot deadlock. Returns the CP (milli) credited by this run. */
+async function topUpFounderCommissions(store, c, { creatorId = null, wallet = null } = {}) {
+  if (!await hasFounderTable(c)) return 0n;
+  if (!creatorId && !wallet) {   // every creator (staff view): one creator at a time, ascending id
+    const ids = (await query(c, `SELECT DISTINCT m.creator_id FROM ryo_creator_commissions m WHERE m.scope=$1 AND m.cp_milli < m.sr_milli*10/100
+      AND EXISTS(SELECT 1 FROM ryo_founder_purchases f WHERE f.scope=m.scope AND f.wallet=m.wallet AND f.status='confirmed')
+      AND NOT EXISTS(SELECT 1 FROM ryo_creator_ledger l WHERE l.scope=m.scope AND l.event_id='topup:'||m.source_id) ORDER BY m.creator_id`, [store.scope])).map(r => r.creator_id);
+    let sum = 0n; for (const id of ids) sum += await topUpFounderCommissions(store, c, { creatorId: id }); return sum;
+  }
+  let total = 0n;
+  for (let round = 0; round < 50; round++) {
+    const rows = await query(c, `SELECT m.source_id,m.creator_id,m.wallet,m.kind,m.sr_milli,m.cp_milli FROM ryo_creator_commissions m
+      WHERE m.scope=$1 AND ($2::text IS NULL OR m.creator_id=$2) AND ($3::text IS NULL OR m.wallet=$3) AND m.cp_milli < m.sr_milli*10/100
+        AND EXISTS(SELECT 1 FROM ryo_founder_purchases f WHERE f.scope=m.scope AND f.wallet=m.wallet AND f.status='confirmed')
+        AND NOT EXISTS(SELECT 1 FROM ryo_creator_ledger l WHERE l.scope=m.scope AND l.event_id='topup:'||m.source_id)
+      ORDER BY m.created,m.source_id LIMIT 500`, [store.scope, creatorId, wallet]);
+    if (!rows.length) break;
+    for (const id of [...new Set(rows.map(m => m.creator_id))].sort()) await c.query('SELECT 1 FROM ryo_creators WHERE scope=$1 AND id=$2 FOR NO KEY UPDATE', [store.scope, id]);
+    for (const m of rows) {
+      const delta = BigInt(m.sr_milli) * FOUNDER_COMMISSION_PERCENT / 100n - BigInt(m.cp_milli);
+      if (delta > 0n && await ledger(store, c, m.creator_id, 'topup:' + m.source_id, TOPUP_KIND, delta, BigInt(m.sr_milli), { referral: privateId(m.wallet), percent: 10, previousPercent: 5, base: m.kind })) total += delta;
+    }
+    if (rows.length < 500) break;
+  }
+  return total;
 }
 
 // Qualification observes settled server-validated Adventure defeats. It cannot execute attacks,
@@ -281,7 +332,10 @@ async function endAdventure(store, c, wallet, tracking, claimed, claimId) {
 
 async function summary(store, wallet, origin, body = {}) {
   await initialize(store);
-  const creator = await creatorByWallet(store, store.pool, wallet), result = { ...await publicInfo(store, origin), creator: publicCreator(creator), termsAccepted: !!creator?.application?.termsAt };
+  let creator = await creatorByWallet(store, store.pool, wallet);
+  // A creator never sees (or spends) a balance missing the Founder-box top-up.
+  if (creator?.status === 'APPROVED' && await store.transaction(c => topUpFounderCommissions(store, c, { creatorId: creator.id })) > 0n) creator = await creatorByWallet(store, store.pool, wallet);
+  const result = { ...await publicInfo(store, origin), creator: publicCreator(creator), termsAccepted: !!creator?.application?.termsAt };
   try { result.adminRole = adminRole(wallet); } catch { result.adminRole = null; }
   const ownReferral = await referral(store, store.pool, wallet, false);
   result.attribution = ownReferral ? { referral: privateId(wallet), paidMints: ownReferral.paid_mints, stage5: !!ownReferral.stage5, qualified: ownReferral.qualified, appeal: ownReferral.appeal } : null;
@@ -293,8 +347,11 @@ async function summary(store, wallet, origin, body = {}) {
   const counts = s => ({ total: number(s.total), qualified: number(s.qualified), pending: number(s.pending) }), cl = counts(viaCreator), pl = counts(viaPlayer);
   const stats = { total: cl.total + pl.total, qualified: cl.qualified + pl.qualified, pending: cl.pending + pl.pending, creatorLink: cl, playerLink: pl };
   const [points] = await query(store.pool, `SELECT COALESCE(SUM(delta) FILTER(WHERE delta>0),0) AS earned,COALESCE(-SUM(delta) FILTER(WHERE kind='redemption'),0) AS redeemed,
-    COALESCE(SUM(delta) FILTER(WHERE kind IN ('adventure-commission','purchase-commission')),0) AS commission FROM ryo_creator_ledger WHERE scope=$1 AND creator_id=$2`, args);
-  const [pending] = await query(store.pool, `SELECT COALESCE(SUM(l.remaining),0) AS n FROM ryo_creator_adventure_lots l JOIN ryo_creator_referrals r ON r.scope=l.scope AND r.wallet=l.wallet
+    COALESCE(SUM(delta) FILTER(WHERE kind = ANY($3)),0) AS commission FROM ryo_creator_ledger WHERE scope=$1 AND creator_id=$2`, [...args, COMMISSION_KINDS]);
+  // Provisional pending commission: 10% of eligible unclaimed Adventure earnings of Founder-box referrals, 5% of the rest.
+  const founderLots = await hasFounderTable(store.pool) ? "EXISTS(SELECT 1 FROM ryo_founder_purchases f WHERE f.scope=r.scope AND f.wallet=r.wallet AND f.status='confirmed')" : 'FALSE';
+  const [pending] = await query(store.pool, `SELECT COALESCE(SUM(l.remaining) FILTER(WHERE NOT ${founderLots}),0) AS n,COALESCE(SUM(l.remaining) FILTER(WHERE ${founderLots}),0) AS founder
+    FROM ryo_creator_adventure_lots l JOIN ryo_creator_referrals r ON r.scope=l.scope AND r.wallet=l.wallet
     WHERE r.scope=$1 AND r.creator_id=$2 AND l.eligible AND l.remaining>0`, args);
   const referrals = await query(store.pool, `SELECT wallet,paid_mints,stage5,qualified,expires,attributed,via FROM (
     SELECT wallet,paid_mints,stage5,qualified,expires,attributed,'creator' AS via FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2
@@ -304,8 +361,8 @@ async function summary(store, wallet, origin, body = {}) {
   const redemptions = await query(store.pool, 'SELECT id,item_id,price,status,result,created FROM ryo_creator_redemptions WHERE scope=$1 AND creator_id=$2 ORDER BY created DESC,id LIMIT 20 OFFSET $3', [...args, offset]);
   const shop = await query(store.pool, "SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id='hero-pass' ORDER BY price,id", [store.scope]);
   const [used] = await query(store.pool, "SELECT COUNT(*) AS n FROM ryo_creator_redemptions r JOIN ryo_creator_shop s ON s.scope=r.scope AND s.id=r.item_id WHERE r.scope=$1 AND s.kind='hero' AND r.season=$2 AND r.status='fulfilled'", [store.scope, result.rules.season]);
-  return { ...result, stats, points: { balanceMilli: String(creator.balance), earnedMilli: String(points.earned), redeemedMilli: String(points.redeemed), commissionMilli: String(points.commission), pendingMilli: String(BigInt(pending.n) * 5n / 100n) },
-    link: origin.replace(/\/$/, '') + '/?creator=' + creator.code, referrals: referrals.map(r => ({ ...r, wallet: undefined, player: privateId(r.wallet) })), ledger: entries.map(r => ({ ...r, detail: { referral: r.detail.referral, item: r.detail.item, version: r.detail.version, percent: r.detail.percent, reasonCode: r.detail.reasonCode } })),
+  return { ...result, stats, points: { balanceMilli: String(creator.balance), earnedMilli: String(points.earned), redeemedMilli: String(points.redeemed), commissionMilli: String(points.commission), pendingMilli: String(BigInt(pending.n) * COMMISSION_PERCENT / 100n + BigInt(pending.founder) * FOUNDER_COMMISSION_PERCENT / 100n) },
+    link: origin.replace(/\/$/, '') + '/?creator=' + creator.code, referrals: referrals.map(r => ({ ...r, wallet: undefined, player: privateId(r.wallet) })), ledger: entries.map(r => ({ ...r, detail: { referral: r.detail.referral, item: r.detail.item, version: r.detail.version, percent: r.detail.percent, base: r.detail.base, reasonCode: r.detail.reasonCode } })),
     redemptions, shop: shop.map(s => ({ ...s, price: String(s.price), remaining: s.supply - s.used, delivery: s.kind === 'hero' ? 'in-game hero' : 'cosmetic' })),
     seasonRemaining: Math.max(0, result.rules.promotionalSupply - number(used.n)), page: page(body) };
 }
@@ -317,6 +374,8 @@ async function redeem(store, wallet, body) {
     const { config } = await program(store, c, true);
     await store.locked(c, wallet); const creator = await approved(store, c, wallet, true);
     if (!creator.application?.termsAt) fail('Accept the Creator Program Terms before redeeming rewards.', 409);
+    // The balance spent below always includes the Founder-box top-up (the creator row is already locked by this transaction).
+    if (await topUpFounderCommissions(store, c, { creatorId: creator.id }) > 0n) creator.balance = (await creatorByWallet(store, c, wallet)).balance;
     const old = (await query(c, 'SELECT * FROM ryo_creator_redemptions WHERE scope=$1 AND id=$2', [store.scope, redemptionId]))[0];
     if (old) { if (old.creator_id !== creator.id || old.item_id !== itemId) fail('Request ID belongs to another redemption.', 409); return { redemption: old, replay: true }; }
     const item = (await query(c, 'SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, itemId]))[0];
@@ -352,7 +411,9 @@ async function redeem(store, wallet, body) {
 }
 
 async function adminSnapshot(store, wallet, body) {
-  const role = adminRole(wallet), offset = page(body) * 20, search = typeof body.search === 'string' ? body.search.trim().slice(0, 80) : '';
+  const role = adminRole(wallet);
+  await store.transaction(c => topUpFounderCommissions(store, c));   // balances shown to staff include every owed top-up
+  const offset = page(body) * 20, search = typeof body.search === 'string' ? body.search.trim().slice(0, 80) : '';
   const creators = await query(store.pool, `SELECT * FROM ryo_creators WHERE scope=$1 AND (wallet ILIKE $2 OR display_name ILIKE $2 OR code ILIKE $2) ORDER BY created DESC,id LIMIT 20 OFFSET $3`, [store.scope, '%' + search + '%', offset]);
   const refs = await query(store.pool, `SELECT r.*,c.display_name FROM ryo_creator_referrals r JOIN ryo_creators c ON c.scope=r.scope AND c.id=r.creator_id WHERE r.scope=$1 AND (r.wallet ILIKE $2 OR c.display_name ILIKE $2) ORDER BY r.attributed DESC,r.wallet LIMIT 20 OFFSET $3`, [store.scope, '%' + search + '%', offset]);
   const [capacity] = await query(store.pool, `SELECT (SELECT COALESCE(SUM(balance),0) FROM ryo_creators WHERE scope=$1) AS outstanding,
@@ -455,4 +516,4 @@ async function handle(ctx, wallet, action, body = {}) {
   if (action === 'creator-appeal') { const message = text(body.message, 1000); return store.transaction(async c => { await store.locked(c, wallet); const r = await referral(store, c, wallet); const creator = !r && await creatorByWallet(store, c, wallet, true); if (!r && !creator) fail('No creator application or referral attribution found.', 404); if (r?.appeal || creator?.application?.appeal) fail('An appeal is already recorded. An administrator will review it.', 409); if (r) await c.query('UPDATE ryo_creator_referrals SET appeal=$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, message]); else await c.query('UPDATE ryo_creators SET application=$3 WHERE scope=$1 AND id=$2', [store.scope, creator.id, JSON.stringify({ ...creator.application, appeal: { message, at: store.now() } })]); await audit(store, c, wallet, 'review.appeal', creator?.id || privateId(wallet), 'Player submitted an appeal', { message }); return { ok: true }; }); }
   fail('Unknown Creators Portal action.', 404);
 }
-module.exports = { convertPlayerReferrals, syncApprovedCreators, program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole };
+module.exports = { convertPlayerReferrals, syncApprovedCreators, program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole, COMMISSION_PERCENT, FOUNDER_COMMISSION_PERCENT, TOPUP_KIND, founderBuyer, topUpFounderCommissions };

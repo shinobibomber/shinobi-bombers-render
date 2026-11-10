@@ -122,6 +122,12 @@ No endpoint transfers CP, withdraws it, swaps it or converts it into Ryo/SOL/USD
   do not earn CP. Earnings within the saved window can settle after expiry; newly earned rewards
   outside it cannot. Offline lots use the server simulation step timestamps (15-second precision);
   online lots use the authoritative credit timestamp, not a claimed client defeat time.
+- Founder-box referrals (owner decision 2026-11-10): a referral with a CONFIRMED Founder box purchase earns the creator 10%
+  instead of 5% on both commissions. Commissions already recorded at 5% for that referral (before or after the box) are raised
+  automatically and exactly once: one `founder-commission-topup` ledger row per commission (event `topup:<source_id>`, unique),
+  delta = floor(SR x 10%) - the original CP, credited in the same transaction; original rows are never edited. It runs when the
+  creator dashboard or a redemption loads, when staff open the admin view, and after each new commission for that referral.
+  Read-only preview: `node tools/creator-founder-topup-report.cjs`.
 - Fractional commission amounts round down to milli-CP per settlement; unclaimed fractional Ryo
   remains in its lot. The player's full legitimate Ryo claim is never reduced.
 - Totals, history, available CP, redeemed CP and provisional pending CP come from PostgreSQL.

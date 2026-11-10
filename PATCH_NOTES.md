@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Creators earn 10% on Founder-box referrals
+
+- Creators now earn 10% Creator Points (instead of 5%) on the Adventure claims and eligible game purchases of every referred player who bought a Founder box. Other referrals stay at 5%.
+- It counts back in time: commissions you already earned at 5% from a player who bought a Founder box are raised to 10% automatically. The extra appears once in your Point history as "Founder-box bonus (raised to 10%)", and your balance updates the next time you open the Creators Portal.
+- Point history now shows readable event names and the rate used for each commission.
+
 ## November 10, 2026 — Rescued heroes can be salvaged
 
 - Heroes you rescue from prison cages can now be salvaged for Upgrade Shards, like any other hero. They are still account-bound: they can't be listed on the Market, and a hero fused from one stays bound.
