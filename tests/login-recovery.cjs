@@ -1,5 +1,5 @@
 /* Sign-in never hangs on "Recovering pending transactions…" (owner report 2026-11-10: a player's phone stayed on that
- * line). The browser's own Solana check (pending deposits / wallet balance) is limited to 15 s; after that the game loads
+ * line). The browser's own Solana check (pending deposits / wallet balance) is limited to 8 s; after that the game loads
  * the server state and enters, while the check continues in the background. Isolated fixtures only: the harness wallet
  * and server are in-process fakes; no real wallet, RPC or transaction is used. */
 const { withGame } = require('./harness.cjs');
@@ -9,7 +9,7 @@ const signIn = p => p.locator('#loginPhantom').click();
 const entered = () => RyoPayments.state.authenticated && !LoginScreen.active;
 
 (async () => {
-  // 1. The browser check never answers: the game still opens after about 15 s, with the server state loaded.
+  // 1. The browser check never answers: the game still opens after about 8 s, with the server state loaded.
   await withGame(async ({ p, f, errors }) => {
     await p.waitForFunction(() => window.BetaWallet && window.RyoPayments && window.LoginScreen);
     await p.evaluate(() => { BetaWallet.recoverPending = () => new Promise(() => {}); });
@@ -18,7 +18,7 @@ const entered = () => RyoPayments.state.authenticated && !LoginScreen.active;
     assert.equal(await p.evaluate(entered), false, 'still recovering after 5 s (the check is given its time)');
     await p.waitForFunction(entered, null, { timeout: 30000 });
     const took = Date.now() - t0;
-    assert(took >= 14000 && took < 26000, 'entered the game after the 15 s limit: ' + took + ' ms');
+    assert(took >= 7000 && took < 16000, 'entered the game after the 8 s limit: ' + took + ' ms');
     assert(f.requests.some(r => r.action === 'state'), 'the server state was loaded');
     assert.equal(await p.evaluate(() => RyoPayments.state.busy), false, 'payments are not left busy');
     assert.deepEqual(errors, []);
@@ -29,7 +29,7 @@ const entered = () => RyoPayments.state.authenticated && !LoginScreen.active;
     await p.waitForFunction(() => window.BetaWallet && window.RyoPayments && window.LoginScreen);
     await p.evaluate(() => {
       const record = { economyVersion: 2, kind: 'deposit', hash: 'L'.repeat(88), amount: 5000, treasuryAddress: RyoPayments.state.configuration?.treasuryAddress, requestId: 'late-deposit-request-0001' };
-      BetaWallet.recoverPending = () => new Promise(r => setTimeout(() => { record.treasuryAddress = RyoPayments.state.configuration.treasuryAddress; r([{ record }]); }, 17000));
+      BetaWallet.recoverPending = () => new Promise(r => setTimeout(() => { record.treasuryAddress = RyoPayments.state.configuration.treasuryAddress; r([{ record }]); }, 10000));
     });
     const balanceBefore = f.balance;
     await signIn(p);
@@ -50,7 +50,7 @@ const entered = () => RyoPayments.state.authenticated && !LoginScreen.active;
   // 2b. The check fails after the limit: no page error, the game stays open and usable.
   await withGame(async ({ p, errors }) => {
     await p.waitForFunction(() => window.BetaWallet && window.RyoPayments && window.LoginScreen);
-    await p.evaluate(() => { BetaWallet.recoverPending = () => new Promise((_, no) => setTimeout(() => no(Error('RPC request timed out')), 17000)); });
+    await p.evaluate(() => { BetaWallet.recoverPending = () => new Promise((_, no) => setTimeout(() => no(Error('RPC request timed out')), 10000)); });
     await signIn(p);
     await p.waitForFunction(entered, null, { timeout: 30000 });
     await p.waitForTimeout(4000);   // past the late failure
@@ -77,5 +77,5 @@ const entered = () => RyoPayments.state.authenticated && !LoginScreen.active;
     assert.equal(await p.evaluate(() => LoginScreen.active), true, 'the error keeps the player on the sign-in screen');
     assert.deepEqual(errors, []);
   });
-  console.log('PASS: sign-in recovery — a hanging browser Solana check is limited to 15 s and the game opens with the server state; a late deposit is still sent and the balance refreshed; fast sign-in and early errors unchanged.');
+  console.log('PASS: sign-in recovery — a hanging browser Solana check is limited to 8 s and the game opens with the server state; a late deposit is still sent and the balance refreshed; fast sign-in and early errors unchanged.');
 })().catch(e => { console.error(e); process.exitCode = 1; });

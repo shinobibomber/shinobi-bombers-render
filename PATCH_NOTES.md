@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Faster sign-in on phones
+
+- Signing in is much faster on slow phone connections. Before, the game checked your wallet balance step by step, twice, before it let you in, and each step could wait a long time on a weak connection. Now the sign-in request appears right away and the game opens after at most a few seconds while your wallet balance finishes loading in the background.
+- If you have a deposit that was still pending, it is still found and credited once; the check just no longer holds up sign-in.
+- Payments are unchanged: every payment still checks the network and the token before you sign.
+
 ## November 10, 2026 — New rank frames for hero cards
 
 - Every hero card in the Adventure team panel and in the Heroes Collection now has a frame that matches its rank: Genin silver with a shuriken, Chunin green with leaves, Jonin blue with a water crescent, Elite purple with a tomoe crest and blossoms, Legend gold with a star and diamonds, and Mythic violet and gold with a tomoe crest and wings.

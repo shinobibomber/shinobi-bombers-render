@@ -88,7 +88,34 @@ const clientPatches = [
   // raised before the 15 s is reported exactly as before; a later one is ignored here (the pending record stays and is
   // recovered on the next refresh).
   ['await recoverDeposits();const data=await refreshInternal()',
-   "{const rd=recoverDeposits();rd.catch(()=>{});let t;const slow=await Promise.race([rd.then(()=>false),new Promise(r=>{t=setTimeout(()=>r(true),15000)})]).finally(()=>clearTimeout(t));if(slow){notify('Still checking pending deposits in the background. Nothing is lost; your balance updates when it finishes.');rd.then(()=>busy?0:run(refreshInternal)).catch(()=>{})}}const data=await refreshInternal()", 1],
+   "{const rd=recoverDeposits();rd.catch(()=>{});let t;const slow=await Promise.race([rd.then(()=>false),new Promise(r=>{t=setTimeout(()=>r(true),8000)})]).finally(()=>clearTimeout(t));if(slow){notify('Still checking pending deposits in the background. Nothing is lost; your balance updates when it finishes.');rd.then(()=>busy?0:run(refreshInternal)).catch(()=>{})}}const data=await refreshInternal()", 1],
+  // Faster sign-in on slow phone connections (owner report 2026-11-10: mobile players wait too long to load and sign in).
+  // Signing in ran the wallet's balance check (7 Solana calls in a row: network check twice, token mint twice, SOL balance, token
+  // account, token balance) TWICE in sequence: inside connect(), before the wallet even showed the signature request, and again
+  // in the "Recovering pending transactions" step. Each call can wait up to 12 s direct plus 22 s via the relay. Now:
+  //  1. connect() and the empty-pending check wait at most 3 s for the balance check, which keeps running in the background and
+  //     updates the balances when it finishes (an error inside the 3 s is raised exactly as before; a later one is shown as the
+  //     wallet message);
+  //  2. one balance check at a time per wallet (a second request joins the one in flight);
+  //  3. the SOL balance is fetched in parallel with the token mint and account checks.
+  // Pending deposits are still recovered (the 8 s limit above), nothing is credited differently, and every payment still runs
+  // its own full network (genesis) and mint checks first: those are not cached.
+  ['async function devnet(){if(await connection.getGenesisHash()!==GENESIS)throw Error(',
+   "const soft=(p,ms)=>{let t,late=false;p.catch(e=>{if(late)notify((e&&e.message)||'Wallet refresh failed. Refresh to retry.')});return Promise.race([p,new Promise(r=>{t=setTimeout(()=>{late=true;r()},ms)})]).finally(()=>clearTimeout(t))};async function devnet(){if(await connection.getGenesisHash()!==GENESIS)throw Error(", 1],
+  ['async function refresh(){\n  reset();if(!state.account||!provider){notify();return {...state}}',
+   'let flight=null;function refresh(){if(flight&&flight.a===state.account&&flight.p===provider)return flight.q;const f={a:state.account,p:provider};f.q=refreshRun().finally(()=>{if(flight===f)flight=null});flight=f;return f.q}function refreshFresh(){const w=flight?flight.q.catch(()=>{}):Promise.resolve();return w.then(()=>refresh())}\n async function refreshRun(){\n  reset();if(!state.account||!provider){notify();return {...state}}', 1],
+  ["const sol=await connection.getBalance(key(account),'confirmed');let balance='0';",
+   "const solP=connection.getBalance(key(account),'confirmed');solP.catch(()=>{});let balance='0';", 1],
+  ['if(account!==state.account||p!==provider)return {...state};state.solBalance=sol;',
+   'const sol=await solP;if(account!==state.account||p!==provider)return {...state};state.solBalance=sol;', 1],
+  ['await refresh();return {...state};\n }\n async function context(){', 'await soft(refresh(),3000);return {...state};\n }\n async function context(){', 1],
+  ['if(!records.length){await refresh();', 'if(!records.length){await soft(refresh(),3000);', 1],
+  // After something changed (mint configured, tokens sent, redemption, recovered deposits) the balances must be read AFTER it:
+  // wait for any check already in flight, then run a fresh one (a joined check could return balances from before the change).
+  ['localStorage.setItem(configKey,JSON.stringify(config()));await refresh();', 'localStorage.setItem(configKey,JSON.stringify(config()));await refreshFresh();', 1],
+  ['acknowledge(result.record.hash);await refresh();', 'acknowledge(result.record.hash);await refreshFresh();', 1],
+  ['verifyRedemption(result.receipt,result.record);await refresh();', 'verifyRedemption(result.receipt,result.record);await refreshFresh();', 1],
+  ["else if(record.kind==='distribution')acknowledge(record.hash);\n }await refresh();", "else if(record.kind==='distribution')acknowledge(record.hash);\n }await refreshFresh();", 1],
   // SR token program: verifyMint reads the mint account's owner on-chain and accepts only classic SPL Token or Token-2022
   // (anything else fails in getMint); the balance account and the deposit then use that program. A classic mint behaves
   // exactly as before (tokenProgram undefined -> the library default). The server verifies the registered program anyway.

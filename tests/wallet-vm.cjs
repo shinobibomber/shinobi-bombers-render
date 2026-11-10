@@ -4,16 +4,16 @@ const web3=require('../app/node_modules/@solana/web3.js'),spl=require('../app/no
 const GENESIS='EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',UNIT=1000000n;
 const owner=web3.Keypair.generate(),tester=web3.Keypair.generate(),other=web3.Keypair.generate(),studio=web3.Keypair.generate(),mints=new Map(),accounts=new Map(),receipts=new Map(),submitted=[];
 let genesis=GENESIS,reject=false,changeAfterSend=false,failNext=false,tamper=false,walletAppend=null,walletPriority=false,rpcFetchMode='ok',capturedRpcFetch;
-let solLamports=1000000000,feeUnavailable=false,gasRpcError=false,signCalls=0,solAfterSign=null;
+let solLamports=1000000000,feeUnavailable=false,gasRpcError=false,signCalls=0,solAfterSign=null,rpcDelay=0;const calls={genesis:0,balance:0,account:0,tokenBalance:0},slow=()=>rpcDelay?new Promise(r=>setTimeout(r,rpcDelay)):null;
 const storage=new Map(),localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v))};
 function mintInfo(mint){const value=mints.get(mint.toBase58());if(!value)return null;const data=Buffer.alloc(spl.MINT_SIZE);spl.MintLayout.encode({...value,mintAuthorityOption:value.authority?1:0,mintAuthority:value.authority||web3.PublicKey.default,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:web3.PublicKey.default},data);if(value.program)return {data:require('./sr-revenue-fixture.cjs').token2022(data,'mint',['MetadataPointer','TokenMetadata']),owner:value.program,lamports:1000000,executable:false};return {data,owner:spl.TOKEN_PROGRAM_ID,lamports:1000000,executable:false};}
 class Connection {
  constructor(url,options){capturedRpcFetch=options?.fetch}
- async getGenesisHash(){if(rpcFetchMode!=='ok')await capturedRpcFetch('https://example.test',{method:'POST'});return genesis}
- async getBalance(){if(gasRpcError)throw Error('RPC balance unavailable');return solLamports}
+ async getGenesisHash(){calls.genesis++;await slow();if(rpcFetchMode!=='ok')await capturedRpcFetch('https://example.test',{method:'POST'});return genesis}
+ async getBalance(){calls.balance++;await slow();if(gasRpcError)throw Error('RPC balance unavailable');return solLamports}
  async getFeeForMessage(message){return {value:feeUnavailable?null:message.header.numRequiredSignatures*5000+(message.accountKeys.some(k=>k.equals(web3.ComputeBudgetProgram.programId))?400:0)}}
- async getAccountInfo(address){return mints.has(address.toBase58())?mintInfo(address):accounts.has(address.toBase58())?{owner:spl.TOKEN_PROGRAM_ID}:null}
- async getTokenAccountBalance(address){return {value:{amount:accounts.get(address.toBase58()).amount.toString()}}}
+ async getAccountInfo(address){calls.account++;await slow();return mints.has(address.toBase58())?mintInfo(address):accounts.has(address.toBase58())?{owner:spl.TOKEN_PROGRAM_ID}:null}
+ async getTokenAccountBalance(address){calls.tokenBalance++;await slow();return {value:{amount:accounts.get(address.toBase58()).amount.toString()}}}
  async getMinimumBalanceForRentExemption(size){return size===0?890880:size===165?2039280:1461600}
  async getLatestBlockhash(){return {blockhash:web3.Keypair.generate().publicKey.toBase58(),lastValidBlockHeight:1000}}
  async getParsedTransaction(hash){return receipts.get(hash)||null}
@@ -105,6 +105,34 @@ const html=fs.readFileSync(require('node:path').join(__dirname,'../app/public/in
   await client.installConfig(mint);assert.equal(client.state.tokenAddress,mint);}
  await client.recoverPending();assert.match(client.state.message,/No pending/);assert.equal(client.state.busy,false);
  const preserved=JSON.stringify([deposits[0].record]);storage.set('shinobi-solana-pending-v1',preserved);rpcFetchMode='rate';await assert.rejects(client.recoverPending(),/rate-limit/);assert.equal(client.state.busy,false);assert.equal(storage.get('shinobi-solana-pending-v1'),preserved);rpcFetchMode='timeout';await assert.rejects(client.recoverPending(),/timed out/);assert.equal(client.state.busy,false);assert.equal(storage.get('shinobi-solana-pending-v1'),preserved);rpcFetchMode='ok';assert.equal(client.pendingDeposits,1,'failed status refresh never erases native pending record');await client.recoverPending();client.acknowledge(deposits[0].record.hash);
+ // ---- Slow phone connection (owner report 2026-11-10: mobile players wait too long to sign in). Every Solana call takes 1.5 s;
+ // the full balance check is 6 calls in a row (about 9 s). Sign-in waits at most ~3 s for it, runs it once, still raises
+ // errors that happen within that time, and shows a later error as the wallet message without crashing.
+ {
+  const unhandled=[];process.on('unhandledRejection',e=>unhandled.push(e));
+  const until=async(fn,ms)=>{const end=Date.now()+ms;while(Date.now()<end){if(fn())return true;await new Promise(r=>setTimeout(r,50))}return fn()};
+  storage.set('shinobi-solana-pending-v1','[]');
+  rpcDelay=1500;
+  let t=Date.now(),b0=calls.balance;await client.connect('phantom');let took=Date.now()-t;
+  assert(took>=2500&&took<5500,'connect() waits about 3 s for the balance check, not all of it (took '+took+' ms)');
+  assert.equal(client.state.account,owner.publicKey.toBase58());
+  assert(await until(()=>client.state.verified,20000),'the balances arrive in the background');
+  assert.equal(calls.balance-b0,1,'one balance check per sign-in step');
+  assert.equal(client.state.tokenBalance,accounts.get(spl.getAssociatedTokenAddressSync(new web3.PublicKey(client.state.tokenAddress),owner.publicKey).toBase58())?.amount.toString()||'0');
+  // The pending-deposit step with nothing pending also waits at most ~3 s.
+  t=Date.now();await client.recoverPending();took=Date.now()-t;assert(took<5500,'recoverPending() with nothing pending waits at most ~3 s (took '+took+' ms)');
+  await until(()=>client.state.verified,20000);
+  // Several refreshes at once share one check.
+  rpcDelay=100;b0=calls.balance;await Promise.all([client.refresh(),client.refresh(),client.refresh()]);assert.equal(calls.balance-b0,1,'concurrent refreshes join one check');
+  // An error inside the 3 s is raised as before (a wrong network stops sign-in).
+  rpcDelay=0;genesis='mainnet';await assert.rejects(client.connect('phantom'),/not Solana Devnet/,'an early error still stops sign-in');genesis=GENESIS;
+  // A late error (after the 3 s) is shown as the wallet message and raises nothing unhandled.
+  rpcDelay=3500;genesis='mainnet';await client.connect('phantom');
+  assert(await until(()=>/not Solana Devnet/.test(client.state.message),8000),'a late error is shown as the wallet message');
+  genesis=GENESIS;rpcDelay=0;await new Promise(r=>setTimeout(r,200));
+  assert.deepEqual(unhandled,[],'no unhandled rejection');process.removeAllListeners('unhandledRejection');
+  await client.refresh();assert.equal(client.state.verified,true);assert.equal(client.state.busy,false);
+ }
  console.log(JSON.stringify({wallets:'Phantom + Solflare',mainnetRpc:'blocked before signing',mint:'1b total: 980m issuer + 20m studio; authority revoked; signatures verified',distribution:'1m gross: 980k tester + 20k studio',burn:'finalized receipt + memo + balance delta verified',rejection:'no burn',walletMutation:'blocked',failedTransaction:'no burn/credit',accountChange:'recover once after reconnect',deposit:'SPL transfer and unique memo; pending recovery',invalidMintAndReceipt:'rejected',pendingDepositGetter:'owner/mint/network/kind scoped; empty or failed receipt recovery preserves count; acknowledgement clears count',validation:'SDK signatures/serialization with simulated RPC; no validator/public deployment'},null,2));
 })().catch(e=>{console.error(e);process.exitCode=1});
 
