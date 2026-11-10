@@ -80,8 +80,11 @@ const address = () => web3.Keypair.generate().publicKey.toBase58();
   await call(descendant,'creator-attribute',{code:mixedCreator.code});
   const descendantCode=(await call(descendant,'creator-player-state')).code;
   await assert.rejects(call(ancestor,'creator-attribute',{code:descendantCode}),/Circular/);
-  const migrated=address(), migration=await call(promotedWallet,'creator-migrate',{wallet:migrated});
-  await call(migrated,'creator-migrate',{accept:true,id:migration.migrationId});
+  // Wallet migration was removed (2026-11-11); a migration completed before then is seeded as the old acceptance wrote it.
+  await assert.rejects(call(promotedWallet,'creator-migrate',{wallet:address()}),/no longer available/,'wallet migration is refused');
+  const migrated=address();
+  await rows('INSERT INTO ryo_creator_wallets(scope,wallet,creator_id) VALUES($1,$2,$3)',[migrated,mixedCreator.id]);
+  await rows('UPDATE ryo_creators SET wallet=$3 WHERE scope=$1 AND id=$2',[mixedCreator.id,migrated]);
   await assert.rejects(call(ancestor,'creator-attribute',{code:descendantCode}),/Circular/,'reserved creator identity keeps ancestry after migration');
   assert.equal((await rows('SELECT COUNT(*) AS n FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2',[ancestor]))[0].n,0);
   await call(address(),'creator-attribute',{code:descendantCode}); // valid mixed chain remains allowed

@@ -79,6 +79,9 @@ async function fixture(p, f, account, snapshot) {
      assert(!(await p.locator('.cp-notice').innerText()).includes('Loading creator program'), 'reopening during a refresh cannot leave a stale loading notice');
      assert.match(await p.locator('#creatorsPanel').innerText(), /125,000 CP/);
      assert.match(await p.locator('.cp-link').innerText(), /\/?creator=/);
+     // Creator wallet migration was removed (2026-11-11): no request form and no Accept button.
+     assert.doesNotMatch(await p.locator('#creatorsPanel').innerText(), /migration/i, 'no wallet migration on the dashboard');
+     assert.equal(await p.locator('.cp-migration-entry, [data-form="migration"]').count(), 0);
      await p.screenshot({ path: path.join(root, 'tests/out/creators-dashboard-desktop.png') });
      await p.locator('#creatorsPanel [data-tab="referrals"]').click();
      assert.match(await p.locator('.cp-table').innerText(), /Player [A-F0-9]{10}/);

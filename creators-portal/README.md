@@ -82,10 +82,10 @@ legacy spend or recorded Adventure earnings. The browser hint is not authoritati
 
 Self-referrals and creator-to-creator/circular attribution are rejected. Prior creator wallet
 aliases remain reserved after migration. An existing attribution can never be overwritten.
-Wallet migration requires an authenticated source request and a separately authenticated exact
-destination acceptance within 15 minutes. Creator ID, CP and referrals follow the migration; Ryo,
-game heroes and cosmetics do not silently move between wallets. Old migration aliases cannot
-apply again or enroll as referrals.
+Creator wallet migration was removed on 2026-11-11 (`creator-migrate` is refused with 410).
+Migrations completed before then stay valid: the creator keeps the new wallet, and the old wallet
+stays reserved, so it cannot apply again or enroll as a referral. Wallet problems are handled by
+staff (for example the admin "Link a player to a referrer by hand" tool).
 
 Paid mint evidence is the unique settled summon order plus its exact successful output count.
 Single and multi-summons count their actual outputs. Free starter grants/bonus spending, CP shop

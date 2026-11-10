@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Creator wallet migration removed
+
+- The Creators Portal no longer offers creator wallet migration (moving your Creator ID, Creator Points and referrals to a different wallet). The request form and the Accept wallet migration button are gone.
+- Migrations completed before today stay as they are: your creator identity, points and referrals remain on the wallet you moved to.
+- If you need help with a wallet or a referral link, contact the team.
+
 ## November 11, 2026 — Summoning Shrine Legend pity
 
 - The Summoning Shrine now has a Legend guarantee: if you go 149 paid summons in a row without a Legend, your **150th summon is a guaranteed Legend**.

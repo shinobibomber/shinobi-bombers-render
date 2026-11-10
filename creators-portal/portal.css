@@ -79,7 +79,6 @@
 .cp-notice{color:#f2d2a0;margin:0 0 16px;padding:10px 14px;border:1px solid #795330;background:#29182d;border-radius:6px;overflow-wrap:anywhere}.cp-notice:empty{display:none}.cp-notice.error{color:#ffb4cc;border-color:#994466;background:#2e1028}
 .cp-admin-list{display:grid;gap:15px}.cp-admin-list details{margin:12px 0}.cp-admin-list summary{cursor:pointer;color:#f1c589}.cp-admin-list .cp-inline{margin-top:10px}
 .cp-admin-list pre,.cp-section pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#080517;border:1px solid #463061;border-radius:6px;padding:12px;color:#b3a5cf;font:12px/1.6 monospace}
-.cp-migration-entry{margin-top:16px;padding:14px 0;border-top:1px solid #543270;text-align:right}.cp-migration-entry button{font-size:13px!important}
 .cp-modal{background:linear-gradient(145deg,#21103e,#0d0722);color:#eee6f8;border:2px solid #da9f37;border-radius:12px;max-width:540px;width:calc(100% - 30px);max-height:calc(100dvh - 40px);overflow:auto;padding:25px;box-shadow:0 0 25px #8b3dff40;font:500 16px/1.5 Rajdhani,system-ui}
 .cp-modal::backdrop{background:#030110d9}.cp-modal h2{color:#ffcf4a;margin:0 0 10px}.cp-modal p{color:#c2b4d8;line-height:1.5}.cp-modal label{display:grid;gap:6px}.cp-modal textarea{min-height:80px;resize:vertical}.cp-modal .cp-inline{justify-content:flex-end;margin-top:20px}
 body.cp-has-frame #sbwLayer .sbw-avatar{outline:2px solid #e4bc78;outline-offset:2px;box-shadow:0 0 0 5px #a875a34d}body.cp-has-badge #sbwLayer .sbw-walletbtn::before{content:'✦ ';color:#f1cb89}
@@ -99,7 +98,6 @@ body.cp-has-frame #sbwLayer .sbw-avatar{outline:2px solid #e4bc78;outline-offset
  #creatorsPanel .cp-sections button[aria-selected=true]{box-shadow:inset 0 -2px #ffc845}.cp-content{padding:18px 12px 6px}
  .cp-section h2{font-size:23px}.cp-grid,.cp-grid.two,.cp-shop{grid-template-columns:1fr}.cp-card{padding:16px}.cp-card strong.cp-number{font-size:30px}.cp-note{font-size:15px;padding:12px}
  .cp-form button{justify-self:stretch}.cp-pages{justify-content:space-between;gap:6px}.cp-pages button{padding:8px 10px!important}
-.cp-migration-entry{text-align:left}
 }
 @media(prefers-reduced-motion:reduce){#creatorsPanel *{transition:none!important}}
 body.cp-reduced #creatorsPanel *{transition:none!important}

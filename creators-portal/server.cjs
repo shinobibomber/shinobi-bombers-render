@@ -562,29 +562,6 @@ async function adminAction(store, wallet, body) {
     await audit(store, c, wallet, 'admin.' + action, target, reason, detail); return { ok: true };
   });
 }
-async function migrate(store, wallet, body) {
-  return store.transaction(async c => {
-    await program(store, c, true);
-    if (body.accept === true) {
-      const r = (await query(c, 'SELECT * FROM ryo_creator_migrations WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, text(body.id, 80)]))[0];
-      if (!r || r.new_wallet !== wallet || r.accepted || number(r.expires) <= store.now()) fail('Migration is unavailable or expired.', 409);
-      if ((await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length || await referral(store, c, wallet) || await require('./player-referrals.cjs').referral(store, c, wallet) || (await query(c, 'SELECT 1 FROM ryo_player_referrers WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('The receiving wallet already has a creator/referral identity.', 409);
-      const creator = await approved(store, c, r.old_wallet, true); if (creator.id !== r.creator_id) fail('Creator identity changed.', 409);
-      if ((await query(c, "SELECT 1 FROM ryo_purchases WHERE scope=$1 AND wallet=$2 AND status='pending'", [store.scope, r.old_wallet])).length) fail('Settle the old wallet pending purchase first.', 409);
-      // CP/referrals follow the creator ID. Game assets and Ryo do not silently move wallets.
-      await c.query('INSERT INTO ryo_creator_wallets(scope,wallet,creator_id) VALUES($1,$2,$3)', [store.scope, wallet, creator.id]);
-      await c.query('UPDATE ryo_creators SET wallet=$3 WHERE scope=$1 AND id=$2', [store.scope, creator.id, wallet]);
-      await c.query('UPDATE ryo_creator_migrations SET accepted=$3 WHERE scope=$1 AND id=$2', [store.scope, r.id, store.now()]);
-      await audit(store, c, wallet, 'wallet.migrated', creator.id, 'Both wallets authenticated; destination accepted a pending migration', { from: r.old_wallet, to: wallet }); return { ok: true };
-    }
-    const creator = await approved(store, c, wallet, true), destination = walletAddress(body.wallet);
-    if (destination === wallet) fail('Choose a different receiving wallet.');
-    const migrationId = id();
-    await c.query('INSERT INTO ryo_creator_migrations(scope,id,creator_id,old_wallet,new_wallet,expires,created) VALUES($1,$2,$3,$4,$5,$6,$7)', [store.scope, migrationId, creator.id, wallet, destination, store.now() + 15 * 60000, store.now()]);
-    await audit(store, c, wallet, 'wallet.migration-requested', creator.id, 'Authenticated source requested wallet migration', { to: destination, id: migrationId });
-    return { migrationId, expires: store.now() + 15 * 60000 };
-  });
-}
 async function handle(ctx, wallet, action, body = {}) {
   if (!enabled()) fail('Creators Portal is not enabled on this server.', 503);
   const { store, origin } = ctx;
@@ -599,10 +576,12 @@ async function handle(ctx, wallet, action, body = {}) {
   if (action === 'creator-apply') return application(store, wallet, body);
   if (action === 'creator-attribute') return attribute(store, wallet, body);
   if (action === 'creator-redeem') return redeem(store, wallet, body);
-  if (action === 'creator-migrate') return migrate(store, wallet, body);
+  // Creator wallet migration was removed (owner 2026-11-11): requests and acceptances are refused. Earlier migrations stay
+  // valid; their ryo_creator_migrations rows and reserved wallets in ryo_creator_wallets are kept and still honoured.
+  if (action === 'creator-migrate') fail('Creator wallet migration is no longer available. Contact the team.', 410);
   if (action === 'creator-admin') { await initialize(store); return adminSnapshot(store, wallet, body); }
   if (action === 'creator-admin-action') { await initialize(store); return adminAction(store, wallet, body); }
   if (action === 'creator-appeal') { const message = text(body.message, 1000); return store.transaction(async c => { await store.locked(c, wallet); const r = await referral(store, c, wallet); const creator = !r && await creatorByWallet(store, c, wallet, true); if (!r && !creator) fail('No creator application or referral attribution found.', 404); if (r?.appeal || creator?.application?.appeal) fail('An appeal is already recorded. An administrator will review it.', 409); if (r) await c.query('UPDATE ryo_creator_referrals SET appeal=$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, message]); else await c.query('UPDATE ryo_creators SET application=$3 WHERE scope=$1 AND id=$2', [store.scope, creator.id, JSON.stringify({ ...creator.application, appeal: { message, at: store.now() } })]); await audit(store, c, wallet, 'review.appeal', creator?.id || privateId(wallet), 'Player submitted an appeal', { message }); return { ok: true }; }); }
   fail('Unknown Creators Portal action.', 404);
 }
-module.exports = { convertPlayerReferrals, syncApprovedCreators, program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole, COMMISSION_PERCENT, FOUNDER_COMMISSION_PERCENT, TOPUP_KIND, founderBuyer, topUpFounderCommissions, chestCommission, creatorDiscountBps, applyCreatorDiscount, creatorDiscount, CREATOR_DISCOUNTED };
+module.exports = { convertPlayerReferrals, syncApprovedCreators, program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, ledger, recordEvent, qualify, privateId, adminRole, COMMISSION_PERCENT, FOUNDER_COMMISSION_PERCENT, TOPUP_KIND, founderBuyer, topUpFounderCommissions, chestCommission, creatorDiscountBps, applyCreatorDiscount, creatorDiscount, CREATOR_DISCOUNTED };
