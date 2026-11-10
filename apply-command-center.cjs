@@ -28,6 +28,7 @@ function applyCommandCenter(appDir = path.join(__dirname, 'app'), { schema = tru
   for (const [i, hook] of serviceHooks.entries()) text = replaceOne(text, hook, i ? 'chat-report route' : 'cc-* route');
   fs.writeFileSync(service, text);
   fs.copyFileSync(path.join(__dirname, 'command-center/server.cjs'), path.join(appDir, 'server/command-center.cjs'));
+  fs.copyFileSync(path.join(__dirname, 'command-center/founder-ops.cjs'), path.join(appDir, 'server/command-center-founders.cjs'));   // Phase 2, read-only
   if (schema) applyCommandCenterSchema(appDir);
   console.log('Command Center staff API, chat moderation and reports applied.');
 }

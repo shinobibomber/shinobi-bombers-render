@@ -18,7 +18,7 @@ is verified; benefits are claimed inside the game when it opens.
 | Public NFT files | `server/site-server.cjs` (`/founders/metadata/<tier>-<n>.json`, `/founders/art/*.png`, `/founders/terms`), `founders/public/art/*.png` (approved clean poster crops) |
 | Game panel | `founders/founders-game.js`, `founders/founders-game.css` (Activate, Limited/Premium summons, Sensei trial, SOL Sensei) |
 | Chest dialog | `chest-ui/src/ChestManager.tsx`, `chest-ui/src/bridge.ts` (per-wallet claim cycle, Founder label) |
-| Command Center | `command-center/server.cjs` (`cc-founders`, `cc-founders-pause`, `cc-founders-revoke`), `command-center/public/cc.js` (Founder NFTs view) |
+| Command Center | `command-center/server.cjs` (`cc-founders`, `cc-founders-pause`, `cc-founders-revoke`, and the read-only Phase 2 `cc-founder-collections`, `cc-founder-lookup`, `cc-founder-integrity`, `cc-founder-access`, `cc-founder-weeks`), `command-center/founder-ops.cjs` (copied to `app/server/command-center-founders.cjs` by `apply-command-center.cjs`; the build fails without it), `command-center/public/cc.js` (Founder NFTs tabs), `command-center/README.md` |
 | Tests and tools | `tests/founders-server.cjs`, `tests/founders-prelaunch.cjs`, `tools/founders-devnet-e2e.cjs` |
 | Source artwork | `founders/assets/source/*.png`: the owner's posters, byte-for-byte unchanged (`founders/build-assets.cjs` only writes derived copies) |
 

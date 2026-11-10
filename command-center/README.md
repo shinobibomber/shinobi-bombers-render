@@ -71,12 +71,37 @@ Every staff write runs in one database transaction and meets these rules:
   When approved, they post to the read-only System channel in EN and, optionally, PT-BR. They can be
   unpublished (hidden).
 
+## Phase 2: Founder operations (read-only)
+
+The Founder NFTs view has six tabs. Overview is the Phase 1 view (with the Owner-only Pause sales and Suspend / Restore
+actions). The other five are **read-only**: they never write, sign, grant, repair or call a payment. They are served by
+`founder-ops.cjs` (copied to `app/server/command-center-founders.cjs`), behind the existing `founders.read` permission
+(Owner, Financial Approver, Game Operator; never Viewer, Moderator or Support, because they show full wallets).
+
+| Tab | Action | What it shows |
+|---|---|---|
+| Collections | `cc-founder-collections` | Supply, sold, reserved, expired and remaining per tier, gross confirmed receipts, sale mode, pause state and switches. "Check on chain" reads every confirmed Founder mint (finalized): supply 1, 0 decimals, Token-2022, mint authority removed, and the current holder. Cached 10 minutes (a failed read 1 minute), one read at a time. |
+| Entitlement lookup | `cc-founder-lookup` | One buyer, by wallet, Founder mint address or "mythic #5": payment evidence, entitlement and perks, Limited Passes left, Sensei trial and purchases, Founder heroes in the profile, Premium Summon progress, stored summon rolls, Market listings of Founder heroes, the Founder audit, and that wallet's integrity findings. |
+| Integrity checks | `cc-founder-integrity` | Reconciliation checks that should all be empty (see below). A finding is for the Owner to review; nothing is repaired here. |
+| Early access & Council | `cc-founder-access` | Buyer-bound eligibility (Mythic: full Council, Legacy: community) beside the current NFT holder. No Early Access dates exist and a Founder NFT never opens the game. Council votes are not implemented. |
+| Premium weeks | `cc-founder-weeks` | The Premium Summon qualifying-week tracker per Founder, and weekly activity counts. The Weekly Mission Pass is shown as not implemented. |
+
+Integrity checks: confirmed purchase without an entitlement; entitlement without a matching purchase; duplicate wallet or
+serial; serial above supply; Limited passes left + used not equal to 10; summon before activation; summon rank outside its
+pool; Premium Summons over the completed qualifying weeks; discounted SOL Sensei outside a running Legacy trial; Mythic who
+also paid SOL for Sensei; trial not 7 days; profile Founder tier without an entitlement, or on a suspended one; Founder
+heroes listed on the Market; reservations pending over 30 minutes; and, after "Check on chain", mint missing / supply not 1 /
+mint authority still set / wrong program.
+
+Benefits stay with the original buyer (owner decision 2026-11-09): the current on-chain holder is shown for information only
+and changes nothing. The configured supply is Mythic 33 and Legacy 30 (the specification proposed 30 + 30).
+
 ## Not implemented (shown as such, never simulated)
 
 The following have no backend yet:
 
 - Guild, Team, DM, Trade and Event chat.
-- Founder NFT management, Weekly Mission Pass, early access, economy and treasury, creators and
+- The Weekly Mission Pass, Founder's Council votes, Early Access scheduling, economy and treasury, creators and
   marketing, events, game configuration, support tickets and the security center.
 - Player appeal forms.
 - Search by referral code or NFT serial.

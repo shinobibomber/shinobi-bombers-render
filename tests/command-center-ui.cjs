@@ -27,6 +27,10 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
   await say('reporter', 'please stop spamming');
   await call('reporter', 'chat-report', { messageId: spam.id, category: 'spam', details: 'Third time today' });
   await call('reporter', 'chat-report', { messageId: xss.id, category: 'offensive' });
+  // Founder fixture (Phase 2): a clean Mythic buyer, and a confirmed Legacy purchase WITHOUT an entitlement (a defect the integrity tab must show).
+  const FB = { good: Keypair.generate().publicKey.toBase58(), bad: Keypair.generate().publicKey.toBase58() }, FM = { good: Keypair.generate().publicKey.toBase58(), bad: Keypair.generate().publicKey.toBase58() };
+  await pool.query("INSERT INTO ryo_founder_purchases(scope,request_id,wallet,tier,serial,mint,price_lamports,status,message,wire,last_height,signature,created,settled) VALUES($1,'founder-ui-request-0001',$2,'mythic',1,$3,700000000,'confirmed','m','w',1,'sig-good',$5,$5),($1,'founder-ui-request-0002',$4,'legacy',1,$6,250000000,'confirmed','m','w',1,'sig-bad',$5,$5)", [store.scope, FB.good, FM.good, FB.bad, now - 86400000, FM.bad]);
+  await pool.query("INSERT INTO ryo_founder_entitlements(scope,wallet,tier,request_id,mint,granted,activated,limited_passes) VALUES($1,$2,'mythic','founder-ui-request-0001',$3,$4,$4,10)", [store.scope, FB.good, FM.good, now - 86400000]);
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
@@ -107,6 +111,26 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
     await shot(p, 'audit-desktop');
     await p.goto(base + '#health'); await waitText(p, '#view', /Solana RPC/); await shot(p, 'health-desktop');
 
+    // ---- Founder NFTs (Phase 2): tabs, all read-only except the existing Pause / Suspend ----
+    await p.goto(base + '#founders'); await p.waitForSelector('.tabs');
+    assert.deepEqual(await p.locator('.tabs button').allTextContents(), ['Overview', 'Collections', 'Entitlement lookup', 'Integrity checks', 'Early access & Council', 'Premium weeks']);
+    await waitText(p, '#view', /Purchases/); await shot(p, 'founders-overview');
+    await p.getByRole('tab', { name: 'Collections' }).click(); await waitText(p, '#view', /2 sold|1 sold/);
+    assert.match(await p.locator('#view').innerText(), /Mythic[\s\S]*1 sold[\s\S]*Legacy[\s\S]*1 sold/i); assert.match(await p.locator('#view').innerText(), /Not checked yet/);
+    await p.getByRole('button', { name: 'Check on chain' }).click(); await waitText(p, '#view', /No Solana connection is available/);   // the UI fixture has no Solana RPC: shown, never faked
+    await shot(p, 'founders-collections');
+    await p.getByRole('tab', { name: 'Entitlement lookup' }).click(); await p.locator('input[type="search"]').fill('mythic #1'); await p.getByRole('button', { name: 'Look up' }).click();
+    await waitText(p, '#view', /Purchase evidence[\s\S]*Entitlement[\s\S]*valid/); assert.match(await p.locator('#view').innerText(), new RegExp(FB.good.slice(0, 8)));
+    await shot(p, 'founders-lookup');
+    await p.locator('input[type="search"]').fill(FB.bad); await p.getByRole('button', { name: 'Look up' }).click(); await waitText(p, '#view', /CONFIRMED_WITHOUT_ENTITLEMENT/);
+    await p.locator('input[type="search"]').fill(Keypair.generate().publicKey.toBase58()); await p.getByRole('button', { name: 'Look up' }).click(); await waitText(p, '#view', /No Founder purchase found/);
+    await p.getByRole('tab', { name: 'Integrity checks' }).click(); await waitText(p, '#view', /CONFIRMED_WITHOUT_ENTITLEMENT/);
+    assert.match(await p.locator('#view').innerText(), /Critical\s*1/i); assert.match(await p.locator('#view').innerText(), /nothing is repaired here|Nothing is repaired here/i); assert.equal(await p.locator('#view button').count(), 7, 'no action buttons besides the six tabs and Refresh');
+    await shot(p, 'founders-integrity');
+    await p.getByRole('tab', { name: 'Early access & Council' }).click(); await waitText(p, '#view', /Council: full/); assert.match(await p.locator('#view').innerText(), /never opens the game/);
+    await p.getByRole('tab', { name: 'Premium weeks' }).click(); await waitText(p, '#view', /Weekly Mission Pass[\s\S]*Not implemented/);
+    await shot(p, 'founders-weeks');
+
     await p.locator('#lang').selectOption('pt'); await waitText(p, '#sidebar', /Visão geral/); assert.equal(await p.evaluate(() => document.documentElement.lang), 'pt-BR');
     await p.locator('#lang').selectOption('en');
 
@@ -120,6 +144,7 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
     await shot(p, 'nav-mobile');
     await p.locator('#sidebar a[href="#chat"]').click(); await p.waitForSelector('.tabs'); await p.waitForTimeout(300); await noSideScroll(p, 'phone chat'); await shot(p, 'chat-mobile');
     const tap = await p.locator('.tabs button').first().boundingBox(); assert(tap.height >= 44, 'touch targets are at least 44px on phones');
+    await p.goto(base + '#founders'); await p.waitForSelector('.tabs'); await p.getByRole('tab', { name: 'Integrity checks' }).click(); await waitText(p, '#view', /CONFIRMED_WITHOUT_ENTITLEMENT/); await p.waitForTimeout(200); await noSideScroll(p, 'phone Founder integrity'); await shot(p, 'founders-mobile');
     assert.deepEqual(errors, [], 'no page errors');
 
     // ---- Viewer: read-only, no chat evidence ----
@@ -128,6 +153,7 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
     await v.p.goto(base + '#chat'); await waitText(v.p, '#view', /Permission required/);
     assert.equal(await v.p.locator('#view button').count(), 0);
     assert.equal(await v.p.locator('#sidebar a[href="#roles"]').count(), 0, 'staff roles are only listed for the Owner');
+    await v.p.goto(base + '#founders'); await waitText(v.p, '#view', /Permission required/); assert.equal(await v.p.locator('#view .tabs').count(), 0, 'viewers get no Founder data (full wallets)');
     await v.p.goto(base + '#audit'); await v.p.waitForSelector('#view tbody tr');
     assert.deepEqual(v.errors, []);
     // ---- Moderator: moderation yes, economy no ----

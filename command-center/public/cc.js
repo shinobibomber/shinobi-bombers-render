@@ -127,7 +127,7 @@
   ];
   // Modules from the specification that have no backend yet. They are listed, never simulated.
   const PLANNED = [
-['pass', 'Weekly Mission Pass', 2], ['early', 'Early access', 2], ['economy', 'Economy & treasury', 3],
+['pass', 'Weekly Mission Pass', 2], ['economy', 'Economy & treasury', 3],
     ['creators', 'Creators & marketing', 3], ['events', 'Events', 4], ['config', 'Game configuration', 4], ['support', 'Support center', 4], ['security', 'Security center', 4],
     ['guild', 'Guild / Team / DM / Trade chat', null],
   ];
@@ -304,32 +304,13 @@
     },
 
     /* ---------- Staff roles (Owner) ---------- */
-    /* ---------- Founder NFTs (founders.cjs) ---------- */
+    /* ---------- Founder NFTs (founders.cjs). Phase 2: read-only tabs beside the existing overview ---------- */
     async founders(view) {
-      const d = (await api('cc-founders')).data, sol = v => (Number(v) || 0).toLocaleString(undefined, { maximumFractionDigits: 3 }) + ' SOL';
-      const mono = v => h('span', { class: 'mono', text: v }), manage = can('founders.manage');
-      // Supply and the Mythic early bird come from the server (founders.cjs TIERS); each purchase row shows its own price.
-      const supply = k => { const t = d.tiers[k], of = t.sold + t.reserved + t.remaining, eb = t.earlyBird;
-        return card(h('div', { class: 'eyebrow', text: k === 'mythic' ? 'Mythic (1 SOL' + (eb ? ' · #1-#' + eb.total + ' ' + eb.price + ' SOL' : '') + ')' : 'Legacy (0.5 SOL)' }),
-          h('strong', { text: t.sold + ' sold · ' + t.reserved + ' reserved · ' + t.remaining + ' left of ' + of }),
-          eb ? h('p', { class: 'muted', text: 'Early bird: ' + eb.left + ' of ' + eb.total + ' left at ' + eb.price + ' SOL' }) : null); };
-      const rows = (list, cols, map) => scroll('table-wide', cols, list.length ? list.map(r => h('tr', {}, map(r).map(v => h('td', {}, v == null ? '—' : v)))) : empty(cols.length));
-      const pauseBtn = manage ? h('button', { class: 'small' + (d.paused ? '' : ' danger'), type: 'button', text: d.paused ? 'Resume sales' : 'Pause sales', onclick: () => run(async () => {
-        if (await guarded({ title: d.paused ? 'Resume Founder sales' : 'Pause Founder sales', detail: 'Reservations already sent can still settle.', confirm: d.paused ? 'Resume' : 'Pause', danger: !d.paused, submit: v => write('cc-founders-pause', { paused: !d.paused, reason: v.reason }) })) RENDER.founders(view);
-      }) }) : null;
-      const revokeBtn = e => manage ? h('button', { class: 'small' + (e.revoked ? '' : ' danger'), type: 'button', text: e.revoked ? 'Restore' : 'Suspend', onclick: () => run(async () => {
-        if (await guarded({ title: (e.revoked ? 'Restore' : 'Suspend') + ' Founder benefits', detail: e.wallet, confirm: e.revoked ? 'Restore' : 'Suspend', danger: !e.revoked, submit: v => write('cc-founders-revoke', { wallet: e.wallet, revoke: !e.revoked, reason: v.reason }) })) RENDER.founders(view);
-      }) }) : null;
-      fill(view, h('div', { class: 'view-head' }, h('div', {}, h('h1', { text: 'Founder NFTs' }), h('p', { class: 'muted', text: 'Founder box supply, purchases, entitlements, summons and SOL Sensei. Benefits are bound to the original buyer.' })), refreshBtn(() => RENDER.founders(view))),
-        h('div', { class: 'grid kpis' }, supply('mythic'), supply('legacy'),
-          card(h('div', { class: 'eyebrow', text: 'Sale' }), h('strong', { text: d.mode + (d.paused ? ' · PAUSED' : '') }), pauseBtn),
-          card(h('div', { class: 'eyebrow', text: 'Switches' }), h('strong', { text: 'Redemption ' + (d.redemption ? 'on' : 'off') + ' · SOL Sensei ' + (d.senseiSol ? 'on' : 'off') }))),
-        card(h('h3', { text: 'Purchases (' + d.failures + ' expired)' }), rows(d.purchases, ['When', 'Wallet', 'Tier', 'Serial', 'Price', 'Status', 'Mint'], r => [when(r.created), mono(r.wallet), r.tier, String(r.serial), sol(r.price), r.status, mono(r.mint)])),
-        card(h('h3', { text: 'Entitlements' }), rows(d.entitlements, ['Wallet', 'Tier', 'Activated', 'Passes left', 'Trial ends', 'Status', ''], e => [mono(e.wallet), e.tier, e.activated ? when(e.activated) : 'not yet', String(e.limited_passes), e.trial_ends ? when(e.trial_ends) : null, e.revoked ? 'suspended: ' + e.revoked_reason : 'valid', revokeBtn(e)])),
-        card(h('h3', { text: 'Founder summons' }), rows(d.summons, ['When', 'Wallet', 'Kind', 'Period', 'Rank'], r => [when(r.created), mono(r.wallet), r.kind, r.period == null ? null : String(r.period), ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'][r.rank]])),
-        card(h('h3', { text: 'SOL Sensei' }), rows(d.sensei, ['When', 'Wallet', 'Price', 'Founder price', 'Status'], r => [when(r.created), mono(r.wallet), sol(r.price), r.founder_discount ? 'yes' : 'no', r.status])),
-        card(h('h3', { text: 'Wallets with 3+ expired reservations' }), rows(d.repeatedExpiries, ['Wallet', 'Expired'], r => [mono(r.wallet), String(r.n)])),
-        card(h('h3', { text: 'Founder audit' }), rows(d.audit, ['When', 'Actor', 'Action', 'Target'], r => [when(r.created), mono(r.actor), r.action, r.target])));
+      S.founderTab = FTABS.some(x => x[0] === S.founderTab) ? S.founderTab : 'overview';
+      const panel = h('div', {}), bar = h('div', { class: 'tabs', role: 'tablist' });
+      const draw = () => { bar.replaceChildren(...FTABS.map(([id, label]) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(S.founderTab === id), onclick: () => { S.founderTab = id; draw(); }, text: label }))); fill(panel, stateBox(t('state.loading'))); run(() => FOUNDER[S.founderTab](panel, draw)); };
+      fill(view, h('div', { class: 'view-head' }, h('div', {}, h('h1', { text: 'Founder NFTs' }), h('p', { class: 'muted', text: 'Founder box supply, purchases, entitlements, summons and SOL Sensei. Benefits are bound to the original buyer. Everything except Pause and Suspend is read-only.' })), refreshBtn(async () => draw())), bar, panel);
+      draw();
     },
 
     async roles(view) {
@@ -393,6 +374,127 @@
     const b = (d, cls = '') => h('button', { class: 'small ' + cls, type: 'button', text: { warn: 'Warn', mute: 'Mute', unmute: 'Unmute', ban: 'Ban', unban: 'Unban' }[d], onclick: () => run(() => decide(d, { wallet, ...extra }, after)) });
     return h('div', { class: 'row-actions' }, b('warn'), st?.mutedUntil ? b('unmute') : b('mute', 'danger'), st?.banned ? b('unban') : b('ban', 'danger'));
   }
+  /* ---------- Founder NFTs: tabs ---------- */
+  const FTABS = [['overview', 'Overview'], ['collections', 'Collections'], ['lookup', 'Entitlement lookup'], ['integrity', 'Integrity checks'], ['access', 'Early access & Council'], ['weeks', 'Premium weeks']];
+  const solText = v => (Number(v) || 0).toLocaleString(undefined, { maximumFractionDigits: 3 }) + ' SOL';
+  const monoSpan = (v, title) => h('span', { class: 'mono', text: v == null ? '—' : v, title: title || null });
+  const HOLDER = { buyer: ['buyer holds it', 'ok'], transferred: ['moved to another wallet', 'warn'], none: ['no holder found', 'crit'], unavailable: ['unavailable', 'crit'], not_checked: ['not checked', 'info'] };
+  const holderBadge = s => { const [label, kind] = HOLDER[s] || [s || '—', 'info']; return badge(label, kind); };
+  const SEVERITY = { crit: 'crit', warn: 'warn', info: 'info' };
+  const FOUNDER = {
+    async overview(panel, redraw) {
+      const d = (await api('cc-founders')).data, manage = can('founders.manage');
+      const mono = v => h('span', { class: 'mono', text: v }), sol = solText;
+      // Supply and the Mythic early bird come from the server (founders.cjs TIERS); each purchase row shows its own price.
+      const supply = k => { const t = d.tiers[k], of = t.sold + t.reserved + t.remaining, eb = t.earlyBird;
+        return card(h('div', { class: 'eyebrow', text: k === 'mythic' ? 'Mythic (1 SOL' + (eb ? ' · #1-#' + eb.total + ' ' + eb.price + ' SOL' : '') + ')' : 'Legacy (0.5 SOL)' }),
+          h('strong', { text: t.sold + ' sold · ' + t.reserved + ' reserved · ' + t.remaining + ' left of ' + of }),
+          eb ? h('p', { class: 'muted', text: 'Early bird: ' + eb.left + ' of ' + eb.total + ' left at ' + eb.price + ' SOL' }) : null); };
+      const rows = (list, cols, map) => scroll('table-wide', cols, list.length ? list.map(r => h('tr', {}, map(r).map(v => h('td', {}, v == null ? '—' : v)))) : empty(cols.length));
+      const pauseBtn = manage ? h('button', { class: 'small' + (d.paused ? '' : ' danger'), type: 'button', text: d.paused ? 'Resume sales' : 'Pause sales', onclick: () => run(async () => {
+        if (await guarded({ title: d.paused ? 'Resume Founder sales' : 'Pause Founder sales', detail: 'Reservations already sent can still settle.', confirm: d.paused ? 'Resume' : 'Pause', danger: !d.paused, submit: v => write('cc-founders-pause', { paused: !d.paused, reason: v.reason }) })) redraw();
+      }) }) : null;
+      const revokeBtn = e => manage ? h('button', { class: 'small' + (e.revoked ? '' : ' danger'), type: 'button', text: e.revoked ? 'Restore' : 'Suspend', onclick: () => run(async () => {
+        if (await guarded({ title: (e.revoked ? 'Restore' : 'Suspend') + ' Founder benefits', detail: e.wallet, confirm: e.revoked ? 'Restore' : 'Suspend', danger: !e.revoked, submit: v => write('cc-founders-revoke', { wallet: e.wallet, revoke: !e.revoked, reason: v.reason }) })) redraw();
+      }) }) : null;
+      fill(panel,
+        h('div', { class: 'grid kpis' }, supply('mythic'), supply('legacy'),
+          card(h('div', { class: 'eyebrow', text: 'Sale' }), h('strong', { text: d.mode + (d.paused ? ' · PAUSED' : '') }), pauseBtn),
+          card(h('div', { class: 'eyebrow', text: 'Switches' }), h('strong', { text: 'Redemption ' + (d.redemption ? 'on' : 'off') + ' · SOL Sensei ' + (d.senseiSol ? 'on' : 'off') }))),
+        card(h('h3', { text: 'Purchases (' + d.failures + ' expired)' }), rows(d.purchases, ['When', 'Wallet', 'Tier', 'Serial', 'Price', 'Status', 'Mint'], r => [when(r.created), mono(r.wallet), r.tier, String(r.serial), sol(r.price), r.status, mono(r.mint)])),
+        card(h('h3', { text: 'Entitlements' }), rows(d.entitlements, ['Wallet', 'Tier', 'Activated', 'Passes left', 'Trial ends', 'Status', ''], e => [mono(e.wallet), e.tier, e.activated ? when(e.activated) : 'not yet', String(e.limited_passes), e.trial_ends ? when(e.trial_ends) : null, e.revoked ? 'suspended: ' + e.revoked_reason : 'valid', revokeBtn(e)])),
+        card(h('h3', { text: 'Founder summons' }), rows(d.summons, ['When', 'Wallet', 'Kind', 'Period', 'Rank'], r => [when(r.created), mono(r.wallet), r.kind, r.period == null ? null : String(r.period), ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'][r.rank]])),
+        card(h('h3', { text: 'SOL Sensei' }), rows(d.sensei, ['When', 'Wallet', 'Price', 'Founder price', 'Status'], r => [when(r.created), mono(r.wallet), sol(r.price), r.founder_discount ? 'yes' : 'no', r.status])),
+        card(h('h3', { text: 'Wallets with 3+ expired reservations' }), rows(d.repeatedExpiries, ['Wallet', 'Expired'], r => [mono(r.wallet), String(r.n)])),
+        card(h('h3', { text: 'Founder audit' }), rows(d.audit, ['When', 'Actor', 'Action', 'Target'], r => [when(r.created), mono(r.actor), r.action, r.target])));
+    },
+
+    /* Supply per tier, receipts, switches and (on request) the on-chain state of every Founder mint. */
+    async collections(panel) {
+      const draw = (o, checking) => {
+        const d = o.data, c = d.chain;
+        const tiers = d.tiers.map(x => card(h('div', { class: 'eyebrow', text: x.name + ' · ' + solText(x.offerPrice) + ' offer (regular ' + solText(x.regularPrice) + ')' }),
+          h('strong', { text: x.sold + ' sold · ' + x.reserved + ' reserved · ' + x.remaining + ' left of ' + x.supply }), x.soldOut ? badge('sold out', 'gold') : null,
+          h('p', { class: 'muted', text: 'Confirmed receipts ' + solText(x.grossConfirmedSol) + ' · ' + x.expired + ' expired reservation(s)' })));
+        const chainRows = c.mints.map(m => h('tr', {}, h('td', { text: m.tier + ' #' + m.serial }), h('td', {}, monoSpan(m.buyer)), h('td', {}, monoSpan(m.holder || '—')), h('td', {}, holderBadge(m.holderStatus)),
+          h('td', {}, m.issues.length ? m.issues.map(i => badge(i, 'crit')) : badge('supply 1, authority removed', 'ok')), h('td', {}, monoSpan(m.mint))));
+        fill(panel,
+          h('div', { class: 'grid kpis' }, ...tiers, card(h('div', { class: 'eyebrow', text: 'Sale' }), h('strong', { text: d.mode + (d.paused ? ' · PAUSED' : d.paused === null ? ' · pause state unavailable' : '') })),
+            card(h('div', { class: 'eyebrow', text: 'Switches' }), h('strong', { text: 'Public ' + (d.switches.publicSale ? 'on' : 'off') + ' · Testing ' + (d.switches.privateTesting ? 'on' : 'off') + ' · Redemption ' + (d.switches.redemption ? 'on' : 'off') + ' · SOL Sensei ' + (d.switches.senseiSol ? 'on' : 'off') }))),
+          card(h('div', { class: 'view-head' }, h('h3', { text: 'On-chain check' }), h('div', { class: 'row-actions' }, (c.status === 'not_checked' ? badge('not checked', 'info') : statusBadge(c.status)), h('button', { class: 'small', type: 'button', disabled: checking, text: c.status === 'ready' ? 'Check again' : 'Check on chain', onclick: () => run(async () => { fill(panel, stateBox('Reading the Founder mints on Solana (finalized)…')); draw(await api('cc-founder-collections', { chain: true, refresh: true }), true); }) }))),
+            c.status === 'not_checked' ? h('p', { class: 'muted', text: 'Not checked yet. The check reads each confirmed Founder mint (supply, authority, current holder) from Solana; results are cached for 10 minutes.' }) : null,
+            c.note ? h('p', { class: 'muted', text: c.note }) : null,
+            c.status === 'ready' ? h('p', { class: 'muted' }, 'Checked ' + c.checked + ' mint(s) at ', when(c.observedAt), ' · ' + c.transferred + ' moved to another wallet · ' + Object.values(c.issues).reduce((a, b) => a + b, 0) + ' issue(s)') : null,
+            c.mints.length ? scroll('table-wide', ['Serial', 'Original buyer', 'Current holder', 'Holder', 'Mint check', 'Mint'], chainRows) : null),
+          h('ul', { class: 'muted' }, d.notes.map(n => h('li', { text: n }))));
+      };
+      draw(await api('cc-founder-collections', {}), false);
+    },
+
+    /* One buyer: payment evidence, entitlement, grants, summons, Sensei, market listings, audit, current holder. */
+    async lookup(panel) {
+      const out = h('div', { class: 'grid' }), input = h('input', { type: 'search', name: 'q', placeholder: 'Buyer wallet, Founder mint, or "mythic #5"', 'aria-label': 'Buyer wallet, Founder mint, or tier and serial', maxlength: 64, required: true });
+      const show = async q => {
+        fill(out, stateBox(t('state.loading')));
+        const d = (await api('cc-founder-lookup', { query: q.trim() })).data;
+        if (!d.found) return fill(out, stateBox('No Founder purchase found', 'Nothing matches "' + d.query + '". A wallet that never bought a Founder box has no entitlement.'));
+        const kv = pairs => h('dl', { class: 'kv' }, pairs.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', {}, v == null ? '—' : v)])), e = d.entitlement;
+        const parts = [card(h('h3', { text: 'Buyer' }), kv([['Wallet', monoSpan(d.wallet)], ['Found by', d.by], ['Issues', d.issues.length ? d.issues.map(i => badge(i.code, SEVERITY[i.severity] || 'info')) : badge('none found', 'ok')]]))];
+        parts.push(card(h('h3', { text: 'Purchase evidence' }), scroll('table-wide', ['When', 'Tier', 'Serial', 'Price', 'Status', 'Signature', 'Mint'], d.purchases.length ? d.purchases.map(p => h('tr', {}, h('td', {}, when(p.created)), h('td', { text: p.tier }), h('td', { text: String(p.serial) }), h('td', { text: solText(p.price) }), h('td', {}, statusBadge(p.status === 'confirmed' ? 'ready' : p.status)), h('td', {}, monoSpan(short(p.signature), p.signature)), h('td', {}, monoSpan(short(p.mint), p.mint)))) : empty(7))));
+        if (e) parts.push(card(h('h3', { text: 'Entitlement' }), kv([['Tier', e.name], ['Status', e.valid ? badge('valid', 'ok') : badge('suspended: ' + (e.revokedReason || ''), 'crit')], ['Granted', when(e.granted)], ['Activated', e.activated ? when(e.activated) : 'not yet'], ['Limited passes left', String(e.limitedPasses) + ' of 10'],
+          ['Sensei', e.perks.sensei === 'permanent' ? 'Permanent (included)' : e.trial ? 'Trial ' + (e.trial.running ? 'running until ' : 'ended ') + new Date(e.trial.ends).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'Trial not started'],
+          ['Perks', e.perks.discountPercent + '% service discount · Chest every ' + e.perks.chestCooldownHours + ' h · Council ' + e.perks.council + ' · Mission Pass ' + e.perks.missionPass], ['NFT now', holderBadge(d.chain.holderStatus)], ['Current holder', monoSpan(d.chain.holder)]])));
+        if (d.profile) parts.push(card(h('h3', { text: 'Game profile flags' }), kv([['Founder tier', d.profile.founderTier], ['Permanent Sensei', d.profile.sensei ? 'yes (' + (d.profile.senseiSource || 'unknown source') + ')' : 'no']])));
+        if (d.premium) parts.push(card(h('h3', { text: 'Premium Summon' }), kv([['Unlocks every', d.premium.everyWeeks + ' completed qualifying weeks'], ['Qualifying weeks', String(d.premium.qualifyingWeeks)], ['Claimed', String(d.premium.claimed)], ['Available now', String(d.premium.available)], ['Next unlock in', d.premium.available ? 'now' : d.premium.nextUnlockInWeeks + ' week(s)'], ['Active this week', d.premium.activeThisWeek ? 'yes' : 'no']])));
+        parts.push(card(h('h3', { text: 'Founder heroes in the profile (' + d.heroes.length + ')' }), scroll('', ['Hero', 'Rank', 'Source'], d.heroes.length ? d.heroes.map(x => h('tr', {}, h('td', {}, x.name || '—', h('br'), monoSpan(short(x.tokenId), x.tokenId)), h('td', { text: x.rankName }), h('td', { text: x.source }))) : empty(3))));
+        parts.push(card(h('h3', { text: 'Founder summons' }), scroll('table-wide', ['When', 'Kind', 'Period', 'Rank', 'Roll (0-9999)', 'Hero'], d.summons.length ? d.summons.map(s => h('tr', {}, h('td', {}, when(s.created)), h('td', { text: s.kind }), h('td', { text: s.period == null ? '—' : String(s.period) }), h('td', { text: s.rankName }), h('td', { text: String(s.roll) }), h('td', {}, monoSpan(short(s.hero), s.hero)))) : empty(6))));
+        parts.push(card(h('h3', { text: 'SOL Sensei purchases' }), scroll('table-wide', ['When', 'Price', 'Founder price', 'Status', 'Signature'], d.sensei.length ? d.sensei.map(s => h('tr', {}, h('td', {}, when(s.created)), h('td', { text: solText(s.price) }), h('td', { text: s.founderDiscount ? 'yes' : 'no' }), h('td', {}, statusBadge(s.status === 'confirmed' ? 'ready' : s.status)), h('td', {}, monoSpan(short(s.signature), s.signature)))) : empty(5))));
+        if (d.market && d.market.length) parts.push(card(h('h3', { text: 'Founder heroes listed on the Market' }), scroll('', ['Listing', 'Status', 'Hero'], d.market.map(m => h('tr', {}, h('td', {}, monoSpan(short(m.id), m.id)), h('td', { text: m.status }), h('td', {}, monoSpan(short(m.hero), m.hero)))))));
+        parts.push(card(h('h3', { text: 'Founder audit' }), scroll('table-wide', ['When', 'Actor', 'Action', 'Detail'], d.audit.length ? d.audit.map(a => h('tr', {}, h('td', {}, when(a.created)), h('td', {}, monoSpan(short(a.actor), a.actor)), h('td', { text: a.action }), h('td', {}, h('details', {}, h('summary', { text: 'Record' }), h('pre', { text: JSON.stringify(a.detail, null, 2) }))))) : empty(4))));
+        fill(out, h('div', { class: 'grid cols' }, parts), h('ul', { class: 'muted' }, d.notes.map(n => h('li', { text: n }))));
+      };
+      fill(panel, h('form', { class: 'inline card', onsubmit: ev => { ev.preventDefault(); run(() => show(input.value)); } }, h('label', {}, 'Search', input), h('button', { class: 'primary', type: 'submit', text: 'Look up' })),
+        h('p', { class: 'muted', text: 'Read-only. Search by the buyer\'s wallet, a Founder NFT mint address, or a tier and serial such as "mythic #5".' }), out);
+    },
+
+    /* Reconciliation checks: all of these should be empty. */
+    async integrity(panel) {
+      const d = (await api('cc-founder-integrity')).data, s = d.summary;
+      const rows = d.checks.map(c => h('tr', {}, h('td', {}, badge(c.severity, SEVERITY[c.severity] || 'info')), h('td', {}, h('b', { text: c.code }), h('div', { class: 'muted', text: c.title }), c.note ? h('div', { class: 'muted', text: c.note }) : null),
+        h('td', {}, c.status === 'ready' ? (c.count ? badge(String(c.count), SEVERITY[c.severity] || 'warn') : badge('0', 'ok')) : (c.status === 'not_checked' ? badge('not checked', 'info') : statusBadge(c.status))),
+        h('td', {}, c.sample && c.sample.length ? h('details', {}, h('summary', { text: 'Show ' + c.sample.length }), h('pre', { text: JSON.stringify(c.sample, null, 2) })) : '—')));
+      fill(panel, h('div', { class: 'grid kpis' },
+        card(h('div', { class: 'eyebrow', text: 'Critical' }), h('strong', { text: String(s.crit) }), s.crit ? badge('needs review', 'crit') : badge('clear', 'ok')),
+        card(h('div', { class: 'eyebrow', text: 'Warnings' }), h('strong', { text: String(s.warn) }), s.warn ? badge('review', 'warn') : badge('clear', 'ok')),
+        card(h('div', { class: 'eyebrow', text: 'Info' }), h('strong', { text: String(s.info) })),
+        card(h('div', { class: 'eyebrow', text: 'Checks that could not run' }), h('strong', { text: String(s.unavailable) }))),
+        card(scroll('table-wide', ['Severity', 'Check', 'Found', 'Sample'], rows)),
+        h('p', { class: 'muted', text: 'These checks only read. Nothing is repaired here: a finding is for the Owner to review, and any correction goes through the existing audited actions (Suspend / Restore) or a separate approved change. The on-chain checks appear after "Check on chain" in Collections.' }));
+    },
+
+    /* Early Access and Founder's Council eligibility (buyer-bound), beside the current NFT holder. */
+    async access(panel) {
+      const d = (await api('cc-founder-access')).data, c = d.counts;
+      const rows = d.members.map(m => h('tr', {}, h('td', {}, monoSpan(short(m.wallet), m.wallet)), h('td', { text: m.tier + (m.serial ? ' #' + m.serial : '') }), h('td', {}, m.valid ? badge('valid', 'ok') : badge('suspended', 'crit')),
+        h('td', { text: m.council === 'full' ? 'Full member' : m.council === 'community' ? 'Community access' : '—' }), h('td', { text: m.earlyAccess }), h('td', {}, holderBadge(m.holderStatus), m.holder ? [h('br'), monoSpan(short(m.holder), m.holder)] : null)));
+      fill(panel, h('div', { class: 'grid kpis' }, card(h('div', { class: 'eyebrow', text: 'Council: full' }), h('strong', { text: String(c.full) })), card(h('div', { class: 'eyebrow', text: 'Council: community' }), h('strong', { text: String(c.community) })), card(h('div', { class: 'eyebrow', text: 'Suspended' }), h('strong', { text: String(c.suspended) }))),
+        card(scroll('table-wide', ['Buyer', 'Tier', 'Entitlement', 'Council', 'Early access', 'NFT holder'], rows.length ? rows : empty(6))),
+        h('ul', { class: 'muted' }, d.notes.map(n => h('li', { text: n }))));
+    },
+
+    /* Premium Summon qualifying-week tracker. The Weekly Mission Pass itself is not implemented. */
+    async weeks(panel) {
+      const d = (await api('cc-founder-weeks')).data, r = d.rules;
+      const rows = d.members.map(m => h('tr', {}, h('td', {}, monoSpan(short(m.wallet), m.wallet)), h('td', { text: m.tier }), h('td', {}, m.valid ? badge('valid', 'ok') : badge('suspended', 'crit')), h('td', {}, when(m.activated)),
+        h('td', { text: m.qualifyingWeeks + ' (every ' + m.everyWeeks + ')' }), h('td', { text: String(m.claimed) }), h('td', { text: String(m.available) }), h('td', { text: m.available ? 'now' : m.nextUnlockInWeeks + ' week(s)' }), h('td', { text: m.activeThisWeek ? 'yes' : 'no' })));
+      fill(panel, card(h('h3', { text: 'Rules' }), h('dl', { class: 'kv' }, h('dt', { text: 'Week' }), h('dd', { text: r.reset }), h('dt', { text: 'Mythic' }), h('dd', { text: 'one Premium Summon per ' + r.mythicEveryWeeks + ' completed qualifying weeks' }), h('dt', { text: 'Legacy' }), h('dd', { text: 'one per ' + r.legacyEveryWeeks + ' completed qualifying weeks' }),
+        h('dt', { text: 'Odds' }), h('dd', { text: r.pool.map(p => p.rank + ' ' + p.percent + '%').join(' · ') }), h('dt', { text: 'Counting' }), h('dd', { text: r.qualifying }))),
+        card(h('h3', { text: 'Activated Founders (' + d.members.length + ')' }), scroll('table-wide', ['Wallet', 'Tier', 'Entitlement', 'Activated', 'Qualifying weeks', 'Claimed', 'Available', 'Next unlock', 'Active this week'], rows.length ? rows : empty(9))),
+        card(h('h3', { text: 'Active Founders per week' }), scroll('', ['Week starting (UTC)', 'Active Founders'], d.history.length ? d.history.map(x => h('tr', {}, h('td', {}, when(x.week)), h('td', { text: String(x.activeFounders) }))) : empty(2))),
+        card(h('h3', { text: 'Weekly Mission Pass' }), badge(t('state.notImplemented'), 'violet'), h('p', { class: 'muted', text: d.missionPass.note })));
+    },
+  };
+
   const CHAT = {
     async reports(panel) {
       S.reportStatus = S.reportStatus || 'open';

@@ -476,6 +476,12 @@ async function handle(ctx, wallet, action, body = {}) {
     case 'cc-role-grant': need(roles, 'roles.manage'); return changeRole(ctx, wallet, body, true);
     case 'cc-role-revoke': need(roles, 'roles.manage'); return changeRole(ctx, wallet, body, false);
     case 'cc-founders': need(roles, 'founders.read'); return envelope(store, (await require('./founders.cjs').adminOverview(store)).founders);
+    // Phase 2, Founder operations: read-only (command-center-founders.cjs never writes, signs or grants anything).
+    case 'cc-founder-collections': need(roles, 'founders.read'); return envelope(store, await require('./command-center-founders.cjs').collections(ctx, body));
+    case 'cc-founder-lookup': need(roles, 'founders.read'); return envelope(store, await require('./command-center-founders.cjs').lookup(ctx, body));
+    case 'cc-founder-integrity': need(roles, 'founders.read'); return envelope(store, await require('./command-center-founders.cjs').integrity(ctx));
+    case 'cc-founder-access': need(roles, 'founders.read'); return envelope(store, await require('./command-center-founders.cjs').access(ctx));
+    case 'cc-founder-weeks': need(roles, 'founders.read'); return envelope(store, await require('./command-center-founders.cjs').weeks(ctx));
     case 'cc-founders-pause': need(roles, 'founders.manage'); return envelope(store, await require('./founders.cjs').adminPause(store, wallet, body.paused === true, body.reason));
     case 'cc-founders-revoke': need(roles, 'founders.manage'); return envelope(store, await require('./founders.cjs').adminRevoke(store, wallet, body.wallet, body.revoke === true, body.reason));
     default: fail('Unknown Command Center action.', 404);
