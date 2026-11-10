@@ -213,7 +213,7 @@
     'ev': () => openFounders(),
     'go1': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go2': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go3': () => notice('Daily missions', 'Daily missions are not available yet.'),
     'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => window.CreatorsPortal?.open(), 'news': () => window.CreatorsPortal?.openPlayer(),
-    'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
+    'sup': () => window.HeroPasses?.ui() ? HeroPasses.open() : notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
   };
   function act(k, h, el) {
     const a = h.a || '', [t, ...rest] = a.split(':'), arg = rest.join(':');
@@ -303,8 +303,18 @@
     const evArt = b.st.querySelector('[data-sbwid="ev"] > .sl');
     if (evArt) { b.box = place(mk('div', 'sbw-boxcard', evArt), 0, 0, 369, 132); b.box.innerHTML = '<img src="/founders/art/mythic.png" alt=""><div><small>LIMITED EVENT</small><b>FOUNDER BOXES</b><span>Mythic &amp; Legacy · Founder sale</span><em>Founder sale</em></div><i>VIEW</i>'; }
     b.tiles = [1270, 1345, 1420, 1494, 1569].map((x, i) => { const t = place(mk('div', 'sbw-tile', b.st), x, 302, 66, 122); const cv = mk('canvas', '', t); cv.width = 132; cv.height = 150; mk('b', '', t); t.addEventListener('click', () => go(1)); return t; });
+    // CLAIM (hero-passes.js, owner request 2026-11-11) takes the Support button's place only while the server reports the
+    // CLAIM switch on; Support stays reachable from ⚙ Tools and the Reward Center's Help & Support.
+    b.sup = b.st.querySelector('[data-sbwid="sup"]');
+    if (b.sup) { b.claim = mk('span', 'sbw-claim', b.sup); b.claim.hidden = true; b.claim.innerHTML = '<span aria-hidden="true">🎁</span><span>CLAIM</span><i class="sbw-claim-badge" hidden></i>'; }
   };
   PAINT.home = (b, now) => {
+    if (b.claim) {
+      const H = window.HeroPasses, on = !!(H && H.ui()), n = on ? H.pending() : 0, badge = $('.sbw-claim-badge', b.claim);
+      b.claim.hidden = !on; b.sup.classList.toggle('sbw-claim-on', on); b.claim.classList.toggle('ready', n > 0);
+      const label = on ? (n ? 'Claim rewards, ' + n + ' ready' : 'Claim rewards') : 'Support'; if (b.sup.getAttribute('aria-label') !== label) b.sup.setAttribute('aria-label', label);
+      badge.hidden = !n; setText(badge, String(n));
+    }
     // EVENT card: the live Founder sale (prices and boxes left come only from the server's founders-info).
     if (b.box) { if (!FDS.busy && Date.now() - FDS.at > 60000) foundersLoad(); const f = FDS.info, t = f && f.tiers, sold = !!(t && t.mythic.soldOut && t.legacy.soldOut);
       if (t) setText($('span', b.box), 'Mythic ' + t.mythic.price + ' · Legacy ' + t.legacy.price + ' SOL');

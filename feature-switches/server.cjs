@@ -37,6 +37,11 @@ const CATALOG = Object.freeze({
   fusion:             { env: 'FUSION_ENABLED', group: 'gameplay', label: 'Fusion', default: 'on' },
   dojo:               { env: 'DOJO_ENABLED', group: 'gameplay', label: 'Dojo upgrades', default: 'on' },
   training:           { env: 'TRAINING_ENABLED', group: 'gameplay', label: 'Hero training', default: 'on' },
+  // Promotional Standard Hero Passes (hero-passes/server.cjs, owner request 2026-11-11): OFF everywhere until opened here.
+  heroPassAdmin:        { env: 'HERO_PASS_ADMIN_ENABLED', group: 'rewards', label: 'Hero Pass campaigns (admin section)', default: 'off' },
+  heroPassDistribution: { env: 'HERO_PASS_DISTRIBUTION_ENABLED', group: 'rewards', label: 'Hero Pass bulk distribution (Send to all)', default: 'off' },
+  heroPassClaimUi:      { env: 'HERO_PASS_CLAIM_UI_ENABLED', group: 'rewards', label: 'Main-menu CLAIM button and Reward Center', default: 'off' },
+  heroPassClaims:       { env: 'HERO_PASS_CLAIMS_ENABLED', group: 'rewards', label: 'Claiming and using Hero Passes', default: 'off' },
 });
 const KEYS = Object.freeze(Object.keys(CATALOG));
 

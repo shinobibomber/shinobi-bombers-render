@@ -3,12 +3,12 @@
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);
-  const GROUPS = { money: 'Game money features', founders: "Founder's boxes and Sensei SOL", gameplay: 'Gameplay screens' };
+  const GROUPS = { money: 'Game money features', founders: "Founder's boxes and Sensei SOL", rewards: 'Player rewards (Hero Passes)', gameplay: 'Gameplay screens' };
   const MONEY_WARNING = 'This opens a real-money feature on the live game for every player. Your wallet will ask you to sign a free confirmation: approve it only if it names this same feature.';
   let state = null, pending = null, busy = false, walletId = null;
   try { walletId = sessionStorage.getItem('sb-control-wallet'); } catch {}
   // Opening a money or Founder feature (turn ON, or reset to an ON Render value) needs a fresh wallet confirmation.
-  const opens = (s, enabled) => (s.group === 'money' || s.group === 'founders') && (enabled === true || (enabled === null && s.environment === true));
+  const opens = (s, enabled) => s.group !== 'gameplay' && (enabled === true || (enabled === null && s.environment === true));   // same rule as control/server.cjs
   async function confirmWithWallet(s, enabled) {
     if (SBWallet.active?.address !== state.wallet) {
       const w = (SBWallet.list() || []).find(x => x.id === walletId) || (SBWallet.list() || [])[0];

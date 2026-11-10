@@ -499,6 +499,11 @@ async function adminSnapshot(store, wallet, body) {
 async function adminAction(store, wallet, body) {
   const access = adminRole(wallet, true), action = text(body.operation, 40), reason = text(body.reason, 500);
   if (['adjust', 'config', 'shop', 'manual-add', 'attribute-referral', 'grant-rescue-hero'].includes(action) && access !== 'approver') fail('An approver role is required for CP, inventory and program changes.', 403);
+  // Owner request 2026-11-11: promotional Hero Pass campaigns (hero-passes.cjs). Approver only; every change is audited.
+  if (action.startsWith('pass-')) {
+    if (access !== 'approver') fail('An approver role is required for Hero Pass campaigns.', 403);
+    return require('./hero-passes.cjs').admin(store, wallet, { ...body, operation: action }, (c, act, target, detail) => audit(store, c, wallet, act, target, reason || 'Hero Pass campaign', detail));
+  }
   // Owner request 2026-11-11: staff grant a rescue hero by hand (e.g. a prisoner freed before the server grant existed), with the
   // rarity chosen by the approver (never Mythic). prison-rescue.cjs staffGrant; the audit record is in the same transaction.
   if (action === 'grant-rescue-hero') {
