@@ -1,5 +1,13 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Chest Overflow update
+
+- The Chest Overflow penalty now applies **whenever** your unclaimed Chest holds 500,000 Ryo or more: 500,000+ −10%, 750,000+ −20%, 1,000,000+ −30% on **new** enemy defeats.
+- The claim timer and the 12-hour grace period no longer pause it. It also applies right after a claim and while claims are unavailable.
+- Ryo already in your Chest is **never reduced**, and every defeat is still added to your Chest right away.
+- To keep full rewards, keep your Chest under 500,000 Ryo by claiming regularly or spending Chest rewards on Summon, Fusion, Dojo or Training. The penalty drops the moment your Chest goes below a threshold.
+- The alerts by the Chest warn you at 450,000 Ryo and show your current rate.
+
 ## November 11, 2026 — Minimum Chest claim: 100,000 Ryo
 
 - Chest claims now start at **100,000 Ryo**. Until your Chest reaches 100,000 Ryo, the Claim button waits and your rewards keep adding up safely in your Chest.

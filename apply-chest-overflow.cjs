@@ -3,7 +3,7 @@
  * exact-string hooks in app/server/adventure.cjs (each must match exactly once, or the build stops):
  *   settleLocked() and adventure() compute the overflow window (chest-overflow.window, same locked transaction) and pass it to
  *   advance() as its optional 8th argument (combat-adventure.cjs applies the tier per defeat); the Adventure response gains
- *   `overflow` (chest-overflow.status; after a claim in the same request the timer has restarted, so no window is reported).
+ *   `overflow` (chest-overflow.status).
  * adventure.cjs is covered by its pinned hash; the client asset is a separate script (no index.html code hooks). */
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
@@ -46,7 +46,7 @@ function applyChestOverflow(appDir = path.join(__dirname, 'app')) {
     html = html.replace('</head>', marker + '\n' + script + '\n</head>');
     fs.writeFileSync(index, html);
   }
-  console.log('Chest Overflow applied: from a 500,000 Ryo Chest, new enemy rewards -10/-20/-30% once the claim is available + 12 h grace.');
+  console.log('Chest Overflow applied: from a 500,000 Ryo Chest, new enemy rewards -10/-20/-30% (always; no timer or grace exceptions).');
 }
 module.exports = { applyChestOverflow, adventureHooks, marker, script };
 if (require.main === module) applyChestOverflow();

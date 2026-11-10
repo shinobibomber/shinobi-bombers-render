@@ -1,6 +1,6 @@
-/* Chest Overflow alerts in the real game page (owner request 2026-11-11), driven by the server's `overflow` status: approaching,
- * threshold reached (grace countdown, rate still 100%), penalty active (rate shown, "your earned Ryo is safe", Open Chest /
- * Continue), penalty reduced, full rewards restored; dismissals remembered per account; the "+X Ryo → Chest" estimate
+/* Chest Overflow alerts in the real game page (owner request 2026-11-11; rule: always from 500,000, no grace), driven by the
+ * server's `overflow` status: approaching, penalty active (rate shown, "your earned Ryo is safe", Open Chest / Continue),
+ * penalty reduced, full rewards restored; dismissals remembered per account; the "+X Ryo → Chest" estimate
  * (AdventureChest.rewardRate) follows the active penalty; the banner fits a phone. Isolated fixture. */
 const assert = require('node:assert/strict'), path = require('node:path'), { withGame } = require('./harness.cjs');
 const root = path.resolve(__dirname, '..');
@@ -14,16 +14,12 @@ const alertText = p => p.evaluate(() => { const e = document.querySelector('.che
     const show = async (o, re) => { f.chestOverflow = o; f.pendingChest = o.chestRyo; await p.evaluate(() => AdventureChest.refresh()); await p.waitForFunction(r => new RegExp(r).test(document.querySelector('.chest-overflow:not([hidden])')?.innerText || ''), re.source); return alertText(p); };
     const baseRate = await p.evaluate(() => AdventureChest.rewardRate);
     // 1. Approaching.
-    assert.match(await show(status(460000, 0, 'approaching'), /CHEST ALMOST FULL/), /460,000 Ryo.*From 500,000 Ryo, new enemy rewards drop by 10%.*12-hour grace/);
+    assert.match(await show(status(460000, 0, 'approaching'), /CHEST ALMOST FULL/), /460,000 Ryo\. From 500,000 Ryo, new enemy rewards drop by 10%\. Claim or spend Chest rewards to keep full rewards\./);
+    assert.doesNotMatch(await alertText(p), /grace|timer/i, 'no grace or timer wording any more');
     await p.locator('.chest-overflow .co-close').click();
     await p.evaluate(() => AdventureChest.refresh()); await p.waitForTimeout(400);
     assert.equal(await alertText(p), '', 'a dismissed alert stays dismissed for the same state');
-    // 2. Threshold reached, grace running: rate still 100%.
-    assert.match(await show(status(620000, 10, 'grace', { activeFrom: Date.now() + 5 * 3600000 - 60000 }), /CHEST OVERFLOW WARNING/), /620,000 Ryo unclaimed\. Current enemy reward rate: 100%\. A −10% penalty on new enemy rewards starts in 4h 5[89]m/);
-    assert.equal(await p.evaluate(() => AdventureChest.rewardRate), baseRate, 'no penalty during the grace period');
-    // Waiting for the claim timer.
-    assert.match(await show(status(620000, 10, 'waiting', { claimReadyAt: Date.now() + 3 * 3600000 }), /CHEST OVERFLOW WARNING/), /Your next claim is ready .*A −10% penalty can start 12 hours after that/);
-    // 3. Penalty active (-20%): the estimate follows.
+    // 2. Penalty active (-20%) at once, whatever the claim timer: the estimate follows.
     assert.match(await show(status(800000, 20, 'active', { activeFrom: Date.now() - 1000, ratePercent: 80 }), /−20% ENEMY REWARDS/), /800,000 Ryo, so new enemy rewards pay 80%\. Your earned Ryo is safe\..*Open Chest Continue/);
     assert.equal(await p.locator('.chest-overflow.bad').count(), 1);
     assert.equal(Math.round(await p.evaluate(() => AdventureChest.rewardRate) * 1000), Math.round(baseRate * 0.8 * 1000), '"+X Ryo → Chest" estimate pays 80%');
@@ -50,5 +46,5 @@ const alertText = p => p.evaluate(() => { const e = document.querySelector('.che
     await p.screenshot({ path: path.join(root, 'tests/out/chest-overflow-phone.png') });
     assert.deepEqual(errors, []);
   }, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  console.log('PASS: Chest Overflow alerts — approaching, threshold reached (grace countdown / claim timer, 100%), penalty active (rate, earned Ryo safe, Open Chest / Continue), penalty reduced, full rewards restored, dismissals remembered, "+X Ryo → Chest" estimate follows the penalty, phone fit.');
+  console.log('PASS: Chest Overflow alerts — approaching (no grace wording), penalty active (rate, earned Ryo safe, Open Chest / Continue), penalty reduced, full rewards restored, dismissals remembered, "+X Ryo → Chest" estimate follows the penalty, phone fit.');
 })().catch(e => { console.error(e); process.exitCode = 1; });

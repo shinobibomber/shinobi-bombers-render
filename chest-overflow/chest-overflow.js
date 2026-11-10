@@ -1,7 +1,7 @@
 /* Chest Overflow, client (apply-chest-overflow.cjs). Owner request 2026-11-11. The server decides every reward
  * (chest-overflow.cjs + combat-adventure.cjs); this file only (1) scales the on-screen "+X Ryo → Chest" estimate
  * (AdventureChest.rewardRate) while the server reports an active penalty, and (2) shows small, dismissible alerts by the Chest
- * from the server's `overflow` status: approaching, threshold reached (with the claim/grace timing), penalty active, penalty
+ * from the server's `overflow` status (owner rule: always from 500,000 Ryo, no grace): approaching, penalty active, penalty
  * reduced, full rewards restored. Each alert shows once per state change (remembered per account); it never blocks play. */
 (function () {
   'use strict';
@@ -57,8 +57,6 @@
   }
   function dismiss() { const c = current(); if (c && shownKey) store.set(SEEN + c.account, shownKey); hide(); }
   function hide() { if (el) el.hidden = true; shownKey = null; transientShown = false; clearTimeout(autoHide); }
-  const left = ms => { const m = Math.max(1, Math.ceil(ms / 60000)); return (m >= 60 ? Math.floor(m / 60) + 'h ' : '') + (m % 60) + 'm'; };
-  const when = t => new Date(t).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
 
   /* The alert for this status (and the previous one, for "reduced" / "restored"), or null. */
   function alertFor(o, prev) {
@@ -66,13 +64,7 @@
     if (prevActiveTier > 0 && tier === 0) return { key: 'restored:' + Date.now(), cls: 'good', t: 'FULL REWARDS RESTORED', b: 'Your Chest is below 500,000 Ryo. New enemy rewards pay 100% again.', transient: true };
     if (active && prevActiveTier > tier) return { key: 'reduced:' + prevActiveTier + '>' + tier, cls: 'warn', t: 'PENALTY REDUCED', b: 'Chest overflow penalty −' + prevActiveTier + '% → −' + tier + '%. New enemy rewards now pay ' + (100 - tier) + '%. Claim or spend more to restore full rewards.', transient: true };
     if (active) return { key: 'active:' + tier, cls: 'bad', t: 'CHEST OVERFLOW: −' + tier + '% ENEMY REWARDS', b: 'Your Chest holds ' + fmt(o.chestRyo) + ' Ryo, so new enemy rewards pay ' + (100 - tier) + '%. Your earned Ryo is safe. Claim or spend your Chest rewards to restore full rewards.' };
-    if (tier > 0) {
-      const timing = Number.isFinite(o.activeFrom) ? 'A −' + tier + '% penalty on new enemy rewards starts in ' + left(o.activeFrom - Date.now()) + ' unless you claim or spend.'
-        : Number.isFinite(o.claimReadyAt) && o.claimReadyAt > Date.now() ? 'Your next claim is ready ' + when(o.claimReadyAt) + '. A −' + tier + '% penalty can start ' + o.graceHours + ' hours after that if you don\'t claim or spend.'
-        : o.unavailable ? 'No penalty while claiming is unavailable.' : 'No penalty until your next claim is ready.';
-      return { key: 'threshold:' + tier + ':' + (Number.isFinite(o.activeFrom) ? 'grace' : 'wait'), cls: 'warn', t: 'CHEST OVERFLOW WARNING', b: fmt(o.chestRyo) + ' Ryo unclaimed. Current enemy reward rate: 100%. ' + timing };
-    }
-    if (o.state === 'approaching') return { key: 'approaching', cls: '', t: 'CHEST ALMOST FULL', b: 'Your Chest holds ' + fmt(o.chestRyo) + ' Ryo. From 500,000 Ryo, new enemy rewards drop by 10% once your claim is ready and a ' + o.graceHours + '-hour grace period ends. Claim or spend Chest rewards to keep full rewards.' };
+    if (o.state === 'approaching') return { key: 'approaching', cls: '', t: 'CHEST ALMOST FULL', b: 'Your Chest holds ' + fmt(o.chestRyo) + ' Ryo. From 500,000 Ryo, new enemy rewards drop by 10%. Claim or spend Chest rewards to keep full rewards.' };
     return null;
   }
 
@@ -85,7 +77,7 @@
     if (!prev || prev.tier !== next.tier || prev.active !== next.active) store.set(LAST + c.account, JSON.stringify(next));
     if (transientShown) return;   // a "reduced"/"restored" note stays until it times out or is dismissed
     if (!a) { if (shownKey) hide(); return; }
-    if (a.key === shownKey) { el.querySelector('p').textContent = a.b; return; }   // keep countdowns current
+    if (a.key === shownKey) { el.querySelector('p').textContent = a.b; return; }   // keep the Chest amount current
     if (store.get(SEEN + c.account) === a.key) return;
     const b = banner(); b.className = 'chest-overflow' + (a.cls ? ' ' + a.cls : ''); b.querySelector('h3').textContent = a.t; b.querySelector('p').textContent = a.b;
     b.hidden = false; shownKey = a.key; clearTimeout(autoHide); transientShown = !!a.transient;
