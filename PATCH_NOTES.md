@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Mythic heroes shine red
+
+- Mythic heroes now have their own red look: when you reveal a Mythic (like the Founder's Tsukiyomi) the card, frame, label and announcement are red instead of Legend gold, and the reveal summary counts your Mythic.
+- Fixed: Tsukiyomi's picture now appears on his reveal card (it showed only a glow while his art was still loading).
+- Mythic hero cards in your Heroes collection and Adventure team now use the same red border and frame.
+
 ## November 11, 2026 — Spend your Chest rewards right away
 
 - You can now pay for Summon, Fusion, Dojo upgrades and Training directly with your verified, unclaimed Chest rewards. No need to wait for your next claim.

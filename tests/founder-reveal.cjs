@@ -77,6 +77,13 @@ const root = path.resolve(__dirname, '..');
     await p.waitForFunction(() => S.v2.revealBatch.every(i => i.revealed) && !document.querySelector('#revealContinue').disabled);
     assert.deepEqual((await p.locator('.reveal-card .cinematic-rank').allInnerTexts()).sort(), ['Elite', 'Legend', 'Mythic'], 'each card names its own rank (Mythic is not shown as Legend)');
     assert((await p.locator('.reveal-card[data-rank="4"]').count()) >= 1 && (await p.evaluate(() => [...document.querySelectorAll('.reveal-card')].some(c => /Tsukiyomi, .*Mythic/.test(c.getAttribute('aria-label') || '')))), 'the Mythic card is labelled Mythic for screen readers');
+    // Owner request 2026-11-11: the Mythic card is red (not Legend gold) and shows Tsukiyomi once his art has loaded.
+    const mythicCard = p.locator('.reveal-card[data-rank="5"]');
+    assert.equal(await mythicCard.count(), 1, 'the Mythic card has its own rank');
+    assert.equal((await mythicCard.evaluate(c => c.style.getPropertyValue('--rank-color'))).trim(), '#ff3b3b', 'red, not Legend gold');
+    await p.waitForFunction(() => window.MythicHero?.assetsReady === true, null, { timeout: 30000 });
+    await p.waitForFunction(() => { const cv = document.querySelector('.reveal-card[data-rank="5"] canvas'); if (!cv?.width) return false; const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 40) n++; return n > 200; }, null, { timeout: 15000 });
+    await p.screenshot({ path: path.join(root, 'tests/out/founder-reveal-mythic.png') });
     await finish(); tier = 'legacy';
 
     // ---- A replayed summon (the server says it was already delivered) never reveals again.

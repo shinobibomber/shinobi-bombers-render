@@ -25,6 +25,7 @@ suites.push('referral-typo.cjs');
 suites.push('prison-rescue-server.cjs','prison-rescue-client.cjs');
 suites.push('creator-founder-commission.cjs','creator-discount.cjs','referral-admin-link.cjs');
 suites.push('chest-spending-server.cjs','chest-spending-ui.cjs');
+suites.push('rescue-staff-grant.cjs');
 suites.push('canonical-host.cjs');
 suites.push('live-economy.cjs','financial-server-2022.cjs');
 suites.push('control-panel.cjs');

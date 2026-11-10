@@ -14,7 +14,7 @@
   const SHOWN = { '5': 'home', '3': 'codex', '2': 'summon', '6': 'fusion', '4:0': 'dojo', '1': 'heroes', '0': 'adventure', '4:1': 'market', '8': 'boss-hunt' };
   let preview = null; /* Guild/Chat preview screens (no game page) */
   let dojoView = 'dojo'; /* Dojo pages: 'dojo' (Services, landing), 'dojo-upg' (Enter Dojo), 'dojo-sen' (Manage Sensei) */
-  const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a', '#c98bff'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'];
+  const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a', '#ff3b3b'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'];
   /* Rank card frames (owner request 2026-11-10): every hero card on the Adventure team panel and in the Heroes Collection gets a
    * rank-themed frame: Genin shuriken, Chunin leaves, Jonin water crescent, Elite tomoe + blossoms, Legend star + diamond,
    * Mythic tomoe crest + wings. Drawn in code: one hidden SVG sprite (below) holds the ornament shapes, each card carries one

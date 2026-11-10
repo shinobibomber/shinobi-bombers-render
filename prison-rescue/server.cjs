@@ -65,7 +65,7 @@ const publicGrant = (row, st) => ({ status: 'granted', id: row.id, rank: Number(
 
 async function claim(store, wallet, body = {}, { random = n => crypto.randomInt(n) } = {}) {
   const id = body && body.requestId;
-  if (typeof id !== 'string' || !/^[-a-zA-Z0-9_]{16,80}$/.test(id)) fail('Invalid request ID.');
+  if (typeof id !== 'string' || !/^[-a-zA-Z0-9_]{16,80}$/.test(id) || id.startsWith('staff-')) fail('Invalid request ID.');   // 'staff-' ids belong to staffGrant
   return store.transaction(async c => {
     await store.locked(c, wallet);   // the same per-wallet lock as Adventure sync, purchases and claims
     const old = (await rows(c, 'SELECT * FROM ryo_prison_rescues WHERE scope=$1 AND id=$2', [store.scope, id]))[0];
@@ -99,4 +99,32 @@ async function claim(store, wallet, body = {}, { random = n => crypto.randomInt(
   });
 }
 
-module.exports = { SCHEMA, FRESH_MS, MIN_DAMAGE, MAX_WAITING, MAX_HEROES, ODDS, ENEMY_HP, rankFor, totals, currentSession, fold, claim };
+/** Staff grant (owner request 2026-11-11): an approver gives a player a rescue hero by hand, e.g. for a prisoner freed before the
+ *  server grant existed. The approver picks the rarity (Genin 0 .. Legend 4, never Mythic). Same hero as a rescue (account-bound,
+ *  prisonRescue) recorded in ryo_prison_rescues (id 'staff-<request>', roll -1, session 'staff'); exactly once per request id;
+ *  refused while the player has a purchase settling (its settlement would overwrite the profile) or a full collection.
+ *  onGranted(c, row) writes the staff audit record in the same transaction. Waiting prisoners and spacing are not touched. */
+const RANKS = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'];
+async function staffGrant(store, wallet, { rank, requestId }, onGranted) {
+  if (!Number.isSafeInteger(rank) || rank < 0 || rank > 4) fail('Choose Genin, Chunin, Jonin, Elite or Legend.');
+  if (typeof requestId !== 'string' || !/^[-a-zA-Z0-9_]{16,80}$/.test(requestId)) fail('Invalid request ID.');
+  const id = 'staff-' + requestId;
+  return store.transaction(async c => {
+    await store.locked(c, wallet);
+    const old = (await rows(c, 'SELECT * FROM ryo_prison_rescues WHERE scope=$1 AND id=$2', [store.scope, id]))[0];
+    if (old) { if (old.session !== 'staff' || old.wallet !== wallet || Number(old.rank) !== rank) fail('Request ID belongs to another grant.', 409); return { ...publicGrant(old, null), replay: true }; }
+    if ((await rows(c, "SELECT 1 FROM ryo_purchases WHERE scope=$1 AND wallet=$2 AND status='pending' LIMIT 1", [store.scope, wallet])).length) fail('This player has a purchase settling. Try again in a minute.', 409);
+    const economy = require('./economy.cjs'), profile = await store.profileLocked(c, wallet);
+    if (profile.heroes.length >= MAX_HEROES) fail('This player\'s collection is full (500 heroes).', 409);
+    const hero = economy.hero(rank);
+    Object.assign(hero, { referralReward: true, prisonRescue: true, rescueId: id, staffGrant: true });
+    profile.heroes.push(hero);
+    const next = economy.normalizeProfile(profile), granted = next.heroes.find(h => h.tokenId === hero.tokenId) || hero;
+    await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, JSON.stringify(next)]);
+    const row = (await rows(c, 'INSERT INTO ryo_prison_rescues(scope,id,wallet,rank,roll,hero,session,created) VALUES($1,$2,$3,$4,-1,$5,$6,$7) RETURNING *', [store.scope, id, wallet, rank, JSON.stringify(granted), 'staff', store.now()]))[0];
+    if (onGranted) await onGranted(c, row);
+    return { ...publicGrant(row, null), rankName: RANKS[rank] };
+  });
+}
+
+module.exports = { SCHEMA, FRESH_MS, MIN_DAMAGE, MAX_WAITING, MAX_HEROES, ODDS, ENEMY_HP, RANKS, rankFor, totals, currentSession, fold, claim, staffGrant };

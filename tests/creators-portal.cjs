@@ -116,6 +116,15 @@ async function fixture(p, f, account, snapshot) {
      await p.waitForFunction(() => /UiFan is now linked/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
      assert.equal((await store.pool.query('SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [store.scope, uiFan])).rows[0].n * 1, 1, 'the staff link creates the referral');
      assert.equal(await p.locator('[data-fill-player="UiFan"]').count(), 0, 'the linked player leaves the list');
+     // Owner request 2026-11-11: staff grant a rescue hero by hand, choosing the rarity.
+     await p.locator('[data-admin="rescue-grant"] summary').click();
+     await p.locator('[data-form="rescue-grant"] [name="player"]').fill('UiFan');
+     await p.locator('[data-form="rescue-grant"] [name="rank"]').selectOption('3');
+     assert.deepEqual(await p.locator('[data-form="rescue-grant"] [name="rank"] option').allInnerTexts(), ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'], 'never Mythic');
+     await p.locator('[data-form="rescue-grant"] [name="reason"]').fill('Fixture: prisoner freed before server rescue heroes');
+     await p.locator('[data-form="rescue-grant"] button').click();
+     await p.waitForFunction(() => /Granted: Elite rescue hero .* to UiFan/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
+     assert.equal((await store.profile(uiFan)).heroes.filter(h => h.prisonRescue && h.rank === 3).length, 1, 'the player has the Elite rescue hero');
      await p.screenshot({ path: path.join(root, 'tests/out/creators-admin-desktop.png') });
      await p.locator('#creatorsPanel [data-cp="close"]').click();
      await p.locator('[data-sbwid="nav-guild"]').click(); await p.waitForFunction(() => WebsiteDesign.current() === 'guild');

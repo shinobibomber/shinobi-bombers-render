@@ -203,11 +203,11 @@
     },
     {
       "path": "reveal-design/reveal-design.css",
-      "sha256": "c1df817183408571aabbe0b1b10166c8cd1200c730149dbb73d1b2f2e7c96202"
+      "sha256": "2846fd850746bbc29a8914391669b1a661d421c2ebed38c65a9264fbb6183ab4"
     },
     {
       "path": "reveal-design/reveal-design.js",
-      "sha256": "cc497a53cd33899081063aed5490572d9ca932bd396e55bd9fc2dbc827e73047"
+      "sha256": "810e50a8520b23b7335cc60e2344d2f79e70bf4e48e81fde9bd232fab0c8f731"
     },
     {
       "path": "reveal-design/reveal-design.png",

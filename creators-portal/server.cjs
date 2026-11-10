@@ -498,7 +498,16 @@ async function adminSnapshot(store, wallet, body) {
 }
 async function adminAction(store, wallet, body) {
   const access = adminRole(wallet, true), action = text(body.operation, 40), reason = text(body.reason, 500);
-  if (['adjust', 'config', 'shop', 'manual-add', 'attribute-referral'].includes(action) && access !== 'approver') fail('An approver role is required for CP, inventory and program changes.', 403);
+  if (['adjust', 'config', 'shop', 'manual-add', 'attribute-referral', 'grant-rescue-hero'].includes(action) && access !== 'approver') fail('An approver role is required for CP, inventory and program changes.', 403);
+  // Owner request 2026-11-11: staff grant a rescue hero by hand (e.g. a prisoner freed before the server grant existed), with the
+  // rarity chosen by the approver (never Mythic). prison-rescue.cjs staffGrant; the audit record is in the same transaction.
+  if (action === 'grant-rescue-hero') {
+    const player = await resolvePlayer(store, body.player), rank = typeof body.rank === 'number' ? body.rank : NaN;
+    if (player.wallet === wallet) fail('Staff cannot grant heroes to their own wallet.', 403);
+    const grant = await require('./prison-rescue.cjs').staffGrant(store, player.wallet, { rank, requestId: requestId(body.requestId) }, (c, row) =>
+      audit(store, c, wallet, 'admin.grant-rescue-hero', privateId(player.wallet), reason, { username: player.username, wallet: player.wallet, rank, hero: row.hero?.tokenId, grant: row.id }));
+    return { ok: true, replay: !!grant.replay, player: privateId(player.wallet), username: player.username, rank: grant.rank, hero: { name: grant.hero?.name, rank: grant.rank } };
+  }
   // Owner request 2026-11-10: staff link a player to a referrer by hand (e.g. players who used a mistyped link). The game's own
   // attribute() runs with opts.staff (new-player rule and enrollment pause skipped; permanence, self, cycles, creator identities
   // and the enrollment limit kept), then the audit record is written.
