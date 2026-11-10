@@ -54,6 +54,8 @@ services:
         value: solana-mainnet:live
       - key: RYO_SITE_ORIGIN        # https://shinobibombers.fun (official custom domain); also used at build time
         sync: false
+      - key: FEATURE_PANEL_DISABLED  # on = ignore every admin Control panel switch value (emergency; Render settings apply)
+        sync: false
       - key: FOUNDERS_REVENUE_WALLET # SOL receipts of Founder boxes and Sensei SOL only (never the game's RYO_REVENUE_WALLET)
         sync: false
       - key: RYO_SITE_REDIRECT_HOSTS # shinobibombers.onrender.com: page loads 301 to RYO_SITE_ORIGIN (not /healthz, NFT metadata/art or APIs)

@@ -229,4 +229,4 @@ function rewriteText(text, file, rules) {
   return text;
 }
 
-module.exports = { NETWORKS, resolve, built, launched, mintReleased, registryMint, prelaunch, releaseStage, privateTesters, privateTesting, startupProblems, assertStartup, mainnetRules, rewriteText, MAINNET_LEFTOVERS };
+module.exports = { NETWORKS, resolve, built, launched, mintReleased, registryMint, prelaunch, releaseStage, privateTesters, privateTesting, founderRevenueProblems, startupProblems, assertStartup, mainnetRules, rewriteText, MAINNET_LEFTOVERS };

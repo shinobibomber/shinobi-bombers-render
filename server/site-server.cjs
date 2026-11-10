@@ -277,6 +277,31 @@ function founderSalePage(req, res) {
   res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-cache', ...SITE_HEADERS, ...PRELAUNCH_HEADERS });
   return res.end(req.method === 'HEAD' ? undefined : html.replace('<body>', '<body data-page="founders">'));
 }
+/* Feature switches set in the admin Control panel apply to the game whether or not the panel page itself mounts: the
+ * site process loads them on its own (5-second refresh). Until the first load, money and Founder switches stay closed;
+ * afterwards the last good copy is kept (feature-switches.cjs). The loader has its OWN single connection, so panel
+ * traffic can never delay the game's switch values; while they are not loaded the logs say so every 30 seconds. */
+const switchesStarted = (() => {
+  const file = path.join(GAME_DIR, 'server', 'feature-switches.cjs');
+  if (!process.env.DATABASE_URL || !process.env.RYO_SCOPE || !fs.existsSync(file)) return false;
+  try {
+    const { Pool } = require(require.resolve('pg', { paths: [path.join(GAME_DIR, 'server')] }));
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1, connectionTimeoutMillis: 8000, idleTimeoutMillis: 10000, statement_timeout: 15000 });
+    pool.on('error', e => console.warn('[site] feature-switch pool: ' + e.message));
+    const FS = require(file); FS.start(pool, process.env.RYO_SCOPE);
+    const watch = setInterval(() => { if (typeof FS.isLoaded !== 'function' || FS.isLoaded()) clearInterval(watch); else console.error('[site] Feature switches NOT loaded yet (database unreachable?): money and Founder features stay closed until they load.'); }, 30000);
+    if (watch.unref) watch.unref();
+    return true;
+  } catch (e) { console.warn('[site] Feature switches could not start: ' + e.message); return false; }
+})();
+/* Admin Control panel (control/server.cjs): feature switches, mounted in every stage when the database and the site
+ * identity are configured (pre-launch portal, private testing and the public game). Otherwise /admin/control is 404.
+ * It uses its own small pool (control/server.cjs). */
+const control = (() => {
+  if (!switchesStarted || !process.env.RYO_SITE_ORIGIN) return null;
+  try { return require(path.join(ROOT, 'control', 'server.cjs')).createControl({ gameDir: GAME_DIR }); }
+  catch (e) { console.warn('[site] Control panel unavailable: ' + e.message); return null; }
+})();
 const game = loadGame();
 
 /* Canonical host. Wallet sign-in, CSRF checks and Founder NFT links are bound to ONE origin (RYO_SITE_ORIGIN), so a
@@ -308,6 +333,8 @@ const server = http.createServer((req, res) => {
   if (canonicalRedirect(req, res, url, name)) return;
   // Same-origin Solana RPC relay for the game page's wallet (rpc-relay/server.cjs): limited methods, same origin only.
   if (!PRELAUNCH && rpcRelay && name === '/api/rpc') return rpcRelay.handle(req, res).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
+  if (control && name === '/api/control') return control.handle(req, res);
+  if (control && control.page(req, res, name)) return;
   // Read-only release policy: available during pre-launch without mounting any game or money API.
   if (require('../dev-vfx-lab/handler.cjs').handle(req, res, name)) return;
   if(name==='/economy-policy.json'){

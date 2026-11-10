@@ -1,0 +1,30 @@
+:root { --bg: #0d0717; --card: #1a1029; --line: #3b2a57; --text: #f6f1ff; --muted: #b8afd6; --on: #6fe3a1; --off: #ff6b6b; --gold: #ffcf4a; --violet: #c58cff; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
+.top { display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.brand { letter-spacing: .06em; color: var(--gold); }
+.who { margin-left: auto; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+main { max-width: 980px; margin: 0 auto; padding: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 0 0 16px; }
+h1, h2 { margin: 0 0 8px; } h1 { font-size: 1.3rem; } h2 { font-size: 1.05rem; color: var(--violet); }
+button { font: inherit; border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; background: var(--violet); color: #12091f; font-weight: 700; }
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.wallets { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+.status { min-height: 1.4em; color: var(--muted); } .status.err { color: var(--off); }
+.note { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--gold); color: var(--gold); }
+.release dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 8px 0 0; } .release dt { color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+.sw { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.sw .name { font-weight: 700; }
+.state { font-weight: 800; } .state.on { color: var(--on); } .state.off { color: var(--off); }
+.meta { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.badge.panel { border-color: var(--gold); color: var(--gold); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.log { margin: 0; padding-left: 20px; max-height: 340px; overflow: auto; } .log li { margin: 6px 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+dialog { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 14px; max-width: min(520px, calc(100vw - 32px)); width: 100%; }
+dialog::backdrop { background: rgba(0, 0, 0, .6); }
+textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px; font: inherit; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.money { color: var(--gold); font-weight: 700; }

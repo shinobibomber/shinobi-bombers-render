@@ -41,10 +41,16 @@
   // Expose discovery metadata, not providers and their transaction capabilities.
   const list = () => entries().map(({ id, name, icon }) => ({ id, name, icon, kind: ['phantom', 'solflare'].includes(normalized(name)) ? normalized(name) : 'other' }));
 
+  // Exactly these statements (site sign-in, admin Control panel sign-in, and the panel's confirmation before it OPENS a
+  // money or Founder feature); anything else is refused before signing.
+  const FREE = ' This is free: it does not send a transaction or move any funds.';
+  const SIGN_IN = ['Sign in to Shinobi Bombers.' + FREE, 'Sign in to the Shinobi Bombers Control panel.' + FREE];
+  const CONFIRM = /^Confirm in the Shinobi Bombers Control panel: (turn ON|reset to Render \(ON\)) [A-Za-z0-9 '()-]{3,60}\. This is free: it does not send a transaction or move any funds\.$/;
+  const STATEMENTS = { includes: s => SIGN_IN.includes(s) || CONFIRM.test(String(s)) };
   function validateChallenge(challenge, address, network) {
     const text = challenge?.message, lines = typeof text === 'string' ? text.split('\n') : [];
     if (lines.length !== 11 || lines[0] !== location.host + ' wants you to sign in with your Solana account:' || lines[1] !== address || lines[2] !== '' || lines[4] !== ''
-      || lines[3] !== 'Sign in to Shinobi Bombers. This is free: it does not send a transaction or move any funds.'
+      || !STATEMENTS.includes(lines[3])
       || lines[5] !== 'URI: ' + location.origin || lines[6] !== 'Version: 1' || !/^Chain ID: (mainnet|devnet)$/.test(lines[7])
       || typeof challenge.nonce !== 'string' || !/^Nonce: [a-f0-9]{32}$/.test(lines[8]) || lines[8] !== 'Nonce: ' + challenge.nonce
       || (network && lines[7] !== 'Chain ID: ' + String(network).toLowerCase())) throw error('ORIGIN');

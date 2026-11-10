@@ -147,5 +147,6 @@ async function view(pool, scope, env = process.env) {
     version: v.get(key) || 0, lastChange: cache.values.get(key) || null }));
 }
 
-module.exports = { CATALOG, KEYS, SCHEMA, envValue, effective, source, load, start, stop, change, log, view, panelDisabled,
+const isLoaded = () => cache.loaded;
+module.exports = { CATALOG, KEYS, SCHEMA, envValue, effective, source, load, start, stop, change, log, view, panelDisabled, isLoaded,
   _setForTest: values => { cache = { scope: 'test', values: new Map(Object.entries(values).map(([k, enabled]) => [k, { enabled, version: 1 }])), loaded: true, at: Date.now() }; } };

@@ -36,6 +36,9 @@ function start(extra) {
     assert.notEqual((await a.req('POST', '/api/prelaunch', 'old.example', JSON.stringify({ action: 'status' }))).status, 301, 'API calls are never redirected');
     assert.equal((await a.req('GET', '/', 'new.example')).status !== 301, true, 'the canonical host is served');
     assert.equal((await a.req('GET', '/', 'evil.example')).status !== 301, true, 'unlisted hosts are never redirected (no open redirect)');
+    // The admin Control panel is mounted in the pre-launch stage too (never redirected away by the portal).
+    assert.equal((await a.req('GET', '/admin/control/', 'new.example')).status, 200, 'Control panel page in pre-launch');
+    assert.equal((await a.req('GET', '/admin/control/', 'old.example')).status, 301, 'old host redirects like any page');
     passed.push('listed old host: page loads 301 to the same path and query on RYO_SITE_ORIGIN; /healthz, NFT metadata/art and API calls stay; other hosts untouched');
   } finally { a.child.kill(); }
 

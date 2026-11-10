@@ -125,6 +125,16 @@ With `PRELAUNCH_MODE=on` the live server runs **only** the pre-launch portal fro
 - **Legal pages:** Referral Rules and the Privacy notice describe what the code actually does. **Terms is a draft**,
   marked as such, to be replaced with reviewed text before launch.
 
+### Admin Control panel (owner decision 2026-11-09)
+
+`/admin/control` (every stage, including pre-launch) lets an owner or approver wallet (`RYO_ADMIN_OWNERS`,
+`RYO_ADMIN_APPROVERS`; operators/viewers read-only) open or close game features: summoning, SR deposits, Boss Hunt,
+Chest claims, withdrawals, Market, the Founder sale/private testing/reward redemption, Sensei SOL, chat, fusion, dojo and
+training. A panel value overrides the Render setting until reset; every change needs a reason and is kept in a
+hash-chained log. `FEATURE_PANEL_DISABLED=on` in Render ignores all panel values. The panel cannot bypass the other locks
+(registry mint/activation, SR routing approval, custody/mint checks, the Market wallets, `FOUNDERS_REVENUE_WALLET`).
+Release (public/hold) is still `GAME_LAUNCH_HOLD` in Render.
+
 ### Automatic public release (owner decision 2026-11-09)
 
 On the live server the game opens to the public by itself once the released SR mint is configured: `RYO_TOKEN_MINT`
