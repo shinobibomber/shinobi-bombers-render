@@ -1,5 +1,12 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Dojo Chest Claim Limit Bonus (switches on when announced)
+
+- Every Dojo tier raises the most you can claim from your Chest at once by **+100,000 Ryo**, up to **+600,000 Ryo** at Legendary Dojo (Tier VI). Dojo tiers you already own count automatically.
+- Your claim allowance = the base allowance + your Dojo bonus, always within the per-claim maximum, today's reward budget and the funded reward pool.
+- The Dojo upgrade screen shows the Chest Claim bonus for every tier and what your next upgrade adds. The Chest shows your **Chest Claim Details**: Dojo tier, base allowance, Dojo bonus, personal allowance and how much you can claim now, with a note when the per-claim maximum or today's budget limits it.
+- Claim timers don't change (24 hours, Founders 12 hours), and Dojo prices and Chakra recovery are the same. Paying with Chest rewards isn't affected; the bonus applies to claims only.
+
 ## November 11, 2026 — Chest Overflow: claim your rewards
 
 - Very full Chests now earn less from **new** enemy defeats until you claim or spend: under 500,000 Ryo full rewards; 500,000–749,999 −10%; 750,000–999,999 −20%; 1,000,000 and up −30%.

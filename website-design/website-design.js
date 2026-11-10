@@ -205,6 +205,7 @@
     window.CreatorsPortal?.close();
     if (k.startsWith('guild') || k === 'chat') { const p = k === 'chat' ? 'chat' : 'guild'; if (D.screens[p]) { preview = p; sync(); return; } return notice(p === 'chat' ? 'Chat' : 'Guild', p === 'chat' ? SOON.chat : SOON.guild); }
     preview = null; if (k === 'dojo') dojoView = 'dojo';
+    if (k === 'dojo-upg') { go(ROUTE.dojo[0], ROUTE.dojo[1]); return MODS.dojo.focus('upg'); }   // Dojo upgrades (e.g. from the Chest claim details)
     const r = ROUTE[k]; if (r) go(r[0], r[1]);
   }
   const HOME = {
@@ -586,6 +587,14 @@
     // the empty gap left of the prices) and redrawn from the game's live prices (GameBalance.dojoPrices).
     b.price = DROWY.map((y, i) => { if (!i) return null; const e = place(mk('span', 'sbw-cover sbw-dprice', b.st), 1440, y - 21, 165, 42); e.dataset.mapped = '1'; artMatch(b, e, 1432); return e; });
     b.up = place(mk('button', 'sbw-dup', b.st), 78, 760, 480, 70); b.up.type = 'button'; b.up.onclick = () => MODS.dojo.upgrade();
+    // Dojo Chest Claim Limit Bonus (only while the server reports an approved base allowance): the "HEROES" column (always "All")
+    // becomes CHEST CLAIM per tier, the left card's "Resting Heroes" box shows the current bonus, and the note previews the next tier.
+    const claimCover = (cls, x, y, w, h, sx) => { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.dataset.mapped = '1'; e.hidden = true; artMatch(b, e, sx); return e; };
+    b.claimHead = claimCover('sbw-dclaimh', 1021, 143, 112, 31, 1024);
+    b.claimCol = DROWY.map(y => claimCover('sbw-dclaim', 1022, y - 18, 112, 36, 1030));
+    b.midVal = claimCover('sbw-dval sbw-dmid', 300, 578, 94, 38, 386);
+    b.midLbl = claimCover('sbw-dmidl', 248, 618, 144, 26, 386);
+    b.preview = claimCover('sbw-dprev', 66, 662, 500, 80, 70);
   };
   PAINT['dojo-upg'] = b => {
     const tier = dojoState().tier, next = tier + 1, prices = (window.GameBalance && GameBalance.dojoPrices) || [], rec = (window.GameBalance && GameBalance.dojoRecovery) || [];
@@ -595,6 +604,19 @@
     b.price.forEach((e, i) => { if (!e) return; const v = Number(prices[i]), t = v > 0 ? fmt(v) + ' Ryo' : prices[i] === 0 ? 'Free' : ''; if (e.textContent !== t) e.textContent = t; });
     b.stat.forEach((e, i) => { const [t, c] = i < tier ? ['Unlocked', 'own'] : i === tier ? ['Active', 'act'] : i === next ? ['Next', 'nxt'] : ['—', 'lck']; if (e.textContent !== t) e.textContent = t; e.className = 'sbw-dstat ' + c; });
     const k = next <= 6 ? `<i>⌂</i><span>UPGRADE - ${fmt(prices[next])} Ryo</span>` : '<i></i><span>MAX TIER REACHED</span>'; if (b.up.dataset.k !== k) { b.up.dataset.k = k; b.up.innerHTML = k; } b.up.disabled = next > 6;
+    if (b.claimHead) {
+      const ca = window.AdventureChest?.snapshot?.chest?.claimAllowance, on = !!(ca && ca.active);
+      [b.claimHead, ...b.claimCol, b.midVal, b.midLbl, b.preview].forEach(e => { e.hidden = !on; });
+      if (on) {
+        const per = Number(ca.bonusPerTierRyo) || 100000, base = Number(ca.baseAllowanceRyo) || 0, ceiling = Number(ca.hardCeilingRyo) || 0, cur = tier * per;
+        setText(b.claimHead, 'CHEST CLAIM'); b.claimCol.forEach((e, i) => setText(e, '+' + fmt(i * per)));
+        const mv = `<b>+${fmt(cur)}</b>`; if (b.midVal.innerHTML !== mv) b.midVal.innerHTML = mv; setText(b.midLbl, 'Chest Claim Bonus');
+        const allowance = bonus => Math.min(ceiling, base + bonus), capped = bonus => base + bonus > ceiling ? ` The approved per-claim maximum of ${fmt(ceiling)} Ryo applies.` : '';
+        setText(b.preview, next <= 6
+          ? `Chest Claim Bonus: +${fmt(cur)} → +${fmt(next * per)} Ryo at Tier ${ROMAN[next]} (+${fmt(per)}). Claim allowance after the upgrade: ${fmt(allowance(next * per))} Ryo per claim.${capped(next * per)} Chakra recovery unchanged.`
+          : `Legendary Dojo: +${fmt(cur)} Ryo Chest Claim Bonus. Your claim allowance: ${fmt(allowance(cur))} Ryo per claim.${capped(cur)}`);
+      }
+    }
   };
   INIT['dojo-sen'] = b => {
     dojoBack(b, 'SENSEI');
@@ -2014,6 +2036,17 @@
     setInterval(() => { sync(); placeTrigger(); }, 700);
     let last = 0; const loop = now => { if (!document.hidden) { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     sync();
+    // Dojo Chest Claim Limit Bonus: one notice when the server-confirmed profile shows a higher Dojo tier (the upgrade settled),
+    // only while a base claim allowance is approved. Server values only; once per upgrade.
+    let dojoSeen = null;
+    addEventListener('shinobi-ryo-ledger', () => {
+      const st = ledger(); if (!st.authenticated || !st.profile) { dojoSeen = null; return; }
+      const t = Math.max(0, Math.min(6, Number(st.profile.dojo) || 0));
+      if (!dojoSeen || dojoSeen.a !== st.account) { dojoSeen = { a: st.account, t }; return; }
+      if (t <= dojoSeen.t) { dojoSeen.t = t; return; }
+      dojoSeen.t = t; const ca = window.AdventureChest?.snapshot?.chest?.claimAllowance;
+      if (ca && ca.active) notice('DOJO UPGRADE COMPLETE!', `Your Dojo is now Tier ${ROMAN[t]}. Chest Claim Bonus: +${fmt(t * (Number(ca.bonusPerTierRyo) || 100000))} Ryo. Your personal Chest claim allowance has increased, subject to reward-pool funding and today's approved budget. Open your Chest to review your available claim.`);
+    });
     window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync, open: goScreen };
   }
   init().catch(e => console.error('Website designs could not be applied:', e));

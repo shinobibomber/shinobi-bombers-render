@@ -47,9 +47,21 @@ function validateBudget(p) {
   const whole = (v, min, max, label) => { if (!Number.isSafeInteger(v) || v < min || v > max) fail(label + ' must be a whole number between ' + min + ' and ' + max + '.'); return v; };
   const dailyCapRyo = whole(p.dailyCapRyo, 1, 1000000000, 'Daily emission cap');
   const perClaimMaxRyo = whole(p.perClaimMaxRyo, 1, dailyCapRyo, 'Per-claim maximum');
+  // Optional (owner request 2026-11-11, Dojo Chest Claim Limit Bonus): a base personal allowance, at most the per-claim maximum.
+  // Unset = no personal allowance: every claim is capped exactly as before (per-claim maximum and the daily budget).
+  const base = p.basePersonalAllowanceRyo === undefined || p.basePersonalAllowanceRyo === null ? null : whole(p.basePersonalAllowanceRyo, 1, perClaimMaxRyo, 'Base personal claim allowance');
   if (typeof p.evidence !== 'string' || !p.evidence.trim() || p.evidence.length > 500) fail('Enter the approved reward-budget evidence reference.');
-  return { dailyCapRyo, perClaimMaxRyo, evidence: p.evidence.trim() };
+  return { dailyCapRyo, perClaimMaxRyo, ...(base === null ? {} : { basePersonalAllowanceRyo: base }), evidence: p.evidence.trim() };
 }
+/* Dojo Chest Claim Limit Bonus: every Dojo tier adds 100,000 Ryo to the personal claim allowance (Legendary, tier 6: +600,000),
+ * derived from the saved profile in the claim transaction (never stored, never from the browser). Only when the approved
+ * budget sets basePersonalAllowanceRyo; the per-claim maximum, the daily budget, pool funding and custody always still apply. */
+const DOJO_CLAIM_BONUS_RYO = 100000, DOJO_MAX_TIER = 6;
+async function dojoTier(store, c, wallet) {
+  const t = Number((await c.query("SELECT data->'dojo' AS dojo FROM ryo_profiles WHERE scope=$1 AND wallet=$2", [store.scope, wallet])).rows[0]?.dojo);
+  return Number.isInteger(t) && t > 0 ? Math.min(DOJO_MAX_TIER, t) : 0;
+}
+const personalAllowance = (budget, tier) => budget && Number.isSafeInteger(budget.basePersonalAllowanceRyo) ? budget.basePersonalAllowanceRyo + tier * DOJO_CLAIM_BONUS_RYO : null;
 async function rewardBudget(store, c = store.pool) {
   const row = (await c.query('SELECT config FROM ryo_admin_control WHERE scope=$1', [store.scope])).rows[0];
   try { return row?.config?.rewardBudget ? validateBudget(row.config.rewardBudget) : null; } catch { return null; }
@@ -81,7 +93,8 @@ async function claimLimit(store, c, wallet) {
   if (!budget) fail('Chest claims await an approved reward budget. Your earnings stay in your Chest.', 503);
   const remaining = budget.dailyCapRyo - await budgetUsed(store, c, now);
   if (remaining < 1) fail("Today's approved Chest reward budget has been fully claimed. Your earnings stay in your Chest; try again later.", 409);
-  return Math.min(budget.perClaimMaxRyo, remaining);
+  const personal = personalAllowance(budget, await dojoTier(store, c, wallet));
+  return Math.min(budget.perClaimMaxRyo, remaining, personal ?? Infinity);
 }
 /** Global rolling-24 h use of the approved reward budget: chest claims plus SR spent directly from chests on game services
  * (owner decision 2026-11-11: chest spending shares the daily budget, never the per-player claim timer). */
@@ -111,7 +124,24 @@ async function nextClaimAt(store, c, wallet) {
 async function claimInfo(store, c, wallet) {
   if (!live()) return null;
   const last = await lastClaim(store, c, wallet), cooldown = await claimCooldownFor(store, c, wallet);
-  return { nextClaimAt: last === null ? 0 : last + cooldown, claimCooldownMs: cooldown, founderCooldown: cooldown < CLAIM_COOLDOWN_MS };
+  // Display details only: never let them turn a committed claim (or a Chest refresh) into an error.
+  const allowance = await claimAllowance(store, c, wallet).catch(() => ({ active: false }));
+  return { nextClaimAt: last === null ? 0 : last + cooldown, claimCooldownMs: cooldown, founderCooldown: cooldown < CLAIM_COOLDOWN_MS, claimAllowance: allowance };
+}
+/** Chest claim details for the UI (live, server values). `active` only when the approved budget sets a base allowance; without
+ * one (the normal state) a single budget read answers, so the Chest poll stays cheap. */
+async function claimAllowance(store, c, wallet) {
+  const budget = await rewardBudget(store, c);
+  if (!budget || !Number.isSafeInteger(budget.basePersonalAllowanceRyo)) return { active: false };
+  const tier = await dojoTier(store, c, wallet), bonus = tier * DOJO_CLAIM_BONUS_RYO;
+  const remaining = Math.max(0, budget.dailyCapRyo - await budgetUsed(store, c, store.now())), personal = personalAllowance(budget, tier);
+  const effective = Math.min(budget.perClaimMaxRyo, remaining, personal ?? Infinity);
+  // What sets today's maximum: the remaining daily budget (below the other caps), the hard per-claim ceiling (below the
+  // personal allowance), or the personal allowance itself.
+  const ownCap = Math.min(budget.perClaimMaxRyo, personal ?? Infinity);
+  const limitedBy = remaining < ownCap ? 'budget' : personal !== null && personal > budget.perClaimMaxRyo ? 'ceiling' : personal !== null ? 'personal' : 'ceiling';
+  return { active: personal !== null, dojoTier: tier, dojoBonusRyo: bonus, bonusPerTierRyo: DOJO_CLAIM_BONUS_RYO, baseAllowanceRyo: budget.basePersonalAllowanceRyo ?? null,
+    personalAllowanceRyo: personal, hardCeilingRyo: budget.perClaimMaxRyo, dailyRemainingRyo: remaining, effectiveRyo: effective, limitedBy };
 }
 
 /** Fields merged into the public `config` action on live (beta: none, so its payload is unchanged). */
@@ -186,4 +216,4 @@ async function summary(store, c = store.pool) {
     rewardBudget: { configured: !!budget, ...(budget || {}), claimedLast24h: used, remainingLast24h: budget ? Math.max(0, budget.dailyCapRyo - used) : 0, claimCooldownHours: 24 } };
 }
 
-module.exports = { UNIT, DAY, CLAIM_COOLDOWN_MS, live, claimFunding, claimFundingNotConfigured, withdrawalPlan, withdrawalsAnytime, withdrawalColumns, withdrawalSettled, validateBudget, rewardBudget, claimLimit, chestLimit, budgetUsed, claimCooldownFor, nextClaimAt, claimInfo, publicConfig, assertCustody, summary };
+module.exports = { UNIT, DAY, CLAIM_COOLDOWN_MS, DOJO_CLAIM_BONUS_RYO, dojoTier, personalAllowance, claimAllowance, live, claimFunding, claimFundingNotConfigured, withdrawalPlan, withdrawalsAnytime, withdrawalColumns, withdrawalSettled, validateBudget, rewardBudget, claimLimit, chestLimit, budgetUsed, claimCooldownFor, nextClaimAt, claimInfo, publicConfig, assertCustody, summary };

@@ -1121,6 +1121,13 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-pity.ready{border-color:#ff8a3d;box-shadow:0 0 16px #ff8a3daa}
 #sbwLayer .sbw-pity.ready em{color:#ffb35c;font-weight:900}
 #sbwLayer .sbw-pity.starter{gap:3px;padding-block:4px}
+/* Dojo Chest Claim Limit Bonus (Dojo upgrades screen; covers shown only while a base allowance is approved) */
+#sbwLayer .sbw-dclaimh{justify-content:center;white-space:nowrap;font:800 14px Rajdhani,sans-serif;letter-spacing:.02em;color:#fff}
+#sbwLayer .sbw-dmid b{font-size:19px}
+#sbwLayer .sbw-dclaim{justify-content:center;font:700 19px Rajdhani,sans-serif;color:#ffcf3a;text-shadow:0 1px 2px #000}
+#sbwLayer .sbw-dmid{justify-content:flex-start}
+#sbwLayer .sbw-dmidl{justify-content:center;font:600 15px Rajdhani,sans-serif;color:#d8cfe8}
+#sbwLayer .sbw-dprev{justify-content:flex-start;align-items:flex-start;white-space:normal;text-align:left;font:600 15px/1.35 Rajdhani,sans-serif;color:#f1e6c8;padding:4px 2px}
 /* Fusion Shards panel (Fusion screen, over the artwork's next-rank note box) */
 #sbwLayer .sbw-fshards{position:absolute;z-index:8;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:5px 10px;border:1px solid #c58bff;border-radius:8px;background:linear-gradient(180deg,#1c0a36,#0b0816);box-shadow:0 0 12px #b56cff44;color:#efe4ff;font:700 13px/1.2 Rajdhani,sans-serif}
 #sbwLayer .sbw-fshards[hidden]{display:none}

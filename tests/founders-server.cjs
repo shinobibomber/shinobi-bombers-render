@@ -522,9 +522,11 @@ const ok = label => pass.push(label);
   for (const w of [regular, mythicF, legacyF]) await chest(W(w), 100);
   const t0 = now;
   for (const w of [regular, mythicF, legacyF]) assert.equal((await claim(W(w))).credited, 5, 'same per-claim maximum for everyone');
-  assert.deepEqual(await T.claimInfo(store, pool, W(regular)), { nextClaimAt: t0 + DAY, claimCooldownMs: DAY, founderCooldown: false });
-  assert.deepEqual(await T.claimInfo(store, pool, W(mythicF)), { nextClaimAt: t0 + 12 * HOUR, claimCooldownMs: 12 * HOUR, founderCooldown: true });
-  assert.deepEqual(await T.claimInfo(store, pool, W(legacyF)), { nextClaimAt: t0 + 12 * HOUR, claimCooldownMs: 12 * HOUR, founderCooldown: true });
+  // Cooldown fields only: the Dojo claim allowance details (claimAllowance) are covered by tests/dojo-claim-bonus.cjs.
+  const cooldownInfo = async w => { const { claimAllowance, ...cooldown } = await T.claimInfo(store, pool, w); return cooldown; };
+  assert.deepEqual(await cooldownInfo(W(regular)), { nextClaimAt: t0 + DAY, claimCooldownMs: DAY, founderCooldown: false });
+  assert.deepEqual(await cooldownInfo(W(mythicF)), { nextClaimAt: t0 + 12 * HOUR, claimCooldownMs: 12 * HOUR, founderCooldown: true });
+  assert.deepEqual(await cooldownInfo(W(legacyF)), { nextClaimAt: t0 + 12 * HOUR, claimCooldownMs: 12 * HOUR, founderCooldown: true });
   now = t0 + 12 * HOUR - 1;
   for (const w of [regular, mythicF, legacyF]) await assert.rejects(claim(W(w)), e => e.status === 429);
   await assert.rejects(claim(W(mythicF)), /once every 12 hours/);
@@ -541,7 +543,7 @@ const ok = label => pass.push(label);
   // Losing eligibility: back to 24 h measured from the SAME last claim (the timestamp is never reset).
   const lastMythic = Number((await pool.query('SELECT MAX(created) AS t FROM ryo_reward_claims WHERE scope=$1 AND wallet=$2', [store.scope, W(mythicF)])).rows[0].t);
   await F.adminRevoke(store, 'admin-wallet', W(mythicF), true, 'Test revocation');
-  assert.deepEqual(await T.claimInfo(store, pool, W(mythicF)), { nextClaimAt: lastMythic + DAY, claimCooldownMs: DAY, founderCooldown: false });
+  assert.deepEqual(await cooldownInfo(W(mythicF)), { nextClaimAt: lastMythic + DAY, claimCooldownMs: DAY, founderCooldown: false });
   await F.adminRevoke(store, 'admin-wallet', W(mythicF), false);
   // Redemption switch closed → everyone 24 h; forged client data cannot change it (only the entitlement row counts).
   delete process.env.FOUNDERS_REWARD_REDEMPTION_ENABLED;
