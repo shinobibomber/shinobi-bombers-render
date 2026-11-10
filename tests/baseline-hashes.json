@@ -203,11 +203,11 @@
     },
     {
       "path": "reveal-design/reveal-design.css",
-      "sha256": "2846fd850746bbc29a8914391669b1a661d421c2ebed38c65a9264fbb6183ab4"
+      "sha256": "9685ca989915d7b20be002674a322eb9ad64d1dbe54bb1e379aca6bc7e51b927"
     },
     {
       "path": "reveal-design/reveal-design.js",
-      "sha256": "810e50a8520b23b7335cc60e2344d2f79e70bf4e48e81fde9bd232fab0c8f731"
+      "sha256": "284cd69c450ab6102bbef7348bb51f6c27fe90f0c390817e5c9baf28d77eb98c"
     },
     {
       "path": "reveal-design/reveal-design.png",
@@ -271,7 +271,7 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "3e08a6a4427484d52b2dfc54eb4417004c069ab1c56ca14395f4705d2d5e0980"
+      "sha256": "a91f58200ac07bcee78b5fd6d7ad6d67f8fccce2d57a50f0a7e1b12c77190e05"
     },
     {
       "path": "app/server/gameplay-options.cjs",
@@ -299,7 +299,7 @@
     },
     {
       "path": "app/server/store.cjs",
-      "sha256": "bae19a0745f98549447678a6c4efe1e1416312a776afdb0829901d062a093a22"
+      "sha256": "ca9a62993fb228a06ec22c38ccb0edb5a55e3d89c095eb134f7b43bca46c3c3c"
     },
     {
       "path": "app/server/transaction-review.cjs",

@@ -7,6 +7,8 @@ let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 html=require('../apply-performance.cjs').restoreReferences(html);
 // Live economy (applied after the Founders step): fee-free deposit wallet hooks.
 for(const [before,after,count]of require('../apply-live-economy.cjs').clientPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact live economy client hook: '+before.slice(0,50));html=html.split(after).join(before)}
+// Shrine Legend pity (applied after chest spending): the client keeps the server's guaranteed-Legend flag.
+for(const [before,after]of require('../apply-shrine-pity.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact shrine pity hook');html=html.replace(after,()=>before)}
 // Chest spending (applied after the prison rescue step): checkout "Pay using" choice and the funding in the purchase request.
 for(const [before,after]of require('../apply-chest-spending.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact chest spending hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
 assert.equal(html.split('<!-- chest-spending -->').length-1,1,'one chest spending script marker');

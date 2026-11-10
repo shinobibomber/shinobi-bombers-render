@@ -27,6 +27,7 @@ suites.push('creator-founder-commission.cjs','creator-discount.cjs','referral-ad
 suites.push('chest-spending-server.cjs','chest-spending-ui.cjs');
 suites.push('rescue-staff-grant.cjs');
 suites.push('offline-sync.cjs','mythic-perk-transfer.cjs');
+suites.push('shrine-pity.cjs','shrine-pity-ui.cjs');
 suites.push('canonical-host.cjs');
 suites.push('live-economy.cjs','financial-server-2022.cjs');
 suites.push('control-panel.cjs');

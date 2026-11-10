@@ -156,3 +156,7 @@ body.cinematic-paused #summonReveal.cinematic-reveal *,body.cinematic-paused #su
 #summonReveal.cinematic-reveal .reveal-card.is-revealed:is([data-rank="3"],[data-rank="4"],[data-rank="5"]) .cinematic-model canvas{filter:drop-shadow(0 0 4px var(--rank-color)) drop-shadow(0 0 14px var(--rank-color))}
 @keyframes sb-rank-glow{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.05)}}
 @media(prefers-reduced-motion:reduce){#summonReveal.cinematic-reveal *,#summonReveal.cinematic-reveal *::before,#summonReveal.cinematic-reveal *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}#summonReveal.cinematic-reveal .cinematic-atmosphere{display:none}#summonReveal.cinematic-reveal .is-revealed .cinematic-sparks{opacity:.35}#summonReveal.cinematic-reveal .reveal-card:hover{transform:none}}
+
+/* Summoning Shrine hard pity (shrine-pity): a small tag on a guaranteed Legend; the Legend reveal itself is unchanged. */
+#summonReveal.cinematic-reveal .cinematic-pity{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:4;padding:2px 10px;border:1px solid #ffcf63;border-radius:999px;background:#2a1a04e6;color:#ffe9a8;font:800 11px/1.4 Rajdhani,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;box-shadow:0 0 10px #ffcf6388}
+#summonReveal.cinematic-reveal .cinematic-pity[hidden]{display:none}

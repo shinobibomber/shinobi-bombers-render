@@ -166,7 +166,7 @@
       const seal = document.createElement('span'); seal.className = 'cinematic-seal';
       seal.innerHTML = '<span class="cinematic-scroll" aria-hidden="true"><i class="cinematic-scroll-cap top"></i><span class="cinematic-scroll-body"><b>忍</b></span><i class="cinematic-scroll-cap bottom"></i></span><b>SEALED SCROLL</b><small>Tap to reveal</small>';
       const face = document.createElement('span'); face.className = 'cinematic-face';
-      face.innerHTML = '<span class="cinematic-portrait cinematic-model"><canvas aria-hidden="true"></canvas><i class="cinematic-sparks" aria-hidden="true"></i></span><span class="cinematic-element"></span><strong class="cinematic-name"></strong><span class="cinematic-stars"></span><span class="cinematic-stats"></span><span class="cinematic-rank"></span><span class="cinematic-new">NEW!</span>';
+      face.innerHTML = '<span class="cinematic-portrait cinematic-model"><canvas aria-hidden="true"></canvas><i class="cinematic-sparks" aria-hidden="true"></i></span><span class="cinematic-element"></span><strong class="cinematic-name"></strong><span class="cinematic-stars"></span><span class="cinematic-stats"></span><span class="cinematic-rank"></span><span class="cinematic-new">NEW!</span><span class="cinematic-pity" hidden>Pity Guarantee!</span>';
       card.append(seal, face);
     }
     const face = card.querySelector('.cinematic-face');
@@ -181,6 +181,9 @@
     face.querySelector('.cinematic-stats').textContent = 'Lv. ' + number(hero.lv) + ' · Power ' + number(hero.pw) + ' · Stamina ' + number(hero.st);
     face.querySelector('.cinematic-rank').textContent = rankName(hero);
     const badge = face.querySelector('.cinematic-new'); badge.hidden = !(newModels || newModelFlags())[index];
+    // A Legend guaranteed by the Summoning Shrine's hard pity (shrine-pity) carries a small tag; natural Legends do not.
+    // Only in a Summoning Shrine reveal: a hero that later reaches someone else (e.g. through the Market) never shows it.
+    const pityTag = face.querySelector('.cinematic-pity'); if (pityTag) pityTag.hidden = !(item.revealed && hero.shrinePity === 'guaranteed' && S.v2.revealSource === 'summon');
     badge.title = 'First ' + model.label + ' in your current collection';
     if (item.revealed && opening?.item === item) {
       card.classList.remove('is-opening');

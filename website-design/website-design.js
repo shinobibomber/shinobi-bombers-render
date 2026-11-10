@@ -171,8 +171,8 @@
       heroes.forEach(h => counts[h.rank] = (counts[h.rank] || 0) + 1);
       const qty = p.quote?.params?.quantity || heroes.length || '—', when = Number(p.created) ? new Date(Number(p.created)).toLocaleString() : '';
       const state = p.status === 'confirmed' ? '' : p.status === 'refunded' ? 'Refunded · Ryo returned' : 'Settling…';
-      const chips = heroes.map((h, j) => `<div class="sbw-sh-hero${owned.has(h.tokenId) ? '' : ' gone'}" style="--rc:${RCOL[h.rank] || RCOL[0]}"><canvas data-b="${i}" data-h="${j}"></canvas><b>${esc(h.name)}</b><small>${esc(RNAME[h.rank] || '')}${owned.has(h.tokenId) ? '' : ' · no longer in collection'}</small><em title="Power · Speed · Stamina">PWR ${stat(h.baseStats?.pw)} · SPD ${stat(h.baseStats?.sp)} · STA ${stat(h.baseStats?.st)}</em></div>`).join('');
-      return `<section class="sbw-sh-batch"><header><b>×${esc(qty)} summon</b><span>${esc(when)}</span><span>${esc(fmt(Number(p.amount)))} Ryo</span>${state ? `<em>${esc(state)}</em>` : ''}</header>${chips ? `<div class="sbw-sh-grid">${chips}</div>` : ''}</section>`;
+      const chips = heroes.map((h, j) => `<div class="sbw-sh-hero${owned.has(h.tokenId) ? '' : ' gone'}" style="--rc:${RCOL[h.rank] || RCOL[0]}"><canvas data-b="${i}" data-h="${j}"></canvas><b>${esc(h.name)}</b><small>${esc(RNAME[h.rank] || '')}${h.shrinePity === 'guaranteed' ? ' · Pity guarantee' : ''}${owned.has(h.tokenId) ? '' : ' · no longer in collection'}</small><em title="Power · Speed · Stamina">PWR ${stat(h.baseStats?.pw)} · SPD ${stat(h.baseStats?.sp)} · STA ${stat(h.baseStats?.st)}</em></div>`).join('');
+      return `<section class="sbw-sh-batch"><header><b>×${esc(qty)} summon</b><span>${esc(when)}</span><span>${esc(fmt(Number(p.amount)))} Ryo</span>${p.status === 'confirmed' && p.result?.pity ? `<span>Legend pity after: ${esc(p.result.pity.after)} / 150</span>` : ''}${state ? `<em>${esc(state)}</em>` : ''}</header>${chips ? `<div class="sbw-sh-grid">${chips}</div>` : ''}</section>`;
     });
     const total = counts.reduce((a, n) => a + n, 0);
     dlg.className = 'sbw-dialog sbw-history'; dlg.onclick = null;
@@ -373,6 +373,8 @@
       return { quantity, card, price: footer.querySelector('strong') };
     });
     const fee = cov(b, 1277, 356, 360, 17, '#08091b', 13, '#d4d9e8');
+    b.pity = place(mk('div', 'sbw-pity', b.st), 38, 566, 232, 74); b.pity.setAttribute('role', 'status'); b.pity.hidden = true;
+    b.pity.innerHTML = '<div class="sbw-pity-top"><small>LEGEND PITY</small><b></b></div><i aria-hidden="true"><s></s></i><em></em>';
     fee.classList.add('sbw-summon-fee'); fee.textContent = liveRevenue() ? 'SR revenue: 50 / 30 / 10 / 10 · no burn' : 'Price includes the 2% studio share';
   };
   function summonQty() { const sel = nativeEl('#p2', e => /Combat\.quantity\(\d+\)/.test(e.getAttribute('onclick') || '') && e.classList.contains('selected')); const m = sel && /\((\d+)\)/.exec(sel.getAttribute('onclick')); return m ? +m[1] : 1; }
@@ -390,6 +392,22 @@
     if (b.live.cost) { b.live.cost.hidden = false; setText(b.live.cost, total || '—'); }
     if (b.live.slabel) { b.live.slabel.hidden = false; setText(b.live.slabel, 'SUMMON ' + n); }
     if (b.live.ltimer) { b.live.ltimer.hidden = false; setText(b.live.ltimer, 'Not active'); }
+    // Legend pity (shrine-pity): consecutive paid Shrine summons without a Legend, from the server profile after settlement.
+    if (b.pity) {
+      const st = window.RyoPayments?.state, raw = st?.authenticated && st.profile ? Number(st.profile.shrineLegendPity) : NaN;
+      const pity = Number.isSafeInteger(raw) && raw >= 0 && raw <= 149 ? raw : (st?.authenticated && st.profile ? 0 : null);
+      b.pity.hidden = pity === null;
+      if (b.live.ltimer && pity !== null) b.live.ltimer.hidden = true;   // the pity panel replaces the old rate-up timer text
+      if (pity !== null) {
+        setText($('b', b.pity), pity + ' / 150');
+        $('s', b.pity).style.width = (pity / 150 * 100).toFixed(1) + '%';
+        // Starter Ryo (test server) is spent first when it covers the price and never counts, so name paid summons then.
+        const starter = (Number(st.bonus) || 0) > 0;
+        setText($('em', b.pity), pity >= 149 ? (starter ? 'NEXT PAID SUMMON GUARANTEED LEGEND! Starter Ryo doesn\'t count' : 'NEXT SUMMON GUARANTEED LEGEND!')
+          : (150 - pity) + (starter ? ' paid summons to a guaranteed Legend. Starter Ryo doesn\'t count' : ' summons to a guaranteed Legend'));
+        b.pity.classList.toggle('ready', pity >= 149); b.pity.classList.toggle('starter', starter);
+      }
+    }
   };
   MODS.summon = {
     qty: a => { if (QTY.includes(+a) && window.Combat) Combat.quantity(+a); refresh(); },
@@ -403,8 +421,8 @@
       toast('Summon is busy – try again in a moment.');
     },
     gallery: () => go(1), history: () => summonHistory(),
-    flashRates: () => { const r = $('.hs[data-sbwid="rates"]', built.summon.st); if (r) { r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash'); } toast('Rates: Genin 60% · Chunin 25% · Jonin 10% · Elite 4% · Legend 1%'); },
-    legend: () => notice('Legend rate-up', 'No limited-time rate-up is active. Every summon uses the fixed rates: Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1%.'),
+    flashRates: () => { const r = $('.hs[data-sbwid="rates"]', built.summon.st); if (r) { r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash'); } toast('Rates: Genin 60% · Chunin 25% · Jonin 10% · Elite 4% · Legend 1% · a Legend is guaranteed by your 150th paid summon in a row without one'); },
+    legend: () => notice('Legend pity', 'Every paid summon uses the fixed rates: Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1%. Legend pity: if 149 paid summons in a row bring no Legend, your 150th summon is a guaranteed Legend. Any Legend from the Shrine resets the count. Only Shrine summons paid with Ryo or Chest rewards count; rescues, fusion, passes and rewards never change it.'),
     featured: () => notice('Featured Shinobi', 'Featured heroes are not configured. Every summon uses the fixed rarity rates.'),
     elements: () => go(3)
   };

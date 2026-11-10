@@ -1,5 +1,14 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Summoning Shrine Legend pity
+
+- The Summoning Shrine now has a Legend guarantee: if you go 149 paid summons in a row without a Legend, your **150th summon is a guaranteed Legend**.
+- The Shrine shows your progress as **LEGEND PITY N / 150**, with a bar and how many summons are left. At 149 it reads "NEXT SUMMON GUARANTEED LEGEND!".
+- Any Legend from the Shrine resets the counter to 0, whether it came naturally or from the guarantee. In a ×5, ×10 or ×15 batch every summon counts one by one, and the guarantee lands on the exact summon that reaches 150.
+- Summons paid with your game balance or your Chest rewards count. Free starter Ryo (test server) does not. Heroes from referrals, prison rescues, rewards, fusion or the Market don't change the counter.
+- A guaranteed Legend shows a **Pity Guarantee!** tag in the reveal, and Summon History shows your Legend pity after each summon.
+- Everyone starts at 0. Summon prices and Shrine rates are unchanged, and the guarantee is never a Mythic.
+
 ## November 11, 2026 — Going offline keeps your last kill
 
 - Fixed: when you pressed Go offline while a bomb was still flying, the defeat it caused a moment later could be missed. Every defeat that lands before you go offline is now saved to your Chest.
