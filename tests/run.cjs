@@ -21,6 +21,7 @@ suites.push('login-recovery.cjs');
 suites.push('salvage-restore.cjs');
 suites.push('hero-card-frames.cjs');
 suites.push('founder-reveal.cjs');
+suites.push('referral-typo.cjs');
 suites.push('canonical-host.cjs');
 suites.push('live-economy.cjs','financial-server-2022.cjs');
 suites.push('control-panel.cjs');

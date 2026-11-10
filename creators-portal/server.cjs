@@ -172,6 +172,13 @@ function advanceProof(store, profile, proof, active, report, verified) {
 }
 async function attribute(store, wallet, body) {
   let code = text(body.code, 32).toUpperCase();
+  // A player link is "RP" + 20 hex characters, always 22 long. A pasted link with extra trailing characters (owner report
+  // 2026-11-10: "...AA2AMythic") is the same link with a typo: if its first 22 characters are a real player code, use that code.
+  // The code space is 80 random bits, so the prefix identifies exactly one owner; an unknown prefix still fails as before.
+  if (/^RP[0-9A-F]{20}[A-Z0-9]{1,10}$/.test(code)) {
+    const real = code.slice(0, 22);
+    if ((await query(store.pool, 'SELECT 1 FROM ryo_player_referrers WHERE scope=$1 AND code=$2', [store.scope, real])).length) code = real;
+  }
   if (code.startsWith('RP')) {
     // An approved creator's player link enrolls new players in the Creator Program; every other RP link is unchanged.
     const owner = (await query(store.pool, "SELECT c.code FROM ryo_player_referrers p JOIN ryo_creators c ON c.scope=p.scope AND c.wallet=p.wallet WHERE p.scope=$1 AND p.code=$2 AND c.status='APPROVED'", [store.scope, code]))[0];

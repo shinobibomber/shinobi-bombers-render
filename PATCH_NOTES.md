@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Referral links with a typo still work
+
+- A referral link that was copied with extra characters on the end (for example `...?referral=RP009D06A47C922627AA2AMythic`) is now recognised as the original referral link, so new sign-ups through it count for the right player. Before, such a link was refused and the sign-up was not attributed to anyone.
+- Attribution rules are unchanged: only new players, never yourself, and it can't be changed once set.
+
 ## November 10, 2026 — Reward heroes now get the reveal
 
 - Heroes you receive as rewards now play the Summoning Shrine reveal: referral passes you claim, Creator Shop hero passes you redeem, and your Founder benefits (activating the Founder box and each Limited Summon Pass). The reward window closes, you reveal your new shinobi, and the Heroes screen opens with them at the top.
