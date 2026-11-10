@@ -80,6 +80,15 @@ const clientPatches = [
    'sdk.createAssociatedTokenAccountIdempotentInstruction(owner,destination,treasury,mint,tokenProgram),...(feeFree?[]:[sdk.createAssociatedTokenAccountIdempotentInstruction(owner,studioAta,studio,mint)]),sdk.createTransferCheckedInstruction(source,mint,destination,owner,BigInt(net)*UNIT,DECIMALS,[],tokenProgram),...(feeFree?[]:[sdk.createTransferCheckedInstruction(source,mint,studioAta,owner,BigInt(studioFee)*UNIT,DECIMALS)]),', 1],
   ["notify('Deposit finalized: '+(amount-Math.ceil(amount/50)).toLocaleString()+' Ryo credited after the 2% studio fee.')",
    "notify(result.record?.studioFee===0?'Deposit finalized: '+amount.toLocaleString()+' Ryo credited (no deposit fee).':'Deposit finalized: '+(amount-Math.ceil(amount/50)).toLocaleString()+' Ryo credited after the 2% studio fee.')", 1],
+  // Sign-in never hangs (owner report 2026-11-10: a phone stuck on "Recovering pending transactions…"). The browser's own
+  // Solana checks (pending deposits, wallet balance) have no time limit; after 15 s the refresh goes on to the server state
+  // (itself limited to 20 s) and the check keeps running in the background. A deposit it finds later is still sent to the
+  // server, which credits a signature only once, and the balance is refreshed when it finishes, but only through run() and
+  // only when no other Ryo operation is in progress, so it can never overwrite fresher purchase/withdrawal state. An error
+  // raised before the 15 s is reported exactly as before; a later one is ignored here (the pending record stays and is
+  // recovered on the next refresh).
+  ['await recoverDeposits();const data=await refreshInternal()',
+   "{const rd=recoverDeposits();rd.catch(()=>{});let t;const slow=await Promise.race([rd.then(()=>false),new Promise(r=>{t=setTimeout(()=>r(true),15000)})]).finally(()=>clearTimeout(t));if(slow){notify('Still checking pending deposits in the background. Nothing is lost; your balance updates when it finishes.');rd.then(()=>busy?0:run(refreshInternal)).catch(()=>{})}}const data=await refreshInternal()", 1],
   // SR token program: verifyMint reads the mint account's owner on-chain and accepts only classic SPL Token or Token-2022
   // (anything else fails in getMint); the balance account and the deposit then use that program. A classic mint behaves
   // exactly as before (tokenProgram undefined -> the library default). The server verifies the registered program anyway.

@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Sign-in no longer gets stuck
+
+- Signing in could stay on "Recovering pending transactions and refreshing your Ryo balance…" for minutes, mostly in phone wallet browsers. The game now opens within about 15 seconds even when the Solana network is slow, and finishes checking pending deposits in the background.
+- Nothing is lost: a deposit found during that background check is still credited once, and your balance updates as soon as the check finishes.
+
 ## November 10, 2026 — Founder discount fixed
 
 - Founder's box buyers now always get their discount on summons and other Ryo services: 10% for Mythic Founders and 5% for Legacy Founders, from your very first purchase. Previously, a Founder who bought the box before playing could be charged the full price until the game had reloaded their account.

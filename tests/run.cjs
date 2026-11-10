@@ -17,6 +17,7 @@ suites.push('mythic-expressions.cjs');
 suites.push('combat-rules.cjs','combat-identity.cjs','combat-native.cjs','combat-adventure.cjs','combat-hunt.cjs');
 suites.push('hero-upgrades-server.cjs','hero-upgrades-ui.cjs');
 suites.push('founders-server.cjs','founders-prelaunch.cjs','founders-pricing-ui.cjs','founder-discount.cjs');
+suites.push('login-recovery.cjs');
 suites.push('canonical-host.cjs');
 suites.push('live-economy.cjs','financial-server-2022.cjs');
 suites.push('control-panel.cjs');
