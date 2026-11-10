@@ -1121,5 +1121,28 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-pity.ready{border-color:#ff8a3d;box-shadow:0 0 16px #ff8a3daa}
 #sbwLayer .sbw-pity.ready em{color:#ffb35c;font-weight:900}
 #sbwLayer .sbw-pity.starter{gap:3px;padding-block:4px}
+/* Fusion Shards panel (Fusion screen, over the artwork's next-rank note box) */
+#sbwLayer .sbw-fshards{position:absolute;z-index:8;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:5px 10px;border:1px solid #c58bff;border-radius:8px;background:linear-gradient(180deg,#1c0a36,#0b0816);box-shadow:0 0 12px #b56cff44;color:#efe4ff;font:700 13px/1.2 Rajdhani,sans-serif}
+#sbwLayer .sbw-fshards[hidden]{display:none}
+#sbwLayer .sbw-fs-row{display:flex;align-items:center;gap:8px;min-width:0}
+#sbwLayer .sbw-fshards small{font:900 12px Rajdhani,sans-serif;letter-spacing:.12em;color:#d7b4ff}
+#sbwLayer .sbw-fs-rate{min-width:86px;font:900 17px Rajdhani,sans-serif;color:#fff;white-space:nowrap}
+#sbwLayer .sbw-fshards i{flex:1;min-width:40px;height:8px;border-radius:5px;background:#2a2033;overflow:hidden}
+#sbwLayer .sbw-fshards s{display:block;height:100%;background:linear-gradient(90deg,#b56cff,#ffcf63);text-decoration:none}
+#sbwLayer .sbw-fs-step{display:flex;align-items:center;gap:4px}
+#sbwLayer .sbw-fs-step em{min-width:38px;font-style:normal;text-align:center;color:#fff}
+#sbwLayer .sbw-fshards button{min-width:26px;height:24px;padding:0 8px;border:1px solid #ffcf63;border-radius:6px;background:#1a1226;color:#ffe9a8;font:900 13px Rajdhani,sans-serif;cursor:pointer;pointer-events:auto}
+#sbwLayer .sbw-fshards button:disabled{opacity:.4;cursor:default}
+#sbwLayer .sbw-fshards .sbw-fs-fill,#sbwLayer .sbw-fshards .sbw-fs-craft{background:linear-gradient(#fcc126,#f7a51a 55%,#fb8f0b);color:#2a1000}
+#sbwLayer .sbw-fs-bal{white-space:nowrap;color:#e8d9ff}
+#sbwLayer .sbw-fs-note{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:#ffe9a8}
+#sbwLayer .sbw-fshards.full{border-color:#7dff9b;box-shadow:0 0 14px #7dff9b66}
+#sbwLayer .sbw-fshards.full .sbw-fs-note{color:#7dff9b;font-weight:900}
+#sbwLayer .sbw-fshards.short .sbw-fs-note{color:#ff9d7a}
+#sbwLayer .sbw-fshards.sbw-mflow{gap:8px;padding:10px 12px;font-size:14px}
+#sbwLayer .sbw-fshards.sbw-mflow .sbw-fs-row{flex-wrap:wrap;row-gap:8px}
+#sbwLayer .sbw-fshards.sbw-mflow i{order:9;flex:1 1 100%;height:10px}
+#sbwLayer .sbw-fshards.sbw-mflow button{min-width:36px;height:34px;font-size:14px}
+#sbwLayer .sbw-fshards.sbw-mflow .sbw-fs-note{text-align:left;white-space:normal}
 #sbwLayer .sbw-pity.starter em{white-space:normal;font-size:9.5px;line-height:1.15}
 #sbwLayer .sbw-pity[hidden]{display:none}

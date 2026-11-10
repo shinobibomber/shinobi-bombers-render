@@ -455,6 +455,18 @@
     b.rarity = cover(936, 760, 60, 21, '#020d1e', 17, '#ffffff', 'sbw-left');
     b.jutsu = cover(1345, 760, 60, 21, '#030e1f', 17, '#ffffff', 'sbw-left');
     b.note = cover(918, 835, 522, 17, 'linear-gradient(90deg,#1b073b,#1d0536 40%,#240846 75%,#1c063b)', 13, '#e3d8f7', 'sbw-left'); b.note.style.fontWeight = '500';
+    // Fusion Shards (fusion-shards.js): success boost and crafting, over the artwork's next-rank note box (signed in only).
+    b.fshards = place(mk('div', 'sbw-fshards', b.st), 873, 797, 608, 68); b.fshards.hidden = true; b.fshards.setAttribute('aria-label', 'Fusion Shards');
+    b.fshards.innerHTML = '<div class="sbw-fs-row"><small>SUCCESS</small><b class="sbw-fs-rate"></b><i aria-hidden="true"><s></s></i>'
+      + '<span class="sbw-fs-step"><button type="button" data-fs="-" aria-label="One Fusion Shard less per attempt">−</button><em title="Fusion Shards per attempt"></em><button type="button" data-fs="+" aria-label="One Fusion Shard more per attempt">+</button></span>'
+      + '<button type="button" class="sbw-fs-fill" data-fs="fill">FILL 100%</button></div>'
+      + '<div class="sbw-fs-row"><span class="sbw-fs-bal"></span><span class="sbw-fs-note" role="status"></span><button type="button" class="sbw-fs-craft" data-fs="craft">CRAFT</button></div>';
+    b.fshards.onclick = e => {
+      const a = e.target.closest('[data-fs]')?.dataset.fs, F = window.FusionShards; if (!a || !F) return;
+      const r = fusionRank();
+      if (a === '+') F.set(r, F.perAttempt() + 1); else if (a === '-') F.set(r, F.perAttempt() - 1); else if (a === 'fill') F.fill(r); else if (a === 'craft') F.openCraft();
+      refresh();
+    };
   };
   PAINT.fusion = (b, now) => {
     const rank = fusionRank(), rows = fusionRows();
@@ -471,6 +483,20 @@
     setText(b.lineTop, `Combine the weakest ${RNAME[rank]} heroes · 3 → 1 each · ${rank === 3 ? 'Lv 5 Elites only' : 'Reserve heroes only'} · ${success}`);
     setText(b.lineFoot, nativeText('#p6', /Up to \d+ attempts[^\n]*/) || 'Failed attempts consume heroes and charge the fee');
     setText(b.note, `The resulting hero will be a ${RNAME[rank + 1]} with improved base stats and a guaranteed rank jutsu.`);
+    if (b.fshards) {
+      const F = window.FusionShards, on = !!(F && ledger().authenticated);
+      b.fshards.hidden = !on; b.note.hidden = on;   // the panel replaces the artwork's next-rank note while signed in
+      if (on) {
+        const pl = F.plan(rank, 1), full = pl.per > 0 && pl.final >= 100;
+        setText($('.sbw-fs-rate', b.fshards), pl.per ? pl.base + '% → ' + pl.final + '%' : pl.base + '%');
+        $('s', b.fshards).style.width = pl.final + '%';
+        setText($('em', b.fshards), pl.per + ' / ' + pl.needed);
+        setText($('.sbw-fs-bal', b.fshards), '◆ ' + F.balance().toLocaleString('en-US') + ' Fusion · ' + F.upgrade().toLocaleString('en-US') + ' Upgrade Shards');
+        setText($('.sbw-fs-note', b.fshards), pl.short ? 'Need ' + pl.short + ' more Fusion Shard' + (pl.short === 1 ? '' : 's') : full ? '100% GUARANTEED SUCCESS' : pl.per ? '+' + (pl.final - pl.base) + '% · ' + pl.per + ' per attempt' : '+5% per Fusion Shard');
+        b.fshards.classList.toggle('full', full && !pl.short); b.fshards.classList.toggle('short', pl.short > 0);
+        $('[data-fs="-"]', b.fshards).disabled = pl.per < 1; $('[data-fs="+"]', b.fshards).disabled = pl.per >= pl.needed; $('[data-fs="fill"]', b.fshards).disabled = pl.per >= pl.needed;
+      }
+    }
     setText(b.rarity, RNAME[rank + 1]); b.rarity.style.color = RCOL[rank + 1];
     setText(b.jutsu, (nativeText('#p6', /JUTSU\s*\n\s*\d+/).match(/\d+$/) || ['—'])[0]);
     for (let i = 0; i < 4; i++) for (const id of ['r' + (i + 1), 'et' + (i + 1)]) { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.classList.toggle('on2', i === rank); }
@@ -1497,7 +1523,7 @@
     summon: [[1252, 118, 1652, 372], [318, 568, 540, 755, { half: 1 }], [552, 568, 768, 755, { half: 1 }], [778, 568, 1000, 755, { half: 1 }], [1010, 568, 1232, 755, { half: 1 }],
       [300, 100, 1245, 560, { fit: 1 }], [1252, 378, 1652, 605], [1252, 612, 1652, 752], [15, 128, 285, 450], [28, 462, 280, 705, { half: 1 }], [28, 715, 280, 875, { half: 1 }]],
     fusion: [[20, 115, 640, 225, { fit: 1 }], [40, 238, 815, 352, { pan: 0.75 }], [42, 358, 815, 540, { pan: 0.75 }], [40, 548, 815, 972, { pan: 0.75 }], [845, 222, 1510, 632],
-      [860, 640, 1500, 870], [860, 874, 1500, 972]],
+      [860, 640, 1500, 795], { flow: '.sbw-fshards' }, [860, 874, 1500, 972]],
     dojo: [[70, 118, 820, 350, { fit: 1 }], [72, 365, 785, 1012], [800, 365, 1508, 1012]],
     'dojo-upg': [[55, 98, 440, 142, { fit: 1 }], [45, 132, 584, 860], [596, 130, 1632, 852, { pan: 0.65 }]],
     'dojo-sen': [[56, 96, 330, 144], [826, 140, 1604, 372, { fit: 1 }], { parts: [[858, 374, 1120, 420], [1306, 374, 1584, 420]] }, [858, 420, 1592, 452, { fit: 1 }],

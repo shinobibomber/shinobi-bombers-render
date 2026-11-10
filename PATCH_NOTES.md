@@ -1,5 +1,14 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Fusion Shards
+
+- New in the Fusion tab: **Fusion Shards**. Craft them from your Upgrade Shards: **2 Upgrade Shards = 1 Fusion Shard**. Use Craft 1, Craft Max (an odd shard stays) or pick an amount. Crafting asks you to confirm first, because it's permanent.
+- Each Fusion Shard adds **+5% success** to every fusion attempt, up to a **guaranteed 100%**. Base rates are unchanged: Genin→Chunin 90%, Chunin→Jonin 80%, Jonin→Elite 70%, Elite→Legend 60%. That's 2, 4, 6 or 8 shards for a sure fusion.
+- The Fusion screen shows your success rate, the shards you've chosen per attempt (− / +), **Fill 100%**, and your Fusion and Upgrade Shard balances.
+- Batch fusions use the same number per attempt. If you don't have enough for every attempt, the checkout uses what you have and tells you before you pay.
+- Fusion Shards are used when the fusion settles, whether it succeeds or fails. If the purchase fails, nothing is used. Fusion prices, discounts and Chest payment work as before.
+- Fusion Shards are game items tied to your account. They can't be traded or withdrawn.
+
 ## November 11, 2026 — Creator wallet migration removed
 
 - The Creators Portal no longer offers creator wallet migration (moving your Creator ID, Creator Points and referrals to a different wallet). The request form and the Accept wallet migration button are gone.
