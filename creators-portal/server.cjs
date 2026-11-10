@@ -247,7 +247,9 @@ async function settledPurchase(store, c, row) {
     await qualify(store, c, r);
   }
   // The order crossing qualification (including all its initial mints) earns no extra commission.
-  if (wasQualified && number(row.created) > number(r.qualified) && settledAt < number(r.expires) && r.rules?.purchaseProducts?.includes(row.product))
+  // Chest-funded orders (chest-spending.cjs) earn no purchase commission: the creator already earns the Adventure commission
+  // on that SR (chestCommission), so the same SR never earns CP twice (owner decision 2026-11-11). Paid mints still count.
+  if (row.quote?.funding !== 'chest' && wasQualified && number(row.created) > number(r.qualified) && settledAt < number(r.expires) && r.rules?.purchaseProducts?.includes(row.product))
     await commission(store, c, r, eventId, 'purchase', BigInt(row.amount) * UNIT);
 }
 // Commission rates (owner decision 2026-11-10): 5% normally, 10% on a referral who bought a Founder box (a CONFIRMED purchase in
@@ -339,6 +341,13 @@ async function topUpFounderCommissions(store, c, { creatorId = null, wallet = nu
   return total;
 }
 
+/** Adventure commission for eligible Chest SR spent directly on a game service (chest-spending.cjs), exactly once per spend,
+ *  the same commission a claim of that SR would have paid (5%, or 10% for a Founder-box referral). */
+async function chestCommission(store, c, wallet, source, eligibleMilli) {
+  const r = await referral(store, c, wallet); if (!r?.qualified || !(BigInt(eligibleMilli) > 0n)) return;
+  if (!await recordEvent(store, c, 'chest-settlement:' + source, wallet, 'chest-settlement', { eligibleMilli: String(eligibleMilli) })) return;
+  await commission(store, c, r, source, 'adventure', BigInt(eligibleMilli));
+}
 // Qualification observes settled server-validated Adventure defeats. It cannot execute attacks,
 // consume chakra, accept client stage claims or create a second reward simulation.
 async function beginAdventure(store, c, wallet, profile, old, active, report) {
@@ -587,4 +596,4 @@ async function handle(ctx, wallet, action, body = {}) {
   if (action === 'creator-appeal') { const message = text(body.message, 1000); return store.transaction(async c => { await store.locked(c, wallet); const r = await referral(store, c, wallet); const creator = !r && await creatorByWallet(store, c, wallet, true); if (!r && !creator) fail('No creator application or referral attribution found.', 404); if (r?.appeal || creator?.application?.appeal) fail('An appeal is already recorded. An administrator will review it.', 409); if (r) await c.query('UPDATE ryo_creator_referrals SET appeal=$3 WHERE scope=$1 AND wallet=$2', [store.scope, wallet, message]); else await c.query('UPDATE ryo_creators SET application=$3 WHERE scope=$1 AND id=$2', [store.scope, creator.id, JSON.stringify({ ...creator.application, appeal: { message, at: store.now() } })]); await audit(store, c, wallet, 'review.appeal', creator?.id || privateId(wallet), 'Player submitted an appeal', { message }); return { ok: true }; }); }
   fail('Unknown Creators Portal action.', 404);
 }
-module.exports = { convertPlayerReferrals, syncApprovedCreators, program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole, COMMISSION_PERCENT, FOUNDER_COMMISSION_PERCENT, TOPUP_KIND, founderBuyer, topUpFounderCommissions, creatorDiscountBps, applyCreatorDiscount, creatorDiscount, CREATOR_DISCOUNTED };
+module.exports = { convertPlayerReferrals, syncApprovedCreators, program, audit, assertNewPlayer, paidSummonQuantity, advanceProof, MARKER, DEFAULTS, UNIT, ITEMS, enabled, handle, initialize, publicInfo, application, attribute, settledPurchase, beginAdventure, endAdventure, summary, redeem, adminAction, adminSnapshot, migrate, ledger, recordEvent, qualify, privateId, adminRole, COMMISSION_PERCENT, FOUNDER_COMMISSION_PERCENT, TOPUP_KIND, founderBuyer, topUpFounderCommissions, chestCommission, creatorDiscountBps, applyCreatorDiscount, creatorDiscount, CREATOR_DISCOUNTED };

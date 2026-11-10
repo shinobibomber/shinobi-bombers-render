@@ -135,6 +135,9 @@ No endpoint transfers CP, withdraws it, swaps it or converts it into Ryo/SOL/USD
   opts.staff: the new-player rule and the enrollment pause are skipped; permanence (an existing referrer is never changed), self,
   cycles, creator identities and the enrollment limit still apply. Each link is in the admin audit (admin.attribute-referral).
   The section lists recent registered sign-ups without a referrer (filtered by the admin search box).
+- Chest-funded purchases (chest-spending, owner decision 2026-11-11): a referral paying a game service directly with unclaimed
+  Chest SR earns the creator the Adventure commission on the eligible SR spent (as a claim would, once, at settlement) and NO
+  purchase commission on that order (no double CP on the same SR). Paid mints still count toward qualification.
 - Creator discount (owner decision 2026-11-10): an APPROVED creator pays 5% less for their own Summon, Fusion, Dojo, Sensei and
   Training, or 10% once any of their referrals (creator or player link) has a CONFIRMED Founder box. It is applied after the
   Founder discount or the Mythic Box 10% (those two never stack with each other), one after the other. Store.profileLocked

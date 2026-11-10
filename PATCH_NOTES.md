@@ -1,5 +1,14 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Spend your Chest rewards right away
+
+- You can now pay for Summon, Fusion, Dojo upgrades and Training directly with your verified, unclaimed Chest rewards. No need to wait for your next claim.
+- At checkout, choose **Pay using: Chest rewards** or **Game balance**. You'll see how much of your Chest you can use now and what's left after the purchase.
+- Spending from your Chest does not use or reset your 24-hour claim timer, and there's no withdrawal fee on purchases. When your claim is ready, you claim whatever is left.
+- Same prices and discounts as always (Mythic Box, Founder and creator discounts included). You're only charged when the purchase settles; if it fails, your Chest rewards are returned.
+- Not available for Sensei (SOL), Boss Hunt entry or the Market.
+- Claiming and withdrawing work as before: claim every 24 hours, withdraw any time (5% to the Locked Treasury).
+
 ## November 10, 2026 — Referral links and Founder boxes
 
 - Referral and creator links are for new players. From now on, buying a Founder box counts as your first order, so a referral link can no longer be added to your account after you buy one.

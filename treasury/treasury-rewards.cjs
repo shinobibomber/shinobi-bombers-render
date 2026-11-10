@@ -79,9 +79,26 @@ async function claimLimit(store, c, wallet) {
   if (last !== null && now < last + cooldown) fail('Chest rewards can be claimed once every ' + cooldown / 3600000 + ' hours. Next claim: ' + new Date(last + cooldown).toISOString() + '. Your earnings stay in your Chest.', 429);
   const budget = await rewardBudget(store, c);
   if (!budget) fail('Chest claims await an approved reward budget. Your earnings stay in your Chest.', 503);
-  const used = Number((await c.query('SELECT COALESCE(SUM(amount),0) AS n FROM ryo_reward_claims WHERE scope=$1 AND created>$2', [store.scope, now - DAY])).rows[0].n);
-  const remaining = budget.dailyCapRyo - used;
+  const remaining = budget.dailyCapRyo - await budgetUsed(store, c, now);
   if (remaining < 1) fail("Today's approved Chest reward budget has been fully claimed. Your earnings stay in your Chest; try again later.", 409);
+  return Math.min(budget.perClaimMaxRyo, remaining);
+}
+/** Global rolling-24 h use of the approved reward budget: chest claims plus SR spent directly from chests on game services
+ * (owner decision 2026-11-11: chest spending shares the daily budget, never the per-player claim timer). */
+async function budgetUsed(store, c, now) {
+  let used = Number((await c.query('SELECT COALESCE(SUM(amount),0) AS n FROM ryo_reward_claims WHERE scope=$1 AND created>$2', [store.scope, now - DAY])).rows[0].n);
+  if ((await c.query("SELECT to_regclass('ryo_chest_spends') IS NOT NULL AS t")).rows[0].t)
+    used += Number((await c.query("SELECT COALESCE(SUM(amount),0) AS n FROM ryo_chest_spends WHERE scope=$1 AND status IN ('pending','confirmed') AND created>$2", [store.scope, now - DAY])).rows[0].n);
+  return used;
+}
+/** Maximum whole SR one chest-funded purchase may use (Infinity on beta): the approved daily budget and per-claim maximum,
+ * without the per-player claim timer. Throws when no budget is approved or today's budget is used up. */
+async function chestLimit(store, c) {
+  if (!live()) return Infinity;
+  const budget = await rewardBudget(store, c);
+  if (!budget) fail('Chest rewards await an approved reward budget. Your earnings stay in your Chest.', 503);
+  const remaining = budget.dailyCapRyo - await budgetUsed(store, c, store.now());
+  if (remaining < 1) fail("Today's approved Chest reward budget is used up. Your earnings stay in your Chest; try again later.", 409);
   return Math.min(budget.perClaimMaxRyo, remaining);
 }
 /** Live only: when this wallet may claim next (0 = now). null on beta (field omitted). */
@@ -141,7 +158,7 @@ async function claimFunding({ store, connection, mint, treasuryAddress, checkNet
       const ata = spl.getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(treasuryAddress), false, require('./live-economy.cjs').programId());
       custody = Number((await connection.getTokenAccountBalance(ata, 'finalized')).value.amount) / Number(UNIT);
     } catch { custody = null; }
-    const budget = await rewardBudget(store, c), used = Number((await c.query('SELECT COALESCE(SUM(amount),0) AS n FROM ryo_reward_claims WHERE scope=$1 AND created>$2', [store.scope, store.now() - DAY])).rows[0].n);
+    const budget = await rewardBudget(store, c), used = await budgetUsed(store, c, store.now());   // claims + chest spends
     const paused = !!(await c.query('SELECT pauses FROM ryo_admin_control WHERE scope=$1', [store.scope])).rows[0]?.pauses?.claims;
     const gate = require('./launch-gates.cjs').isOn('rewardClaims'), custodyFree = custody === null ? null : Math.max(0, Math.floor(custody - liabilities));
     const value = { applicable: true, status: custody === null ? 'unverified' : 'verified', observedAt: store.now(), commitment: 'finalized',
@@ -163,10 +180,10 @@ async function summary(store, c = store.pool) {
   const fees = (await c.query('SELECT COUNT(*) AS n,COALESCE(SUM(fee_raw),0) AS fee,COALESCE(SUM(gross_raw),0) AS gross FROM ryo_withdrawal_treasury_fees WHERE scope=$1', [store.scope])).rows[0];
   const recent = (await c.query('SELECT wallet,request_id,signature,gross_raw,fee_raw,net_raw,destination,created FROM ryo_withdrawal_treasury_fees WHERE scope=$1 ORDER BY created DESC LIMIT 50', [store.scope])).rows;
   const now = store.now(), budget = await rewardBudget(store, c);
-  const used = Number((await c.query('SELECT COALESCE(SUM(amount),0) AS n FROM ryo_reward_claims WHERE scope=$1 AND created>$2', [store.scope, now - DAY])).rows[0].n);
+  const used = await budgetUsed(store, c, now);   // claims + chest spends (shared daily budget)
   return { applicable: true, withdrawalDeduction: { bps: registry().withdrawalTreasuryFeeBps, destination: registry().addresses.lockedTreasury, count: Number(fees.n), feeRaw: String(fees.fee), grossRaw: String(fees.gross), recent: recent.map(r => ({ ...r, gross_raw: String(r.gross_raw), fee_raw: String(r.fee_raw), net_raw: String(r.net_raw), created: Number(r.created) })),
     note: 'Separate ledger. Not Chapter 04 service revenue and never split 50/30/10/10.' },
     rewardBudget: { configured: !!budget, ...(budget || {}), claimedLast24h: used, remainingLast24h: budget ? Math.max(0, budget.dailyCapRyo - used) : 0, claimCooldownHours: 24 } };
 }
 
-module.exports = { UNIT, DAY, CLAIM_COOLDOWN_MS, live, claimFunding, claimFundingNotConfigured, withdrawalPlan, withdrawalsAnytime, withdrawalColumns, withdrawalSettled, validateBudget, rewardBudget, claimLimit, claimCooldownFor, nextClaimAt, claimInfo, publicConfig, assertCustody, summary };
+module.exports = { UNIT, DAY, CLAIM_COOLDOWN_MS, live, claimFunding, claimFundingNotConfigured, withdrawalPlan, withdrawalsAnytime, withdrawalColumns, withdrawalSettled, validateBudget, rewardBudget, claimLimit, chestLimit, budgetUsed, claimCooldownFor, nextClaimAt, claimInfo, publicConfig, assertCustody, summary };

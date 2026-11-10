@@ -26,6 +26,7 @@ const CATALOG = Object.freeze({
   srDeposits:         { env: 'SOL_DEPOSITS_ENABLED', group: 'money', label: 'SR deposits', default: 'money' },
   bossHunt:           { env: 'BOSS_HUNT_ENABLED', group: 'money', label: 'Boss Hunt entry', default: 'money' },
   rewardClaims:       { env: 'REWARD_CLAIMS_ENABLED', group: 'money', label: 'Chest reward claims', default: 'money' },
+  chestSpending:      { env: 'CHEST_SPENDING_ENABLED', group: 'money', label: 'Spend unclaimed Chest rewards in shops', default: 'money' },
   withdrawals:        { env: 'SOL_WITHDRAWALS_ENABLED', group: 'money', label: 'SR withdrawals', default: 'money' },
   market:             { env: 'MARKETPLACE_ENABLED', group: 'money', label: 'Market', default: 'money' },
   foundersPublicSale: { env: 'FOUNDERS_PUBLIC_SALE_ENABLED', group: 'founders', label: "Founder's box public sale", default: 'off' },
