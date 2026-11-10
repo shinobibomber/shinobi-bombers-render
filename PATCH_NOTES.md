@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — New rank frames for hero cards
+
+- Every hero card in the Adventure team panel and in the Heroes Collection now has a frame that matches its rank: Genin silver with a shuriken, Chunin green with leaves, Jonin blue with a water crescent, Elite purple with a tomoe crest and blossoms, Legend gold with a star and diamonds, and Mythic violet and gold with a tomoe crest and wings.
+- The frames glow and their ornaments gently move on deployed heroes in Adventure and on Heroes Collection cards. They follow your display settings: Low quality keeps them still, Off removes the glow, and Reduce motion shows them still. They use only lightweight animations, so Adventure keeps its frame rate.
+- Hero buttons, names and chakra numbers work exactly as before.
+
 ## November 10, 2026 — Sign-in no longer gets stuck
 
 - Signing in could stay on "Recovering pending transactions and refreshing your Ryo balance…" for minutes, mostly in phone wallet browsers. The game now opens within about 15 seconds even when the Solana network is slow, and finishes checking pending deposits in the background.

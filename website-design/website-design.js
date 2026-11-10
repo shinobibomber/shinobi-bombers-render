@@ -15,6 +15,35 @@
   let preview = null; /* Guild/Chat preview screens (no game page) */
   let dojoView = 'dojo'; /* Dojo pages: 'dojo' (Services, landing), 'dojo-upg' (Enter Dojo), 'dojo-sen' (Manage Sensei) */
   const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a', '#c98bff'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'];
+  /* Rank card frames (owner request 2026-11-10): every hero card on the Adventure team panel and in the Heroes Collection gets a
+   * rank-themed frame: Genin shuriken, Chunin leaves, Jonin water crescent, Elite tomoe + blossoms, Legend star + diamond,
+   * Mythic tomoe crest + wings. Drawn in code: one hidden SVG sprite (below) holds the ornament shapes, each card carries one
+   * decorative, pointer-transparent `.sbw-frame` layer. The CSS animates only transform/opacity (compositor), and only for
+   * deployed Adventure cards and the Heroes cards on screen. */
+  const ORN_SHAPES = {
+    shuriken: '<path fill-rule="evenodd" d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6zM12 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4z"/>',
+    leaf: '<path d="M3 21C3 9 11 3 21 3c0 10-6 18-18 18zM4 20C9 14 13 10 18 6" fill-rule="evenodd"/><path d="M4.5 19.5C9 14 13 10 17.5 6.5" stroke="#06041a" stroke-width="1.2" fill="none" opacity=".55"/>',
+    swirl: '<path d="M12 2.5a9.5 9.5 0 1 0 9.5 9.5 7.2 7.2 0 0 1-9.5-9.5zM12 8.2a3.8 3.8 0 1 0 3.8 3.8A3 3 0 0 1 12 8.2z" fill-rule="evenodd"/>',
+    tomoe: '<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.3"/><circle cx="12" cy="5.2" r="2.5"/><circle cx="18" cy="15.6" r="2.5"/><circle cx="6" cy="15.6" r="2.5"/>',
+    flower: '<circle cx="12" cy="6.6" r="3.6"/><circle cx="17.1" cy="10.4" r="3.6"/><circle cx="15.1" cy="16.4" r="3.6"/><circle cx="8.9" cy="16.4" r="3.6"/><circle cx="6.9" cy="10.4" r="3.6"/><circle cx="12" cy="12" r="2" fill="#fff" opacity=".85"/>',
+    star: '<path d="M12 0l2.1 9.9L24 12l-9.9 2.1L12 24l-2.1-9.9L0 12l9.9-2.1z"/>',
+    diamond: '<path d="M12 1.5l8.5 10.5L12 22.5 3.5 12z"/><path d="M12 6l4.6 6L12 18 7.4 12z" fill="#06041a" opacity=".45"/>',
+    wing: '<path d="M1 22C1 10 7 3 23 1c-4 4-4.6 6-6.4 8.2 1.6.2 3.4 0 5.4-1.4-3.6 4.2-5.6 5.6-8.4 6.4 1.8.8 3.6.8 5.8.2-3.6 4.6-8.8 7.6-17.4 7.6z"/>',
+  };
+  const ORN_SPRITE = '<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>' + Object.entries(ORN_SHAPES).map(([k, v]) => `<symbol id="sbw-o-${k}" viewBox="0 0 24 24" fill="currentColor">${v}</symbol>`).join('') + '</defs></svg>';
+  // Ornaments per rank: [position, shape, heroes-only]. t top, b bottom, l / r sides, bl / br bottom corners.
+  const ORN_SET = [
+    [['t', 'shuriken'], ['b', 'shuriken', 1]],
+    [['t', 'leaf'], ['br', 'leaf', 1], ['bl', 'leaf', 1]],
+    [['t', 'swirl'], ['b', 'swirl', 1]],
+    [['t', 'tomoe'], ['l', 'flower'], ['r', 'flower'], ['b', 'tomoe', 1]],
+    [['t', 'star'], ['b', 'diamond', 1]],
+    [['t', 'tomoe'], ['l', 'wing'], ['r', 'wing'], ['b', 'diamond', 1]],
+  ];
+  function frameHtml(rank, full) {
+    const list = ORN_SET[rank] || ORN_SET[0];
+    return `<i class="sbw-frame" aria-hidden="true">${list.filter(o => full || !o[2]).map(([pos, shape]) => `<svg class="o o-${pos} o-${shape}" viewBox="0 0 24 24" focusable="false"><use href="#sbw-o-${shape}"/></svg>`).join('')}</i>`;
+  }
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   // Reduced motion: the system setting or the player's Display & Accessibility choice.
   let RM = motionPreference.matches || !!window.DisplaySettings?.v.reduceMotion, geometryRevision = 0;
@@ -819,7 +848,7 @@
   function heroCardHtml(c, i, on) {
     const h = c.h || {}, r = h.r || 0, col = RCOL[r] || RCOL[0], [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0), pct = cm ? Math.round(100 * cc / cm) : 0;
     const btn = (k, label, cls = '', dis) => `<button type="button" class="sbw-hb ${cls}" data-k="${k}" data-i="${i}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
-    return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
+    return `<div class="sbw-hcard r${r}${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">${frameHtml(r, true)}
       <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
       <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}${h.referralBound ? '<b class="sbw-bound" title="Referral-bound hero: cannot be listed, sold or transferred">🔒</b>' : ''}</div>
       <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? '4 automatic skills' : c.attack || c.style)}</span></div>
@@ -957,7 +986,7 @@
       if (e.dataset.k !== k) {
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
         e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
-        e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${esc(h.r===5?'MYTHIC':RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
+        e.innerHTML = `<i class="sbw-at-aura"></i>${frameHtml(h.r, false)}<div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${esc(h.r===5?'MYTHIC':RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
         if (keep && e.dataset.sbwHero === String(h.id)) e.querySelector('canvas').replaceWith(keep);
         e.dataset.sbwHero = String(h.id);
       }
@@ -1920,6 +1949,7 @@
     if (window.GameLoading && GameLoading.ready) await GameLoading.ready;
     D = await fetch(BASE + 'screens.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('screens.json ' + r.status); return r.json(); });
     layer = mk('div', '', document.body); layer.id = 'sbwLayer'; layer.hidden = true;
+    layer.insertAdjacentHTML('afterbegin', ORN_SPRITE);
     if (D.header) buildHeader();
     const prior = window.go;
     if (typeof prior === 'function') { window.go = function (...args) { preview = null; if (args[0] !== 4 || args[1]) dojoView = 'dojo'; const r = prior.apply(this, args); queueMicrotask(sync); return r; }; }

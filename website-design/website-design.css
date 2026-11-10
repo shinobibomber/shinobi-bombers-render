@@ -303,7 +303,7 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-at-head em{display:flex;align-items:center;gap:10px;height:36px;padding:0 16px;border:2px solid #d99a1f;border-radius:8px;background:#0b0820;font:600 14px Rajdhani,sans-serif;font-style:normal;color:#cfd8ee}
 #sbwLayer .sbw-at-head strong{font:800 22px Rajdhani,sans-serif;color:#fff}
 #sbwLayer .sbw-at-grid{flex:1;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:1fr 1fr;gap:8px}
-#sbwLayer .sbw-at-card{position:relative;isolation:isolate;display:flex;align-items:center;gap:8px;padding:4px 8px 4px 4px;border:2px solid var(--rc,#33407a);border-radius:10px;overflow:hidden;cursor:default;
+#sbwLayer .sbw-at-card{position:relative;isolation:isolate;display:flex;align-items:center;gap:8px;padding:4px 8px 4px 4px;border:2px solid var(--rc,#33407a);border-radius:10px;overflow:visible;cursor:default;
   background:radial-gradient(circle at 18% 60%,color-mix(in srgb,var(--rc,#33407a) 30%,transparent),transparent 55%),linear-gradient(135deg,#140a36,#070518);box-shadow:0 0 10px color-mix(in srgb,var(--rc,#33407a) 55%,transparent)}
 #sbwLayer .sbw-at-card.empty{justify-content:flex-start;gap:14px;padding-left:18px;border-style:solid;--rc:#3b4f9a;background:linear-gradient(135deg,#0d1030,#060819);cursor:pointer}
 #sbwLayer .sbw-at-card.empty>b{font:300 34px/1 Rajdhani,sans-serif;color:#9fb2ff}
@@ -327,7 +327,6 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
    No animated canvas filters or box shadows, and no particles over a hero's face. */
 #sbwLayer .sbw-at-aura{display:none}
 #sbwLayer .sbw-patch{position:absolute;z-index:6;pointer-events:none;user-select:none}
-#sbwLayer .sbw-at-card.aura-elite,#sbwLayer .sbw-at-card.aura-legend{box-shadow:0 0 14px color-mix(in srgb,var(--rc) 65%,transparent),inset 0 0 12px color-mix(in srgb,var(--rc) 20%,transparent)}
 #sbwLayer .sbw-at-card.aura-legend .sbw-at-info strong{color:#fff0b2}
 #sbwLayer [data-aura="3"]{--aura:#d76bff;--aura-light:#f6d9ff;--aura-cycle:3.6s}
 #sbwLayer [data-aura="4"]{--aura:#ffca45;--aura-light:#fff3bd;--aura-cycle:2.8s}
@@ -882,7 +881,7 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-myth-nft span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-myth-nft button{min-height:28px;padding:2px 10px;border:1px solid #c98bff;border-radius:7px;background:#1d0d45;color:#efe4ff;font:800 12.5px Rajdhani,sans-serif;cursor:pointer}
 #sbwLayer .sbw-myth-nft button[aria-pressed="true"]{border-color:#ffd257;color:#ffd257}
-#sbwLayer .sbw-at-card.aura-mythic{box-shadow:0 0 16px #b36bffaa,inset 0 0 14px #c98bff44;border-color:#c98bff}
+#sbwLayer .sbw-at-card.aura-mythic{border-color:#c98bff}
 #sbwLayer .sbw-at-card.aura-mythic .sbw-at-info strong{color:#f1dcff}
 #sbwLayer .sbw-hc-portrait{position:relative}
 #sbwLayer .sbw-nft{position:absolute;top:4px;right:4px;padding:1px 6px;border:1px solid #ffd257;border-radius:5px;background:#2a1640;font:800 10.5px Rajdhani,sans-serif;color:#ffe9a8;letter-spacing:.6px}
@@ -1057,3 +1056,56 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-cs-head{background:none;border:0;padding:0;box-shadow:none}
 #sbwLayer .sbw-cs-tag,#sbwLayer .sbw-cs-link,#sbwLayer .sbw-cs-panel h3{white-space:nowrap}
 #sbwLayer .sbw-cs-guild button,#sbwLayer .sbw-cs-qa button{white-space:nowrap;padding:9px 8px;font-size:16px}
+
+/* ===== Rank card frames (owner request 2026-11-10): Adventure team cards and Heroes Collection cards =====
+   Genin silver shuriken · Chunin green leaves · Jonin blue water crescent · Elite purple tomoe + blossoms · Legend gold star +
+   diamond · Mythic violet/gold double frame, tomoe crest and wings. One decorative `.sbw-frame` layer per card (aria-hidden,
+   pointer-events none); the ornament shapes live in one hidden SVG sprite. Frame lines and glow are static; only transform and
+   opacity animate (compositor, nothing repaints), and only on deployed Adventure cards and Heroes cards. Low quality = still
+   frames, Off = no glow layer, paused / reduced motion = still, Bloom & glow off = no glow layer. */
+#sbwLayer .sbw-at-card{--os:18px}
+#sbwLayer .sbw-hcard{--os:28px}
+#sbwLayer .sbw-hgrid{overflow:visible}
+#sbwLayer .sbw-hcard.r5{z-index:2}
+#sbwLayer .sbw-frame{position:absolute;inset:-2px;z-index:3;pointer-events:none;border-radius:inherit;--rc2:var(--rc)}
+#sbwLayer .r5{--rc2:#ffd257}
+#sbwLayer .sbw-frame::before{content:"";position:absolute;inset:3px;border:1px solid color-mix(in srgb,var(--rc) 55%,transparent);border-radius:7px}
+#sbwLayer .r5 .sbw-frame::before{inset:4px;border:1px solid color-mix(in srgb,var(--rc2) 80%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--rc) 55%,transparent)}
+#sbwLayer .sbw-frame::after{content:"";position:absolute;inset:-5px;border-radius:14px;opacity:.4;
+  box-shadow:0 0 14px 1px color-mix(in srgb,var(--rc) 70%,transparent),inset 0 0 10px color-mix(in srgb,var(--rc) 22%,transparent)}
+#sbwLayer .r5 .sbw-frame::after{box-shadow:0 0 16px 2px color-mix(in srgb,var(--rc) 75%,transparent),0 0 26px 4px color-mix(in srgb,var(--rc2) 35%,transparent),inset 0 0 12px color-mix(in srgb,var(--rc) 25%,transparent)}
+#sbwLayer .sbw-frame .o{position:absolute;display:block;width:var(--os);height:var(--os);color:var(--rc);overflow:visible;filter:drop-shadow(0 0 3px var(--rc))}
+#sbwLayer .r5 .sbw-frame .o-tomoe,#sbwLayer .r5 .sbw-frame .o-diamond{color:var(--rc2);filter:drop-shadow(0 0 4px var(--rc2))}
+#sbwLayer .sbw-frame .o-t{left:50%;top:calc(var(--os) * -.42 - 1px);margin-left:calc(var(--os) * -.5)}
+#sbwLayer .sbw-frame .o-b{left:50%;bottom:calc(var(--os) * -.42 - 1px);margin-left:calc(var(--os) * -.5)}
+#sbwLayer .sbw-frame .o-l{left:calc(var(--os) * -.42 - 1px);top:50%;margin-top:calc(var(--os) * -.5)}
+#sbwLayer .sbw-frame .o-r{right:calc(var(--os) * -.42 - 1px);top:50%;margin-top:calc(var(--os) * -.5)}
+#sbwLayer .sbw-frame .o-br{right:12%;bottom:calc(var(--os) * -.45)}
+#sbwLayer .sbw-frame .o-bl{left:12%;bottom:calc(var(--os) * -.45);scale:-1 1}
+#sbwLayer .sbw-frame .o-t.o-tomoe,#sbwLayer .r5 .sbw-frame .o-t{width:calc(var(--os) * 1.25);height:calc(var(--os) * 1.25);margin-left:calc(var(--os) * -.625);top:calc(var(--os) * -.55 - 1px)}
+#sbwLayer .sbw-frame .o-wing{width:calc(var(--os) * 1.3);height:calc(var(--os) * 1.3);top:18%;margin-top:0}
+#sbwLayer .sbw-frame .o-l.o-wing{left:calc(var(--os) * -1.05)}
+#sbwLayer .sbw-frame .o-r.o-wing{right:calc(var(--os) * -1.05);scale:-1 1}
+#sbwLayer .sbw-at-card.r5{z-index:2}
+/* Motion: deployed Adventure cards and every Heroes Collection card */
+@keyframes sbw-fr-breath{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes sbw-fr-sway{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+@keyframes sbw-fr-bob{0%,100%{transform:translateY(-1.5px)}50%{transform:translateY(1.5px)}}
+@keyframes sbw-fr-spin{to{transform:rotate(360deg)}}
+@keyframes sbw-fr-pulse{0%,100%{transform:scale(.9);opacity:.85}50%{transform:scale(1.12);opacity:1}}
+@keyframes sbw-fr-flap{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(4deg)}}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame::after{animation:sbw-fr-breath 4.2s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-leaf{animation:sbw-fr-sway 3.4s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-flower{animation:sbw-fr-sway 5s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-swirl{animation:sbw-fr-bob 2.8s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-tomoe{animation:sbw-fr-spin 16s linear infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-star{animation:sbw-fr-pulse 2.4s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-diamond{animation:sbw-fr-pulse 3.2s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-wing{animation:sbw-fr-flap 2.8s ease-in-out infinite}
+/* Quality: Low (1) = still frames, Off (0) = no glow layer; paused (hidden tab) and reduced motion = still */
+#sbwLayer[data-effects-quality="1"] .sbw-frame::after,#sbwLayer[data-effects-quality="1"] .sbw-frame .o,#sbwLayer[data-effects-quality="0"] .sbw-frame::after,#sbwLayer[data-effects-quality="0"] .sbw-frame .o,
+#sbwLayer[data-effects-paused="true"] .sbw-frame::after,#sbwLayer[data-effects-paused="true"] .sbw-frame .o{animation:none!important}
+#sbwLayer[data-effects-quality="0"] .sbw-frame::after{display:none}
+@media(prefers-reduced-motion:reduce){#sbwLayer .sbw-frame::after,#sbwLayer .sbw-frame .o{animation:none!important}}
+/* Phone: the Adventure cards are in a 2-column list, so keep the ornaments small and the wings inside the card gutter */
+#sbwLayer .sbw-ateam.sbw-mflow .sbw-at-card{--os:13px}
