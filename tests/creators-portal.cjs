@@ -91,6 +91,15 @@ async function fixture(p, f, account, snapshot) {
      assert(f.profile.heroes.some(h => h.creatorReward), 'shop delivers a real hero into the current game profile');
      assert.equal(await p.locator('[data-redeem]').count(), 1, 'only Standard Hero Summon Pass remains');
      assert.equal(await p.locator('[data-redeem="creator-aura"]').count(), 0);
+     // The Creator Shop hero plays the same reveal: the panel closes, the hero is revealed, then the Heroes screen opens (newest first).
+     await p.waitForFunction(() => S.v2.revealSource === 'reward' && S.v2.revealBatch?.length === 1 && document.querySelector('#revealContinue'), null, { timeout: 15000 });
+     assert.equal(await p.locator('#creatorsPanel').isVisible(), false, 'the Creators panel makes way for the reveal');
+     assert.match(await p.locator('#revealTitle').innerText(), /Reward received/);
+     await p.evaluate(() => { Experience.revealAll(); RevealDesign.skip(); });
+     await p.waitForFunction(() => S.v2.revealBatch.every(i => i.revealed) && !document.querySelector('#revealContinue').disabled);
+     await p.locator('#revealContinue').click();
+     await p.waitForFunction(() => WebsiteDesign.current() === 'heroes' && document.querySelectorAll('.sbw-scr.on .sbw-hcard').length >= 1, null, { timeout: 15000 });
+     await p.evaluate(() => CreatorsPortal.open()); await p.waitForFunction(() => !document.querySelector('#creatorsPanel').hasAttribute('aria-busy') && CreatorsPortal.snapshot?.marker === 'shinobi-creators-portal-v1');
      await p.locator('#creatorsPanel [data-tab="history"]').click(); assert.match(await p.locator('.cp-table').innerText(), /not an NFT/);
      await p.locator('#creatorsPanel [data-tab="admin"]').click();
      await p.screenshot({ path: path.join(root, 'tests/out/creators-admin-desktop.png') });
@@ -158,10 +167,27 @@ async function fixture(p, f, account, snapshot) {
      const initial=f.profile.heroes.length;await p.locator('[data-player-claim="2"]').click();await p.locator('.cp-modal button[value="confirm"]').click();
      await p.waitForFunction(()=>Number(CreatorsPortal.snapshot?.passes?.claimed)===2);
      assert.equal(f.profile.heroes.length,initial+2);assert(f.profile.heroes.slice(-2).every(h=>h.referralReward));
+     // The claimed heroes play the Summoning Shrine reveal (owner request 2026-11-10): the panel closes, nothing to buy again, and
+     // finishing lands on the Heroes screen with the newest heroes first (they are Genin, so rarest-first would hide them).
+     await p.waitForFunction(()=>S.v2.revealSource==='reward'&&S.v2.revealBatch?.length===2&&document.querySelector('#revealContinue'),null,{timeout:15000});
+     assert.equal(await p.locator('#creatorsPanel').isVisible(),false,'the referral panel makes way for the reveal');
+     assert.match(await p.locator('#revealTitle').innerText(),/Reward received/); assert.equal(await p.locator('.reveal-card .card-back').first().innerText().then(t=>/REWARD SCROLL/.test(t)),true);
+     assert.deepEqual(await p.evaluate(()=>S.v2.revealBatch.map(i=>[i.hero.tokenOwner===RyoPayments.state.account,!!i.hero.tokenId])),[[true,true],[true,true]],'the batch holds the player\'s own delivered heroes');
+     assert.equal(await p.locator('#revealAgain:visible, [data-reveal-again]:visible').count(),0,'no paid Summon Again for a reward');
+     await p.evaluate(()=>{Experience.revealAll();RevealDesign.skip()});
+     await p.waitForFunction(()=>S.v2.revealBatch.every(i=>i.revealed)&&!document.querySelector('#revealContinue').disabled);
+     await p.locator('#revealContinue').click();
+     await p.waitForFunction(()=>WebsiteDesign.current()==='heroes'&&document.querySelectorAll('.sbw-scr.on .sbw-hcard').length>=2,null,{timeout:15000});
+     assert.equal(await p.evaluate(()=>document.querySelector('#p1 .heroes-sort').value),'new','the Heroes screen shows the newest heroes first');
+     const firstTwo=await p.evaluate(()=>[...document.querySelectorAll('.sbw-scr.on .sbw-hcard')].slice(0,2).map(c=>({lock:!!c.querySelector('.sbw-bound'),rank:c.querySelector('.sbw-hc-top b')?.textContent})));
+     assert.deepEqual(firstTwo.map(c=>c.lock),[true,true],'both new referral heroes are first and carry the referral-bound lock (their rank follows the summon odds)');
+     await p.screenshot({path:path.join(root,`tests/out/reward-heroes-${width}.png`)});
+     await p.evaluate(()=>CreatorsPortal.openPlayer());await p.waitForFunction(()=>Number(CreatorsPortal.snapshot?.passes?.claimed)===2&&!document.querySelector('#creatorsPanel').hasAttribute('aria-busy'));
      assert.equal(await p.locator('[data-player-claim="2"]').isDisabled(),true);
      await p.locator('#cp-tab-history').click();assert.match(await p.locator('.cp-table').innerText(),/not NFTs/);
      await p.locator('#cp-tab-referrals').click();assert.match(await p.locator('.cp-table').innerText(),/2 passes unlocked/);assert(!(await p.locator('#creatorsPanel').innerText()).includes(invitee));
      await p.keyboard.press('Escape');assert.equal(await p.locator('#creatorsPanel').isVisible(),false);
+     await p.evaluate(()=>go(5));await p.waitForFunction(()=>WebsiteDesign.current()==='home');   // the reveal finished on the Heroes screen
      await p.locator('[data-sbwid="tut"]').click();await p.waitForFunction(()=>CreatorsPortal.snapshot?.marker==='shinobi-creators-portal-v1');
      assert.equal(await p.locator('#cp-tab-apply').count(),1,'creator application stays separate');assert.equal(await p.locator('[data-player-claim]').count(),0);
      assert.deepEqual(errors,[]);

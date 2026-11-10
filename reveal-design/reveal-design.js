@@ -3,6 +3,8 @@
   'use strict';
   const sprites = window.ShinobiSprites;
   const ranks = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'];
+  // A Mythic hero (rank 5, e.g. the Mythic Founder's Tsukiyomi) uses the Legend presentation but its own name and announcement.
+  const rankName = hero => (Number(hero.r) >= 5 ? 'Mythic' : ranks[Math.max(0, Math.min(4, Number(hero.r) || 0))]);
   const colors = ['#c5cbd5', '#48dc8b', '#45b5ff', '#bd79ff', '#ffcf63'];
   // Existing model identity is independent of rank and gameplay probabilities.
   const elements = {
@@ -155,7 +157,7 @@
     card.dataset.rank = String(rank); card.dataset.element = model.key;
     card.style.setProperty('--rank-color', item.revealed ? colors[rank] : '#bda16d');
     card.style.setProperty('--element-color', element[2]);
-    card.setAttribute('aria-label', item.revealed ? hero.name + ', ' + element[0] + ', ' + ranks[rank] + ', level ' + hero.lv : 'Reveal scroll ' + (index + 1));
+    card.setAttribute('aria-label', item.revealed ? hero.name + ', ' + element[0] + ', ' + rankName(hero) + ', level ' + hero.lv : 'Reveal scroll ' + (index + 1));
     card.setAttribute('aria-pressed', String(item.revealed === true));
     card.setAttribute('aria-disabled', String(item.revealed === true));
     if (!card.querySelector('.cinematic-face')) {
@@ -175,7 +177,7 @@
     stars.removeAttribute('title');
     const number = value => Number.isFinite(Number(value)) ? Number(value).toLocaleString('en-US', { maximumFractionDigits: 1 }) : '—';
     face.querySelector('.cinematic-stats').textContent = 'Lv. ' + number(hero.lv) + ' · Power ' + number(hero.pw) + ' · Stamina ' + number(hero.st);
-    face.querySelector('.cinematic-rank').textContent = ranks[rank];
+    face.querySelector('.cinematic-rank').textContent = rankName(hero);
     const badge = face.querySelector('.cinematic-new'); badge.hidden = !(newModels || newModelFlags())[index];
     badge.title = 'First ' + model.label + ' in your current collection';
     if (item.revealed && opening?.item === item) {
@@ -239,11 +241,11 @@
     if (!skipAnimations && !motion.matches && !document.hidden) {
       card.classList.add('is-opening');
       if (rank === 3) card.classList.add('cinematic-elite');
-      if (rank === 4) { card.classList.add('cinematic-legend'); dialog.classList.add('legend-opening'); }
+      if (rank >= 4) { card.classList.add('cinematic-legend'); dialog.classList.add('legend-opening'); }
     }
     if (rank >= 3) {
-      $('.cinematic-announcement').textContent = (rank === 4 ? 'LEGEND AWAKENED' : 'ELITE SHINOBI') + ' · ' + item.hero.name;
-      $('.cinematic-announcement').style.setProperty('--rank-color', colors[rank]);
+      $('.cinematic-announcement').textContent = (rank >= 5 ? 'MYTHIC AWAKENED' : rank === 4 ? 'LEGEND AWAKENED' : 'ELITE SHINOBI') + ' · ' + item.hero.name;
+      $('.cinematic-announcement').style.setProperty('--rank-color', colors[Math.min(rank, 4)]);
     }
     return new Promise(resolve => {
       const record = { item, finish() { if (record.done) return; record.done = true; clearTimeout(record.timer); timers.delete(record.timer); resolve(); } };

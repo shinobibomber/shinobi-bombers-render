@@ -154,7 +154,7 @@ function initialProfile(profile) { return live() ? { ...profile, heroes: [], liv
 function cleanStarterProfile(profile) {
   if (!live() || !profile || typeof profile !== 'object' || profile.liveStart === 1) return profile;
   const heroes = Array.isArray(profile.heroes) ? profile.heroes : [];
-  if (heroes.length === 2 && heroes.every(h => h && h.rank === 0 && h.level === 1 && !h.nft && !h.mythic && !h.starter && !h.referralReward) && !profile.dojo && !profile.sensei) profile.heroes = [];
+  if (heroes.length === 2 && heroes.every(h => h && h.rank === 0 && h.level === 1 && !h.nft && !h.mythic && !h.starter && !h.referralReward && !h.creatorReward && !h.founderSummon && !h.founderGrant && !h.prisonRescue) && !profile.dojo && !profile.sensei) profile.heroes = [];   // reward heroes are real grants, never the old free starters
   profile.liveStart = 1;
   return profile;
 }

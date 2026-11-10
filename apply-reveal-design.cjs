@@ -12,7 +12,18 @@ const cinematicPatches = [
   ["save();if(rare&&!reduced)await pause(1100);", "save();if(rare&&!reduced&&!window.RevealDesign?.loaded)await pause(1100);"],
   ["document.getElementById('revealAll').disabled=busy||batchRun||allRevealed()}", "document.getElementById('revealAll').disabled=busy||batchRun||allRevealed();window.RevealDesign?.sync()}"],
   ["async function finishReveal(){if(busy||batchRun||!allRevealed())return;", "async function finishReveal(){if(busy||batchRun||!allRevealed()||(window.RevealDesign?.loaded&&!RevealDesign.canReveal()))return;"],
-  ["if(!was||wasRevealed||!opened)return false;const card=", "if(!was||wasRevealed||!opened)return false;if(window.RevealDesign?.loaded)return opened;const card="]
+  ["if(!was||wasRevealed||!opened)return false;const card=", "if(!was||wasRevealed||!opened)return false;if(window.RevealDesign?.loaded)return opened;const card="],
+  // Reward reveal (owner request 2026-11-10): referral passes, Creator Shop heroes, the prison-cage rescue grant and the Founder
+  // Limited / Premium summon passes play the same reveal as the Summoning Shrine. A 'reward' source has no paid Summon Again
+  // (reveal-design.js only offers it for 'summon') and finishes on the Heroes screen.
+  ["const fusion=S.v2.revealSource==='fusion',prison=S.v2.revealSource==='prison';", "const fusion=S.v2.revealSource==='fusion',prison=S.v2.revealSource==='prison',reward=S.v2.revealSource==='reward';"],
+  ["${fusion?'CHAKRA COMBINED':prison?'THE CAGE IS OPEN':'THE SCROLLS HAVE ANSWERED'}", "${fusion?'CHAKRA COMBINED':prison?'THE CAGE IS OPEN':reward?'REWARD DELIVERED':'THE SCROLLS HAVE ANSWERED'}"],
+  ["${fusion?'Fusion complete · reveal your heroes':prison?'Hero rescued · reveal your shinobi':'Reveal your shinobi'}", "${fusion?'Fusion complete · reveal your heroes':prison?'Hero rescued · reveal your shinobi':reward?'Reward received · reveal your shinobi':'Reveal your shinobi'}"],
+  ["${fusion?'FUSION SCROLL':prison?'RESCUED SHINOBI':'SHINOBI SCROLL'}", "${fusion?'FUSION SCROLL':prison?'RESCUED SHINOBI':reward?'REWARD SCROLL':'SHINOBI SCROLL'}"],
+  ["go(source==='fusion'?6:source==='prison'?0:2);nextRescue()}", "go(source==='fusion'?6:source==='prison'?0:source==='reward'?1:2);if(source==='reward')window.HeroesDesign?.showNewest?.();nextRescue()}"],
+  // presentRewardIds(tokenIds): sync the profile first (the heroes were just granted by the server), then reveal the player's own
+  // heroes with those ids. Returns false (and reveals nothing) while another reveal is open or when a hero is not in the collection.
+  ["workAll,restAll,reveal,revealAll,finishReveal,presentFusion(heroes){", "presentReward(heroes){if(!heroes.length||pending().length)return false;S.v2.revealSource='reward';S.v2.revealBatch=heroes.map(hero=>({hero:JSON.parse(JSON.stringify(hero)),revealed:false}));save();showReveal();return true},presentRewardIds(ids){try{window.TokenCheckout?.syncProfile?.()}catch{}const owner=window.RyoPayments?.state?.account,heroes=(Array.isArray(ids)?ids:[]).map(id=>S.h.find(h=>h.tokenId===id&&h.tokenOwner===owner)).filter(Boolean);return Experience.presentReward(heroes)},workAll,restAll,reveal,revealAll,finishReveal,presentFusion(heroes){"]
 ];
 const patches = [
   ["if(!dialog.open&&!document.body.classList.contains('is-loading'))dialog.showModal()}", "if(!dialog.open&&!document.body.classList.contains('is-loading'))dialog.showModal();window.RevealDesign?.refresh()}"],

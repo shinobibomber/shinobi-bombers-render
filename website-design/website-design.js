@@ -837,6 +837,7 @@
     b.tabs = b.s.hs.filter(h => /^tf\d$/.test(h.id)).map((h, i) => cov(b, h.r[0] + 5, h.r[1] + 6, h.r[2] - h.r[0] - 10, h.r[3] - h.r[1] - 12, i === 0 ? '#342003' : '#04172e', 15, '#e8eefc'));
     b.summary = cov(b, 24, 288, 600, 24, '#06071d', 15, '#cfd8ee', 'sbw-left');
     b.page = cov(b, 1342, 288, 130, 24, '#000108', 15, '#ffffff');
+    b.sortLabel = cov(b, 1360, 240, 104, 28, '#04172e', 15, '#ffffff');   // the artwork's fixed "By Rarity" text is covered by the live sort name
     b.page.setAttribute('role', 'status'); b.page.setAttribute('aria-live', 'polite');
     b.grid = cv(b, 26, 322, 1036, 684, 'sbw-hgrid');
     /* detail panel: one clean panel over the artwork's (portrait, stats, perks, Train, Sell) */
@@ -863,6 +864,7 @@
     b.tabs.forEach((t, i) => { t.style.color = i === b.tabIdx ? '#ffd257' : '#e8eefc'; const hs = $(`.hs[data-sbwid="tf${i}"]`, b.st); if (hs) hs.classList.toggle('on2', i === b.tabIdx); });
     setText(b.summary, nativeText('#p1', /\d+[–-]\d+ of \d+ heroes[^\n]*/) || nativeText('#p1', /\d+ of \d+ heroes[^\n]*/) || `${cards.length} heroes`);
     const pageSelect = root.querySelector('.heroes-page-select'); setText(b.page, pageSelect?.selectedOptions[0]?.textContent || '1 / 1');
+    setText(b.sortLabel, 'By ' + (root.querySelector('.heroes-sort')?.selectedOptions[0]?.textContent || 'Rarity'));
     for (const id of ['pp', 'pn']) { const e = $(`.hs[data-sbwid="${id}"]`, b.st), button = heroPageButton(id === 'pp'); if (e) { const disabled = !button || button.disabled; e.setAttribute('aria-disabled', String(disabled)); e.classList.toggle('dim', disabled); } }
     if (b.sel >= cards.length) b.sel = 0;
     const sig = cards.map(c => [c.idx, c.status, c.lvl, c.pw, c.tog && c.tog.textContent, c.up && c.up.textContent, c.mode && c.mode.textContent].join(',')).join('|') + '#' + b.sel;

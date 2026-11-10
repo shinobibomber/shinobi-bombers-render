@@ -51,8 +51,10 @@
     try { await fn(); } catch (e) { message = e?.message || 'Something went wrong.'; }
     busy = false; await refresh();
   }
-  const activate = () => act(async () => { const r = await api('founder-activate'); data = r; message = 'Founder benefits activated: ' + r.activation.heroes.map(h => h.name).join(', ') + ' joined your roster.'; });
-  const summon = kind => act(async () => { const r = await api('founder-summon', { kind, requestId: rid('fs') }); message = (kind === 'limited' ? 'Limited' : 'Premium') + ' summon: ' + r.summon.rankName + ' — ' + r.summon.hero.name; });
+  // Granted heroes play the Summoning Shrine reveal (owner request 2026-11-10): close this panel, then reveal them; the reveal ends on the Heroes screen.
+  const reveal = heroes => { try { const ids = (heroes || []).map(h => h && h.tokenId).filter(Boolean); if (!ids.length || !window.Experience?.presentRewardIds) return; if (dialog?.open) dialog.close(); window.Experience.presentRewardIds(ids); } catch {} };
+  const activate = () => act(async () => { const r = await api('founder-activate'); data = r; message = 'Founder benefits activated: ' + r.activation.heroes.map(h => h.name).join(', ') + ' joined your roster.'; reveal(r.activation.heroes); });
+  const summon = kind => act(async () => { const r = await api('founder-summon', { kind, requestId: rid('fs') }); message = (kind === 'limited' ? 'Limited' : 'Premium') + ' summon: ' + r.summon.rankName + ' — ' + r.summon.hero.name; if (!r.summon.replay) reveal([r.summon.hero]); });
   const trial = () => act(async () => { const r = await api('founder-sensei-trial'); message = 'Sensei trial active until ' + fmtTime(r.trial.ends) + '.'; });
   // Permanent Sensei for SOL, started from the Dojo › Sensei tab: the server builds the payment, review() checks it, the
   // player's wallet signs it and the server verifies and broadcasts it. onStatus reports each step to the Sensei tab.

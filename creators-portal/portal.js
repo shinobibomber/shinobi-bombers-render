@@ -44,6 +44,11 @@
     notice('Loading ' + (mode === 'player' ? 'referrals' : 'creator program') + '…'); await run(async () => { await refresh(); notice(''); }); if (root.open) $('.cp-section').focus({ preventScroll: true });
   }
   function close() { root.close(); root.hidden = true; }
+  // Delivered heroes play the Summoning Shrine reveal (owner request 2026-11-10): close this panel, then reveal them; the reveal
+  // finishes on the Heroes screen. Without the reveal overlay (or while another reveal is open) the notice above is all that shows.
+  function reveal(outputs) {
+    try { const ids = (outputs || []).map(h => h && h.tokenId).filter(Boolean); if (!ids.length || !window.Experience?.presentRewardIds) return; close(); window.Experience.presentRewardIds(ids); } catch {}
+  }
   root.addEventListener('close', () => { if (!root.open) root.hidden = true; });
   root.addEventListener('cancel', e => { e.preventDefault(); close(); });
   root.addEventListener('click', e => { if (e.target === root) close(); });
@@ -136,7 +141,7 @@
       if (b.dataset.playerClaim) {
         const quantity = Number(b.dataset.playerClaim), ok = await confirm('Claim ' + quantity + ' hero' + (quantity === 1 ? '' : 'es'), 'Spend ' + quantity + ' qualified referral pass' + (quantity === 1 ? '' : 'es') + ' to receive regular in-game Shrine heroes. No SOL payment.'); if (!ok) return;
         const key = 'sb-player-claim:' + wallet() + ':' + quantity; let requestId = sessionStorage.getItem(key); if (!requestId) { requestId = crypto.randomUUID(); sessionStorage.setItem(key, requestId); }
-        await api('creator-player-claim', { requestId, quantity }); sessionStorage.removeItem(key); await refresh(); notice(quantity + ' hero' + (quantity === 1 ? '' : 'es') + ' delivered. Open Heroes to view your rewards.'); return;
+        const claimed = await api('creator-player-claim', { requestId, quantity }); sessionStorage.removeItem(key); await refresh(); notice(quantity + ' hero' + (quantity === 1 ? '' : 'es') + ' delivered. Open Heroes to view your rewards.'); reveal(claimed.claim?.result?.outputs); return;
       }
       if (b.dataset.cp === 'copy') { await navigator.clipboard.writeText(snapshot.link); notice('Referral link copied. Disclose your referral rewards when sharing.'); return; }
       if (b.dataset.cp === 'terms') { await api('creator-terms', { terms: true }); await refresh(); notice('Creator Program Terms accepted.'); return; }
@@ -144,7 +149,7 @@
       if (b.dataset.redeem) {
         const item = snapshot.shop.find(i => i.id === b.dataset.redeem), ok = await confirm('Redeem ' + item.name, cp(item.price) + ' CP. ' + item.detail + ' Delivery and point deduction happen together.'); if (!ok) return;
         const key = 'sb-creator-redemption:' + wallet() + ':' + item.id; let request = sessionStorage.getItem(key); if (!request) { request = crypto.randomUUID(); sessionStorage.setItem(key, request); }
-        const result = await api('creator-redeem', { requestId: request, itemId: item.id, version: item.version, expectedPriceMilli: item.price }); sessionStorage.removeItem(key); await refresh(); notice('Reward delivered. ' + (result.redemption.result.kind === 'hero' ? 'Your new in-game hero is in Heroes.' : 'Your cosmetic is active.')); return;
+        const result = await api('creator-redeem', { requestId: request, itemId: item.id, version: item.version, expectedPriceMilli: item.price }); sessionStorage.removeItem(key); await refresh(); notice('Reward delivered. ' + (result.redemption.result.kind === 'hero' ? 'Your new in-game hero is in Heroes.' : 'Your cosmetic is active.')); if (result.redemption.result.kind === 'hero') reveal(result.redemption.result.outputs); return;
       }
       if (b.dataset.status) { const ok = await confirm('Update creator status', b.dataset.status + ' — CP and history are preserved.', true); if (!ok) return; await api('creator-admin-action', { operation: 'status', creatorId: b.dataset.creator, status: b.dataset.status, ...ok }); await refresh(); notice('Creator status updated.'); return; }
       if (b.dataset.inspect) { admin = await api('creator-admin', { creatorId: b.dataset.inspect, page }); render(); return; }

@@ -106,7 +106,7 @@
       search.oninput = () => { query = search.value; page = 0; layout(); };
       select = document.createElement('select'); select.className = 'heroes-sort'; select.setAttribute('aria-label', 'Sort heroes');
       select.style.setProperty('--sort-arrow', crop(image, [1715, 241, 16, 20]));
-      for (const [value, label] of [['rarity', 'Rarity'], ['level', 'Level'], ['power', 'Power'], ['chakra', 'Chakra'], ['name', 'Name']]) { const option = document.createElement('option'); option.value = value; option.textContent = label; select.append(option); }
+      for (const [value, label] of [['rarity', 'Rarity'], ['new', 'Newest'], ['level', 'Level'], ['power', 'Power'], ['chakra', 'Chakra'], ['name', 'Name']]) { const option = document.createElement('option'); option.value = value; option.textContent = label; select.append(option); }
       select.value = sorting; select.onchange = () => { sorting = select.value; page = 0; layout(); };
       const reset = document.createElement('button'); reset.type = 'button'; reset.className = 'heroes-reset-filter'; reset.setAttribute('aria-label', 'Reset hero filters'); reset.onclick = () => { query = ''; sorting = 'rarity'; page = 0; HeroFilters.choose(-1); };
       pager = document.createElement('div'); pager.className = 'heroes-pagination'; tools.append(search, select, reset, pager); section.append(tools);
@@ -119,7 +119,7 @@
       const matches = cards.filter(card => card.dataset.rankMatch === '1' && heroOf(card).name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
       matches.sort((a, b) => {
         const x = heroOf(a), y = heroOf(b);
-        return sorting === 'name' ? x.name.localeCompare(y.name) : (sorting === 'level' ? y.lv - x.lv : sorting === 'power' ? y.pw - x.pw : sorting === 'chakra' ? y.en - x.en : y.r - x.r) || x.id - y.id;
+        return sorting === 'name' ? x.name.localeCompare(y.name) : sorting === 'new' ? y.id - x.id : (sorting === 'level' ? y.lv - x.lv : sorting === 'power' ? y.pw - x.pw : sorting === 'chakra' ? y.en - x.en : y.r - x.r) || x.id - y.id;
       });
       const pages = Math.max(1, Math.ceil(matches.length / pageSize)); page = Math.min(page, pages - 1);
       scene.dataset.pageSize = String(pageSize);
@@ -156,7 +156,7 @@
       const jump = document.createElement('select'); jump.className = 'heroes-page-select'; jump.setAttribute('aria-label', 'Go to collection page');
       for (let i = 0; i < pages; i++) { const option = document.createElement('option'); option.value = i; option.textContent = (i + 1) + ' / ' + pages; jump.append(option); }
       jump.value = page; jump.onchange = () => { page = Number(jump.value); layout(); pager.querySelector('select').focus({ preventScroll: true }); }; pager.firstChild.after(jump);
-      status.textContent = (matches.length ? (page * pageSize + 1) + '–' + Math.min(matches.length, (page + 1) * pageSize) + ' of ' : '') + matches.length + ' heroes · ' + ({ rarity: 'Rarest first', level: 'Highest level first', power: 'Strongest first', chakra: 'Most chakra first', name: 'Name A–Z' })[sorting] + ' · ' + BattleRoster.list().length + '/50 battle-ready · 10 deployed max';
+      status.textContent = (matches.length ? (page * pageSize + 1) + '–' + Math.min(matches.length, (page + 1) * pageSize) + ' of ' : '') + matches.length + ' heroes · ' + ({ rarity: 'Rarest first', new: 'Newest first', level: 'Highest level first', power: 'Strongest first', chakra: 'Most chakra first', name: 'Name A–Z' })[sorting] + ' · ' + BattleRoster.list().length + '/50 battle-ready · 10 deployed max';
       updateQuickActions();
       if (pagerFocus) {
         const controls = [...pager.querySelectorAll('button,select')];
@@ -258,7 +258,7 @@
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     addEventListener('resize', resize); GameLoading.ready.then(sync);
     let last = 0; function animate(now) { requestAnimationFrame(animate); if (tab !== 1 || document.hidden || now - last < 180) return; last = now; paint(now); }
-    requestAnimationFrame(animate); api.loaded = true; api.refresh = () => team(); api.openDetail = id => openDetail(id, null); sync(); if (tab === 1) team();
+    requestAnimationFrame(animate); api.loaded = true; api.refresh = () => team(); api.openDetail = id => openDetail(id, null); api.showNewest = () => { query = ''; sorting = 'new'; page = 0; if (select) select.value = 'new'; HeroFilters.choose(-1); }; sync(); if (tab === 1) team();
     return true;
   }
   function crop(image, [x, y, width, height]) { const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(image, x, y, width, height, 0, 0, width, height); return 'url("' + canvas.toDataURL('image/png') + '")'; }

@@ -103,7 +103,7 @@
     },
     {
       "path": "heroes-design/heroes-design.js",
-      "sha256": "651b01720654488ff6cbf35e910128a006589b536cc687a874a63ec76aebb307"
+      "sha256": "a5a7b10432ae6a9b6fab4f287db98f96a5213ef9077830708d156e76a3d56d49"
     },
     {
       "path": "heroes-design/heroes-menu.png",
@@ -207,7 +207,7 @@
     },
     {
       "path": "reveal-design/reveal-design.js",
-      "sha256": "94788620085d72881d02c89bcff62f7bd64e8e11ae19e16d85c9d32eb4654716"
+      "sha256": "cc497a53cd33899081063aed5490572d9ca932bd396e55bd9fc2dbc827e73047"
     },
     {
       "path": "reveal-design/reveal-design.png",

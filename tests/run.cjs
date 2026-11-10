@@ -20,6 +20,7 @@ suites.push('founders-server.cjs','founders-prelaunch.cjs','founders-pricing-ui.
 suites.push('login-recovery.cjs');
 suites.push('salvage-restore.cjs');
 suites.push('hero-card-frames.cjs');
+suites.push('founder-reveal.cjs');
 suites.push('canonical-host.cjs');
 suites.push('live-economy.cjs','financial-server-2022.cjs');
 suites.push('control-panel.cjs');

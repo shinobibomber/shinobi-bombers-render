@@ -142,6 +142,11 @@ const passed = [];
         const q = old(); change(q); const before = q.heroes.length;
         assert.equal(economy.normalizeProfile(q).heroes.length, before, 'a profile that is not the untouched default keeps every hero');
       }
+      // Reward heroes are real grants, never the free starters: an unmarked profile holding two of them keeps both (owner request 2026-11-10).
+      for (const flag of ['referralReward', 'creatorReward', 'founderSummon', 'founderGrant', 'prisonRescue']) {
+        const q = old(); q.heroes[0][flag] = flag === 'founderSummon' || flag === 'founderGrant' ? 'limited' : true;
+        assert.equal(economy.normalizeProfile(q).heroes.length, 2, flag + ' hero is never removed by the starter cleanup');
+      }
       devnet(); assert.equal(economy.normalizeProfile(economy.initialProfile()).heroes.length, 2, 'the test server keeps its two default Genin'); mainnet();
       passed.push('no free heroes on live: new accounts start empty; untouched older accounts lose the two default Genin once; anything else is never touched; the test server is unchanged'); }
 

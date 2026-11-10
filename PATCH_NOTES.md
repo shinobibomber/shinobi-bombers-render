@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Reward heroes now get the reveal
+
+- Heroes you receive as rewards now play the Summoning Shrine reveal: referral passes you claim, Creator Shop hero passes you redeem, and your Founder benefits (activating the Founder box and each Limited Summon Pass). The reward window closes, you reveal your new shinobi, and the Heroes screen opens with them at the top.
+- New "Newest" sort in the Heroes Collection (the sort button now cycles through it, and the box shows the active sort), so freshly received Genin heroes are no longer buried at the end of a rarest-first list.
+- Reward heroes keep their referral-bound lock where it applies and can no longer be mistaken for the old free starter heroes.
+
 ## November 10, 2026 — Faster sign-in on phones
 
 - Signing in is much faster on slow phone connections. Before, the game checked your wallet balance step by step, twice, before it let you in, and each step could wait a long time on a weak connection. Now the sign-in request appears right away and the game opens after at most a few seconds while your wallet balance finishes loading in the background.
