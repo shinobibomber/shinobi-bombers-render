@@ -436,6 +436,23 @@ async function audit(c, store, actor, action, target, detail = {}) {
   await c.query('INSERT INTO ryo_founder_audit(scope,actor,action,target,detail,created) VALUES($1,$2,$3,$4,$5,$6)', [store.scope, actor, action, target, JSON.stringify(detail), nowOf(store)]);
 }
 
+/** The buyer's Founder tier for pricing, read from the entitlement itself (owner report 2026-11-10: Founders who bought
+ * the box before ever playing were charged the full price, because profile.founderTier was only copied in when the game
+ * reloaded state after the profile existed). Called from store.profileLocked (build hook), the single locked read behind
+ * the quote preview, the charged purchase and every other profile change, so preview and charge always agree; the store
+ * saves the tier when it changed. Fails closed: a tier without a valid entitlement for this scope and wallet is removed
+ * (only activate, adminRevoke and syncProfile ever write it, and all of them require the entitlement).
+ * A database without the Founder tables (some isolated fixtures) is detected with to_regclass, which never errors, so the
+ * caller's transaction is never aborted; only a positive answer is cached. */
+let tierTable = false;
+async function applyTier(db, scope, wallet, profile) {
+  if (!profile || typeof profile !== 'object') return profile;
+  if (!tierTable) { tierTable = !!(await db.query("SELECT to_regclass('ryo_founder_entitlements') IS NOT NULL AS t")).rows[0]?.t; if (!tierTable) return profile; }
+  const e = await entitlement(db, scope, wallet);
+  if (valid(e)) profile.founderTier = e.tier; else delete profile.founderTier;
+  return profile;
+}
+
 /** Keeps the server-written profile.founderTier in step with the buyer's entitlement when the game loads its state
  * (non-buyers: one primary-key lookup). Never creates a profile. The game panel shows itself from this flag, so a
  * non-Founder's game makes no Founder request at all. */
@@ -706,4 +723,4 @@ module.exports = { SCHEMA, MIGRATION_V2, MIGRATION_V3, prelaunchPricing, priceFo
   founderRevenue, switches, saleMode, rankFor, weekStart, metadata, metadataUri, mintAuthority, buildMint, signedBy,
   info, mint, confirm, settle, sweep, sweepExpired, entitlement, chestCooldownMs, discount, assertRyoProduct,
   activate, summon, recordActivity, qualifyingWeeks, senseiTrial, senseiInfo, senseiBuy, senseiConfirm, settleSensei,
-  status, syncProfile, handleGame, adminOverview, adminPause, adminRevoke };
+  status, syncProfile, applyTier, handleGame, adminOverview, adminPause, adminRevoke };

@@ -4,6 +4,8 @@
  * exact-string hooks (each must match exactly once, or the build stops):
  *   economy.cjs        Founder discount (10% Mythic / 5% Legacy, never stacked with the Mythic Box 10%) and, on the
  *                      live build, the removal of the Ryo Sensei products (Sensei is bought with SOL).
+ *   store.cjs          every locked profile read carries the buyer's Founder tier from the entitlement (founders.applyTier),
+ *                      so quotes and charged purchases get the discount from the very first purchase.
  *   service.cjs        founder-* / sensei-sol-* game actions, pending Founder/Sensei settlement and the profile's
  *                      founderTier flag in state(), the senseiSol config flag (only when enabled), and
  *                      qualifying-week activity from active Adventure play.
@@ -30,6 +32,14 @@ const serviceHooks = [
   ["if(action==='config'){await checkMint();return {economyVersion:2,", "if(action==='config'){await checkMint();return {...(" + F + ".switches().senseiSol?{senseiSol:true}:{}),economyVersion:2,"],
   ["const chest=await require('./adventure.cjs').adventure(store,wallet,{active:body.active===true,claim,",
    "if(body.active===true)await " + F + ".recordActivity(store,wallet);const chest=await require('./adventure.cjs').adventure(store,wallet,{active:body.active===true,claim,"],
+];
+// Every locked profile read (quote preview, the charged purchase, state, activation...) carries the buyer's Founder tier
+// from the entitlement, and the existing "save when normalisation changed it" step stores it (owner report 2026-11-10:
+// Founders who bought before playing were charged the full price). One hook in one place, so the preview and the charge
+// always agree, and no other build step's line is touched.
+const storeHooks = [
+  ["const before=JSON.stringify(row.data),profile=require('./economy.cjs').normalizeProfile(row.data);",
+   "const before=JSON.stringify(row.data),profile=await " + F + ".applyTier(c,this.scope,wallet,require('./economy.cjs').normalizeProfile(row.data));"],
 ];
 const salvageHooks = [
   ["if(hero.nft)fail('NFT-bound heroes cannot be salvaged.", "if(hero.nft||hero.founderBound)fail('NFT-bound heroes cannot be salvaged."],
@@ -68,6 +78,7 @@ function applyFounders(appDir = path.join(__dirname, 'app')) {
   if (!fs.readFileSync(schema, 'utf8').includes('-- Founders v3')) fs.appendFileSync(schema, '\n-- Founders v3: prelaunch prices; historical receipts preserved.\n' + require('./founders/server.cjs').MIGRATION_V3 + '\n');
   patch(path.join(server, 'economy.cjs'), economyHooks, 'economy');
   patch(path.join(server, 'service.cjs'), serviceHooks, 'service');
+  patch(path.join(server, 'store.cjs'), storeHooks, 'store');
   patch(path.join(server, 'hero-upgrades.cjs'), salvageHooks, 'salvage');
   const assets = path.join(appDir, 'public/assets/founders');
   fs.rmSync(assets, { recursive: true, force: true }); fs.mkdirSync(assets, { recursive: true });
@@ -83,5 +94,5 @@ function applyFounders(appDir = path.join(__dirname, 'app')) {
   fs.writeFileSync(index, html);
   console.log("Founder's NFT Boxes applied: Mythic 33 / Legacy 30; prelaunch 0.7 / 0.25 SOL, public game 1 / 0.5 SOL; 1 per wallet across tiers; buyer-bound benefits; switches fail closed.");
 }
-module.exports = { applyFounders, economyHooks, serviceHooks, salvageHooks, clientHooks, dojoSenseiHooks };
+module.exports = { applyFounders, economyHooks, serviceHooks, storeHooks, salvageHooks, clientHooks, dojoSenseiHooks };
 if (require.main === module) applyFounders();

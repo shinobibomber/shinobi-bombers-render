@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 10, 2026 — Founder discount fixed
+
+- Founder's box buyers now always get their discount on summons and other Ryo services: 10% for Mythic Founders and 5% for Legacy Founders, from your very first purchase. Previously, a Founder who bought the box before playing could be charged the full price until the game had reloaded their account.
+- The checkout shows the discounted price and the Founder discount line before you confirm, and that is exactly what is charged.
+
 ## November 10, 2026 — Smoother Adventure
 
 - Adventure runs noticeably smoother, especially on phones and older laptops, when many heroes are fighting and many skills and effects are on screen. In our tests on a slowed-down device the screen now draws about 40% faster and the worst stutters were cut roughly in half.
