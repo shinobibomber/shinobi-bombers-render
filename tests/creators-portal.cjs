@@ -79,6 +79,9 @@ async function fixture(p, f, account, snapshot) {
      assert(!(await p.locator('.cp-notice').innerText()).includes('Loading creator program'), 'reopening during a refresh cannot leave a stale loading notice');
      assert.match(await p.locator('#creatorsPanel').innerText(), /125,000 CP/);
      assert.match(await p.locator('.cp-link').innerText(), /\/?creator=/);
+     // Creator wallet migration was removed (2026-11-11): no request form and no Accept button.
+     assert.doesNotMatch(await p.locator('#creatorsPanel').innerText(), /migration/i, 'no wallet migration on the dashboard');
+     assert.equal(await p.locator('.cp-migration-entry, [data-form="migration"]').count(), 0);
      await p.screenshot({ path: path.join(root, 'tests/out/creators-dashboard-desktop.png') });
      await p.locator('#creatorsPanel [data-tab="referrals"]').click();
      assert.match(await p.locator('.cp-table').innerText(), /Player [A-F0-9]{10}/);
@@ -91,8 +94,75 @@ async function fixture(p, f, account, snapshot) {
      assert(f.profile.heroes.some(h => h.creatorReward), 'shop delivers a real hero into the current game profile');
      assert.equal(await p.locator('[data-redeem]').count(), 1, 'only Standard Hero Summon Pass remains');
      assert.equal(await p.locator('[data-redeem="creator-aura"]').count(), 0);
+     // The Creator Shop hero plays the same reveal: the panel closes, the hero is revealed, then the Heroes screen opens (newest first).
+     await p.waitForFunction(() => S.v2.revealSource === 'reward' && S.v2.revealBatch?.length === 1 && document.querySelector('#revealContinue'), null, { timeout: 15000 });
+     assert.equal(await p.locator('#creatorsPanel').isVisible(), false, 'the Creators panel makes way for the reveal');
+     assert.match(await p.locator('#revealTitle').innerText(), /Reward received/);
+     await p.evaluate(() => { Experience.revealAll(); RevealDesign.skip(); });
+     await p.waitForFunction(() => S.v2.revealBatch.every(i => i.revealed) && !document.querySelector('#revealContinue').disabled);
+     await p.locator('#revealContinue').click();
+     await p.waitForFunction(() => WebsiteDesign.current() === 'heroes' && document.querySelectorAll('.sbw-scr.on .sbw-hcard').length >= 1, null, { timeout: 15000 });
+     await p.evaluate(() => CreatorsPortal.open()); await p.waitForFunction(() => !document.querySelector('#creatorsPanel').hasAttribute('aria-busy') && CreatorsPortal.snapshot?.marker === 'shinobi-creators-portal-v1');
      await p.locator('#creatorsPanel [data-tab="history"]').click(); assert.match(await p.locator('.cp-table').innerText(), /not an NFT/);
+     // Owner request 2026-11-10: staff link a player who used a mistyped link (listed sign-ups without a referrer, "Use", link).
+     const uiFan = require('../app/node_modules/@solana/web3.js').Keypair.generate().publicKey.toBase58();
+     await store.pool.query("INSERT INTO ryo_players(scope,wallet,player_id,username,username_key,created,last_login) VALUES($1,$2,$3,'UiFan','uifan',$4,$4)", [store.scope, uiFan, crypto.randomUUID(), Date.now()]);
      await p.locator('#creatorsPanel [data-tab="admin"]').click();
+     await p.waitForSelector('[data-admin="link-referral"]');
+     await p.locator('[data-admin="link-referral"] summary').click();
+     await p.locator('[data-fill-player="UiFan"]').click();
+     assert.equal(await p.locator('[data-form="attribute"] [name="player"]').inputValue(), 'UiFan', '"Use" fills the player');
+     const creatorCode = await p.evaluate(() => CreatorsPortal.snapshot.creator.code);
+     await p.locator('[data-form="attribute"] [name="code"]').fill(new URL(p.url()).origin + '/?creator=' + creatorCode);
+     await p.locator('[data-form="attribute"] [name="reason"]').fill('Fixture: player used a broken link');
+     await p.locator('[data-form="attribute"] button').click();
+     await p.waitForFunction(() => /UiFan is now linked/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
+     assert.equal((await store.pool.query('SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [store.scope, uiFan])).rows[0].n * 1, 1, 'the staff link creates the referral');
+     assert.equal(await p.locator('[data-fill-player="UiFan"]').count(), 0, 'the linked player leaves the list');
+     // Owner request 2026-11-11: staff grant a rescue hero by hand, choosing the rarity.
+     await p.locator('[data-admin="rescue-grant"] summary').click();
+     await p.locator('[data-form="rescue-grant"] [name="player"]').fill('UiFan');
+     await p.locator('[data-form="rescue-grant"] [name="rank"]').selectOption('3');
+     assert.deepEqual(await p.locator('[data-form="rescue-grant"] [name="rank"] option').allInnerTexts(), ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'], 'never Mythic');
+     await p.locator('[data-form="rescue-grant"] [name="reason"]').fill('Fixture: prisoner freed before server rescue heroes');
+     await p.locator('[data-form="rescue-grant"] button').click();
+     await p.waitForFunction(() => /Granted: Elite rescue hero .* to UiFan/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
+     assert.equal((await store.profile(uiFan)).heroes.filter(h => h.prisonRescue && h.rank === 3).length, 1, 'the player has the Elite rescue hero');
+     // Owner request 2026-11-11: Hero Pass campaigns (rules, scan, preview, Send to all with confirmation, history).
+     process.env.HERO_PASS_ADMIN_ENABLED = 'on'; process.env.HERO_PASS_DISTRIBUTION_ENABLED = 'on';
+     await store.pool.query("INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,status,created) VALUES($1,$2,'hp-ui-summons-000001','summon',$3,'{}','{}','{}',375000,'hp-ui-sig-1','w',1,'confirmed',$4)", [store.scope, uiFan, JSON.stringify({ quantity: 15 }), Date.now()]);
+     await p.locator('[data-admin="hero-passes"] summary').click();
+     await p.locator('[data-hp="load"]').click();
+     await p.locator('[data-hp="new"]').click();
+     await p.locator('[data-form="hp-rules"] [name="t0passes"]').fill('6');
+     await p.locator('[data-form="hp-rules"] [name="reason"]').fill('Fixture: loyalty campaign');
+     await p.locator('[data-form="hp-rules"] button', { hasText: 'SAVE REWARD RULES' }).click();
+     await p.waitForFunction(() => /Reward rules saved \(v1\)/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
+     assert.equal(await p.locator('[data-form="hp-rules"] [name="t0passes"]').inputValue(), '6', 'edited Tier 1 quantity saved');
+     await p.locator('[data-hp="scan"]').click();
+     await p.waitForFunction(() => /Tier 2: 1 · Total accounts: 1 · Total passes: 3/.test(document.querySelector('[data-hp-result="scan"]')?.textContent || ''), null, { timeout: 15000 });
+     await p.locator('[data-hp="preview"]').click();
+     await p.waitForFunction(() => document.querySelector('[data-hp-result="preview"] tbody tr td.cp-wallet'));
+     await p.locator('[data-hp="send"]').click();
+     await p.locator('dialog.cp-modal [name="reason"]').fill('Fixture: send loyalty rewards');
+     await p.locator('dialog.cp-modal button[value="confirm"]').click();
+     await p.waitForFunction(() => /Sent: 1 of 1 rewards assigned\./.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
+     assert.equal((await store.pool.query("SELECT status FROM ryo_pass_entitlements WHERE scope=$1 AND wallet=$2", [store.scope, uiFan])).rows[0]?.status, 'pending', 'a pending reward for the eligible player');
+     assert.match(await p.locator('[data-hp-result="history"]').innerText(), /pending 1 \(3 passes\)/);
+     assert.equal(await p.locator('[data-form="hp-rules"] [data-hp="edit"]').count(), 0, 'rules locked after Send');
+     delete process.env.HERO_PASS_ADMIN_ENABLED; delete process.env.HERO_PASS_DISTRIBUTION_ENABLED;
+     // Owner request 2026-11-11: Starter Activation launch schedule (next 12:00 PM PHT), audited, cancellable before launch.
+     await p.locator('[data-admin="starter-activation"] summary').click();
+     await p.locator('[data-sa="load"]').click();
+     await p.waitForFunction(() => /Not scheduled \(dormant\)/.test(document.querySelector('[data-admin="starter-activation"]')?.textContent || ''));
+     await p.locator('[data-form="sa-schedule"] [name="reason"]').fill('Fixture: schedule the starter launch');
+     await p.locator('[data-form="sa-schedule"] button', { hasText: 'SCHEDULE LAUNCH' }).click();
+     await p.waitForFunction(() => /Starter Activation scheduled for .* 12:00 PHT \(.* 04:00 UTC\)/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
+     assert.equal((await store.pool.query("SELECT config->'starterActivation'->>'timezone' AS tz FROM ryo_admin_control WHERE scope=$1", [store.scope])).rows[0]?.tz, 'Asia/Manila', 'the launch is stored on the server');
+     await p.locator('[data-sa="cancel"]').click();
+     await p.locator('dialog.cp-modal [name="reason"]').fill('Fixture: cancel');
+     await p.locator('dialog.cp-modal button[value="confirm"]').click();
+     await p.waitForFunction(() => /Starter Activation schedule cancelled/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
      await p.screenshot({ path: path.join(root, 'tests/out/creators-admin-desktop.png') });
      await p.locator('#creatorsPanel [data-cp="close"]').click();
      await p.locator('[data-sbwid="nav-guild"]').click(); await p.waitForFunction(() => WebsiteDesign.current() === 'guild');
@@ -158,10 +228,27 @@ async function fixture(p, f, account, snapshot) {
      const initial=f.profile.heroes.length;await p.locator('[data-player-claim="2"]').click();await p.locator('.cp-modal button[value="confirm"]').click();
      await p.waitForFunction(()=>Number(CreatorsPortal.snapshot?.passes?.claimed)===2);
      assert.equal(f.profile.heroes.length,initial+2);assert(f.profile.heroes.slice(-2).every(h=>h.referralReward));
+     // The claimed heroes play the Summoning Shrine reveal (owner request 2026-11-10): the panel closes, nothing to buy again, and
+     // finishing lands on the Heroes screen with the newest heroes first (they are Genin, so rarest-first would hide them).
+     await p.waitForFunction(()=>S.v2.revealSource==='reward'&&S.v2.revealBatch?.length===2&&document.querySelector('#revealContinue'),null,{timeout:15000});
+     assert.equal(await p.locator('#creatorsPanel').isVisible(),false,'the referral panel makes way for the reveal');
+     assert.match(await p.locator('#revealTitle').innerText(),/Reward received/); assert.equal(await p.locator('.reveal-card .card-back').first().innerText().then(t=>/REWARD SCROLL/.test(t)),true);
+     assert.deepEqual(await p.evaluate(()=>S.v2.revealBatch.map(i=>[i.hero.tokenOwner===RyoPayments.state.account,!!i.hero.tokenId])),[[true,true],[true,true]],'the batch holds the player\'s own delivered heroes');
+     assert.equal(await p.locator('#revealAgain:visible, [data-reveal-again]:visible').count(),0,'no paid Summon Again for a reward');
+     await p.evaluate(()=>{Experience.revealAll();RevealDesign.skip()});
+     await p.waitForFunction(()=>S.v2.revealBatch.every(i=>i.revealed)&&!document.querySelector('#revealContinue').disabled);
+     await p.locator('#revealContinue').click();
+     await p.waitForFunction(()=>WebsiteDesign.current()==='heroes'&&document.querySelectorAll('.sbw-scr.on .sbw-hcard').length>=2,null,{timeout:15000});
+     assert.equal(await p.evaluate(()=>document.querySelector('#p1 .heroes-sort').value),'new','the Heroes screen shows the newest heroes first');
+     const firstTwo=await p.evaluate(()=>[...document.querySelectorAll('.sbw-scr.on .sbw-hcard')].slice(0,2).map(c=>({lock:!!c.querySelector('.sbw-bound'),rank:c.querySelector('.sbw-hc-top b')?.textContent})));
+     assert.deepEqual(firstTwo.map(c=>c.lock),[true,true],'both new referral heroes are first and carry the referral-bound lock (their rank follows the summon odds)');
+     await p.screenshot({path:path.join(root,`tests/out/reward-heroes-${width}.png`)});
+     await p.evaluate(()=>CreatorsPortal.openPlayer());await p.waitForFunction(()=>Number(CreatorsPortal.snapshot?.passes?.claimed)===2&&!document.querySelector('#creatorsPanel').hasAttribute('aria-busy'));
      assert.equal(await p.locator('[data-player-claim="2"]').isDisabled(),true);
      await p.locator('#cp-tab-history').click();assert.match(await p.locator('.cp-table').innerText(),/not NFTs/);
      await p.locator('#cp-tab-referrals').click();assert.match(await p.locator('.cp-table').innerText(),/2 passes unlocked/);assert(!(await p.locator('#creatorsPanel').innerText()).includes(invitee));
      await p.keyboard.press('Escape');assert.equal(await p.locator('#creatorsPanel').isVisible(),false);
+     await p.evaluate(()=>go(5));await p.waitForFunction(()=>WebsiteDesign.current()==='home');   // the reveal finished on the Heroes screen
      await p.locator('[data-sbwid="tut"]').click();await p.waitForFunction(()=>CreatorsPortal.snapshot?.marker==='shinobi-creators-portal-v1');
      assert.equal(await p.locator('#cp-tab-apply').count(),1,'creator application stays separate');assert.equal(await p.locator('[data-player-claim]').count(),0);
      assert.deepEqual(errors,[]);

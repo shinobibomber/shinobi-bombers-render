@@ -50,6 +50,9 @@ async function startServer() {
         assert.match(r.headers.get('content-security-policy'), /frame-ancestors 'none'/); assert.equal(r.headers.get('cache-control'), 'no-store');
         assert.equal((await fetch(url + '/admin/server.cjs')).status, 404); assert.equal((await fetch(url + '/admin/schema.sql')).status, 404);
         assert.equal((await fetch(url + '/admin/dashboard.js')).status, 200);
+        { const cc = await fetch(url + '/admin/command-center/'); assert.equal(cc.status, 200); assert.match(await cc.text(), /Shinobi Command Center/); assert.match(cc.headers.get('content-security-policy'), /script-src 'self'/); assert.equal(cc.headers.get('x-robots-tag'), 'noindex, nofollow');
+          assert.equal((await fetch(url + '/admin/command-center/cc.js')).status, 200); assert.equal((await fetch(url + '/admin/command-center/server.cjs')).status, 404); assert.equal((await fetch(url + '/admin/command-center/schema.sql')).status, 404);
+          assert.equal((await fetch(url + '/admin/command-center', { redirect: 'manual' })).status, 308); }
         const blocked = await fetch(url + '/api/ryo', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://wrong.example' }, body: '{"action":"admin-snapshot"}' }); assert.equal(blocked.status, 403);
       });
       await check('live: the home page opens the game at /play/ (website kept at /index.html)', async () => { const r = await fetch(url + '/?ref=x', { redirect: 'manual' }); assert.equal(r.status, 302); assert.equal(r.headers.get('location'), '/play/?ref=x'); assert.equal(r.headers.get('cache-control'), 'no-store'); const g = await page(); await g.goto(url + '/'); assert.equal(new URL(g.url()).pathname, '/play/'); assert.match(await g.title(), /Shinobi Bombers/); await g.close(); assert.equal((await fetch(url + '/index.html')).status, 200); });
@@ -58,7 +61,7 @@ async function startServer() {
         for (const alias of ['/whitepaper/', '/whitepaper.html']) { const x = await fetch(url + alias, { redirect: 'manual' }); assert.equal(x.status, 308); assert.equal(x.headers.get('location'), '/whitepaper'); }
         const w = await page(); await w.setViewportSize({ width: 1280, height: 900 }); await w.goto(url + '/whitepaper');
         assert.equal(await w.locator('main section[id]').count(), 16); assert.equal(await w.locator('.sidebar a').count(), 16);
-        assert.match(await w.title(), /Whitepaper v1\.1/); assert.match(await w.locator('.notice').textContent(), /Community Review Draft/);
+        assert.match(await w.title(), /Whitepaper v1\.2/); assert.match(await w.locator('.notice').textContent(), /Community Review Draft/);
         assert.equal(await w.locator('#netAmount').textContent(), '9,500 SR'); assert.equal(await w.locator('#feeAmount').textContent(), '500 SR');
         await w.locator('#withdrawAmount').fill('1234.567891'); assert.equal(await w.locator('#feeAmount').textContent(), '61.728394 SR'); assert.equal(await w.locator('#netAmount').textContent(), '1,172.839497 SR');
         assert.equal((await w.locator('body').textContent()).includes('★'), false, 'Mythic shows no star count');

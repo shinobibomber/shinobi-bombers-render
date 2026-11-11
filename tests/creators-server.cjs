@@ -15,11 +15,11 @@ const addr = k => k.publicKey.toBase58(), newWallet = () => addr(web3.Keypair.ge
    fs.copyFileSync(path.join(root, 'app/public/index.html'), path.join(fixture, 'public/index.html'));
    const expected = originalRead(path.join(root, 'app/server/schema.sql'), 'utf8').replace(/\n-- Combat contract v1[\s\S]*$/, ''), at = expected.indexOf('\n-- Creators Portal v1:'); assert(at > 0);
    fs.writeFileSync(path.join(fixture, 'server/schema.sql'), expected.slice(0, at));
-   const sources = [...['schema.sql','player-schema.sql'].map(file => path.join(root, 'creators-portal',file)), path.join(root, 'prelaunch/schema.sql'),path.join(root,'sr-revenue/schema.sql')];
+   const sources = [...['schema.sql','player-schema.sql'].map(file => path.join(root, 'creators-portal',file)), path.join(root, 'prelaunch/schema.sql'),path.join(root,'sr-revenue/schema.sql'),path.join(root,'treasury/schema.sql')];
    fs.readFileSync = function (name, options) { const value = originalRead.apply(this, arguments); return sources.includes(path.resolve(String(name))) && options === 'utf8' ? value.replace(/\r?\n/g, '\r\n') : value; };
    require('../apply-creators-portal.cjs').applyCreatorsPortal(fixture);
    require('../apply-prelaunch.cjs').applyPrelaunch(fixture);   // appended after the Creators Portal schema
-   require('../apply-sr-revenue.cjs').applySrRevenue(fixture);
+   require('../apply-sr-revenue.cjs').applySrRevenue(fixture);require('../apply-treasury.cjs').applyTreasury(fixture);
    assert.equal(originalRead(path.join(fixture, 'server/schema.sql'), 'utf8'), expected, 'CRLF checkout assembles identical migration bytes');
  } finally {
    fs.readFileSync = originalRead;
@@ -196,15 +196,20 @@ const addr = k => k.publicKey.toBase58(), newWallet = () => addr(web3.Keypair.ge
    process.env.CREATORS_PORTAL_ENABLED = 'invalid-setting'; await assert.rejects(call(owner, 'creator-state'), /not enabled/); process.env.CREATORS_PORTAL_ENABLED = 'on';
    await call(player, 'creator-appeal', { message: 'Please review my referral evidence.' });
    await assert.rejects(call(player, 'creator-appeal', { message: 'Duplicate' }), /already recorded/);
-   const destination = newWallet(), migration = await call(owner, 'creator-migrate', { wallet: destination });
-   await assert.rejects(call(stranger, 'creator-migrate', { accept: true, id: migration.migrationId }), /unavailable/);
-   await call(destination, 'creator-migrate', { accept: true, id: migration.migrationId });
+   // Creator wallet migration was removed (owner 2026-11-11): requests and acceptances are refused.
+   await assert.rejects(call(owner, 'creator-migrate', { wallet: newWallet() }), /no longer available/, 'wallet migration requests are refused');
+   await assert.rejects(call(stranger, 'creator-migrate', { accept: true, id: 'removed-migration-000001' }), /no longer available/, 'and acceptances');
+   assert.equal((await call(owner, 'creator-state')).creator.id, own.id, 'the creator stays on its wallet');
+   // A migration completed before the removal stays valid (seeded exactly as the old acceptance wrote it).
+   const destination = newWallet();
+   await store.pool.query('INSERT INTO ryo_creator_wallets(scope,wallet,creator_id) VALUES($1,$2,$3)', [store.scope, destination, own.id]);
+   await store.pool.query('UPDATE ryo_creators SET wallet=$3 WHERE scope=$1 AND id=$2', [store.scope, own.id, destination]);
    assert.equal((await call(destination, 'creator-state')).creator.id, own.id); assert.equal((await call(owner, 'creator-state')).creator, null);
-   await assert.rejects(call(owner, 'creator-apply', form), /reserved identity/);
-   const report = await cp.adminSnapshot(store, admin, {}); assert(report.audits.some(a => a.action === 'wallet.migrated')); assert(report.ledger.length === 0);
+   await assert.rejects(call(owner, 'creator-apply', form), /reserved identity/, 'the old wallet of an earlier migration stays reserved');
+   const report = await cp.adminSnapshot(store, admin, {}); assert(!report.audits.some(a => /^wallet\.migrat/.test(a.action)), 'no migration was recorded'); assert(report.ledger.length === 0);
    const publicState = await call(destination, 'creator-state'); assert(publicState.referrals.every(r => !r.wallet)); assert(!JSON.stringify(publicState).includes(player));
    assert.equal((await cp.publicInfo(other, ctx.origin)).rules.enrollmentRemaining, cp.DEFAULTS.enrollmentLimit, 'scopes isolate referral capacity and points');
    process.env.CREATORS_PORTAL_ENABLED = 'off'; await assert.rejects(call(destination, 'creator-state'), /not enabled/); process.env.CREATORS_PORTAL_ENABLED = 'on';
-   console.log('PASS: Creators Portal — signed wallet login/replay, admin roles and allowlist, permanent attribution, verified Stage 5, paid mint exclusions/order, exactly-once 50k CP, 5% claimed Adventure/purchase commissions, expiry snapshots, FIFO prequalification exclusion, atomic shop delivery/rollback/concurrency, limits, privacy, corrections, appeals and dual-wallet migration.');
+   console.log('PASS: Creators Portal — signed wallet login/replay, admin roles and allowlist, permanent attribution, verified Stage 5, paid mint exclusions/order, exactly-once 50k CP, 5% claimed Adventure/purchase commissions, expiry snapshots, FIFO prequalification exclusion, atomic shop delivery/rollback/concurrency, limits, privacy, corrections and appeals; wallet migration removed (refused), earlier migrations still honoured.');
  } finally { await db.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -16,26 +16,31 @@ allocation. A 25,000 SR summon assigns 12,500 to Locked Treasury, 7,500 to Activ
 Rewards, 2,500 to Community Rewards and 2,500 to Economic Reserve. No service studio share
 or automatic service burn remains. Token genesis allocations are a different policy.
 
-## Custody and honest reporting
+## Custody and honest reporting (v2, 2026-11-08)
 
-The router is a server adapter building one signed SPL transaction, not a newly deployed
-Solana router program. Three transfers move Treasury, Community and Reserve funds to their
-separate owner ATAs. Active Rewards stays in the existing game custody wallet to back the
-existing off-chain Chest-credit / later-withdrawal model. Its income and claim cap are
-separate accounting; it is **not a separate on-chain Active Rewards wallet balance**.
-Configuring a different Active Rewards owner is rejected until an external reward-vault
-settlement adapter exists. The dashboard states this distinction explicitly.
+The router is a server adapter that builds **one atomic signed SPL transaction**; it is not an on-chain
+router program (see [docs/treasury/SR_ROUTER_ANCHOR_DESIGN.md](../docs/treasury/SR_ROUTER_ANCHOR_DESIGN.md)).
+v2 sends **four** transfers, to the destinations in the committed public registry
+([treasury/treasury-registry.json](../treasury/treasury-registry.json)):
 
-Locked Treasury must be an initialized SPL Token multisig with at least two required
-distinct external signers, excluding the game custody signer. Existing Treasury ATAs must
-have the correct owner/mint, initialized state, no delegate and no outside close authority.
-These controls are checked at finalized commitment for configuration approval and every
-new checkout. Plain wallets and unsupported vault programs are rejected. This verifies
-multisig restrictions, **not a timelock, vesting schedule, or a prohibition on every action
-external signers might authorize**. A purpose-built vault would be needed for those rules.
+- Locked Treasury 50%: Squads v4 vault #0. Re-verified at finalized commitment for every approval and
+  checkout: the pinned program and discriminator, the vault PDA derived from the registered multisig,
+  threshold ≥ 2 and equal to the registry, the exact member set, no config authority, and the time lock as
+  recorded. No game-controlled key may be a member. The Treasury token account may have no delegate and no
+  foreign close authority.
+- Active Reward Pool 30%: the registered wallet, **outside game custody**. Adventure claims are funded only
+  by verified, independently approved top-ups into custody (sources: `activeRewards`, `lockedTreasury`,
+  `economicReserve`). Top-ups are internal transfers and are never split again.
+- Community 10% and Reserve 10%: registered plain wallets (System-owned or unfunded).
 
-Four distinct public owner addresses are required. Treasury/Community/Reserve cannot use
-the studio fee wallet. No keys are created, requested or committed by this feature.
+Configured destinations must **equal the registry**. If the registry later changes, the approved
+configuration becomes stale and payments stop (fail-closed). Destinations may never equal the custody,
+studio or legacy revenue wallets. Payments additionally need `SR_REVENUE_ROUTING_ENABLED=on`, a committed
+`activation.approved` and a registered SR mint equal to `RYO_TOKEN_MINT`.
+
+This is multisig approval, **not a timelock, vesting schedule, or a prohibition on every action the signers
+might authorize**. v1 quotes signed before the upgrade settle under their persisted wire and evidence. The
+5% withdrawal deduction is booked separately (`ryo_withdrawal_treasury_fees`, see [treasury/README.md](../treasury/README.md)).
 
 ## Configuration and activation
 
@@ -96,7 +101,7 @@ automatic buyback or community payout adapter.
 External Treasury multisig owners or the Reserve owner authorize the actual transfer
 outside the game. A successful finalized SR transfer must arrive from that configured
 source ATA at game custody. An operator then proposes **Verified SR rewards replenishment**
-with source (`lockedTreasury` or `economicReserve`), signature, whole-Ryo `amountRaw`, and
+with source (`activeRewards`, `lockedTreasury` or `economicReserve`), signature, whole-Ryo `amountRaw`, and
 evidence. A different approver reviews it before it becomes Active Rewards funding.
 
 The server verifies the network, successful finalized transaction, mint, exact source,

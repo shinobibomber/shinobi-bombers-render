@@ -1,0 +1,6 @@
+Live-server pricing update — 9 November 2026
+
+Mythic Founder boxes are 0.7 SOL and Legacy Founder packages are 0.25 SOL until the game opens to the public.
+At public launch, any remaining slots return to the regular prices: 1 SOL for Mythic and 0.5 SOL for Legacy.
+This replaces the previous Mythic early-bird offer. Existing purchases and pending reservations keep their agreed prices.
+Limited supply and the one-Founder-box-per-wallet rule remain unchanged.

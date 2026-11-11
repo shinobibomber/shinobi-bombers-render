@@ -8,6 +8,10 @@
   const dict = { en: null, cur: null };
   let lang = 'en', status = null, me = null, refPage = 0, lbPage = 0, countdownTimer = null;
   let intent = null, cr = null, crPage = 0, admPage = 0, admSearch = '';   // creator program state
+  let authBusy = false, authAttempt = 0, drawWallets = null;
+  let sessionReset = Promise.resolve();
+  const walletTriggers = () => $$('#connectBtn, #heroConnect, #refCta, #creatorCta');
+  walletTriggers().forEach(button => { button.disabled = true; button.setAttribute('aria-busy','true'); });
 
   /* ---------- i18n ---------- */
   function t(key, vars = {}) {
@@ -65,10 +69,12 @@
 
   /* ---------- API ---------- */
   async function api(action, body = {}) {
+    const sessionAtRequest = authAttempt;
     let r;
     try { r = await fetch('/api/prelaunch', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-SB-Prelaunch': '1' }, body: JSON.stringify({ ...body, action }) }); }
     catch { throw Object.assign(Error('network'), { code: 'NETWORK' }); }
     let data = {}; try { data = await r.json(); } catch {}
+    if (sessionAtRequest !== authAttempt && !['status', 'leaderboard', 'challenge', 'login', 'logout'].includes(action)) throw Object.assign(Error('session changed'), { code:'SIGN_IN', status:401 });
     if (!r.ok) throw Object.assign(Error(data.error || 'error'), { code: data.code || 'SERVER_ERROR', status: r.status });
     return data;
   }
@@ -113,44 +119,55 @@
   /* ---------- wallet sign-in ---------- */
   function openWallets() {
     const dlg = $('#walletDialog'), list = $('#walletList'), st = $('#walletStatus');
+    if (dlg.open) { drawWallets?.(); return; }
     st.textContent = ''; st.classList.remove('err');
     const draw = () => {
       const wallets = window.SBWallet?.list() || [];
-      if (!wallets.length) {
-        list.replaceChildren(el('p', { class: 'note', text: t('wallet.none') }),
-          el('a', { class: 'btn btn-ghost btn-sm', href: 'https://phantom.app/download', target: '_blank', rel: 'noopener noreferrer', text: t('wallet.getPhantom') }),
-          el('a', { class: 'btn btn-ghost btn-sm', href: 'https://solflare.com/download', target: '_blank', rel: 'noopener noreferrer', text: t('wallet.getSolflare') }));
-        return;
-      }
-      list.replaceChildren(...wallets.map(w => {
-        const b = el('button', { type: 'button' }, w.icon ? el('img', { src: w.icon, alt: '' }) : el('span', { class: 'wl-letter', 'aria-hidden': 'true', text: w.name[0] }), el('span', { text: w.name }), el('small', { text: t('wallet.detected') }));
-        b.addEventListener('click', () => signIn(w));
-        return b;
-      }));
+      const row = (w, name, label, href) => {
+        const n = w ? el('button', { type: 'button', 'data-wallet': w.kind }) : el('a', { href, target: '_blank', rel: 'noopener noreferrer', 'data-wallet': name.toLowerCase() });
+        if (label === 'wallet.recommended') n.classList.add('wallet-primary');
+        const fallback = el('span', { class: 'wl-letter', 'aria-hidden': 'true', text: name[0] }), icon = w?.icon ? el('img', { src: w.icon, alt: '' }) : fallback;
+        if (icon !== fallback) icon.addEventListener('error', () => icon.replaceWith(fallback), { once:true });
+        n.append(icon,
+          el('span', { class: 'wallet-name' }, el('strong', { text: name }), el('span', { text: t(label) })), el('small', { text: t(w ? 'wallet.detected' : 'wallet.install') }));
+        if (w) { n.disabled = authBusy; n.addEventListener('click', () => signIn(w)); }
+        return n;
+      };
+      list.replaceChildren(...(!wallets.length ? [el('p', { class: 'note', text: t('wallet.none') })] : []),
+        row(wallets.find(w => w.kind === 'phantom'), 'Phantom', 'wallet.recommended', 'https://phantom.app/download'),
+        row(wallets.find(w => w.kind === 'solflare'), 'Solflare', 'wallet.supported', 'https://solflare.com/download'),
+        ...wallets.filter(w => w.kind === 'other').map(w => row(w, w.name, 'wallet.standard')));
     };
-    draw(); const off = window.SBWallet?.onChange(draw);
-    dlg.addEventListener('close', () => off?.(), { once: true });
+    drawWallets = draw; draw(); const off = window.SBWallet?.onChange(draw);
+    dlg.addEventListener('close', () => { off?.(); drawWallets = null; if (authBusy) authAttempt++; }, { once: true });
     if (!dlg.open) dlg.showModal();
   }
   async function signIn(w) {
-    const st = $('#walletStatus'), buttons = $$('#walletList button');
-    buttons.forEach(b => { b.disabled = true; }); st.classList.remove('err');
+    if (authBusy) return;
+    authBusy = true; const attempt = ++authAttempt, current = () => attempt === authAttempt && $('#walletDialog').open;
+    const st = $('#walletStatus'); drawWallets?.(); st.classList.remove('err');
     try {
+      await sessionReset; if (!current()) return;
       st.textContent = t('wallet.connecting', { wallet: w.name });
       const { address } = await SBWallet.connect(w.id);
+      if (!current()) return;
       const challenge = await api('challenge', { wallet: address });
-      // The message is built by the server; check it names this site and wallet before signing.
-      if (!challenge.message.startsWith(location.host + ' wants you to sign in') || !challenge.message.includes('\n' + address + '\n') || !challenge.message.includes('URI: ' + location.origin)) throw Object.assign(Error('origin'), { code: 'ORIGIN' });
+      if (!current()) return;
+      SBWallet.validateChallenge(challenge, address, status?.network);
       st.textContent = t('wallet.signing', { wallet: w.name });
       const signature = await SBWallet.signMessage(challenge.message);
-      me = await api('login', { wallet: address, nonce: challenge.nonce, signature });
+      if (!current()) return;
+      const session = await api('login', { wallet: address, nonce: challenge.nonce, signature });
+      if (!current()) { try { await api('logout'); } catch {} return; }
+      me = session;
       try { localStorage.setItem(SESSION_KEY, '1'); } catch {}
       $('#walletDialog').close();
       afterSignIn();
     } catch (e) {
+      if (!current()) return;
       const code = ['NETWORK', 'ORIGIN', 'RATE_LIMITED', 'SIGNATURE_INVALID', 'WALLET_INVALID', 'SERVER_ERROR'].includes(e.code) ? e.code : window.SBWallet?.errorCode(e) || 'default';
       st.textContent = errText({ code }); st.classList.add('err');
-    } finally { buttons.forEach(b => { b.disabled = false; }); }
+    } finally { authBusy = false; drawWallets?.(); }
   }
   function afterSignIn() {
     if (!me) return;
@@ -220,6 +237,7 @@
     renderCreator();
     const panel = $('#adminPanel'); panel.hidden = !cr?.adminRole;
     if (cr?.adminRole) loadAdmin();
+    const treasury = $('#treasuryPanel'); if (treasury) { treasury.hidden = !cr?.adminRole; if (cr?.adminRole) loadTreasury(); }
   }
   const dateOf = ms => ms ? fmtDate(ms) : '—';
   const pill = st => el('span', { class: 'pill s-' + st, text: t('cs.' + st) });
@@ -249,6 +267,7 @@
     box.replaceChildren(el('div', { class: 'row' }, pill('APPROVED'), el('b', { text: t('crd.approved') }), el('span', { class: 'note', text: t('crd.code') + ': ' }), el('b', { class: 'mono', id: 'creatorCode', text: c.code })),
       note, el('h4', { text: t('crd.link') }), el('div', { class: 'link-row' }, input, copy, share),
       el('div', { class: 'cstats' }, stat(fmtNum(cr.stats.total), 'crd.total'), stat(fmtNum(cr.stats.pending), 'crd.progress'), stat(fmtNum(cr.stats.qualified), 'crd.qualified'), stat(fmtNum(cp), 'crd.cp')),
+      cr.stats.playerLink ? el('p', { class: 'note', 'data-player-link': '', text: t('crd.playerLinkNote', { n: fmtNum(cr.stats.playerLink) }) }) : null,
       list, el('p', { class: 'note', text: t('crd.launchNote') }));
   }
   function openCreatorDialog() {
@@ -278,6 +297,37 @@
       st.textContent = errText(e);
     } finally { btn.disabled = false; btn.textContent = t('ap.submit'); }
   }
+  /* Treasury (Chapter 04): read-only admin view. Text nodes only; no wallet action. */
+  async function loadTreasury() {
+    const box = $('#treasuryBody'); if (!box) return;
+    try {
+      const d = await api('treasury-admin'), v = d.verification || {};
+      const pill = st => el('span', { class: 'pill s-' + (st === 'verified' ? 'APPROVED' : st === 'mismatch' ? 'REJECTED' : 'PENDING'), text: String(st || 'unverified').toUpperCase() });
+      const meta = text => el('p', { class: 'meta', text });
+      const sq = v.squads && v.squads.members ? { threshold: v.squads.threshold, members: v.squads.members.length, timeLock: v.squads.timeLockSeconds, proposals: v.squads.transactionIndex } : { threshold: d.squads.threshold, members: d.squads.members.length, timeLock: d.squads.timeLockSeconds, proposals: '—' };
+      const onOff = (on, offKey) => t(on ? 'trs.on' : offKey || 'trs.off');
+      const sr = live => !live || live.srRaw == null ? t('trs.pending') : fmtNum(Number(BigInt(live.srRaw) / 1000000n));
+      const sol = live => !live || live.solLamports == null ? '—' : fmtNum(live.solLamports / 1e9);
+      box.replaceChildren(
+        el('div', { class: 'row' }, el('span', { class: 'meta', text: t('trs.status') }), pill(d.applicable ? v.status : 'unverified')),
+        ...d.registry.destinations.map(x => { const live = v.destinations && v.destinations[x.role]; return el('div', { class: 'admin-item', 'data-role': x.role },
+          el('div', { class: 'row' }, pill(live && live.verification ? live.verification.status : 'unverified'), el('b', { text: x.label + ' · ' + x.percent + '%' })),
+          el('p', { class: 'mono small', text: x.address }), meta(t('trs.balanceSol') + ': ' + sol(live) + ' · ' + t('trs.balanceSr') + ': ' + sr(live))); }),
+        ...(d.registry.gameCustody ? [el('div', { class: 'admin-item', 'data-role': 'gameCustody' }, el('div', { class: 'row' }, pill(v.gameCustody && v.gameCustody.verification ? v.gameCustody.verification.status : 'unverified'), el('b', { text: t('trs.custody') })),
+          el('p', { class: 'mono small', text: d.registry.gameCustody.address }), meta(t('trs.balanceSol') + ': ' + sol(v.gameCustody) + ' · ' + t('trs.balanceSr') + ': ' + sr(v.gameCustody)), el('p', { class: 'note', text: t('trs.custodyNote') }))] : []),
+        el('div', { class: 'admin-item' }, el('b', { text: t('trs.squads') }), meta(sq.threshold + ' / ' + sq.members + ' · ' + t('trs.timeLock') + ': ' + sq.timeLock + ' s · ' + t('trs.proposals') + ': ' + sq.proposals),
+          el('p', { class: 'mono small', text: d.squads.multisig }), ...d.squads.members.map(m => el('p', { class: 'mono small', text: m }))),
+        el('div', { class: 'admin-item' }, el('b', { text: t('trs.mint') }), meta(v.mint && v.mint.address ? v.mint.address + ' · ' + String(v.mint.status).toUpperCase() : t('trs.mintPending'))),
+        el('div', { class: 'admin-item', 'data-funding': '' }, el('b', { text: t('trs.funding') }),
+          meta(t('trs.held') + ': ' + (v.externalHeld && v.externalHeld.status === 'verified' ? fmtNum(Number(BigInt(v.externalHeld.srRaw) / 1000000n)) + ' SR' : v.externalHeld && v.externalHeld.status === 'unverified' ? '—' : t('trs.mintPending'))),
+          meta(t('trs.claimable') + ': ' + (d.claimFunding && d.claimFunding.availableRyo != null ? fmtNum(d.claimFunding.availableRyo) + ' SR' : t('trs.notConfigured'))), el('p', { class: 'note', text: t('trs.claimNote') })),
+        el('div', { class: 'admin-item' }, el('b', { text: t('trs.flags') }), meta(t('trs.routing') + ': ' + onOff(d.flags.srRouting) + ' · ' + t('trs.activation') + ': ' + onOff(d.flags.activationApproved) + ' · ' + t('trs.mint') + ': ' + onOff(d.flags.mintRegistered, 'trs.pending'))),
+        ...(d.ledgers ? [el('div', { class: 'admin-item' }, el('b', { text: t('trs.ledgers') }), meta(t('trs.revenue') + ': ' + (d.ledgers.serviceRevenue ? d.ledgers.serviceRevenue.count : '—') + ' · ' + t('trs.replenishments') + ': ' + (d.ledgers.replenishments ? d.ledgers.replenishments.count : '—') + ' · ' + t('trs.withdrawalFees') + ': ' + (d.ledgers.withdrawalDeductions ? d.ledgers.withdrawalDeductions.count : '—')))] : []),
+        ...(v.alerts || []).map(a => el('p', { class: 'note', text: '⚠ ' + a.signal + ': ' + a.detail })),
+        ...(d.applicable ? [] : [el('p', { class: 'note', text: d.note })]));
+    } catch (e) { box.replaceChildren(el('p', { class: 'note', text: errText(e) })); }
+  }
+  document.addEventListener('click', e => { if (e.target && e.target.id === 'treasuryRefresh') loadTreasury(); });
   async function loadAdmin() {
     const box = $('#adminList');
     try {
@@ -317,6 +367,7 @@
       const d = await api('referrals', { page: refPage });
       $('#sInvited').textContent = fmtNum(d.stats.invited); $('#sProgress').textContent = fmtNum(d.stats.inProgress); $('#sQualified').textContent = fmtNum(d.stats.qualified);
       $('#sAvailable').textContent = fmtNum(d.stats.rewardsAvailable); $('#sEarned').textContent = fmtNum(d.stats.heroesEarned);
+      const sync = $('#creatorSyncNote'); if (sync) sync.hidden = !d.stats.creatorProgram;
       if (!d.referrals.length) { box.replaceChildren(el('p', { class: 'note', text: t('dash.none') })); }
       else {
         const cell = (label, ...content) => el('div', {}, el('span', { class: 'lbl', text: label }), ...content);
@@ -357,9 +408,15 @@
     toggle?.addEventListener('click', () => { const open = !links.classList.contains('open'); links.classList.toggle('open', open); toggle.setAttribute('aria-expanded', String(open)); });
     links?.addEventListener('click', e => { if (e.target.closest('a')) { links.classList.remove('open'); toggle?.setAttribute('aria-expanded', 'false'); } });
     await setLang(initialLang(), false);
-    if (document.body.dataset.page === 'doc') return;   // legal pages: language + comfort only
+    if (document.body.dataset.page === 'doc') { document.body.dataset.portalReady='true'; return; }   // legal pages: language + comfort only
 
     captureReferral();
+    SBWallet.onChange(event => {
+      if (event.type !== 'session') return;
+      authAttempt++; signedOut(true);
+      for (const id of ['#walletDialog', '#registerDialog', '#creatorDialog']) if ($(id)?.open) $(id).close();
+      sessionReset = api('logout').catch(() => {});
+    });
     for (const id of ['#connectBtn', '#heroConnect', '#refCta']) $(id)?.addEventListener('click', connectOrDashboard);
     // "Apply as a creator": sign in and register first if needed, then the application opens by itself.
     $('#creatorCta')?.addEventListener('click', () => { intent = 'creator'; if (me?.player) runIntent(); else if (me && !me.registered) openRegister(); else openWallets(); });
@@ -388,6 +445,8 @@
     // Only ask for the session when this browser signed in before (avoids a needless 401 for new visitors).
     let hint = false; try { hint = localStorage.getItem(SESSION_KEY) === '1'; } catch {}
     if (hint) try { me = await api('me'); if (me.player?.language && me.player.language !== lang) await setLang(me.player.language); afterSignInQuiet(); } catch { signedOut(); }
+    walletTriggers().forEach(button => { button.disabled = false; button.removeAttribute('aria-busy'); });
+    document.body.dataset.portalReady='true';
   }
   function afterSignInQuiet() { if (me?.player) showDashboard(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

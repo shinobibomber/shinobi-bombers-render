@@ -1,0 +1,11 @@
+:root { color-scheme: dark; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0e0f14; color: #e8e8ee; font: 16px/1.5 system-ui, sans-serif; }
+main { width: min(420px, calc(100% - 32px)); padding: 24px; border: 1px solid #2a2c38; border-radius: 12px; background: #161822; }
+h1 { margin: 0 0 8px; font-size: 1.3rem; }
+.note { margin: 0 0 16px; color: #a9abb8; font-size: .9rem; }
+.wallets { display: grid; gap: 8px; }
+button { padding: 12px; border: 1px solid #3a3d50; border-radius: 8px; background: #20232f; color: inherit; font: inherit; cursor: pointer; }
+button:hover:not(:disabled) { background: #2a2e3d; }
+button:disabled { opacity: .5; cursor: default; }
+#status { min-height: 1.5em; margin: 16px 0 0; font-size: .9rem; }
+#status.err { color: #ff8a8a; }

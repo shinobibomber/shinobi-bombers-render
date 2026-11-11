@@ -74,3 +74,4 @@ html.sb-colorblind #sbwLayer .sbw-bar i { background-image: repeating-linear-gra
   .sbds-row { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) { .sbds * { transition: none !important; } }
+html.sb-no-bloom #sbwLayer .sbw-frame::after { display: none !important; }

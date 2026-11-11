@@ -64,6 +64,8 @@ function keyPair() {
     assert.equal((await call('status', {}, { raw: '{bad json' })).status, 400);
     assert.equal((await call('status', {}, { raw: JSON.stringify({ action: 'status', pad: 'x'.repeat(5000) }) })).status, 413);
     assert.equal((await call('me')).status, 401);
+    assert.equal((await call('me',{}, {cookie:'sb_pl=%ZZ'})).status,401,'malformed cookies fail as sign-in errors');
+    assert.equal((await call('logout',{}, {cookie:'sb_pl=%ZZ'})).status,200,'malformed cookies can still be cleared');
     assert.equal((await call('challenge', { wallet: 'not-a-wallet' })).body.code, 'WALLET_INVALID');
 
     // Sign-in: the server-built message is a SIWS-style message bound to the origin, free, no transaction.
@@ -81,6 +83,11 @@ function keyPair() {
     assert.equal((await call('login', { wallet: A.wallet, nonce: chA.body.nonce, signature: A.sign(chA.body.message) })).status, 401, 'a used nonce cannot be replayed');
     clock += 3000; const chExp = await call('challenge', { wallet: A.wallet }); clock += 121000;
     assert.equal((await call('login', { wallet: A.wallet, nonce: chExp.body.nonce, signature: A.sign(chExp.body.message) })).status, 401, 'expired challenges are refused');
+    clock+=3000;const exactExpiry=await call('challenge',{wallet:A.wallet});clock+=120000;
+    assert.equal((await call('login',{wallet:A.wallet,nonce:exactExpiry.body.nonce,signature:A.sign(exactExpiry.body.message)})).status,401,'SIWS expires exactly at its expiration time');
+    clock+=3000;const foreignWallet=keyPair(),foreign=await call('challenge',{wallet:foreignWallet.wallet});const foreignMessage=foreign.body.message.replace('URI: '+ORIGIN,'URI: https://evil.example');
+    await pool.query('UPDATE ryo_challenges SET message=$3 WHERE scope=$1 AND wallet=$2',[SCOPE,foreignWallet.wallet,foreignMessage]);
+    assert.equal((await call('login',{wallet:foreignWallet.wallet,nonce:foreign.body.nonce,signature:foreignWallet.sign(foreignMessage)})).status,401,'even a signed stored challenge must match this server SIWS origin');
     const cookieA = goodA.setCookie.split(';')[0];
     assert.equal((await call('me', {}, { cookie: COOKIE + '=forged-token' })).status, 401);
 
@@ -117,9 +124,9 @@ function keyPair() {
 
     // Dashboard: only real data; pre-launch progress is not invented.
     const dash = await call('referrals', {}, { cookie: cookieA });
-    assert.deepEqual(dash.body.stats, { invited: 1, inProgress: 1, qualified: 0, rewardsAvailable: 0, heroesEarned: 0 });
+    assert.deepEqual(dash.body.stats, { invited: 1, inProgress: 1, qualified: 0, rewardsAvailable: 0, heroesEarned: 0, creatorProgram: false });
     assert.equal(dash.body.prelaunch, true); assert.equal(dash.body.referrals.length, 1);
-    assert.deepEqual({ ...dash.body.referrals[0], joined: 0 }, { player: 'Bunta', joined: 0, status: 'IN_PROGRESS', paidHeroes: 0, stage5: false, rewardLocked: true });
+    assert.deepEqual({ ...dash.body.referrals[0], joined: 0 }, { player: 'Bunta', joined: 0, via: 'player', status: 'IN_PROGRESS', paidHeroes: 0, stage5: false, rewardLocked: true });
     assert.ok(!JSON.stringify(dash.body).includes(B.wallet), 'invitee wallets are never exposed');
     assert.equal((await call('referrals', { page: -1 }, { cookie: cookieA })).status, 400);
 
@@ -185,8 +192,10 @@ function keyPair() {
     assert.match(log, /PRE-LAUNCH portal \(game closed until launch\)/);
     const get = (p, init = {}) => fetch('http://127.0.0.1:' + sitePort + p, { redirect: 'manual', ...init });
     const home = await get('/?referral=RPABC'); assert.equal(home.status, 200); assert.match(await home.text(), /THE SHINOBI ERA BEGINS SOON/);
+    assert.match(home.headers.get('content-security-policy'),/script-src 'self'/);assert.match(home.headers.get('content-security-policy'),/connect-src 'self'/);assert.equal(home.headers.get('x-frame-options'),'DENY');
     for (const [p, status, location] of [['/play/', 302, '/'], ['/play', 302, '/'], ['/play/index.html?referral=RPX', 302, '/?referral=RPX'], ['/rules.html', 308, '/rules'], ['/privacy/', 308, '/privacy'],
-      ['/beta-config.json', 404], ['/admin/', 404], ['/admin', 404], ['/pl/server.cjs', 404], ['/pl/schema.sql', 404], ['/pl/../server/site-server.cjs', 404], ['/play/assets/beta-wallet.js', 404], ['/play/assets/creators-portal/portal.js', 404]]) {
+      ['/beta-config.json', 404], ['/admin/', 404], ['/admin', 404], ['/admin/command-center/', 404], ['/admin/command-center/cc.js', 404], ['/admin/command-center', 404], ['/pl/server.cjs', 404], ['/pl/schema.sql', 404], ['/pl/../server/site-server.cjs', 404], ['/play/assets/beta-wallet.js', 404], ['/play/assets/creators-portal/portal.js', 404],
+      ['/private-test', 404], ['/private-test/private-access.js', 404]]) {   // the private-testing page exists only with RELEASE_STAGE=private
       const r = await get(p); assert.equal(r.status, status, p); if (location) assert.equal(r.headers.get('location'), location, p);
     }
     for (const p of ['/rules', '/privacy', '/terms', '/whitepaper', '/pl/prelaunch.js', '/pl/wallet.js', '/pl/i18n/pt-BR.json', '/pl/announcements.json', '/pl/assets/logo.webp', '/play/assets/login-exact/login-reference.webp']) assert.equal((await get(p)).status, 200, p);
@@ -202,6 +211,9 @@ function keyPair() {
     // The portal API answers status without a database round-trip.
     const s = await get('/api/prelaunch', { method: 'POST', headers: { 'content-type': 'application/json', origin: siteOrigin, 'x-sb-prelaunch': '1' }, body: JSON.stringify({ action: 'status' }) });
     assert.equal(s.status, 200); assert.equal((await s.json()).prelaunch, true);
+    // No private pass can be issued in the portal-only stage (answered before any database round-trip).
+    const pa = await get('/api/prelaunch', { method: 'POST', headers: { 'content-type': 'application/json', origin: siteOrigin, 'x-sb-prelaunch': '1' }, body: JSON.stringify({ action: 'private-access' }) });
+    assert.equal(pa.status, 404); assert.equal((await pa.json()).code, 'UNKNOWN_ACTION'); assert.equal(pa.headers.get('set-cookie'), null);
     console.log('PASS: PRELAUNCH_MODE host — portal pages, clean URLs, artwork only from the game, game API/admin/config closed (403/404), unsafe settings refused at start-up.');
   } finally { child.kill(); }
 })().catch(e => { console.error(e); process.exit(1); });

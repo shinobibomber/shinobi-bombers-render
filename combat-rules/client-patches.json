@@ -218,5 +218,50 @@
     "Math.min(mx,h.en+dt/60*(has(h,3)?1.15:1))",
     "Math.min(1,h.en+dt*CombatRules.recovery(h,0,true))",
     1
+  ],
+  [
+    "S.h.forEach(h=>{const mx=CombatRules.maxChakra(h);",
+    "const now_=performance.now(),br_=window.__sbBenchReady;if(!(br_&&br_.set instanceof Set&&br_.h===S.h&&now_-br_.at<=500))window.__sbBenchReady={set:new Set(window.BattleRoster?BattleRoster.list():S.h),h:S.h,at:now_};const benchReady=window.__sbBenchReady.set;S.h.forEach(h=>{const mx=CombatRules.maxChakra(h);",
+    1
+  ],
+  [
+    "if(!h.on||h.x<0){h.en=Math.min(mx,h.en+dt*CombatRules.recovery(h,S.dojo||0,true));h.z=0;return}",
+    "if(!h.on||h.x<0){if(benchReady.has(h))h.en=Math.min(mx,h.en+dt*CombatRules.recovery(h,S.dojo||0,true));if(h.nap&&h.en>=CombatRules.restTarget(h))h.nap=0;h.z=0;return}",
+    1
+  ],
+  [
+    "if(h.en<1){h.en=Math.min(1,h.en+dt*CombatRules.recovery(h,0,true));h.z=1;h.p=[];return}h.z=0;",
+    "if(h.en<1)h.nap=1;if(h.nap){const rt=CombatRules.restTarget(h);if(h.en<rt){h.en=Math.min(rt,h.en+dt*CombatRules.recovery(h,S.dojo||0,true));if(h.en<rt){h.z=1;h.p=[];return}}h.nap=0}h.z=0;",
+    1
+  ],
+  [
+    "h.en=Number.isFinite(descriptor.chakra?.value)?Math.min(CombatRules.maxChakra(h),descriptor.chakra.value):",
+    "h.nap=descriptor.chakra?.napping?1:0;h.en=Number.isFinite(descriptor.chakra?.value)?Math.min(CombatRules.maxChakra(h),window.CombatClient?.projectChakra?CombatClient.projectChakra(h,descriptor.chakra,p):descriptor.chakra.value):",
+    1
+  ],
+  [
+    "function workAll(){const best=BattleRoster.list().filter(h=>h.en>=1).sort(",
+    "function workAll(){const best=BattleRoster.list().filter(h=>CombatRules.workAllReady(h)).sort(",
+    1
+  ],
+  [
+    "toast(best.length?`${best.length} heroes deployed`:'All heroes need chakra. Let them rest first.')}",
+    "toast(best.length?`${best.length} heroes deployed`:'No hero has 30% chakra yet. Let them rest first.')}",
+    1
+  ],
+  [
+    "function drawParticles(dt){",
+    "/* Performance (owner request 2026-11-10): floating numbers (damage, rewards) were re-parsed with a new font size and stroked +\n   filled for every particle on every frame. Each distinct text is now drawn once into a small cached sprite (2x for sharpness)\n   and the sprite is scaled/faded per frame. Looks the same; far fewer text operations. */\n const TXT_S=2,txtCache=new Map();\n function textSprite(text,col,size){\n  const key=text+'|'+col+'|'+size;let s=txtCache.get(key);if(s)return s;\n  if(txtCache.size>300)txtCache.clear();\n  const c=document.createElement('canvas'),q=c.getContext('2d'),font='900 '+size*TXT_S+'px Impact,\"Arial Black\",sans-serif',pad=Math.ceil(4*TXT_S);\n  q.font=font;const w=Math.ceil(q.measureText(text).width)+2*pad+Math.ceil(3.5*TXT_S),by=Math.ceil(size*TXT_S*1.1)+pad,h=by+Math.ceil(size*TXT_S*.35)+pad;\n  c.width=w;c.height=h;q.font=font;q.textAlign='center';q.lineWidth=3.5*TXT_S;q.strokeStyle='#0a0f1f';q.strokeText(text,w/2,by);q.fillStyle=col;q.fillText(text,w/2,by);\n  s={c,w,h,bx:w/2,by};txtCache.set(key,s);return s;\n }\n function drawParticles(dt){",
+    1
+  ],
+  [
+    "else if(p.t==='text'){g.globalCompositeOperation='source-over';g.globalAlpha=Math.min(1,k*2.2);g.font='900 '+(p.size*(k>.8?1+(k-.8)*2:1))+'px Impact,\"Arial Black\",sans-serif';g.textAlign='center';g.lineWidth=3.5;g.strokeStyle='#0a0f1f';g.strokeText(p.text,p.x,p.y);g.fillStyle=p.col;g.fillText(p.text,p.x,p.y)}",
+    "else if(p.t==='text'){g.globalCompositeOperation='source-over';g.globalAlpha=Math.min(1,k*2.2);const sc=k>.8?1+(k-.8)*2:1,sp=textSprite(String(p.text),p.col,p.size);g.drawImage(sp.c,p.x-sp.bx/TXT_S*sc,p.y-sp.by/TXT_S*sc,sp.w/TXT_S*sc,sp.h/TXT_S*sc)}",
+    1
+  ],
+  [
+    "g.font='900 15px Impact,\"Arial Black\",sans-serif';g.textAlign='center';g.lineWidth=3.5;g.strokeStyle='#0a0f1f';g.strokeText(f.s,p[0],p[1]);g.fillStyle='#ffd76a';g.fillText(f.s,p[0],p[1]);g.globalAlpha=1;g.textAlign='left'}",
+    "const sp=textSprite(String(f.s),'#ffd76a',15);g.drawImage(sp.c,p[0]-sp.bx/TXT_S,p[1]-sp.by/TXT_S,sp.w/TXT_S,sp.h/TXT_S);g.globalAlpha=1}",
+    1
   ]
 ]

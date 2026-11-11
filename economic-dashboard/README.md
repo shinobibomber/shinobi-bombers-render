@@ -10,7 +10,10 @@ Configure comma-separated **public** wallet addresses in the Render service envi
 - `RYO_ADMIN_OPERATORS`: read, propose reporting configuration, and immediately pause new operations.
 - `RYO_ADMIN_APPROVERS`: operator permissions plus independently approve/reject another wallet's proposal.
 
-An approver cannot approve their own proposal, even if they also have another role. Use two distinct wallets. Existing custody, revenue and studio wallets cannot use the game's player login; use dedicated admin wallets. Never configure private keys or seed phrases for admin access. An empty allowlist grants no access. Access changes take effect after the environment change is deployed. Roles are evaluated on every API request; sessions expire using the existing one-hour policy.
+An approver cannot approve their own proposal, even if they also have another role. Use two distinct wallets.
+Exception (owner decision 2026-11-10): `ADMIN_SELF_APPROVAL=on` in Render lets an approver approve or reject its own
+proposals (every kind). The approver role, expiry, stale-version and on-chain checks still apply; each self-review is
+marked `selfApproved` in the audit chain and the dashboard shows an alert while it is on. Remove it to require two wallets. Existing custody, revenue and studio wallets cannot use the game's player login; use dedicated admin wallets. Never configure private keys or seed phrases for admin access. An empty allowlist grants no access. Access changes take effect after the environment change is deployed. Roles are evaluated on every API request; sessions expire using the existing one-hour policy.
 
 Sign in with Phantom. The dashboard holds the session token only in memory, clears its display on logout/session expiry, and does not perform wallet transfers. Role bootstrap remains a hosting-owner operation so an app administrator cannot grant themselves additional access.
 

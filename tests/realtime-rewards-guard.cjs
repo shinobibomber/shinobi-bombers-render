@@ -62,15 +62,63 @@ for(let rank=0;rank<6;rank++)for(const stat of [null,'pw','sp','st'])for(const b
  assert((d.reportedKills||0)*1625<=3*R.damage(p.heroes[0]),'flood cannot exceed actual cooldown and Power');
  assert(p.heroes[0].chakra.value>=R.maxChakra(p.heroes[0])-3,'flood cannot debit nonexistent actions');
 }
+// Owner decision 2026-11-10 (choice A): an exhausted deployed hero rests until 10% of its max chakra is back (Dojo rate),
+// then fights at full speed. Every kill is still credited in the same sync; the guard fails any rest LONGER than the rule.
 {
- const p=economy.normalizeProfile({heroes:[{tokenId:'recovered',rank:5,trainingVersion:2,baseStats:{pw:20,sp:20,st:20},perks:[0,1,2,3,4,5,6],chakra:{version:1,value:1.5,at:t0,nextAt:t0,resting:false}}],battleReady:['recovered']});
- const report=(attacks,kills)=>({combatVersion:1,killSession:'guard-recovered',killStage:1,deployed:['recovered'],combatHeroes:[{id:'recovered',attacks,kills:[kills,0,0,0,0]}]});
- let d=A.advance(null,p,t0,true,60,report(0,0));d=A.advance(d,p,t0+550000,true,60,report(12,2));
- assert.equal(d.reportedKills,2,'first reconnect sync credits kills after mid-gap exhaustion and genuine recovery');
+ const p=economy.normalizeProfile({dojo:6,heroes:[{tokenId:'recovered',rank:5,trainingVersion:2,baseStats:{pw:20,sp:20,st:20},perks:[0,1,2,3,4,5,6],chakra:{version:1,value:1.5,at:t0,nextAt:t0,resting:false}}],battleReady:['recovered']});
+ const h=p.heroes[0],target=R.restTarget(h),report=(attacks,kills)=>({combatVersion:1,killSession:'guard-recovered',killStage:1,deployed:['recovered'],combatHeroes:[{id:'recovered',attacks,kills:[kills,0,0,0,0]}]});
+ const restMs=Math.ceil((target-0.5)/(R.recovery(h,6,true)/1000)),acc=d=>d.combatSessions['guard-recovered'].heroes.recovered.accepted;
+ // A reconnect in the middle of the rest (half-way through it), then syncs during the rest, then the first sync after it.
+ const mid=Math.floor(restMs/2);
+ let d=A.advance(null,p,t0,true,60,report(0,0));d=A.advance(d,p,t0+mid,true,60,report(12,2));
+ assert.equal(h.chakra.napping,true,'the exhausted deployed hero rests');
+ assert.deepEqual([acc(d),d.reportedKills||0],[1,0],'a mid-rest flood report is limited to the one genuine attack and credits nothing');
+ for(let t=t0+mid+30000;t<t0+restMs;t+=30000){d=A.advance(d,p,t,true,60,report(13,2));assert.equal(acc(d),1,'an attack claimed while resting is refused');assert.equal(d.reportedKills||0,0,'nothing is credited while resting');}
+ d=A.advance(d,p,t0+restMs+60000,true,60,report(25,2));
+ assert.equal(d.reportedKills,2,'first sync after the 10% rest credits the real kills');
  assert.equal(d.pending,2*Math.floor(35625*.6*1.03),'recovered attacks retain only verified Bounty rewards');
- assert.equal(d.combatSessions['guard-recovered'].heroes.recovered.accepted,12,'all twelve actions are verified');
- // +0.5/min Fast Charge lets this hero finish earlier and refill its one-chakra active-idle cap.
- assert.equal(p.heroes[0].chakra.value,1,'active idle recovery banks at most one chakra');
- d=A.advance(d,p,t0+550000,true,60,report(13,2));assert.equal(d.combatSessions['guard-recovered'].heroes.recovered.accepted,13);assert.equal(p.heroes[0].chakra.value,0,'the recovered next attack spends exactly one chakra');d=A.advance(d,p,t0+550000,true,60,report(14,2));assert.equal(d.combatSessions['guard-recovered'].heroes.recovered.accepted,13,'no second attack is free at zero chakra');
+ assert.equal(acc(d),13,'the one attack before the rest and the twelve after it are verified, nothing more');
+ assert(Math.abs(h.chakra.value-(target-12))<1e-6,'twelve attacks after the rest cost exactly twelve chakra from the 10% target');
+ const at=t0+restMs+60000;d=A.advance(d,p,at,true,60,report(25,2));assert.equal(acc(d),13,'a replayed report credits nothing');
+ d=A.advance(d,p,at,true,60,report(100000,50));const flood=acc(d);
+ assert(flood<=13+Math.floor(60/R.cooldown(h))+1,'a flood is capped by the attacks the 60 s since the rest allow');assert(Math.abs(h.chakra.value-(target-(flood-1)))<1e-6,'every accepted attack still costs exactly one chakra');
+}
+// SUSTAINED EARNING (owner rule 2026-11-10: every enemy kill is added to the Chest in real time, and no update may stop
+// earning beyond the owner's rule). A deployed hero at Training Grounds (the slowest Dojo), synced every minute for 8 hours
+// by a page that reports generously: it rests no longer than the 10% rule allows (+2 min of sync slack), fights again
+// right after, every kill its verified damage supports is credited in the same sync, and it never gets more attacks
+// than chakra allows. A rule that silences attacks longer than the owner chose (like the retired nap-until-full, a rest
+// 3.3 times longer) fails here and blocks the deploy.
+for(const rank of [0,2,5]){
+ const p=economy.normalizeProfile({dojo:0,heroes:[{tokenId:'steady',rank,trainingVersion:2,baseStats:{pw:R.BANDS[rank][1],sp:R.BANDS[rank][1],st:R.BANDS[rank][1]},perks:R.normalizePerks(rank,[],()=>0)}],battleReady:['steady']});
+ const h=p.heroes[0],id='guard-steady-'+rank,rep=(a,k)=>({combatVersion:1,killSession:id,killStage:1,deployed:['steady'],combatHeroes:[{id:'steady',attacks:a,kills:[k,0,0,0,0]}]});
+ const dmg=R.damage(h),rateS=R.recovery(h,0,true),ruleRestMs=Math.ceil(R.restTarget(h)/rateS)*1000,end=t0+8*3600000;
+ let d=A.advance(null,p,t0,true,60,rep(0,0)),attacks=0,kills=0,lastAcc=0,lastHit=t0,longestHit=0,lastPending=0,lastGain=t0,longestPay=0;
+ for(let t=t0+60000;t<=end;t+=60000){
+  attacks+=400;kills+=400;d=A.advance(d,p,t,true,60,rep(attacks,kills));
+  const acc=d.combatSessions[id].heroes.steady.accepted,pending=Number(d.pending)||0;
+  if(acc>lastAcc){longestHit=Math.max(longestHit,t-lastHit);lastHit=t;lastAcc=acc;}
+  if(pending>lastPending){longestPay=Math.max(longestPay,t-lastGain);lastGain=t;lastPending=pending;}
+  assert(acc<=R.maxChakra(h)+(t-t0)/1000*rateS+1,'rank '+rank+': accepted attacks never exceed the chakra recovered');
+  assert.equal(d.reportedKills||0,Math.min(acc,Math.floor(acc*dmg/HP[0]+1e-7)),'rank '+rank+': every supported kill is credited in real time');
+ }
+ // The final stretch counts in full: a hero that never resumed after a rest fails here.
+ longestHit=Math.max(longestHit,end-lastHit);longestPay=Math.max(longestPay,end-lastGain);
+ assert(longestHit<=ruleRestMs+2*60000,'rank '+rank+': no rest longer than the 10% rule ('+Math.round(longestHit/60000)+' min vs rule '+Math.round(ruleRestMs/60000)+' min)');
+ assert(lastAcc>R.maxChakra(h),'rank '+rank+': the hero fought again after its first rest');
+ if(dmg>=HP[0])assert(longestPay<=ruleRestMs+5*60000,'rank '+rank+': a hero that kills with each attack adds to the Chest again right after each rest');
+}
+// A hero deployed while already below 1 chakra (benched at 0.5, back from a hunt, or an older save, including one saved
+// mid-nap under the retired rule) rests from that moment to 10%, then its genuine kills are credited on the first sync.
+for(const [label,chakra] of [['deployed from the bench below 1',{version:1,value:0.5,at:t0,nextAt:t0,resting:true}],['older save below 1',{version:1,value:0,at:t0,nextAt:t0,resting:false}],['saved mid-nap (retired rule)',{version:1,value:0.25,at:t0,nextAt:t0,resting:false,napping:true}]]){
+ const p=economy.normalizeProfile({dojo:6,heroes:[{tokenId:'low',rank:5,trainingVersion:2,baseStats:{pw:20,sp:20,st:20},perks:[0,1,2,3,4,5,6],chakra}],battleReady:['low']});
+ const h=p.heroes[0],target=R.restTarget(h),id='guard-low-'+label.replace(/[^a-z]/g,''),report=(attacks,kills)=>({combatVersion:1,killSession:id,killStage:1,deployed:['low'],combatHeroes:[{id:'low',attacks,kills:[kills,0,0,0,0]}]});
+ const restMs=Math.ceil((target-chakra.value)/(R.recovery(h,6,true)/1000));
+ let d=A.advance(null,p,t0,true,60,report(0,0));
+ for(let t=t0+60000;t<t0+restMs;t+=120000){d=A.advance(d,p,t,true,60,report(0,0));assert.equal(d.reportedKills||0,0,label+': nothing during the rest');}
+ d=A.advance(d,p,t0+restMs+60000,true,60,report(12,2));
+ assert.equal(d.combatSessions[id].heroes.low.accepted,12,label+': the twelve genuine attacks after the rest are verified');
+ assert.equal(d.reportedKills,2,label+': the first sync after the rest credits the real kills');
+ assert(Math.abs(h.chakra.value-(target-12))<1e-6,label+': each attack cost exactly one chakra from the 10% target');
 }
 console.log(`PASS: real-time rewards guard: ${cases} teams across six ranks, finite chakra, trained stats, 300ms/1500ms sync, first-sync kills, reconnects, replay and flood limits.`);

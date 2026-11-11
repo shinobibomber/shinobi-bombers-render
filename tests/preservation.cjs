@@ -5,6 +5,34 @@ for(const file of baseline.files){assert.equal(sha(fs.readFileSync(path.join(roo
 let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 // The last build step points image URLs at their WebP versions; restore the original names first.
 html=require('../apply-performance.cjs').restoreReferences(html);
+// Session renewal (applied after Expedition Mode): saved tab session, silent wallet reconnect, resume on the login screen.
+for(const [before,after]of require('../apply-session-renewal.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact session renewal hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
+// Expedition Mode (applied after the feature switches, after live economy): RyoPayments.expedition and the deploy/Sensei/Work All skips.
+for(const [before,after]of require('../apply-expedition.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact expedition hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
+assert.equal(html.split(require('../apply-expedition.cjs').marker).length-1,1,'one expedition script marker');
+// Live economy (applied after the Founders step): fee-free deposit wallet hooks.
+for(const [before,after,count]of require('../apply-live-economy.cjs').clientPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact live economy client hook: '+before.slice(0,50));html=html.split(after).join(before)}
+// Starter Activation (applied after Hero Passes): its own script only.
+assert.equal(html.split(require('../apply-starter-activation.cjs').marker).length-1,1,'one starter activation script marker');
+// Hero Passes (applied after Chest Overflow): RyoPayments.heroPasses.
+for(const [before,after]of require('../apply-hero-passes.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact hero passes hook');html=html.replace(after,()=>before)}
+assert.equal(html.split(require('../apply-hero-passes.cjs').marker).length-1,1,'one hero passes script marker');
+assert.equal(html.split(require('../apply-auto-update.cjs').marker).length-1,1,'one auto-update script marker');
+// Chest Overflow (applied after Fusion Shards): its own script only.
+assert.equal(html.split(require('../apply-chest-overflow.cjs').marker).length-1,1,'one chest overflow script marker');
+// Fusion Shards (applied after Shrine pity): RyoPayments.fusionShardCraft and the checkout note.
+for(const [before,after]of require('../apply-fusion-shards.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact fusion shards hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
+assert.equal(html.split('<!-- fusion-shards -->').length-1,1,'one fusion shards script marker');
+// Shrine Legend pity (applied after chest spending): the client keeps the server's guaranteed-Legend flag.
+for(const [before,after]of require('../apply-shrine-pity.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact shrine pity hook');html=html.replace(after,()=>before)}
+// Chest spending (applied after the prison rescue step): checkout "Pay using" choice and the funding in the purchase request.
+for(const [before,after]of require('../apply-chest-spending.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact chest spending hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
+assert.equal(html.split('<!-- chest-spending -->').length-1,1,'one chest spending script marker');
+// Prison rescue (applied after the Founders step, before live economy): server-granted rescue heroes.
+for(const [before,after]of require('../apply-prison-rescue.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact prison rescue hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
+assert.equal(html.split('<!-- prison-rescue -->').length-1,1,'one prison rescue script marker');
+// Founder's NFT Boxes (applied last): RyoPayments.founders.
+for(const [before,after]of require('../apply-founders.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact Founder hook');html=html.replace(after,()=>before)}
 for(const [before,after]of require('../apply-mythic-skill-rotation.cjs').patches.slice().reverse()){assert.equal(html.split(after).length-1,1,'one cosmetic skill identity per Hunt attack/impact');html=html.replace(after,before)}
 for(const [before,after,count]of require('../apply-character-animations.cjs').adventureSizingPatches){assert.equal(html.split(after).length-1,count,'exact Adventure-only native sprite drawing hook');html=html.split(after).join(before)}
 const {clientPatches:combatPatches}=require('../apply-combat-rules.cjs');

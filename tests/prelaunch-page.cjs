@@ -15,6 +15,9 @@ assert.deepEqual(Object.keys(pt).sort(), Object.keys(en).sort(), 'PT-BR has exac
 const used = new Set();
 for (const f of ['index.html', 'rules.html', 'privacy.html', 'terms.html']) {
   const html = fs.readFileSync(path.join(ROOT, 'prelaunch', f), 'utf8');
+  const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+  assert.deepEqual(scripts.map(m=>m[1].match(/\bsrc="([^"]+)"/)?.[1]),f==='index.html'?['/pl/wallet.js','/pl/prelaunch.js','/pl/founders.js']:['/pl/prelaunch.js'],'portal script inventory: '+f);
+  assert(scripts.every(m=>!m[2].trim()),'portal has no inline scripts: '+f);
   for (const m of html.matchAll(/data-i18n(?:-list)?="([^"]+)"/g)) used.add(m[1]);
   for (const m of html.matchAll(/data-i18n-attr="([^"]+)"/g)) m[1].split(';').forEach(p => used.add(p.split(':')[1]));
 }
@@ -49,23 +52,33 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
 
   async function open(viewport, wallet, extra = {}) {
     const ctx = await browser.newContext({ viewport, ...extra }), p = await ctx.newPage();
+    const goto=p.goto.bind(p);p.goto=async(...args)=>{const response=await goto(...args);await p.waitForSelector('body[data-portal-ready="true"]',{state:'attached'});return response};
     p.on('pageerror', e => errors.push(e.message));
+    p.on('request',r=>{if(r.resourceType()==='script'&&new URL(r.url()).origin!==url)errors.push('Unexpected external script: '+new URL(r.url()).host)});
     p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
     await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
     if (wallet) {
       await p.exposeFunction('__testSign', bytes => wallet.sign(bytes));
-      await p.addInitScript(address => {
-        const w = { version: '1.0.0', name: 'Test Wallet', icon: 'data:image/svg+xml;base64,PHN2Zy8+', chains: ['solana:devnet'], accounts: [],
-          features: { 'standard:connect': { version: '1.0.0', connect: async () => ({ accounts: [{ address, chains: ['solana:devnet'], features: ['solana:signMessage'] }] }) },
-            'solana:signMessage': { version: '1.0.0', signMessage: async ({ message }) => [{ signedMessage: message, signature: new Uint8Array(await window.__testSign([...message])) }] } } };
-        addEventListener('wallet-standard:app-ready', e => e.detail.register(w));
-      }, wallet.wallet);
+      await p.addInitScript(({address,fixture,legacy}) => {
+        window.__walletOps={connect:[],sign:[],transactions:0};window.__walletEvents={};
+        const forbidden=()=>{__walletOps.transactions++;throw Error('Registration requested a transaction')};
+        const account={address,chains:['solana:devnet'],features:['solana:signMessage']};
+        const sign=async(name,message)=>{__walletOps.sign.push(name);if(window.__walletWarning)throw Error('Continue at your own risk. This site shows signs of phishing or wallet-draining activity.');if(window.__holdWalletSign)await new Promise(r=>window.__releaseWalletSign=r);return new Uint8Array(await window.__testSign([...message]))};
+        const make=name=>({version:'1.0.0',name,icon:'data:image/svg+xml;base64,PHN2Zy8+',chains:['solana:devnet'],accounts:[],features:{
+          'standard:connect':{connect:async()=>{__walletOps.connect.push(name);return{accounts:[account]}}},
+          'standard:events':{on:(_event,fn)=>{__walletEvents[name]=fn;return()=>delete __walletEvents[name]}},
+          'solana:signMessage':{signMessage:async({message})=>[{signedMessage:message,signature:await sign(name,message)}]},
+          'solana:signTransaction':{signTransaction:forbidden},'solana:signAndSendTransaction':{signAndSendTransaction:forbidden}}});
+        if(legacy)window.solflare={isSolflare:true,publicKey:{toString:()=>address},connect:async()=>{__walletOps.connect.push('Solflare')},signMessage:async message=>({signature:await sign('Solflare',message)}),signTransaction:forbidden,signAndSendTransaction:forbidden};
+        else addEventListener('wallet-standard:app-ready',e=>{window.__registerWallet=name=>e.detail.register(make(name));for(const name of fixture?['MetaMask','Other Wallet','Solflare','Meta Mask (Solana)','Phantom']:['Test Wallet'])__registerWallet(name)});
+        window.ethereum={request:forbidden};
+      }, {address:wallet.wallet,fixture:!!wallet.fixture,legacy:!!wallet.legacy});
     }
     return p;
   }
-  async function register(p, username) {
+  async function register(p, username, walletName='Test Wallet') {
     await p.click('#heroConnect');
-    await p.getByRole('button', { name: /Test Wallet/ }).click();
+    await p.getByRole('button', { name: new RegExp(walletName) }).click();
     await p.waitForSelector('#registerDialog[open]');
     await p.fill('#registerForm input[name=username]', username);
     await p.check('#registerForm input[name=accept]');
@@ -95,7 +108,8 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     assert.equal(await p.getAttribute('#demoLink', 'href'), 'https://demo.example/'); assert.equal(await p.getAttribute('#demoLink', 'target'), '_blank');
     assert.match(await p.textContent('#demo'), /test server \(Solana Devnet\)[\s\S]*do not carry over to the official launch/);
     assert.equal(await p.locator('#demo li').count(), 5);
-    assert.equal(await p.locator('#newsList article').count(), 1);
+    assert.equal(await p.locator('#newsList article').count(), 2);
+    assert.match(await p.locator('#newsList article').first().innerText(), /Founder SOL purchases[\s\S]*when the game opens/);
     assert.equal(await p.locator('[data-i18n]').evaluateAll(els => els.filter(e => /^[a-z]+\.[a-zA-Z0-9.]+$/.test(e.textContent.trim())).length), 0, 'no raw keys on screen');
     await p.screenshot({ path: path.join(OUT, 'prelaunch-desktop.png'), fullPage: true });
     await p.close();
@@ -128,9 +142,9 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     assert.equal(await p.isVisible('#dashboard'), false);
     await p.close();
   });
-  await check('creator program: apply after sign-in → pending → admin approves on the page → creator link', async () => {
-    const p = await open({ width: 1440, height: 900 }, creatorKey);
-    await p.goto(url + '/');
+  await check('referred creator: register with RP link → apply → audited approval → original referrer preserved', async () => {
+    const p = await open({ width: 1440, height: 900 }, creatorKey, { reducedMotion: 'reduce' });
+    await p.goto(url + '/?ref=' + code);
     assert.ok(await p.isVisible('#creators')); assert.ok(await p.isVisible('#navLinks a[href="#creators"]'));
     assert.match(await p.textContent('#creators'), /50,000 Creator Points[\s\S]*5% CP commission[\s\S]*no cash or crypto value/);
     // One click: sign in, register, and the application opens by itself.
@@ -138,6 +152,9 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await p.waitForSelector('#registerDialog[open]'); await p.fill('#registerForm input[name=username]', 'StreamKing'); await p.check('#registerForm input[name=accept]');
     await p.click('#registerForm button[type=submit]');
     await p.waitForSelector('#creatorDialog[open]');
+    assert.match(await p.textContent('#creatorDialog'), /Referred players can apply/);
+    assert.doesNotMatch(await p.textContent('#creatorDialog'), /can't become creators/);
+    assert.equal(await p.textContent('#dReferredBy'), 'Invited by Akira');
     assert.equal(await p.inputValue('#creatorForm input[name=displayName]'), 'StreamKing');
     await p.fill('#creatorForm input[name=displayName]', 'Stream King');
     await p.selectOption('#creatorForm select[name=platform]', 'Twitch');
@@ -146,14 +163,33 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await p.check('#creatorForm input[name=terms]'); await p.click('#creatorForm button[type=submit]');
     assert.match(await p.textContent('#apStatus'), /https:\/\//, 'http links are refused before sending');
     await p.fill('#creatorForm input[name=channelUrl]', 'https://twitch.tv/streamking'); await p.fill('#creatorForm input[name=audience]', '5400');
+    await p.locator('#creatorDialog').evaluate(d => { document.activeElement.blur(); d.scrollTop = 0; });
+    assert(await p.locator('#creatorDialog').evaluate(d => { const r=d.getBoundingClientRect(); return r.top>=0 && r.bottom<=innerHeight; }), 'dialog stays inside desktop viewport');
+    await p.screenshot({ path: path.join(OUT, 'referred-creator-application-desktop.png') });
+    await p.setViewportSize({ width: 390, height: 844 });
+    await p.selectOption('#langSelect', 'pt-BR', { force: true });
+    await p.waitForFunction(() => document.documentElement.lang === 'pt-BR');
+    assert.match(await p.textContent('#creatorDialog'), /Jogadores indicados podem se inscrever/);
+    assert(await p.locator('#creatorDialog').evaluate(d => d.scrollWidth <= d.clientWidth + 1), 'application has no horizontal overflow');
+    await p.locator('#creatorDialog').evaluate(d => { document.activeElement.blur(); d.scrollTop = 0; });
+    assert(await p.locator('#creatorDialog').evaluate(d => { const r=d.getBoundingClientRect(); return r.top>=0 && r.bottom<=innerHeight; }), 'dialog stays inside phone viewport');
+    await p.screenshot({ path: path.join(OUT, 'referred-creator-application-phone.png') });
+    await p.selectOption('#langSelect', 'en', { force: true });
+    await p.waitForFunction(() => document.documentElement.lang === 'en');
     await p.click('#creatorForm button[type=submit]');
     await p.waitForFunction(() => /APPLICATION UNDER REVIEW/.test(document.querySelector('#creatorBody').textContent));
     assert.equal(await p.isVisible('#adminPanel'), false, 'creators do not see the admin panel');
+    assert.equal(await p.isVisible('#treasuryPanel'), false, 'creators do not see the Treasury card');
     await p.close();
 
     const a = await open({ width: 1440, height: 900 }, adminKey);
     await a.goto(url + '/'); await register(a, 'TeamAdmin');
     await a.waitForSelector('#adminPanel:not([hidden]) .admin-item');
+    await a.waitForSelector('#treasuryPanel:not([hidden]) [data-funding]');
+    { const tp = await a.textContent('#treasuryPanel');
+      for (const v of ['TREASURY · CHAPTER 04 · READ-ONLY', '5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn', 'Locked Treasury (Squads Account 1) · 50%', 'Active Reward Pool · 30%', 'Available for player reward claims: Not configured (pre-launch)', 'SR mint', 'not launched yet', 'UNVERIFIED', 'Mainnet payments are disabled', 'Game claim wallet (custody)', 'CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT']) assert(tp.includes(v), 'Treasury card: ' + v);
+      assert.equal(await a.locator('#treasuryPanel input, #treasuryPanel form, #treasuryPanel button:not(#treasuryRefresh)').count(), 0, 'read-only card: no write controls');
+      await a.locator('#treasuryPanel').screenshot({ path: path.join(OUT, 'prelaunch-treasury-card.png') }); }
     const item = a.locator('.admin-item', { hasText: 'Stream King' });
     assert.match(await item.textContent(), /Twitch[\s\S]*5,400[\s\S]*Weekly ninja game streams/);
     await item.getByRole('button', { name: 'Approve' }).click();
@@ -167,6 +203,7 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     const c = await open({ width: 1440, height: 900 }, creatorKey);
     await c.goto(url + '/'); await c.click('#heroConnect'); await c.getByRole('button', { name: /Test Wallet/ }).click();
     await c.waitForSelector('#creatorCode');
+    assert.equal(await c.textContent('#dReferredBy'), 'Invited by Akira');
     assert.match(await c.textContent('#creatorCode'), /^SB[0-9A-F]{14}$/);
     assert.doesNotMatch(await c.textContent('#creatorBody'), /null|undefined/, 'no empty placeholders');
     assert.equal(await c.inputValue('#creatorLink'), url + '/?creator=' + (await c.textContent('#creatorCode')));
@@ -215,6 +252,70 @@ const keyPair = () => { const kp = web3.Keypair.generate(), priv = crypto.create
     await p.goto(url + '/terms'); await p.waitForSelector('.draft'); assert.match(await p.textContent('.draft'), /DRAFT/);
     await p.goto(url + '/privacy'); await p.selectOption('#langSelect', 'pt-BR'); await p.waitForFunction(() => document.querySelector('h1').textContent === 'Aviso de Privacidade');
     await p.close();
+  });
+  await check('wallet selector: Phantom recommended, Solflare second, MetaMask hidden, other standard wallets retained',async()=>{
+    const p=await open({width:1440,height:900},{...keyPair(),fixture:true});await p.goto(url+'/');await p.click('#heroConnect');
+    assert.deepEqual(await p.locator('#walletList button .wallet-name strong').allTextContents(),['Phantom','Solflare','Other Wallet']);
+    assert.match(await p.locator('#walletList .wallet-primary').innerText(),/Phantom.*Recommended/s);assert.equal(await p.locator('#walletList').getByText(/MetaMask|Meta Mask/).count(),0);
+    await p.waitForFunction(()=>document.querySelectorAll('#walletList .wl-letter').length===3,'bad wallet icons use a clean fallback');
+    assert.deepEqual(await p.evaluate(()=>__walletOps.connect),[],'discovery never auto-connects');
+    await p.locator('#walletDialog').screenshot({path:path.join(OUT,'wallet-selector-desktop.png')});
+    await p.setViewportSize({width:390,height:844});await p.selectOption('#langSelect','pt-BR');await p.waitForFunction(()=>document.querySelector('#langSelect').value==='pt-BR');
+    await p.keyboard.press('Escape');await p.click('#heroConnect');assert.match(await p.locator('#walletList .wallet-primary').innerText(),/recomendada/);
+    assert.equal(await p.locator('#walletDialog').evaluate(e=>e.scrollWidth>e.clientWidth),false);
+    await p.locator('#walletDialog').screenshot({path:path.join(OUT,'wallet-selector-phone-pt.png')});await p.close();
+  });
+  await check('wallet buttons wait for startup so an early click cannot be lost',async()=>{
+    const p=await browser.newPage();let release, observed;
+    const blocked=new Promise(resolve=>{observed=resolve});
+    await p.route('**/pl/i18n/en.json',async route=>{await new Promise(r=>{release=r;observed()});await route.continue()});
+    await p.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());await p.goto(url+'/');
+    // Page load can finish before the async dictionary request reaches the route handler.
+    let timer;try{await Promise.race([blocked,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Startup dictionary request was not intercepted')),5000)})])}finally{clearTimeout(timer)}
+    assert(release);assert.equal(await p.locator('#heroConnect').isDisabled(),true);assert.equal(await p.locator('#creatorCta').isDisabled(),true);
+    const click=p.locator('#heroConnect').click();release();await click;await p.waitForSelector('#walletDialog[open]');
+    assert.equal(await p.locator('#heroConnect').isEnabled(),true);assert.equal(await p.locator('#walletList a[data-wallet=phantom]').count(),1);await p.close();
+  });
+  await check('Phantom SIWS registration, HttpOnly session, account-change logout and zero spending requests',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),fixture:true});await p.goto(url+'/');await register(p,'PhantomGuest','Phantom');
+    assert.deepEqual(await p.evaluate(()=>__walletOps.connect),['Phantom']);assert.deepEqual(await p.evaluate(()=>__walletOps.sign),['Phantom']);assert.equal(await p.evaluate(()=>__walletOps.transactions),0);
+    const cookies=await p.context().cookies();assert(cookies.some(c=>c.name==='sb_pl'&&c.httpOnly));
+    const loggedOut=p.waitForResponse(r=>r.url().endsWith('/api/prelaunch')&&r.request().postDataJSON().action==='logout');
+    await p.evaluate(()=>__walletEvents.Phantom({accounts:[]}));await loggedOut;await p.waitForSelector('#dashboard[hidden]',{state:'attached'});
+    assert.equal((await p.evaluate(async()=>{const r=await fetch('/api/prelaunch',{method:'POST',headers:{'Content-Type':'application/json','X-SB-Prelaunch':'1'},body:JSON.stringify({action:'me'})});return r.status})),401);await p.close();
+  });
+  await check('Solflare legacy message signing preserves registration and referral attribution without transactions',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),legacy:true});await p.goto(url+'/?ref='+code);await register(p,'SolflareGuest','Solflare');
+    assert.match(await p.locator('#dReferredBy').innerText(),/Akira/);assert.deepEqual(await p.evaluate(()=>__walletOps.sign),['Solflare']);assert.equal(await p.evaluate(()=>__walletOps.transactions),0);await p.close();
+  });
+  await check('wallet phishing warning stops sign-in without fallback or spending prompts',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),fixture:true});const actions=[];p.on('request',r=>{if(r.url().endsWith('/api/prelaunch'))actions.push(r.postDataJSON().action)});
+    await p.goto(url+'/');await p.evaluate(()=>window.__walletWarning=true);await p.click('#heroConnect');await p.locator('#walletList button[data-wallet=phantom]').click();
+    await p.waitForFunction(()=>document.querySelector('#walletStatus').textContent.includes('security warning'));
+    assert.deepEqual(await p.evaluate(()=>__walletOps.connect),['Phantom']);assert(!actions.includes('login'));assert.equal(await p.evaluate(()=>__walletOps.transactions),0);assert.equal(await p.locator('#registerDialog').isVisible(),false);await p.close();
+  });
+  await check('cancelled signatures and wallet discovery changes cannot create a late login',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),fixture:true});const actions=[];p.on('request',r=>{if(r.url().endsWith('/api/prelaunch'))actions.push(r.postDataJSON().action)});
+    await p.goto(url+'/');await p.evaluate(()=>window.__holdWalletSign=true);await p.click('#heroConnect');await p.locator('#walletList button[data-wallet=phantom]').click();await p.waitForFunction(()=>typeof __releaseWalletSign==='function');
+    await p.evaluate(()=>__registerWallet('Late Wallet'));assert(await p.locator('#walletList button').evaluateAll(xs=>xs.every(x=>x.disabled)));
+    await p.keyboard.press('Escape');await p.evaluate(()=>__releaseWalletSign());await p.waitForTimeout(150);assert(!actions.includes('login'));assert.equal(await p.locator('#registerDialog').isVisible(),false);await p.close();
+  });
+  await check('an account change discards an in-flight registration response',async()=>{
+    const p=await open({width:1024,height:900},{...keyPair(),fixture:true});let release;
+    await p.route('**/api/prelaunch',async route=>{
+      if(route.request().postDataJSON().action!=='register')return route.continue();
+      const response=await route.fetch();await new Promise(r=>{release=r});await route.fulfill({response});
+    });
+    await p.goto(url+'/');await p.click('#heroConnect');await p.locator('#walletList button[data-wallet=phantom]').click();await p.waitForSelector('#registerDialog[open]');
+    await p.fill('#registerForm input[name=username]','LateAccount');await p.check('#registerForm input[name=accept]');await p.click('#registerForm button[type=submit]');
+    for(let i=0;i<100&&!release;i++)await new Promise(r=>setTimeout(r,10));assert(release);
+    await p.evaluate(()=>__walletEvents.Phantom({accounts:[]}));release();await p.waitForTimeout(150);
+    assert.equal(await p.locator('#dashboard').isHidden(),true);assert.equal(await p.locator('#registerDialog').isVisible(),false);await p.close();
+  });
+  await check('portal CSP blocks external and inline scripts without changing wallet warning settings',async()=>{
+    const p=await browser.newPage();const response=await p.goto(url+'/');const csp=response.headers()['content-security-policy'];assert(csp.includes("script-src 'self'"));assert(!csp.includes('unsafe-inline'));assert(csp.includes("frame-ancestors 'none'"));
+    await p.evaluate(()=>{window.__violations=[];addEventListener('securitypolicyviolation',e=>__violations.push(e.blockedURI));const a=document.createElement('script');a.src='https://security-test.invalid/test.js';document.head.append(a);const b=document.createElement('script');b.textContent='window.__untrustedRan=true';document.head.append(b)});
+    await p.waitForFunction(()=>__violations.includes('inline')&&__violations.some(x=>x.includes('security-test.invalid')));assert.equal(await p.evaluate(()=>!!window.__untrustedRan),false);await p.close();
   });
   await check('no page errors anywhere', async () => assert.deepEqual(errors, []));
 

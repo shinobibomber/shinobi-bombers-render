@@ -1,5 +1,360 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Faster Chest updates as the game grows
+
+- **The server now works out the reward pool much faster.** Every Chest update used to recount every claim and purchase in the game; it now reads totals the database keeps ready. Chest updates and claims stay quick as more players join.
+- **Nothing changes in your rewards:** the same Ryo per kill, the same reward rate, the same claim limits and the same Chest amounts.
+
+## November 11, 2026 — Automatic refresh after updates
+
+- **The game now refreshes itself after an update.** When a new version goes live, a small banner appears: "New update available. Reloading in 10 s", with a **Reload now** button. The page then reloads, signs you back in and returns you to your Adventure map with the same team.
+- **It never interrupts you.** The countdown waits while a payment, a deposit, a Fusion or Summon result, Boss Hunt or any other dialog is open, and your last kills are sent to the Chest before it reloads.
+- Phantom signs back in by itself. Solflare and other wallets show the login screen once and need one click. Sign-ins older than 24 hours need a new signature.
+- The game also stops checking Expedition and Hero Pass status while its tab is hidden, and refreshes them the moment you come back.
+
+## November 11, 2026 — Faster Fusion and Heroes, smoother on slow devices
+
+- **Fusion is much smoother with big collections.** The Reserve list now draws only the heroes you can see, so scrolling and selecting stay quick even with hundreds of heroes.
+- **The Heroes tab opens about twice as fast.**
+- **Slow devices keep up.** If the game runs slowly, it now pauses only the decorative effects (falling petals, glows, hero frames and auras) and brings them back automatically when it speeds up again. Your own display settings are never changed.
+- **The Expedition Hall shows long hero lists 60 at a time**, with a "Show more" button.
+- Nothing changed in combat, Chakra, Chests, Ryo or rewards.
+
+## November 11, 2026 — Stay signed in while you play
+
+- **Fixed: players were signed out in the middle of the game.** Every sign-in ended exactly one hour after the wallet signature, even while you were playing. Your sign-in now renews itself while the game is open, for up to 24 hours. After 24 hours, one new wallet signature starts a fresh day.
+- **Reloading the page keeps you signed in.** Refreshing, or coming back to a tab your phone reloaded, no longer asks for a new signature. Phantom players go straight back into the game. Solflare players tap their wallet button once, and no signature is needed. This only applies in the same browser tab: closing the tab, switching wallet accounts or disconnecting your wallet still signs you out.
+
+## November 11, 2026 — Faster sign-in, works on more networks
+
+- **Fixed: sign-in could stay on "Recovering pending transactions and refreshing your Ryo balance…"**, for some players unless they used a VPN. The game now opens as soon as your signature is accepted, with your verified balance and heroes already loaded. The pending-transaction check finishes in the background. If it finds a problem, a message appears in game.
+- **Works on more networks.** Some internet providers and networks refuse the connection to Solana or show their own block page. The game now notices this and connects through its own secure connection instead, so you shouldn't need a VPN to play.
+
+## November 11, 2026 — Whitepaper v1.2 and Treasury page updated
+
+- **The whitepaper is up to date.** Version 1.2 now covers everything released so far: Expedition Mode, the Chest claim limits (100,000 Ryo minimum, Dojo claim bonus, Chest Overflow), fee-free deposits, Fusion Shards and Legend pity, Training and Upgrade Shards, the Founder's NFT Boxes, creator discounts, and a release status list showing what is open and what is not yet.
+- **New: "Where Each Payment Goes"** shows how every kind of payment is split: services, Expedition early return, Boss Hunt entries, withdrawals and deposits.
+- **Renamed: Economic Stability Reserve is now the Content Creators Reward Pool.** It is the same wallet and the same 10% share. It funds rewards for content creators. The new name appears in the whitepaper and on the Treasury page.
+
+## November 11, 2026 — Deposits unblocked on phones
+
+- **Fixed: deposits could stay blocked on a phone.** Sometimes a deposit you approved in your wallet never reached Solana: the connection dropped, or the page paused while you were in the wallet app. The game then kept waiting for it, showed "deposit(s) remain unresolved", and wouldn't let you make another deposit on that phone.
+- Now a deposit that never reached Solana is cleared automatically once it can no longer go through, usually within about 3 minutes. The popup says **DEPOSIT FAILED**, and you can deposit again right away.
+- Nothing was lost: no tokens leave your wallet unless the deposit actually reaches Solana. If a cleared deposit does show up on Solana later, the game picks it up again and credits it as usual.
+
+## November 11, 2026 — Expedition Mode is live
+
+- **Your heroes now rotate.** After **10 hours of real combat**, a hero leaves on a **free Expedition** to rest, then comes back on its own. Only actual fighting counts; resting and recovering Chakra never do.
+- **Expedition times:** Genin 2h · Chunin 3h · Jonin 4h · Elite 5h · Legend 6h · Mythic 8h. **Founders' Expeditions take half the time.**
+- While a hero is away, **Sensei swaps in another hero**. Its Chakra keeps recovering, its rank, stats and perks never change, and its Combat Duty starts again from zero when it returns.
+- The **Expedition Hall** replaces the Daily Missions panel on the main menu. It shows each hero's Combat Duty, who is away and who is back, and Combat Duty also appears in the Heroes Collection.
+- **Optional early return.** Expeditions are always free, but you can pay Ryo from your game balance to bring a hero back early. A full Expedition costs Genin 2,000 · Chunin 6,000 · Jonin 15,000 · Elite 28,000 · Legend 45,000 · Mythic 90,000 Ryo, and you only pay for the time left. You see the price and confirm before anything is charged.
+- Early-return payments go 50% to the Active Reward Pool, 30% to the Locked Treasury, 10% to Community Rewards and 10% to the Content Creators Reward Pool. Nothing is burned.
+
+## November 11, 2026 — Adventure stage restored after sign-in
+
+- **Fixed: some players were back at Adventure stage 1.** Until now the game kept your current stage only on the device you played on. A new phone or browser, a wallet's built-in browser or cleared site data started you at stage 1.
+- Your stage is now restored automatically when you sign in, from the stage the server has verified for your account. You'll see "Adventure progress restored: stage N".
+- Your rewards were never affected: the server always paid by your verified stage. Your progress only goes forward; it is never moved back.
+
+## November 11, 2026 — Dojo claim bonus on top of the maximum, bigger Chest purchases
+
+- **Every Dojo tier now adds +100,000 Ryo to how much you can claim at once.** The bonus is added on top of the normal claim limit, so higher tiers always count: with the normal 200,000 Ryo limit, Legendary Dojo (Tier VI) lets you claim up to **800,000 Ryo** at once. Dojo tiers you already own count automatically.
+- **No per-purchase cap when paying with Chest rewards.** A single Summon, Fusion, Dojo or Training purchase can use as much of your Chest Ryo as it costs (for example a full ×15 summon), within today's reward budget.
+- Claims and Chest payments still share today's reward budget and need a funded reward pool. Claim timers (24 hours, Founders 12 hours) and the 100,000 Ryo minimum claim are unchanged.
+
+## November 11, 2026 — Deposit and withdrawal results, Shrine fix, safer purchases
+
+- **Deposit and withdrawal results on screen.** After every deposit or withdrawal, a popup tells you how it went:
+  - **SUCCESSFUL:** the Ryo was added to your Game Balance, or sent to your wallet.
+  - **FAILED:** with the reason. Nothing was charged, or your reserved Ryo was returned.
+  - **PROCESSING:** it's still being confirmed on-chain. The popup updates by itself when it finishes, and nothing is lost.
+  
+  A withdrawal that finishes later shows its result when it settles, even if you've closed the Chest.
+- **Summoning Shrine fix.** When your Chest held 450,000 Ryo or more, the Chest Overflow alert covered the ×5 / ×10 / ×15 buttons, so pressing ×5 opened the Chest. The alert now appears in the middle of the screen. Press **Continue** to close it, or **Open Chest** to go to your Chest. The Shrine buttons work normally.
+- **No more lost rewards during a purchase.** Rewards and changes that arrived while a purchase was still confirming could be undone when the purchase finished. That included Boss Hunt heroes, Founder heroes and a Mythic hero sync. Now only the purchase's own result is applied, and everything else on your account stays as it is.
+- The Legacy Founder 7-day Sensei trial now waits until a pending purchase has finished, so the trial's days can't be overwritten.
+
+## November 11, 2026 — Shinobi Starter Activation (starts at the announced launch time)
+
+- New players who join from the launch time on get **10 FREE GENIN HEROES**. They start at Level 1 with Power 1, Speed 1 and Stamina 1, and you can make them stronger with Training.
+- Starter heroes are **account-bound**: they can't be sold, traded, transferred or salvaged, and heroes fused from them stay bound.
+- New accounts start at a **50% enemy reward rate**. Complete **15 paid Summoning Shrine summons** (game balance or Chest rewards) to unlock the normal **100% rate permanently**. There's no deadline and no extra charge.
+- The **SHINOBI ACTIVATION** card on the main menu and the Summoning Shrine shows your progress. The Chest shows it too.
+- Existing accounts are not affected. Ryo you've already earned is never reduced, and claiming and spending your Chest work as usual.
+
+## November 11, 2026 — Chest Overflow update
+
+- The Chest Overflow penalty now applies **whenever** your unclaimed Chest holds 500,000 Ryo or more: 500,000+ −10%, 750,000+ −20%, 1,000,000+ −30% on **new** enemy defeats.
+- The claim timer and the 12-hour grace period no longer pause it. It also applies right after a claim and while claims are unavailable.
+- Ryo already in your Chest is **never reduced**, and every defeat is still added to your Chest right away.
+- To keep full rewards, keep your Chest under 500,000 Ryo by claiming regularly or spending Chest rewards on Summon, Fusion, Dojo or Training. The penalty drops the moment your Chest goes below a threshold.
+- The alerts by the Chest warn you at 450,000 Ryo and show your current rate.
+
+## November 11, 2026 — Minimum Chest claim: 100,000 Ryo
+
+- Chest claims now start at **100,000 Ryo**. Until your Chest reaches 100,000 Ryo, the Claim button waits and your rewards keep adding up safely in your Chest.
+- A claim that can't reach 100,000 Ryo is refused rather than paid partly. That includes when today's reward budget or pool funding is short. Nothing is deducted and your claim timer isn't used, so you can claim as soon as it's possible.
+- The Chest shows the minimum under **Rewards Overview**. Per-claim maximum, claim timers (24 hours, Founders 12 hours) and paying with Chest rewards are unchanged.
+- Chest Overflow never penalizes you while a 100,000 Ryo claim isn't possible through no fault of yours.
+
+## November 11, 2026 — Reward Center and CLAIM button (switches on when announced)
+
+- A new **🎁 CLAIM** button sits where Support used to be on the main menu. A small badge shows when you have a reward waiting. Support is still available from ⚙ Tools and from the Reward Center's Help & Support.
+- Our loyalty rewards arrive here as **Standard Hero Passes**. Open CLAIM, review your reward and press **CLAIM N HERO PASSES**. The passes go into your Hero Passes balance.
+- Use your passes anytime from **Hero Passes**: each pass recruits one in-game hero at normal Summoning Shrine odds, with the usual reveal.
+- Promotional passes and the heroes they recruit are **account-bound**: they can't be sold, traded or transferred, and heroes fused from them stay bound. Using passes doesn't change your Shrine Legend pity or your Ryo.
+- Each reward can be claimed once, and your claim history is kept in the Reward Center.
+
+## November 11, 2026 — Dojo Chest Claim Limit Bonus (switches on when announced)
+
+- Every Dojo tier raises the most you can claim from your Chest at once by **+100,000 Ryo**, up to **+600,000 Ryo** at Legendary Dojo (Tier VI). Dojo tiers you already own count automatically.
+- Your claim allowance = the base allowance + your Dojo bonus, always within the per-claim maximum, today's reward budget and the funded reward pool.
+- The Dojo upgrade screen shows the Chest Claim bonus for every tier and what your next upgrade adds. The Chest shows your **Chest Claim Details**: Dojo tier, base allowance, Dojo bonus, personal allowance and how much you can claim now, with a note when the per-claim maximum or today's budget limits it.
+- Claim timers don't change (24 hours, Founders 12 hours), and Dojo prices and Chakra recovery are the same. Paying with Chest rewards isn't affected; the bonus applies to claims only.
+
+## November 11, 2026 — Chest Overflow: claim your rewards
+
+- Very full Chests now earn less from **new** enemy defeats until you claim or spend: under 500,000 Ryo full rewards; 500,000–749,999 −10%; 750,000–999,999 −20%; 1,000,000 and up −30%.
+- Ryo already in your Chest is **never reduced**, and every defeat is still added to your Chest right away.
+- It's fair on timing: no penalty while your claim timer is running, a **12-hour grace period** once your claim is ready, and none while claiming is unavailable through no fault of yours (claims closed or paused, today's reward budget used up, or the reward pool empty). Nobody is penalised before November 11, 04:00 UTC.
+- Claiming or spending Chest rewards (Summon, Fusion, Dojo, Training) lowers the penalty immediately.
+- New alerts by the Chest tell you when it's getting full, when a penalty will start, when it's active, and when full rewards are back. The "+Ryo → Chest" numbers in battle show what you actually earn.
+
+## November 11, 2026 — Fusion Shards
+
+- New in the Fusion tab: **Fusion Shards**. Craft them from your Upgrade Shards: **2 Upgrade Shards = 1 Fusion Shard**. Use Craft 1, Craft Max (an odd shard stays) or pick an amount. Crafting asks you to confirm first, because it's permanent.
+- Each Fusion Shard adds **+5% success** to every fusion attempt, up to a **guaranteed 100%**. Base rates are unchanged: Genin→Chunin 90%, Chunin→Jonin 80%, Jonin→Elite 70%, Elite→Legend 60%. That's 2, 4, 6 or 8 shards for a sure fusion.
+- The Fusion screen shows your success rate, the shards you've chosen per attempt (− / +), **Fill 100%**, and your Fusion and Upgrade Shard balances.
+- Batch fusions use the same number per attempt. If you don't have enough for every attempt, the checkout uses what you have and tells you before you pay.
+- Fusion Shards are used when the fusion settles, whether it succeeds or fails. If the purchase fails, nothing is used. Fusion prices, discounts and Chest payment work as before.
+- Fusion Shards are game items tied to your account. They can't be traded or withdrawn.
+
+## November 11, 2026 — Creator wallet migration removed
+
+- The Creators Portal no longer offers creator wallet migration (moving your Creator ID, Creator Points and referrals to a different wallet). The request form and the Accept wallet migration button are gone.
+- Migrations completed before today stay as they are: your creator identity, points and referrals remain on the wallet you moved to.
+- If you need help with a wallet or a referral link, contact the team.
+
+## November 11, 2026 — Summoning Shrine Legend pity
+
+- The Summoning Shrine now has a Legend guarantee: if you go 149 paid summons in a row without a Legend, your **150th summon is a guaranteed Legend**.
+- The Shrine shows your progress as **LEGEND PITY N / 150**, with a bar and how many summons are left. At 149 it reads "NEXT SUMMON GUARANTEED LEGEND!".
+- Any Legend from the Shrine resets the counter to 0, whether it came naturally or from the guarantee. In a ×5, ×10 or ×15 batch every summon counts one by one, and the guarantee lands on the exact summon that reaches 150.
+- Summons paid with your game balance or your Chest rewards count. Free starter Ryo (test server) does not. Heroes from referrals, prison rescues, rewards, fusion or the Market don't change the counter.
+- A guaranteed Legend shows a **Pity Guarantee!** tag in the reveal, and Summon History shows your Legend pity after each summon.
+- Everyone starts at 0. Summon prices and Shrine rates are unchanged, and the guarantee is never a Mythic.
+
+## November 11, 2026 — Going offline keeps your last kill
+
+- Fixed: when you pressed Go offline while a bomb was still flying, the defeat it caused a moment later could be missed. Every defeat that lands before you go offline is now saved to your Chest.
+- Mythic Box discount: when a Mythic Box NFT moves to another wallet, the 10% Mythic Box discount now moves with it right away.
+
+## November 11, 2026 — Mythic heroes shine red
+
+- Mythic heroes now have their own red look: when you reveal a Mythic (like the Founder's Tsukiyomi) the card, frame, label and announcement are red instead of Legend gold, and the reveal summary counts your Mythic.
+- Fixed: Tsukiyomi's picture now appears on his reveal card (it showed only a glow while his art was still loading).
+- Mythic hero cards in your Heroes collection and Adventure team now use the same red border and frame.
+
+## November 11, 2026 — Spend your Chest rewards right away
+
+- You can now pay for Summon, Fusion, Dojo upgrades and Training directly with your verified, unclaimed Chest rewards. No need to wait for your next claim.
+- At checkout, choose **Pay using: Chest rewards** or **Game balance**. You'll see how much of your Chest you can use now and what's left after the purchase.
+- Spending from your Chest does not use or reset your 24-hour claim timer, and there's no withdrawal fee on purchases. When your claim is ready, you claim whatever is left.
+- Same prices and discounts as always (Mythic Box, Founder and creator discounts included). You're only charged when the purchase settles; if it fails, your Chest rewards are returned.
+- Not available for Sensei (SOL), Boss Hunt entry or the Market.
+- Claiming and withdrawing work as before: claim every 24 hours, withdraw any time (5% to the Locked Treasury).
+
+## November 10, 2026 — Referral links and Founder boxes
+
+- Referral and creator links are for new players. From now on, buying a Founder box counts as your first order, so a referral link can no longer be added to your account after you buy one.
+- If you joined through a broken or mistyped referral link, contact the team: staff can now link your account to the right referrer by hand.
+
+## November 10, 2026 — Creator discount
+
+- Approved creators now pay 5% less for their own Summon, Fusion, Dojo, Sensei and Training.
+- Once one of your referred players buys a Founder box (Mythic or Legacy), your creator discount rises to 10%.
+- It stacks with your Founder discount (or Mythic Box 10%), one after the other. Example: Mythic Founder + creator 10% = a 25,000 Ryo summon costs 20,250. The Mythic Box and Founder discounts still don't stack with each other.
+- Your current creator discount is shown on your Creators Portal dashboard. The price you see before paying is exactly what you are charged.
+
+## November 10, 2026 — Creators earn 10% on Founder-box referrals
+
+- Creators now earn 10% Creator Points (instead of 5%) on the Adventure claims and eligible game purchases of every referred player who bought a Founder box. Other referrals stay at 5%.
+- It counts back in time: commissions you already earned at 5% from a player who bought a Founder box are raised to 10% automatically. The extra appears once in your Point history as "Founder-box bonus (raised to 10%)", and your balance updates the next time you open the Creators Portal.
+- Point history now shows readable event names and the rate used for each commission.
+
+## November 10, 2026 — Rescued heroes can be salvaged
+
+- Heroes you rescue from prison cages can now be salvaged for Upgrade Shards, like any other hero. They are still account-bound: they can't be listed on the Market, and a hero fused from one stays bound.
+
+## November 10, 2026 — Rescued prisoners now join your collection
+
+- Freeing a prisoner in Adventure (the cage that comes with every 25th-stage commander, or a rare random cage) now gives you a real hero that is saved to your account and shows up in your Heroes collection. Before, the rescued hero only existed in your browser and disappeared a few seconds later.
+- Every prison cage you free counts: there is no daily limit. You only need to be signed in and playing Adventure.
+- Rescued heroes use the Summoning Shrine odds: Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1% (never Mythic).
+- Rescued heroes are account-bound: they can't be listed on the Market or salvaged for Upgrade Shards, and a hero fused from one stays bound.
+- The "Hero rescued" reveal plays when your new hero arrives.
+- Fair-play rule: rescue heroes are spaced by real battle. If you free two prisoners very close together, the second hero is kept and joins you automatically after a bit more fighting (up to 3 can wait, even if you reload the page).
+
+## November 10, 2026 — Referral links with a typo still work
+
+- A referral link that was copied with extra characters on the end (for example `...?referral=RP009D06A47C922627AA2AMythic`) is now recognised as the original referral link, so new sign-ups through it count for the right player. Before, such a link was refused and the sign-up was not attributed to anyone.
+- Attribution rules are unchanged: only new players, never yourself, and it can't be changed once set.
+
+## November 10, 2026 — Reward heroes now get the reveal
+
+- Heroes you receive as rewards now play the Summoning Shrine reveal: referral passes you claim, Creator Shop hero passes you redeem, and your Founder benefits (activating the Founder box and each Limited Summon Pass). The reward window closes, you reveal your new shinobi, and the Heroes screen opens with them at the top.
+- New "Newest" sort in the Heroes Collection (the sort button now cycles through it, and the box shows the active sort), so freshly received Genin heroes are no longer buried at the end of a rarest-first list.
+- Reward heroes keep their referral-bound lock where it applies and can no longer be mistaken for the old free starter heroes.
+
+## November 10, 2026 — Faster sign-in on phones
+
+- Signing in is much faster on slow phone connections. Before, the game checked your wallet balance step by step, twice, before it let you in, and each step could wait a long time on a weak connection. Now the sign-in request appears right away and the game opens after at most a few seconds while your wallet balance finishes loading in the background.
+- If you have a deposit that was still pending, it is still found and credited once; the check just no longer holds up sign-in.
+- Payments are unchanged: every payment still checks the network and the token before you sign.
+
+## November 10, 2026 — New rank frames for hero cards
+
+- Every hero card in the Adventure team panel and in the Heroes Collection now has a frame that matches its rank: Genin silver with a shuriken, Chunin green with leaves, Jonin blue with a water crescent, Elite purple with a tomoe crest and blossoms, Legend gold with a star and diamonds, and Mythic violet and gold with a tomoe crest and wings.
+- The frames glow and their ornaments gently move on deployed heroes in Adventure and on Heroes Collection cards. They follow your display settings: Low quality keeps them still, Off removes the glow, and Reduce motion shows them still. They use only lightweight animations, so Adventure keeps its frame rate.
+- Hero buttons, names and chakra numbers work exactly as before.
+
+## November 10, 2026 — Sign-in no longer gets stuck
+
+- Signing in could stay on "Recovering pending transactions and refreshing your Ryo balance…" for minutes, mostly in phone wallet browsers. The game now opens within about 15 seconds even when the Solana network is slow, and finishes checking pending deposits in the background.
+- Nothing is lost: a deposit found during that background check is still credited once, and your balance updates as soon as the check finishes.
+
+## November 10, 2026 — Founder discount fixed
+
+- Founder's box buyers now always get their discount on summons and other Ryo services: 10% for Mythic Founders and 5% for Legacy Founders, from your very first purchase. Previously, a Founder who bought the box before playing could be charged the full price until the game had reloaded their account.
+- The checkout shows the discounted price and the Founder discount line before you confirm, and that is exactly what is charged.
+
+## November 10, 2026 — Smoother Adventure
+
+- Adventure runs noticeably smoother, especially on phones and older laptops, when many heroes are fighting and many skills and effects are on screen. In our tests on a slowed-down device the screen now draws about 40% faster and the worst stutters were cut roughly in half.
+- Under the hood: damage numbers and reward pop-ups are drawn more efficiently, the team panel updates its numbers without rebuilding itself, and the glowing buttons (Chest, Work All, the red notification dot) and the ambient lantern and petal effects now use lighter effects. The look stays the same, with slightly softer lantern glows.
+- Combat, chakra and rewards are unchanged: every kill still reaches your Chest as it happens.
+
+## November 10, 2026 — Glowing Elite, Legend and Mythic heroes
+
+- Heroes Collection: Elite, Legend and Mythic portraits now glow with their own animated energy. Elite heroes get slowly turning purple rays, Legend heroes get faster golden rays with a light sweep, and Mythic heroes get violet and gold rays turning in opposite directions, a crescent moon and twinkling stars. The selected hero's detail portrait glows too.
+- The glow follows your display settings: Low quality keeps the rays still, Off removes the glow, and Reduce motion shows a still glow. It uses only lightweight animations, so the Heroes screen keeps its smooth frame rate.
+- Mythic details: the list of skills and cooldowns under Tsukiyomi was removed to keep the panel clean. His four automatic skills still play in battle exactly as before.
+
+## November 10, 2026 — Work All
+
+- Work All now sends out only heroes with at least 30% of their chakra (strongest first, up to 10), so freshly deployed heroes can really fight. If none are ready yet, the game tells you to let them rest first. You can still place heroes by hand.
+
+## November 10, 2026 — Chakra rest at 10%
+
+- Deployed heroes that run out of chakra now rest until 10% of their chakra is back, then fight again at full speed until they run out. A better Dojo makes the rest much shorter (at the Legendary Dojo about 17 times shorter than at the Training Grounds; a strong hero rests about 73 minutes at the Training Grounds and about 6 minutes at the Legendary Dojo).
+- Every enemy kill is still added to your Chest as it happens, and Session gained rises with every kill.
+- Tip: hire a Sensei to swap rested bench heroes in while your deployed heroes rest.
+
+## November 10, 2026 — Sign-in connection fix
+
+- Fixed: some players saw "Solana Mainnet request timed out" when signing in, usually because a VPN, firewall or privacy extension blocked the game's Solana connection. The game now switches automatically to a backup connection through shinobibombers.fun, so signing in, deposits and purchases keep working. A payment is never sent twice: if a payment's connection times out, the game asks you to refresh instead of paying again.
+
+## November 10, 2026 — Adventure rewards fix
+
+- Fixed: Adventure rewards stopped about 10 minutes into a session. Deployed heroes that ran out of chakra were napping until full, which could take hours. They now keep fighting as they recover chakra: about one attack a minute at the Training Grounds, faster with a better Dojo (up to 17 a minute at the Legendary Dojo). Every enemy kill is added to your Chest as it happens, and Session gained keeps rising.
+- Heroes that were napping when this update arrived wake up and fight with the chakra they already have.
+
+## November 10, 2026 — Chakra recovery rules
+
+- Deployed heroes that run out of chakra now nap until their chakra is full, then fight again. A better Dojo makes the nap shorter. (Before, they recovered only 1 chakra at a time at the slowest rate.)
+- Battle-ready heroes waiting on the bench recover chakra at your Dojo's rate, and the game now shows that recovery correctly instead of resetting to an old value.
+- Heroes in Reserve no longer recover chakra. Time spent in Reserve is not credited later.
+- The Codex explains the new rules.
+
+## November 10, 2026 — Sensei with SOL, Dojo prices
+
+- Hire a Sensei now shows the real offer: a permanent Sensei for a one-time payment of 0.4 SOL (shown with an estimated dollar value), paid from your wallet. The old Ryo price and the Ryo rental are gone from the Dojo screens. Legacy Founders see their 0.2 SOL price during their trial, and Mythic Founders get their Sensei free with their box. Rentals already running keep their remaining time.
+- The Sensei is now bought only on the Dojo › Sensei tab, where you can follow the payment step by step. The Founder button no longer sells it and is shown only to Founders.
+- The Dojo Upgrades list now shows the current prices: Apprentice Dojo 3,000,000 Ryo, Shinobi Dojo 7,200,000, Veteran Dojo 14,700,000, Master Dojo 25,200,000, Grandmaster Dojo 38,700,000, Legendary Dojo 55,200,000 (it still showed the old prices).
+- The Dojo is open: you can upgrade it now.
+- The Events card on the Home screen now shows the Founder NFT Boxes with live prices and boxes left. VIEW shows both boxes and their benefits, and opens the Founders page in a new tab to buy (the old Mythic NFT Box is sold out).
+- The browser tab now shows "Shinobi Bombers" (it still said "Tester Demo").
+
+## November 10, 2026 — Adventure reward funding
+
+- The Adventure reward pool can now be funded from the Locked Treasury through its Squads multisig vote. The game counts each top-up exactly once, and only after it has been checked on-chain and approved by the team.
+- Reward claims open once the pool funding and the daily claim limits are approved. We will announce it.
+
+## November 9, 2026 — Founder prices stay, SR token support
+
+- Founder box prices stay at 0.7 SOL (Mythic) and 0.25 SOL (Legacy) until each tier sells out. They no longer return to 1 SOL / 0.5 SOL when the game opens.
+- After the game opens, the Founder boxes are sold at https://shinobibombers.fun/founders.
+- The game now supports the released SR token (a Token-2022 token): deposits, balances and payouts use it directly.
+- The login screen now shows Solana Mainnet, and its Discord, X and Pump.fun buttons open our official pages.
+- New accounts no longer receive free Genin heroes: every hero comes from the Summoning Shrine. Unused free starter Genin were removed from accounts that had not played with them yet.
+- Founder rewards are open: Founder box buyers can sign in with their buying wallet and press the FOUNDER button (bottom-left) to activate their benefits. The button is now visible on every screen.
+- New Dojo prices: Apprentice Dojo 3,000,000 Ryo, Shinobi Dojo 7,200,000, Veteran Dojo 14,700,000, Master Dojo 25,200,000, Grandmaster Dojo 38,700,000, Legendary Dojo 55,200,000. (The Dojo opens in a later roadmap phase.)
+- Fixed: SR deposits from Phantom were refused with "The signed transaction differs from the reviewed request". Phantom adds its own safety checks to transactions; the game now accepts them while still checking every amount and recipient exactly.
+- You can now deposit up to 10,000,000 SR in one deposit (was 1,000,000).
+- Fixed: the game did not fully start for brand-new players who had no heroes yet.
+- Summoning without enough Ryo now tells you so and opens your Chest to deposit SR (it used to say "Summon is busy").
+- The Founder panel now explains that the 10 Limited Summon Passes arrive when you press Activate Founder benefits. Mythic Founders are no longer offered the paid Sensei: it is included free with the box.
+
+## November 9, 2026 — Feature schedule control
+
+- Game features now open and close on our roadmap schedule. If a feature shows "opens soon" or "closed right now", it will open in a later phase.
+
+## November 9, 2026 — Launch rules, no deposit fee and Boss Hunt update
+
+- The game opens to the public automatically when the SR token is released.
+- SR deposits are free: the full amount you deposit is credited to your game balance (the previous 2% fee is removed).
+- Boss Hunt is closed for now and will open after it is configured. When it opens, 10% of every entry goes to the Locked Treasury (the Squads multisig shown on the Treasury page); the prize pool (80%) and the burn (10%) are unchanged.
+- SR spent on summons, fusion, dojo and training is split 50/30/10/10 to the four wallets on the Treasury page.
+
+## November 9, 2026 — Founder pre-launch prices
+
+- Mythic Founder boxes are 0.7 SOL and Legacy Founder boxes are 0.25 SOL until the game opens to the public.
+- At public launch, any remaining boxes return to the regular prices: 1 SOL for Mythic and 0.5 SOL for Legacy.
+- This replaces the earlier Mythic early-bird offer. Existing purchases keep their agreed prices.
+
+## November 9, 2026 — Mythic early bird
+
+- The Mythic Founder box now has 33 boxes instead of 30.
+- Early bird: the first 3 Mythic boxes cost 0.5 SOL. After those 3, Mythic boxes go back to the regular 1 SOL. Legacy boxes are unchanged at 0.5 SOL.
+- A banner on the Mythic card shows how many early-bird boxes are left. Your wallet always shows the exact price before you approve, and if the last early-bird box is taken just before you buy, the page tells you the new price before your wallet opens.
+
+## November 9, 2026 — New official address: shinobibombers.fun
+
+- Shinobi Bombers now lives at https://shinobibombers.fun. Old shinobibombers.onrender.com links open the same page on the new address.
+- Sign in once more with your wallet on the new address. Your account, registration and referrals are unchanged.
+- The Founder's NFT Boxes are at https://shinobibombers.fun/#founders.
+
+## November 9, 2026 — Founder box button fixes
+
+- If you are already signed in, the Founder box buttons now show "Buy now" with the price after you reload the page, instead of asking you to connect your wallet again. Your wallet reconnects when you press Buy.
+- The remaining-supply line shows its numbers again, for example "30 of 30 left · 1 SOL ≈ $86.74".
+
+## November 9, 2026 — Founder box prices in USD and wallet approval
+
+- Founder box buttons now show the SOL price with an approximate US dollar value, for example "Buy now · 1 SOL (≈ $86.74)". You always pay the exact SOL price; the dollar value is a guide and is hidden if a reliable rate is not available.
+- Pressing Buy now opens the wallet you signed in with, where you review and approve the exact payment. The extra browser pop-up is gone.
+- If you reject the payment in your wallet, nothing is charged, and you can press "Approve in wallet" to try again within about a minute.
+
+## November 9, 2026 — Clearer Founder purchase errors
+
+- If your wallet does not hold enough SOL for a Founder box plus network fees, the page now tells you how much SOL is needed instead of showing a "temporarily unavailable" message. No payment is sent in that case.
+
+## November 9, 2026 — Founder SOL purchases
+
+- Mythic Founder boxes cost 1 SOL and Legacy boxes cost 0.5 SOL on Solana Mainnet, with 30 of each tier and one purchase per wallet across both tiers.
+- Claim Founder benefits inside the game when it opens. Buying a box does not open game access today.
+- Standalone SOL Sensei purchases remain closed.
+
+## November 9, 2026 — Founder package preview
+
+- Preview the Mythic and Legacy Founder packages on the landing page.
+- Founder sales, reward activation, and SOL Sensei purchases remain closed.
+- Previous Mythic Box minting and Mainnet Ryo Sensei hire/rental purchases are retired. Existing memberships remain unchanged.
+- Founder purchase confirmation now requires successful finalized payment verification.
+- Approved Founder NFT artwork is included in public metadata. SOL Sensei and previous Mythic Box payment recovery also require successful finalized transaction proof.
+
+
 Player-facing notes, newest first. Each entry is ready to paste into Discord (under 2,000
 characters). Add a new entry at the top whenever an update is deployed.
 
@@ -17,6 +372,22 @@ characters). Add a new entry at the top whenever an update is deployed.
 
 Thanks for playing — see you on the battlefield! 🥷
 -->
+
+---
+
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 9, 2026 · Safer Global Chat)**
+
+**✨ New**
+• **Report a message** — tap ⚑ next to any player's message on the Chat screen, pick a reason, and our moderators will review it.
+• **Official announcements** — team news now arrives in the System channel with a 📢, in English and Português.
+
+**🔄 Changes**
+• **Moderated Global chat** — the team can now remove scam or abusive messages and mute or ban repeat offenders. Removed messages disappear for everyone right away.
+• **Clear notices** — if you receive a warning or mute, the chat tells you why and when it ends. You can always keep reading chat.
+
+ℹ️ The game is still in pre-launch, so these arrive with chat when the game opens. No change to Ryo, heroes, rewards or wallets.
+
+Thanks for playing — see you on the battlefield! 🥷
 
 ---
 
@@ -192,6 +563,58 @@ Test server only; production unchanged.
 • Kept Tsukiyomi's approved appearance and existing Mythic Aura, with bounded effects and cleanup between maps.
 • Production animation artwork is still pending. The preview uses animated poses and older skill art; it does not yet contain fully authored character motion or twelve distinct dragon frames.
 • NFT ownership, deployed hero limits, combat balance and Ryo rewards remain unchanged.
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Creator Referral Sync)**
+
+**🔄 Changes**
+• Approved creators now see **one referral count**: players who joined through your earlier player referral link now count in your Creator Program.
+• Those referrals move into the Creator Program and earn **Creator Points** when they qualify. Their join date and progress are kept.
+• Once you are approved, **both** of your links (player link and creator link) enroll new players in the Creator Program.
+
+**🛠️ Fixes**
+• Fixed creator referral counts missing referrals made before approval. Referrals already rewarded with hero passes keep their rewards and are included in your total.
+
+---
+
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Game Claim Wallet)**
+
+**✨ New**
+• The Treasury Transparency page now shows the **Game claim wallet** — the wallet that will pay Chest rewards and withdrawals at launch — with its live Solana verification status.
+• Its balance is shown separately from the funds available for player rewards, because at launch it will also hold players' deposited SR.
+
+Pre-launch: the wallet is created but not active. Payments, claims and withdrawals stay closed until launch.
+
+---
+
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 8, 2026 · Treasury Transparency)**
+
+**✨ New**
+• **Treasury Transparency page** — see every $SR Chapter 04 wallet in one place: the 50% Locked Treasury, 30% Active Reward Pool, 10% Community Reward Vault and 10% Economic Stability Reserve, with live Solana verification and balances.
+• The Locked Treasury is protected by a 2-of-3 multisig, and the page shows its status in real time.
+• Funds held in the treasury wallets are shown separately from funds available for player chest rewards.
+
+**🔄 Coming at official launch**
+• Withdraw your claimed SR any time — 5% returns to the Locked Treasury, with no SOL platform fee.
+• Chest rewards can be claimed once every 24 hours; unclaimed earnings stay in your Chest.
+
+Pre-launch: payments, claims and withdrawals stay closed until launch. Find the page in the site footer under "Treasury transparency".
+
+---
+
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Creator Applications)**
+
+• Players who joined through a referral link can now apply to become creators. Team review and approval are still required.
+• Becoming a creator keeps your original referrer, referral progress and earned rewards intact. Approval does not grant extra CP or hero passes.
+• Updated the application guidance in English and Portuguese, and strengthened referral-loop protection across both programs.
+
+---
+
+**⚔️ SHINOBI BOMBERS — PATCH NOTES (Nov 7, 2026 · Pre-launch Wallet Selection)**
+
+• Phantom is now the recommended Solana wallet, with Solflare as the second supported option. Other compatible Solana Wallet Standard wallets remain available.
+• MetaMask is temporarily hidden while the reported phishing/security warning is investigated. Wallet warnings must never be bypassed.
+• Registration continues to use a free, server-verified Sign-In With Solana message. No transactions, spending approvals or SOL transfers are requested.
+• Sign-in checks now enforce the exact site, wallet, nonce and expiry. Cancelled prompts and wallet-account changes cannot complete a stale login.
+• Added pre-launch script and framing protections. Existing player accounts, registrations and referral tracking are preserved; deposits and withdrawals remain disabled.
 
 ---
 

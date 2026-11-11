@@ -131,6 +131,7 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-pack-price strong{font:800 21px/1.2 Rajdhani,system-ui,sans-serif;white-space:nowrap}
 #sbwLayer .sbw-flist{position:absolute;z-index:12;overflow-y:auto;background:#060a1c;border-radius:4px;scrollbar-width:thin}
 #sbwLayer .sbw-frow{display:grid;grid-template-columns:26px 44px minmax(0,2.2fr) .6fr .6fr .6fr minmax(0,1.2fr);align-items:center;gap:10px;width:100%;height:60px;padding:0 26px 0 12px;border:0;border-bottom:1px solid #1d2448;background:transparent;color:#fff;font:600 17px Rajdhani,sans-serif;text-align:left;cursor:pointer}
+#sbwLayer .sbw-fvp{box-sizing:border-box;overflow:hidden}
 #sbwLayer .sbw-frow:hover{background:rgba(120,170,255,.10)}
 #sbwLayer .sbw-frow:disabled{opacity:.45;cursor:not-allowed}
 #sbwLayer .sbw-frow.locked i{border-color:#4d4470;font-size:12px}
@@ -161,6 +162,19 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-dtog.on{background:#17a34a;border-color:#4ef08a;color:#fff}
 #sbwLayer .sbw-dtl{position:absolute;z-index:12;display:flex;align-items:center;justify-content:center;border-radius:6px;background:linear-gradient(#ffd25a,#f2a01a);color:#2a1406;font:700 17px Rajdhani,sans-serif;pointer-events:none}
 .sbw-dialog .sbw-small{font-size:13px;color:#a99ad8}
+/* Founder NFT Boxes pop-up (Events card): both tiers side by side, stacked on phones. */
+.sbw-dialog.sbw-fddlg{width:min(780px,calc(100vw - 32px));max-width:min(780px,calc(100vw - 32px));box-sizing:border-box}
+.sbw-fddlg .fd-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin:10px 0}
+.sbw-fddlg .fd-tier{display:flex;gap:10px;min-width:0;padding:10px;border:1px solid #ffd257;border-radius:10px;background:linear-gradient(110deg,#3a1468,#1a0838 55%,#2a1a05)}
+.sbw-fddlg .fd-tier.legacy{border-color:#7fb4ff;background:linear-gradient(110deg,#14305a,#0a1430 55%,#1a1a2a)}
+.sbw-fddlg .fd-tier img{flex:none;width:84px;height:84px;border-radius:8px;object-fit:cover}
+.sbw-fddlg .fd-tier div{min-width:0}
+.sbw-fddlg .fd-tier b{display:block;font:800 18px/1.1 Rajdhani,sans-serif;color:#ffd257}
+.sbw-fddlg .fd-price{display:block;font-weight:700;color:#fff}
+.sbw-fddlg .fd-price s{margin-left:4px;color:#a99bc0;font-weight:400}
+.sbw-fddlg .fd-tier em{display:inline-block;margin:4px 0 2px;padding:1px 8px;border-radius:6px;background:#ffd257;color:#2a1000;font:800 12.5px Rajdhani,sans-serif;font-style:normal}
+.sbw-fddlg .fd-tier.sold em{background:#5a4a6a;color:#eee}
+.sbw-fddlg .fd-tier ul{margin:4px 0 0;padding-left:16px;font-size:12.5px;line-height:1.35;color:#e6dcf5}
 /* Summon History: summoned heroes per batch, newest first. */
 .sbw-dialog.sbw-history{width:min(860px,94vw);max-width:none;max-height:86vh;overflow:auto}
 .sbw-history .sbw-sh-top{position:sticky;top:-16px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-16px -18px 6px;padding:14px 18px 8px;background:linear-gradient(#1a0b40,#160a38)}
@@ -290,7 +304,7 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-at-head em{display:flex;align-items:center;gap:10px;height:36px;padding:0 16px;border:2px solid #d99a1f;border-radius:8px;background:#0b0820;font:600 14px Rajdhani,sans-serif;font-style:normal;color:#cfd8ee}
 #sbwLayer .sbw-at-head strong{font:800 22px Rajdhani,sans-serif;color:#fff}
 #sbwLayer .sbw-at-grid{flex:1;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:1fr 1fr;gap:8px}
-#sbwLayer .sbw-at-card{position:relative;isolation:isolate;display:flex;align-items:center;gap:8px;padding:4px 8px 4px 4px;border:2px solid var(--rc,#33407a);border-radius:10px;overflow:hidden;cursor:default;
+#sbwLayer .sbw-at-card{position:relative;isolation:isolate;display:flex;align-items:center;gap:8px;padding:4px 8px 4px 4px;border:2px solid var(--rc,#33407a);border-radius:10px;overflow:visible;cursor:default;
   background:radial-gradient(circle at 18% 60%,color-mix(in srgb,var(--rc,#33407a) 30%,transparent),transparent 55%),linear-gradient(135deg,#140a36,#070518);box-shadow:0 0 10px color-mix(in srgb,var(--rc,#33407a) 55%,transparent)}
 #sbwLayer .sbw-at-card.empty{justify-content:flex-start;gap:14px;padding-left:18px;border-style:solid;--rc:#3b4f9a;background:linear-gradient(135deg,#0d1030,#060819);cursor:pointer}
 #sbwLayer .sbw-at-card.empty>b{font:300 34px/1 Rajdhani,sans-serif;color:#9fb2ff}
@@ -314,7 +328,6 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
    No animated canvas filters or box shadows, and no particles over a hero's face. */
 #sbwLayer .sbw-at-aura{display:none}
 #sbwLayer .sbw-patch{position:absolute;z-index:6;pointer-events:none;user-select:none}
-#sbwLayer .sbw-at-card.aura-elite,#sbwLayer .sbw-at-card.aura-legend{box-shadow:0 0 14px color-mix(in srgb,var(--rc) 65%,transparent),inset 0 0 12px color-mix(in srgb,var(--rc) 20%,transparent)}
 #sbwLayer .sbw-at-card.aura-legend .sbw-at-info strong{color:#fff0b2}
 #sbwLayer [data-aura="3"]{--aura:#d76bff;--aura-light:#f6d9ff;--aura-cycle:3.6s}
 #sbwLayer [data-aura="4"]{--aura:#ffca45;--aura-light:#fff3bd;--aura-cycle:2.8s}
@@ -335,6 +348,42 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 @keyframes sbw-seal-orbit{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
 @keyframes sbw-energy-rise{0%,100%{opacity:.25;transform:scaleY(1.66) translateY(1px)}50%{opacity:.85;transform:scaleY(1.66) translateY(-12px)}}
 @media(prefers-reduced-motion:reduce){#sbwLayer [data-aura]::before,#sbwLayer .sbw-portrait-energy,#sbwLayer .sbw-portrait-energy::before,#sbwLayer .sbw-portrait-energy::after{animation:none}}
+/* Heroes Collection portrait glow (owner request 2026-11-10): Elite purple energy rays, Legend gold rays + light sweep, Mythic
+ * violet/gold counter-rotating rays + crescent moon + twinkling stars. Collection cards and the detail portrait only.
+ * Performance: every animation changes only transform or opacity (compositor-only); glows are static shadows/gradients;
+ * nothing is blurred, filtered or laid out per frame. Low quality = static rays; Off = no glow; paused/reduced motion = still. */
+#sbwLayer [data-aura="5"]{--aura:#ff3b3b;--aura-light:#ffd0d0;--aura-cycle:3.2s;--aura2:#ffd257}
+#sbwLayer :is(.sbw-hc-portrait,.sbw-h2-port)[data-aura="5"]{isolation:isolate}
+#sbwLayer :is(.sbw-hc-portrait,.sbw-h2-port)[data-aura="5"]::before{content:"";position:absolute;z-index:0;pointer-events:none;inset:15% 3% 0;border-radius:50%;background:radial-gradient(ellipse at 50% 85%,color-mix(in srgb,var(--aura) 55%,transparent),transparent 69%);opacity:.7;animation:sbw-energy-breathe var(--aura-cycle) ease-in-out infinite}
+#sbwLayer :is(.sbw-hc-portrait,.sbw-h2-port)[data-aura="5"]>.sbw-portrait-energy{display:block;position:absolute;z-index:2;left:8%;right:8%;bottom:1%;height:26%;pointer-events:none;border-radius:50%;border:1px solid color-mix(in srgb,var(--aura-light) 70%,transparent);box-shadow:0 0 7px var(--aura),inset 0 0 6px color-mix(in srgb,var(--aura) 65%,transparent);transform:scaleY(.6);animation:sbw-seal-breathe var(--aura-cycle) ease-in-out infinite}
+#sbwLayer :is(.sbw-hc-portrait,.sbw-h2-port)[data-aura="5"]>.sbw-portrait-energy::after{border-radius:0;clip-path:polygon(45% 0,100% 0,66% 39%,100% 39%,0 100%,32% 51%,0 51%);width:6px;height:18px;animation-duration:3.4s}
+#sbwLayer .sbw-nft,#sbwLayer .sbw-bound{z-index:3}
+#sbwLayer .sbw-portrait-rim{display:none;position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;pointer-events:none;contain:strict}
+#sbwLayer :is([data-aura="3"],[data-aura="4"],[data-aura="5"])>.sbw-portrait-rim{display:block;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--aura-light) 55%,transparent),inset 0 0 16px color-mix(in srgb,var(--aura) 55%,transparent);animation:sbw-rim-pulse var(--aura-cycle) ease-in-out infinite}
+#sbwLayer .sbw-portrait-rim::before,#sbwLayer .sbw-portrait-rim::after{content:"";position:absolute;inset:-60%;pointer-events:none;will-change:transform}
+/* Elite: slow purple arcane rays */
+#sbwLayer [data-aura="3"]>.sbw-portrait-rim::before{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--aura) 34%,transparent) 0 9deg,transparent 9deg 36deg);animation:sbw-rim-spin 16s linear infinite}
+/* Legend: tighter, faster golden rays and a light sweep every few seconds */
+#sbwLayer [data-aura="4"]>.sbw-portrait-rim::before{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--aura) 40%,transparent) 0 7deg,transparent 7deg 24deg);animation:sbw-rim-spin 10s linear infinite}
+#sbwLayer [data-aura="4"]>.sbw-portrait-rim::after{inset:-20% auto -20% -60%;width:40%;background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--aura-light) 70%,transparent),transparent);transform:skewX(-18deg);opacity:0;animation:sbw-rim-sweep 4.4s ease-in-out infinite}
+/* Mythic: violet rays one way, gold rays the other, a moon behind the hero */
+#sbwLayer [data-aura="5"]>.sbw-portrait-rim::before{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--aura) 44%,transparent) 0 8deg,transparent 8deg 30deg);animation:sbw-rim-spin 14s linear infinite}
+#sbwLayer [data-aura="5"]>.sbw-portrait-rim::after{background:repeating-conic-gradient(from 15deg,color-mix(in srgb,var(--aura2) 30%,transparent) 0 5deg,transparent 5deg 30deg);animation:sbw-rim-spin 22s linear infinite reverse}
+#sbwLayer .sbw-rim-moon{position:absolute;top:9%;right:13%;width:21%;aspect-ratio:1;border-radius:50%;pointer-events:none;box-shadow:-5px 2px 0 0 var(--aura2),-8px 3px 11px 1px color-mix(in srgb,var(--aura2) 45%,transparent);animation:sbw-rim-moon 5s ease-in-out infinite}
+#sbwLayer .sbw-rim-moon::before,#sbwLayer .sbw-rim-moon::after{content:"";position:absolute;width:3px;height:3px;border-radius:50%;background:var(--aura-light);box-shadow:0 0 4px var(--aura-light)}
+#sbwLayer .sbw-rim-moon::before{left:-230%;top:70%;animation:sbw-rim-twinkle 2.6s ease-in-out infinite}
+#sbwLayer .sbw-rim-moon::after{left:-60%;top:230%;width:2px;height:2px;animation:sbw-rim-twinkle 3.4s ease-in-out -1.2s infinite}
+@keyframes sbw-rim-spin{to{transform:rotate(360deg)}}
+@keyframes sbw-rim-pulse{0%,100%{opacity:.72}50%{opacity:1}}
+@keyframes sbw-rim-sweep{0%,55%{transform:skewX(-18deg) translateX(0);opacity:0}65%{opacity:.85}100%{transform:skewX(-18deg) translateX(520%);opacity:0}}
+@keyframes sbw-rim-moon{0%,100%{opacity:.8;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+@keyframes sbw-rim-twinkle{0%,100%{opacity:.15}50%{opacity:1}}
+/* Low quality: static rays (no rotation, no sweep, no stars). Off: no glow. Paused (hidden tab) and reduced motion: still. */
+#sbwLayer[data-effects-quality="1"] .sbw-portrait-rim::before,#sbwLayer[data-effects-quality="1"] .sbw-portrait-rim::after,#sbwLayer[data-effects-quality="1"] .sbw-rim-moon{animation:none!important;will-change:auto}
+#sbwLayer[data-effects-quality="1"] [data-aura="4"]>.sbw-portrait-rim::after,#sbwLayer[data-effects-quality="1"] .sbw-rim-moon::before,#sbwLayer[data-effects-quality="1"] .sbw-rim-moon::after{display:none}
+#sbwLayer[data-effects-quality="0"] .sbw-portrait-rim{display:none!important}
+#sbwLayer[data-effects-paused="true"] .sbw-portrait-rim,#sbwLayer[data-effects-paused="true"] .sbw-portrait-rim::before,#sbwLayer[data-effects-paused="true"] .sbw-portrait-rim::after,#sbwLayer[data-effects-paused="true"] .sbw-rim-moon,#sbwLayer[data-effects-paused="true"] .sbw-rim-moon::before,#sbwLayer[data-effects-paused="true"] .sbw-rim-moon::after,#sbwLayer[data-effects-paused="true"] [data-aura="5"]::before,#sbwLayer[data-effects-paused="true"] [data-aura="5"]>.sbw-portrait-energy,#sbwLayer[data-effects-paused="true"] [data-aura="5"]>.sbw-portrait-energy::before,#sbwLayer[data-effects-paused="true"] [data-aura="5"]>.sbw-portrait-energy::after{animation-play-state:paused!important}
+@media(prefers-reduced-motion:reduce){#sbwLayer .sbw-portrait-rim,#sbwLayer .sbw-portrait-rim::before,#sbwLayer .sbw-portrait-rim::after,#sbwLayer .sbw-rim-moon,#sbwLayer .sbw-rim-moon::before,#sbwLayer .sbw-rim-moon::after,#sbwLayer [data-aura="5"]::before,#sbwLayer [data-aura="5"]>.sbw-portrait-energy,#sbwLayer [data-aura="5"]>.sbw-portrait-energy::before,#sbwLayer [data-aura="5"]>.sbw-portrait-energy::after{animation:none!important}#sbwLayer .sbw-rim-moon::before,#sbwLayer .sbw-rim-moon::after{opacity:.7}}
 /* Heroes: card buttons (Deploy/Rest hero + Make Battle-ready/Move to Reserve) and the big detail buttons */
 #sbwLayer .sbw-hb{height:28px;border-radius:7px;border:1px solid rgba(255,255,255,.18);font:800 13px Rajdhani,sans-serif;letter-spacing:.3px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 6px rgba(0,0,0,.45);transition:filter .15s,transform .15s}
@@ -449,6 +498,8 @@ body.sbw-active .gc-header .gc-nav-unavailable{visibility:visible;position:fixed
 #sbwLayer .sbw-dstat.nxt{margin:0 22px;border:2px solid #ffb02a;border-radius:6px;background:#3a2006;color:#ffd257;font-weight:800}
 #sbwLayer .sbw-dstat.own{color:#e8eefc}
 #sbwLayer .sbw-dstat.lck{color:#7d86a8}
+/* Dojo Upgrades: live tier prices drawn over the artwork's printed ones (right-aligned like the artwork). */
+#sbwLayer .sbw-dprice{justify-content:flex-end;padding-right:1px;font:700 22px Rajdhani,sans-serif;color:#ffcf3a;text-shadow:0 1px 2px #000}
 #sbwLayer .sbw-dup,#sbwLayer .sbw-dturn{position:absolute;z-index:12;display:flex;align-items:center;justify-content:center;gap:14px;border:2px solid #ffe08a;border-radius:10px;cursor:pointer;
   background:linear-gradient(180deg,#ffd45a,#ffab1c 55%,#f08a0c);color:#2a1000;font:900 27px Rajdhani,sans-serif;letter-spacing:.5px;
   box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -4px 0 rgba(140,60,0,.35),0 0 18px rgba(255,176,40,.55)}
@@ -818,10 +869,10 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 .sbw-rankdlg .sbw-btn.ghost{background:#0d1440;border:1px solid #3b4a8a;color:#dfe6ff}.sbw-rankdlg.weekly .sbw-btn.ghost{border-color:#ffd257;color:#ffd257}
 .sbw-rankdlg .sbw-acts{flex-wrap:wrap}
 #sbwLayer .sbw-bh-head.sbw-mflow .bh-h h3{font-size:20px}#sbwLayer .sbw-bh-head.sbw-mflow .bh-h small{font-size:12px}
-/* Mythic hero (Tsukiyomi): seven stars, NFT status, aura switch and skills */
+/* Mythic hero (Tsukiyomi): seven stars, NFT status and aura switch */
 #sbwLayer .sbw-stars{font-style:normal;letter-spacing:-1px;color:#ffd257;text-shadow:0 0 6px #c98bff}
 #sbwLayer .sbw-hc-top .sbw-stars{margin-left:5px;font-size:11px;vertical-align:1px}
-#sbwLayer .sbw-hcard.mythic{background:linear-gradient(180deg,#2a1150,#0c0624 60%);box-shadow:0 0 0 1px #c98bff,0 0 16px #9b4dff88}
+#sbwLayer .sbw-hcard.mythic{background:linear-gradient(180deg,#3a0a10,#12040a 60%);box-shadow:0 0 0 1px #ff3b3b,0 0 16px #ff3b3b88}
 #sbwLayer .sbw-hcard.mythic .sbw-hc-top i{border-color:#ffd257;color:#ffe9a8;background:#2a1640}
 #sbwLayer .sbw-myth{display:flex;flex-direction:column;gap:6px;margin:0 0 8px;padding:8px 10px;border:1px solid #c98bff;border-radius:9px;background:linear-gradient(135deg,#2a1150,#120830 60%,#2a1a05);box-shadow:inset 0 0 14px #9b4dff44}
 #sbwLayer .sbw-myth-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -831,22 +882,14 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-myth-nft span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-myth-nft button{min-height:28px;padding:2px 10px;border:1px solid #c98bff;border-radius:7px;background:#1d0d45;color:#efe4ff;font:800 12.5px Rajdhani,sans-serif;cursor:pointer}
 #sbwLayer .sbw-myth-nft button[aria-pressed="true"]{border-color:#ffd257;color:#ffd257}
-#sbwLayer .sbw-myth-skills{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0;padding:0;list-style:none}
-#sbwLayer .sbw-myth-skills li{display:flex;flex-direction:column;padding:4px 7px;border-left:3px solid #c98bff;border-radius:6px;background:rgba(150,80,255,.16);min-width:0}
-#sbwLayer .sbw-myth-skills li.ult{border-left-color:#ffd257}
-#sbwLayer .sbw-myth-skills b{font:800 13.5px/1.15 Rajdhani,sans-serif;color:#f1e4ff}
-#sbwLayer .sbw-myth-skills li.ult b{color:#ffd257}
-#sbwLayer .sbw-myth-skills span{font:600 11.5px/1.2 Rajdhani,sans-serif;color:#cfd0ee}
-#sbwLayer .sbw-at-card.aura-mythic{box-shadow:0 0 16px #b36bffaa,inset 0 0 14px #c98bff44;border-color:#c98bff}
-#sbwLayer .sbw-at-card.aura-mythic .sbw-at-info strong{color:#f1dcff}
+#sbwLayer .sbw-at-card.aura-mythic{border-color:#ff3b3b}
+#sbwLayer .sbw-at-card.aura-mythic .sbw-at-info strong{color:#ffd0d0}
 #sbwLayer .sbw-hc-portrait{position:relative}
 #sbwLayer .sbw-nft{position:absolute;top:4px;right:4px;padding:1px 6px;border:1px solid #ffd257;border-radius:5px;background:#2a1640;font:800 10.5px Rajdhani,sans-serif;color:#ffe9a8;letter-spacing:.6px}
 #sbwLayer .sbw-bound{position:absolute;top:4px;left:4px;padding:0 5px;border:1px solid #9b8cc4;border-radius:5px;background:#1b1233;font-size:11px;line-height:18px}
 #sbwLayer .sbw-bound-note{display:flex;flex-direction:column;gap:2px;margin:6px 0 2px;padding:6px 10px;border:1px solid #6a5a9a;border-radius:8px;background:rgba(27,18,51,.85);font:600 12.5px Rajdhani,sans-serif;color:#d9d0f2}
 #sbwLayer .sbw-bound-note b{color:#ffe9a8;letter-spacing:.5px}
 #sbwLayer .sbw-myth{gap:5px;padding:7px 9px}
-#sbwLayer .sbw-myth-skills li{padding:3px 7px}
-#sbwLayer .sbw-myth-skills b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sbwLayer .sbw-h2 .sbw-perks2{min-height:84px}
 /* Limited Mythic NFT Box: home EVENT card and dialog */
 #sbwLayer .sbw-boxcard{display:flex;align-items:center;gap:10px;box-sizing:border-box;padding:8px 12px 8px 8px;border:1px solid #ffd257;border-radius:10px;background:linear-gradient(110deg,#3a1468,#1a0838 55%,#2a1a05);box-shadow:inset 0 0 18px #b36bff55,0 0 10px #ffb02a44;color:#fff;font:600 13px Rajdhani,'Arial Narrow',sans-serif;overflow:hidden;pointer-events:none}
@@ -886,7 +929,7 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 .sbw-boxdlg .bx-mint{min-width:170px;background:linear-gradient(#ffe27a,#ffbb2a 45%,#f48c0c);font-weight:900;letter-spacing:1px}
 @media (max-width:560px){.sbw-boxdlg .bx-top{grid-template-columns:90px 1fr}.sbw-boxdlg .bx-tsu{display:none}.sbw-boxdlg .bx-box{width:90px;height:90px}.sbw-boxdlg h2{font-size:22px}.sbw-boxdlg .bx-perks{grid-template-columns:1fr}}
 .sbw-boxdlg .bx-perks .sbw-stars{color:#ffd257;font-size:17px}
-#sbwLayer .sbw-myth-top .sbw-mythic{font:900 17px Rajdhani,sans-serif;letter-spacing:2px;color:#ffd257;text-shadow:0 0 8px #c98bff}
+#sbwLayer .sbw-myth-top .sbw-mythic{font:900 17px Rajdhani,sans-serif;letter-spacing:2px;color:#ffd257;text-shadow:0 0 8px #ff3b3b}
 #sbwLayer .sbw-myth-stars{display:block;font:700 12px/1.3 system-ui,sans-serif;letter-spacing:1px;color:#ffd257;white-space:nowrap}
 
 /* hero-upgrades-v1: accessible account-bound shard training and destructive salvage choices. */
@@ -895,14 +938,8 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-xbtn.train{gap:8px;padding:0 10px 0 8px}#sbwLayer .sbw-xbtn.train>i{width:30px;height:30px}#sbwLayer .sbw-xbtn.train>span{flex:1;white-space:normal}#sbwLayer .sbw-xbtn.train b{font-size:16px;letter-spacing:0}#sbwLayer .sbw-xbtn.train small{font-size:11px;line-height:1.1;letter-spacing:0}.hero-salvage-confirm{color:#fff!important}
 
 #sbwLayer .sbw-shard-balance{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 10px;margin-top:8px;background:#130d2d;border:1px solid #67419e;border-radius:7px;font-size:13px;color:#d5c7f4}#sbwLayer .sbw-shard-balance b{font-size:17px;color:#ffd781}
-/* Automatic Mythic abilities: retain the collection panel and open detail on demand. */
 #sbwLayer .sbw-myth-generation{font:800 13px Rajdhani,sans-serif;color:#f0d9ff}
-#sbwLayer .sbw-myth-cooldown{display:block;margin-top:2px;font:600 10px/1.2 system-ui;color:#c4aedb}
 #sbwLayer .sbw-myth-generation small{display:block;color:#c5b9db;font-weight:500}
-#sbwLayer .sbw-myth-skills button{width:100%;min-height:30px;padding:4px;border:0;background:transparent;color:inherit;font:700 12px Rajdhani,sans-serif;cursor:pointer;text-align:left;line-height:1.15}
-#sbwLayer .sbw-myth-skills button:focus-visible{outline:2px solid #ffe098;outline-offset:2px}
-#sbwLayer .sbw-myth-auto{font:600 11px/1.3 Rajdhani,sans-serif;color:#d8c5ed}
-.sbw-myth-preview{max-height:90dvh;overflow:auto}.sbw-myth-preview canvas{display:block;width:100%;max-width:420px;height:auto;margin:auto}.sbw-myth-preview small{display:block;line-height:1.5;color:#c4b8d9}
 /* ===== Chat screen (real DOM) ===== */
 #sbwLayer .sbw-chat{--cs-bg:#070420;--cs-panel:#0d0830;--cs-line:#b05cff;--cs-pink:#ff4fd8;--cs-gold:#ffd447;--cs-orange:#ff9a2e;--cs-cyan:#4fd8ff;--cs-green:#4be08a;--cs-ink:#f5efff;--cs-mut:#b9aee0;
   position:absolute;left:0;right:0;display:grid;grid-template-columns:260px minmax(0,1fr) 320px;grid-template-rows:auto minmax(0,1fr);gap:12px;padding:10px 14px 14px;box-sizing:border-box;overflow:hidden;background:var(--cs-bg);color:var(--cs-ink)}
@@ -950,6 +987,16 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-cs-empty{margin:auto;color:var(--cs-mut);font-size:18px;text-align:center}
 #sbwLayer .sbw-cs-note{margin:4px 0 0;min-height:1.2em;font-size:14px;color:var(--cs-mut)}
 #sbwLayer .sbw-cs-note.sbw-cs-error{color:#ff9aa8}
+/* Report a message (server chat-report). The flag sits after the time and stays small. */
+#sbwLayer .sbw-cs-rep{flex:none;min-width:30px;height:30px;padding:0 6px;border-radius:8px;border:1px solid #5a3ba8;background:transparent;color:var(--cs-mut);font-size:14px;cursor:pointer;opacity:.7}
+#sbwLayer .sbw-cs-rep:hover,#sbwLayer .sbw-cs-rep:focus-visible{opacity:1;color:#ff9aa8;border-color:#ff9aa8}
+#sbwLayer .sbw-cs-report{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;padding:8px 10px;border:2px solid #ff9aa8;border-radius:10px;background:#140a3a}
+#sbwLayer .sbw-cs-report[hidden]{display:none}
+#sbwLayer .sbw-cs-report-q{flex:1 1 100%;margin:0;color:var(--cs-ink);font-size:14px;overflow-wrap:anywhere}
+#sbwLayer .sbw-cs-report select,#sbwLayer .sbw-cs-report input{min-height:40px;border-radius:8px;border:1px solid #5a3ba8;background:#0d0830;color:var(--cs-ink);padding:0 8px;font-size:14px}
+#sbwLayer .sbw-cs-report input{flex:1 1 180px;min-width:0}
+#sbwLayer .sbw-cs-report button{min-height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--cs-orange);background:#2a1450;color:var(--cs-ink);font-weight:700;cursor:pointer}
+#sbwLayer .sbw-cs-report button[type="submit"]{background:linear-gradient(180deg,#ffb830,#e07a00);color:#1b0b00}
 #sbwLayer .sbw-cs-form{display:flex;align-items:center;gap:8px;margin-top:6px}
 #sbwLayer .sbw-cs-form input{flex:1;min-width:0}
 #sbwLayer .sbw-cs-count{color:var(--cs-mut);white-space:nowrap}
@@ -1010,3 +1057,108 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-cs-head{background:none;border:0;padding:0;box-shadow:none}
 #sbwLayer .sbw-cs-tag,#sbwLayer .sbw-cs-link,#sbwLayer .sbw-cs-panel h3{white-space:nowrap}
 #sbwLayer .sbw-cs-guild button,#sbwLayer .sbw-cs-qa button{white-space:nowrap;padding:9px 8px;font-size:16px}
+
+/* ===== Rank card frames (owner request 2026-11-10): Adventure team cards and Heroes Collection cards =====
+   Genin silver shuriken · Chunin green leaves · Jonin blue water crescent · Elite purple tomoe + blossoms · Legend gold star +
+   diamond · Mythic violet/gold double frame, tomoe crest and wings. One decorative `.sbw-frame` layer per card (aria-hidden,
+   pointer-events none); the ornament shapes live in one hidden SVG sprite. Frame lines and glow are static; only transform and
+   opacity animate (compositor, nothing repaints), and only on deployed Adventure cards and Heroes cards. Low quality = still
+   frames, Off = no glow layer, paused / reduced motion = still, Bloom & glow off = no glow layer. */
+#sbwLayer .sbw-at-card{--os:18px}
+#sbwLayer .sbw-hcard{--os:28px}
+#sbwLayer .sbw-hgrid{overflow:visible}
+#sbwLayer .sbw-hcard.r5{z-index:2}
+#sbwLayer .sbw-frame{position:absolute;inset:-2px;z-index:3;pointer-events:none;border-radius:inherit;--rc2:var(--rc)}
+#sbwLayer .r5{--rc2:#ffd257}
+#sbwLayer .sbw-frame::before{content:"";position:absolute;inset:3px;border:1px solid color-mix(in srgb,var(--rc) 55%,transparent);border-radius:7px}
+#sbwLayer .r5 .sbw-frame::before{inset:4px;border:1px solid color-mix(in srgb,var(--rc2) 80%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--rc) 55%,transparent)}
+#sbwLayer .sbw-frame::after{content:"";position:absolute;inset:-5px;border-radius:14px;opacity:.4;
+  box-shadow:0 0 14px 1px color-mix(in srgb,var(--rc) 70%,transparent),inset 0 0 10px color-mix(in srgb,var(--rc) 22%,transparent)}
+#sbwLayer .r5 .sbw-frame::after{box-shadow:0 0 16px 2px color-mix(in srgb,var(--rc) 75%,transparent),0 0 26px 4px color-mix(in srgb,var(--rc2) 35%,transparent),inset 0 0 12px color-mix(in srgb,var(--rc) 25%,transparent)}
+#sbwLayer .sbw-frame .o{position:absolute;display:block;width:var(--os);height:var(--os);color:var(--rc);overflow:visible;filter:drop-shadow(0 0 3px var(--rc))}
+#sbwLayer .r5 .sbw-frame .o-tomoe,#sbwLayer .r5 .sbw-frame .o-diamond{color:var(--rc2);filter:drop-shadow(0 0 4px var(--rc2))}
+#sbwLayer .sbw-frame .o-t{left:50%;top:calc(var(--os) * -.42 - 1px);margin-left:calc(var(--os) * -.5)}
+#sbwLayer .sbw-frame .o-b{left:50%;bottom:calc(var(--os) * -.42 - 1px);margin-left:calc(var(--os) * -.5)}
+#sbwLayer .sbw-frame .o-l{left:calc(var(--os) * -.42 - 1px);top:50%;margin-top:calc(var(--os) * -.5)}
+#sbwLayer .sbw-frame .o-r{right:calc(var(--os) * -.42 - 1px);top:50%;margin-top:calc(var(--os) * -.5)}
+#sbwLayer .sbw-frame .o-br{right:12%;bottom:calc(var(--os) * -.45)}
+#sbwLayer .sbw-frame .o-bl{left:12%;bottom:calc(var(--os) * -.45);scale:-1 1}
+#sbwLayer .sbw-frame .o-t.o-tomoe,#sbwLayer .r5 .sbw-frame .o-t{width:calc(var(--os) * 1.25);height:calc(var(--os) * 1.25);margin-left:calc(var(--os) * -.625);top:calc(var(--os) * -.55 - 1px)}
+#sbwLayer .sbw-frame .o-wing{width:calc(var(--os) * 1.3);height:calc(var(--os) * 1.3);top:18%;margin-top:0}
+#sbwLayer .sbw-frame .o-l.o-wing{left:calc(var(--os) * -1.05)}
+#sbwLayer .sbw-frame .o-r.o-wing{right:calc(var(--os) * -1.05);scale:-1 1}
+#sbwLayer .sbw-at-card.r5{z-index:2}
+/* Motion: deployed Adventure cards and every Heroes Collection card */
+@keyframes sbw-fr-breath{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes sbw-fr-sway{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+@keyframes sbw-fr-bob{0%,100%{transform:translateY(-1.5px)}50%{transform:translateY(1.5px)}}
+@keyframes sbw-fr-spin{to{transform:rotate(360deg)}}
+@keyframes sbw-fr-pulse{0%,100%{transform:scale(.9);opacity:.85}50%{transform:scale(1.12);opacity:1}}
+@keyframes sbw-fr-flap{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(4deg)}}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame::after{animation:sbw-fr-breath 4.2s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-leaf{animation:sbw-fr-sway 3.4s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-flower{animation:sbw-fr-sway 5s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-swirl{animation:sbw-fr-bob 2.8s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-tomoe{animation:sbw-fr-spin 16s linear infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-star{animation:sbw-fr-pulse 2.4s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-diamond{animation:sbw-fr-pulse 3.2s ease-in-out infinite}
+#sbwLayer :is(.sbw-hcard,.sbw-at-card.deployed) .sbw-frame .o-wing{animation:sbw-fr-flap 2.8s ease-in-out infinite}
+/* Quality: Low (1) = still frames, Off (0) = no glow layer; paused (hidden tab) and reduced motion = still */
+#sbwLayer[data-effects-quality="1"] .sbw-frame::after,#sbwLayer[data-effects-quality="1"] .sbw-frame .o,#sbwLayer[data-effects-quality="0"] .sbw-frame::after,#sbwLayer[data-effects-quality="0"] .sbw-frame .o,
+#sbwLayer[data-effects-paused="true"] .sbw-frame::after,#sbwLayer[data-effects-paused="true"] .sbw-frame .o{animation:none!important}
+#sbwLayer[data-effects-quality="0"] .sbw-frame::after{display:none}
+@media(prefers-reduced-motion:reduce){#sbwLayer .sbw-frame::after,#sbwLayer .sbw-frame .o{animation:none!important}}
+/* Phone: the Adventure cards are in a 2-column list, so keep the ornaments small and the wings inside the card gutter */
+#sbwLayer .sbw-ateam.sbw-mflow .sbw-at-card{--os:13px}
+
+/* Summoning Shrine Legend pity panel (shrine-pity, owner request 2026-11-11) inside the left Legend banner. */
+#sbwLayer .sbw-pity{position:absolute;z-index:6;box-sizing:border-box;overflow:hidden;justify-content:center;display:flex;flex-direction:column;gap:4px;padding:5px 10px;border:1px solid #ffcf63;border-radius:8px;background:linear-gradient(180deg,#1d1305,#0b0816);box-shadow:0 0 12px #ffcf6355;color:#fff3cf;font:700 12px/1.25 Rajdhani,sans-serif;text-align:center;pointer-events:none}
+#sbwLayer .sbw-pity small{font:900 12px Rajdhani,sans-serif;letter-spacing:.14em;color:#ffcf63}
+#sbwLayer .sbw-pity-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+#sbwLayer .sbw-pity b{font:900 16px Rajdhani,sans-serif;color:#fff}
+#sbwLayer .sbw-pity i{display:block!important;flex:none;width:100%;height:7px;border-radius:5px;background:#2a2033;overflow:hidden}
+#sbwLayer .sbw-pity s{display:block!important;height:100%;background:linear-gradient(90deg,#ffcf63,#ff8a3d);text-decoration:none}
+#sbwLayer .sbw-pity em{font-style:normal;font-size:10.5px;color:#ffe9a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-pity.ready{border-color:#ff8a3d;box-shadow:0 0 16px #ff8a3daa}
+#sbwLayer .sbw-pity.ready em{color:#ffb35c;font-weight:900}
+#sbwLayer .sbw-pity.starter{gap:3px;padding-block:4px}
+/* Main-menu CLAIM (hero-passes.js), in the Support button's place while the CLAIM switch is on */
+#sbwLayer .sbw-claim{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;border:2px solid #ffcf63;border-radius:9px;background:linear-gradient(#2a1a05,#120a02);box-shadow:inset 0 0 0 2px #050a12;color:#ffe9a8;font:800 19px Rajdhani,system-ui;letter-spacing:.06em;text-shadow:0 1px 2px #000;pointer-events:none}
+#sbwLayer .sbw-claim[hidden]{display:none}
+#sbwLayer .sbw-claim>span:first-child{font-size:22px;line-height:1}
+#sbwLayer .sbw-claim.ready{box-shadow:inset 0 0 0 2px #050a12,0 0 12px #ffcf6399}
+#sbwLayer .hs.sbw-claim-on:hover .sbw-claim{border-color:#fff1b8;background:linear-gradient(#3a2508,#1a0f03)}
+#sbwLayer .sbw-claim-badge{position:absolute;top:-9px;right:-9px;min-width:22px;height:22px;padding:0 5px;box-sizing:border-box;border-radius:11px;background:#ff3b3b;color:#fff;font:900 13px/22px Rajdhani,sans-serif;font-style:normal;text-align:center;box-shadow:0 0 0 2px #120a02}
+#sbwLayer .sbw-claim-badge[hidden]{display:none}
+/* Dojo Chest Claim Limit Bonus (Dojo upgrades screen; covers shown only while a base allowance is approved) */
+#sbwLayer .sbw-dclaimh{justify-content:center;white-space:nowrap;font:800 14px Rajdhani,sans-serif;letter-spacing:.02em;color:#fff}
+#sbwLayer .sbw-dmid b{font-size:19px}
+#sbwLayer .sbw-dclaim{justify-content:center;font:700 19px Rajdhani,sans-serif;color:#ffcf3a;text-shadow:0 1px 2px #000}
+#sbwLayer .sbw-dmid{justify-content:flex-start}
+#sbwLayer .sbw-dmidl{justify-content:center;font:600 15px Rajdhani,sans-serif;color:#d8cfe8}
+#sbwLayer .sbw-dprev{justify-content:flex-start;align-items:flex-start;white-space:normal;text-align:left;font:600 15px/1.35 Rajdhani,sans-serif;color:#f1e6c8;padding:4px 2px}
+/* Fusion Shards panel (Fusion screen, over the artwork's next-rank note box) */
+#sbwLayer .sbw-fshards{position:absolute;z-index:8;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:5px 10px;border:1px solid #c58bff;border-radius:8px;background:linear-gradient(180deg,#1c0a36,#0b0816);box-shadow:0 0 12px #b56cff44;color:#efe4ff;font:700 13px/1.2 Rajdhani,sans-serif}
+#sbwLayer .sbw-fshards[hidden]{display:none}
+#sbwLayer .sbw-fs-row{display:flex;align-items:center;gap:8px;min-width:0}
+#sbwLayer .sbw-fshards small{font:900 12px Rajdhani,sans-serif;letter-spacing:.12em;color:#d7b4ff}
+#sbwLayer .sbw-fs-rate{min-width:86px;font:900 17px Rajdhani,sans-serif;color:#fff;white-space:nowrap}
+#sbwLayer .sbw-fshards i{flex:1;min-width:40px;height:8px;border-radius:5px;background:#2a2033;overflow:hidden}
+#sbwLayer .sbw-fshards s{display:block;height:100%;background:linear-gradient(90deg,#b56cff,#ffcf63);text-decoration:none}
+#sbwLayer .sbw-fs-step{display:flex;align-items:center;gap:4px}
+#sbwLayer .sbw-fs-step em{min-width:38px;font-style:normal;text-align:center;color:#fff}
+#sbwLayer .sbw-fshards button{min-width:26px;height:24px;padding:0 8px;border:1px solid #ffcf63;border-radius:6px;background:#1a1226;color:#ffe9a8;font:900 13px Rajdhani,sans-serif;cursor:pointer;pointer-events:auto}
+#sbwLayer .sbw-fshards button:disabled{opacity:.4;cursor:default}
+#sbwLayer .sbw-fshards .sbw-fs-fill,#sbwLayer .sbw-fshards .sbw-fs-craft{background:linear-gradient(#fcc126,#f7a51a 55%,#fb8f0b);color:#2a1000}
+#sbwLayer .sbw-fs-bal{white-space:nowrap;color:#e8d9ff}
+#sbwLayer .sbw-fs-note{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:#ffe9a8}
+#sbwLayer .sbw-fshards.full{border-color:#7dff9b;box-shadow:0 0 14px #7dff9b66}
+#sbwLayer .sbw-fshards.full .sbw-fs-note{color:#7dff9b;font-weight:900}
+#sbwLayer .sbw-fshards.short .sbw-fs-note{color:#ff9d7a}
+#sbwLayer .sbw-fshards.sbw-mflow{gap:8px;padding:10px 12px;font-size:14px}
+#sbwLayer .sbw-fshards.sbw-mflow .sbw-fs-row{flex-wrap:wrap;row-gap:8px}
+#sbwLayer .sbw-fshards.sbw-mflow i{order:9;flex:1 1 100%;height:10px}
+#sbwLayer .sbw-fshards.sbw-mflow button{min-width:36px;height:34px;font-size:14px}
+#sbwLayer .sbw-fshards.sbw-mflow .sbw-fs-note{text-align:left;white-space:normal}
+#sbwLayer .sbw-pity.starter em{white-space:normal;font-size:9.5px;line-height:1.15}
+#sbwLayer .sbw-pity[hidden]{display:none}

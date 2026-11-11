@@ -82,10 +82,10 @@ legacy spend or recorded Adventure earnings. The browser hint is not authoritati
 
 Self-referrals and creator-to-creator/circular attribution are rejected. Prior creator wallet
 aliases remain reserved after migration. An existing attribution can never be overwritten.
-Wallet migration requires an authenticated source request and a separately authenticated exact
-destination acceptance within 15 minutes. Creator ID, CP and referrals follow the migration; Ryo,
-game heroes and cosmetics do not silently move between wallets. Old migration aliases cannot
-apply again or enroll as referrals.
+Creator wallet migration was removed on 2026-11-11 (`creator-migrate` is refused with 410).
+Migrations completed before then stay valid: the creator keeps the new wallet, and the old wallet
+stays reserved, so it cannot apply again or enroll as a referral. Wallet problems are handled by
+staff (for example the admin "Link a player to a referrer by hand" tool).
 
 Paid mint evidence is the unique settled summon order plus its exact successful output count.
 Single and multi-summons count their actual outputs. Free starter grants/bonus spending, CP shop
@@ -122,6 +122,26 @@ No endpoint transfers CP, withdraws it, swaps it or converts it into Ryo/SOL/USD
   do not earn CP. Earnings within the saved window can settle after expiry; newly earned rewards
   outside it cannot. Offline lots use the server simulation step timestamps (15-second precision);
   online lots use the authoritative credit timestamp, not a claimed client defeat time.
+- Founder-box referrals (owner decision 2026-11-10): a referral with a CONFIRMED Founder box purchase earns the creator 10%
+  instead of 5% on both commissions. Commissions already recorded at 5% for that referral (before or after the box) are raised
+  automatically and exactly once: one `founder-commission-topup` ledger row per commission (event `topup:<source_id>`, unique),
+  delta = floor(SR x 10%) - the original CP, credited in the same transaction; original rows are never edited. It runs when the
+  creator dashboard or a redemption loads, when staff open the admin view, and after each new commission for that referral.
+  Read-only preview: `node tools/creator-founder-topup-report.cjs`.
+- New players only: a referral link attaches a player only before their first order (including a pending or confirmed
+  Founder box, since 2026-11-10) or Adventure progress.
+- Staff link by hand (owner request 2026-11-10): the approver-only admin section "Link a player to a referrer by hand" takes a
+  username or wallet, a referral link or code (a mistyped link resolves) and a reason. It runs the same attribute() with
+  opts.staff: the new-player rule and the enrollment pause are skipped; permanence (an existing referrer is never changed), self,
+  cycles, creator identities and the enrollment limit still apply. Each link is in the admin audit (admin.attribute-referral).
+  The section lists recent registered sign-ups without a referrer (filtered by the admin search box).
+- Chest-funded purchases (chest-spending, owner decision 2026-11-11): a referral paying a game service directly with unclaimed
+  Chest SR earns the creator the Adventure commission on the eligible SR spent (as a claim would, once, at settlement) and NO
+  purchase commission on that order (no double CP on the same SR). Paid mints still count toward qualification.
+- Creator discount (owner decision 2026-11-10): an APPROVED creator pays 5% less for their own Summon, Fusion, Dojo, Sensei and
+  Training, or 10% once any of their referrals (creator or player link) has a CONFIRMED Founder box. It is applied after the
+  Founder discount or the Mythic Box 10% (those two never stack with each other), one after the other. Store.profileLocked
+  writes `profile.creatorDiscountBps` on every locked read (`applyCreatorDiscount`), so the quote and the charge always agree.
 - Fractional commission amounts round down to milli-CP per settlement; unclaimed fractional Ryo
   remains in its lot. The player's full legitimate Ryo claim is never reduced.
 - Totals, history, available CP, redeemed CP and provisional pending CP come from PostgreSQL.

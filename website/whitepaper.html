@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0620">
-  <title>Shinobi Bombers | Whitepaper v1.1</title>
-  <meta name="description" content="Official Shinobi Bombers economy and game launch whitepaper (v1.1, community review): Shinobi Ryo ($SR), SR and SOL allocations, the 24-hour chest claim, SR withdrawals, the Mythic NFT Box, the Creators Portal and the Day 1–8 launch roadmap.">
+  <title>Shinobi Bombers | Whitepaper v1.2</title>
+  <meta name="description" content="Official Shinobi Bombers economy and game launch whitepaper (v1.2, community review, updated November 11, 2026): Shinobi Ryo ($SR), SR and SOL allocations, the Chest claim system, SR deposits and withdrawals, Expedition Mode, Founder's NFT Boxes, the Creators Portal and the launch roadmap.">
   <link rel="canonical" href="/whitepaper">
   <meta property="og:type" content="article">
-  <meta property="og:title" content="Shinobi Bombers Whitepaper v1.1">
+  <meta property="og:title" content="Shinobi Bombers Whitepaper v1.2">
   <meta property="og:description" content="Economy and game launch whitepaper · Community review draft.">
   <meta property="og:image" content="/play/assets/mythic-box/box.png">
   <meta name="twitter:card" content="summary_large_image">
@@ -221,7 +221,7 @@
     <a href="/play/">Play</a>
     <a href="/whitepaper" aria-current="page">Whitepaper</a>
   </nav>
-  <span class="version">v1.1 · Community Review</span>
+  <span class="version">v1.2 · Community Review</span>
 </header>
 
 <div class="shell">
@@ -232,12 +232,12 @@
     <a href="#token">03 · Shinobi Ryo</a>
     <a href="#sr-economy">04 · SR Allocations</a>
     <a href="#claims">05 · Chest Claim System</a>
-    <a href="#withdrawals">06 · SR Withdrawals</a>
+    <a href="#withdrawals">06 · Deposits &amp; Withdrawals</a>
     <a href="#sol-revenue">07 · SOL Revenue</a>
     <a href="#sol-phase1">08 · Early Launch Allocation</a>
     <a href="#sol-phase2">09 · Long-Term Allocation</a>
     <a href="#sustainability">10 · Sustainability</a>
-    <a href="#mythic">11 · Mythic NFT</a>
+    <a href="#mythic">11 · Founder &amp; Mythic NFTs</a>
     <a href="#creators">12 · Creators Portal</a>
     <a href="#roadmap">13 · Launch Roadmap</a>
     <a href="#transparency">14 · Transparency</a>
@@ -263,9 +263,9 @@
     </div>
 
     <div class="notice" role="note">
-      <strong>Community Review Draft · November 7, 2026.</strong>
-      This document describes proposed features and policies. It does not confirm that they have been deployed.
-      Token details, launch timing, security controls, and final economic parameters remain subject to verification.
+      <strong>Community Review Draft · Updated November 11, 2026.</strong>
+      This version reflects the game and its economy as released up to November 11, 2026. Features described as live are open to players; features marked as planned or not yet open are released on the roadmap schedule and depend on technical readiness.
+      Token details, security controls, and final economic parameters remain subject to verification.
     </div>
 
     <!-- 01: INTRODUCTION -->
@@ -273,12 +273,12 @@
       <span class="section-kicker">Chapter 01</span>
       <h2 id="h-overview">Executive Summary</h2>
       <p>Shinobi Bombers is an anime-inspired blockchain game built around collectible Shinobi NFT heroes, automated Adventure gameplay, character progression, and a player-driven economy.</p>
-      <p>The project proposes a dual-treasury structure separating gameplay token management from real-world operating expenses.</p>
+      <p>The project uses a dual-treasury structure separating gameplay token management from real-world operating expenses.</p>
       <div class="grid">
         <div class="card">
           <div class="stat">$SR</div>
           <h3>Game Economy</h3>
-          <p>Supports eligible gameplay services, Adventure chest rewards, community incentives, and long-term reward reserves.</p>
+          <p>Supports eligible gameplay services, Adventure chest rewards, community incentives, content-creator rewards, and long-term reward reserves.</p>
         </div>
         <div class="card">
           <div class="stat">SOL</div>
@@ -299,50 +299,97 @@
       <div class="grid">
         <article class="card">
           <h3>⛩ Summoning Shrine</h3>
-          <p>Obtain collectible heroes across Genin, Chunin, Jonin, Elite, and Legend rarity classifications. Special collections may include Mythic heroes.</p>
+          <p>Summon collectible heroes at a base price of 25,000 SR per summon (batches of 5, 10 or 15 are available). Shrine odds: Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1%. <strong>Legend pity:</strong> a Legend is guaranteed on the 150th paid summon in a row without one. Mythic heroes are never drawn at the Shrine; they come from special collections such as the Founder's NFT Boxes.</p>
         </article>
         <article class="card">
           <h3>⚔ Adventure Mode</h3>
-          <p>Deploy heroes, clear stages, destroy obstacles, collect chest rewards, and progress through new maps. Chakra and hero deployment rules apply.</p>
+          <p>Deploy up to 10 battle-ready heroes, clear stages, defeat enemies, and collect chest rewards that are added to your Chest as each defeat happens. Each attack spends 1 Chakra; a deployed hero that runs out rests until 10% of its Chakra is back, and a better Dojo shortens the rest. Heroes in Reserve do not recover Chakra. Enemy rewards run from 50% to 100% of the base rate, in 10% steps, as the funded reward pool grows by 100,000 SR per step. A Sensei keeps your team fighting while you are offline, for up to 12 hours.</p>
         </article>
         <article class="card">
           <h3>✦ Fusion</h3>
-          <p>Combine eligible heroes to progress through supported rarity levels using published fusion requirements. Fusion service fees use SR.</p>
+          <p>Combine three heroes of the same rarity to attempt the next rarity: Genin→Chunin 90%, Chunin→Jonin 80%, Jonin→Elite 70%, Elite→Legend 60% (Elite→Legend needs three level-5 Elite heroes). <strong>Fusion Shards</strong> (2 Upgrade Shards craft 1 Fusion Shard) add +5% success each per attempt, up to a guaranteed 100%. Fusion service fees use SR. Shards are account-bound game items.</p>
         </article>
         <article class="card">
           <h3>🌸 Dojo Services</h3>
-          <p>Access Chakra Recovery, Dojo Upgrades, and Sensei. <strong>Sensei is purchased with SOL.</strong> The Dojo has no separate hero-training service.</p>
+          <p>Dojo upgrades speed up Chakra recovery and raise your Chest claim allowance by 100,000 SR per tier (up to +600,000 at Legendary Dojo). Upgrade prices: Apprentice 3,000,000 · Shinobi 7,200,000 · Veteran 14,700,000 · Master 25,200,000 · Grandmaster 38,700,000 · Legendary 55,200,000 SR. <strong>Sensei is purchased with SOL</strong> (permanent Sensei: 0.4 SOL). The Dojo has no separate hero-training service.</p>
+        </article>
+        <article class="card">
+          <h3>🧬 Training &amp; Upgrade Shards</h3>
+          <p>Heroes level up to level 5 through Training, paid in SR plus Upgrade Shards. Spare heroes can be salvaged for Upgrade Shards (Genin 1, Chunin 2, Jonin 3, Elite 4, Legend 5, Mythic 7). Higher rarities carry more permanent perks, from 1 for Genin to all 7 for Mythic. Shards are account-bound and cannot be traded or withdrawn.</p>
         </article>
         <article class="card">
           <h3>🏪 Hero Marketplace</h3>
-          <p>Buy Heroes, Sell Heroes, and Make Offer. The initial Marketplace is for supported hero NFTs, not general item trading.</p>
+          <p>Buy Heroes, Sell Heroes, and Make Offer. The initial Marketplace is for supported hero NFTs, not general item trading. Account-bound heroes, such as rescued prisoners and referral rewards, cannot be listed. The Marketplace opens in a later roadmap phase.</p>
         </article>
         <article class="card">
           <h3>👹 Boss Hunt</h3>
-          <p>Face challenging bosses and participate in Daily Rewards and Weekly Rewards under published eligibility and reward-pool rules.</p>
+          <p>Face challenging bosses with an automatic 60-second team attack and participate in Daily Rewards and Weekly Rewards under published eligibility and reward-pool rules. Each 10,000 SR entry splits 80% to the prize pool, 10% to the Locked Treasury and 10% burned. Boss Hunt opens in a later roadmap phase.</p>
+        </article>
+        <article class="card">
+          <h3>🏕️ Expedition Mode</h3>
+          <p><strong>Live.</strong> After 10 hours of actual combat a hero leaves on a free Expedition to rest, then returns on its own. See <a href="#expedition">Expedition Mode</a> below.</p>
+        </article>
+        <article class="card">
+          <h3>👑 Founder's NFT Boxes</h3>
+          <p>Limited Mythic Founder (33) and Legacy Founder (30) boxes with in-game benefits for the buying wallet. See Chapter 11.</p>
+        </article>
+        <article class="card">
+          <h3>🎁 Hero Passes &amp; Starter Activation</h3>
+          <p><strong>Not active yet.</strong> Standard Hero Passes (account-bound promotional heroes) and Starter Activation (10 free starter Genin and a 50% enemy reward rate until 15 paid summons, for new players) switch on only when announced.</p>
         </article>
       </div>
+
+      <h3 id="expedition">Expedition Mode</h3>
+      <span class="tag">Live since November 11, 2026</span>
+      <p>Expedition Mode encourages hero rotation. Every hero builds <strong>Combat Duty</strong> from actual fighting only: each attack the server accepts adds that hero's attack cooldown. Resting, Chakra recovery, the bench, Reserve, idle time and time on an Expedition never count, and a repeated or duplicate report cannot add time twice.</p>
+      <p>At <strong>10 hours</strong> of Combat Duty a hero automatically leaves on a <strong>free Expedition</strong>. While away it cannot fight, be deployed or enter a Boss Hunt, and Sensei swaps in another hero. Its Chakra keeps recovering on the bench (it is never refilled instantly), and its rank, stats, perks, ownership and NFT data do not change. When the Expedition ends, Combat Duty restarts at zero and the hero returns on its own, including while you are offline. The Expedition Hall on the main menu shows each hero's Combat Duty, who is away and who is back.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Rarity</th><th scope="col">Expedition</th><th scope="col">Founder (50% shorter)</th><th scope="col">Early return, full Expedition</th></tr></thead>
+          <tbody>
+            <tr><td>Genin</td><td>2 hours</td><td>1 hour</td><td>2,000 SR</td></tr>
+            <tr><td>Chunin</td><td>3 hours</td><td>1 hour 30 minutes</td><td>6,000 SR</td></tr>
+            <tr><td>Jonin</td><td>4 hours</td><td>2 hours</td><td>15,000 SR</td></tr>
+            <tr><td>Elite</td><td>5 hours</td><td>2 hours 30 minutes</td><td>28,000 SR</td></tr>
+            <tr><td>Legend</td><td>6 hours</td><td>3 hours</td><td>45,000 SR</td></tr>
+            <tr><td>Mythic</td><td>8 hours</td><td>4 hours</td><td>90,000 SR</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Early return (optional).</strong> Expeditions are always free. Players may instead pay SR from their deposited game balance to bring a hero back early. The server quotes the price from the time left (the table shows the price for a full Expedition, so a Founder's shorter Expedition costs proportionally less), and nothing is charged before you confirm. An Expedition in its last 15 minutes finishes on its own for free. Starter Ryo and unclaimed Chest rewards cannot pay for it. A Founder's reduced duration is fixed when the Expedition starts.</p>
+      <div class="allocation" role="img" aria-label="Expedition early-return payment: 50 percent active reward pool, 30 percent locked treasury, 10 percent community, 10 percent content creators reward pool">
+        <div class="a" style="flex:50">50%</div><div class="b" style="flex:30">30%</div><div class="c" style="flex:10">10%</div><div class="d" style="flex:10">10%</div>
+      </div>
+      <ul class="legend" aria-hidden="true">
+        <li><i class="a"></i>Active Reward Pool</li><li><i class="b"></i>Locked Treasury Vault</li><li><i class="c"></i>Community Reward Vault</li><li><i class="d"></i>Content Creators Reward Pool</li>
+      </ul>
+      <div class="callout">
+        <strong>Expedition Payments Have Their Own Split</strong>
+        Early-return payments are four ordinary transfers to the published wallets, signed by the game's custody wallet in one transaction. Nothing is burned. The 50% sent to the Active Reward Pool reaches Chest rewards only through the approved top-up process described in Chapter 04. The 50/30/10/10 service split for Summon, Fusion, Dojo and Training is unchanged.
+      </div>
+      <p class="small muted">The 10-hour limit, Expedition durations and early-return prices are launch values and may be adjusted after review.</p>
     </section>
 
     <!-- 03: TOKEN -->
     <section id="token" aria-labelledby="h-token">
       <span class="section-kicker">Chapter 03</span>
       <h2 id="h-token">Shinobi Ryo ($SR)</h2>
-      <p>Shinobi Ryo is the primary in-game token used for eligible gameplay services and player rewards.</p>
+      <p>Shinobi Ryo ($SR) is a Token-2022 token on Solana Mainnet and the primary in-game token used for eligible gameplay services and player rewards. Deposits are free: the full amount you deposit is credited to your game balance, up to 10,000,000 SR per deposit.</p>
       <div class="card">
-        <h3>Planned SR Utility</h3>
+        <h3>SR Utility</h3>
         <ul>
           <li>Hero Summoning</li>
           <li>Fusion-related services</li>
-          <li>Chakra Recovery and Dojo Upgrades</li>
-          <li>Eligible Marketplace purchases and fees</li>
+          <li>Hero Training and Dojo Upgrades</li>
+          <li>Optional Expedition early return</li>
+          <li>Boss Hunt entries and eligible Marketplace purchases and fees, when those features open</li>
           <li>Other approved SR-denominated game services</li>
           <li>Verified gameplay reward payouts</li>
         </ul>
         <p><strong>Exception:</strong> Sensei uses SOL instead of SR.</p>
       </div>
       <h3>Token Launch Details</h3>
-      <p>The token mint address, supply, launch-platform mechanism, liquidity arrangements, ownership distribution, and relevant authorities must be published once verified.</p>
+      <p>The SR mint address and the revenue-model wallets are published on the <a href="/treasury">Treasury transparency page</a>. Supply, liquidity arrangements, ownership distribution, and relevant authorities are published as they are verified.</p>
       <p class="small muted">This revenue model applies only to the live Mainnet server. Beta retains its original test economy. The following percentages apply to approved SR game-service payments; they do not represent allocations of the total token supply at issuance.</p>
     </section>
 
@@ -350,25 +397,40 @@
     <section id="sr-economy" aria-labelledby="h-sr">
       <span class="section-kicker">Chapter 04</span>
       <h2 id="h-sr">SR Revenue Distribution</h2>
-      <p>The full SR payment for an approved game service follows the 50/30/10/10 distribution below. This replaces the service studio allocation and automatic service burn; deposit and withdrawal fees keep their separate rules.</p>
-      <div class="allocation" role="img" aria-label="50 percent locked treasury, 30 percent active reward pool, 10 percent community, 10 percent stability reserve">
+      <p>The full SR payment for an approved game service follows the 50/30/10/10 distribution below. This replaces the service studio allocation and automatic service burn. Deposits are free, and the withdrawal deduction keeps its separate rule.</p>
+      <div class="allocation" role="img" aria-label="50 percent locked treasury, 30 percent active reward pool, 10 percent community, 10 percent content creators reward pool">
         <div class="a" style="flex:50">50%</div><div class="b" style="flex:30">30%</div><div class="c" style="flex:10">10%</div><div class="d" style="flex:10">10%</div>
       </div>
       <ul class="legend" aria-hidden="true">
-        <li><i class="a"></i>Locked Treasury Vault</li><li><i class="b"></i>Active Reward Pool</li><li><i class="c"></i>Community Reward Vault</li><li><i class="d"></i>Economic Stability Reserve</li>
+        <li><i class="a"></i>Locked Treasury Vault</li><li><i class="b"></i>Active Reward Pool</li><li><i class="c"></i>Community Reward Vault</li><li><i class="d"></i>Content Creators Reward Pool</li>
       </ul>
       <div class="grid">
         <div class="card"><div class="stat">50%</div><h3>Locked Treasury Vault</h3><p>Long-term SR reserve for approved replenishment of gameplay reward pools.</p></div>
         <div class="card"><div class="stat">30%</div><h3>Active Reward Pool</h3><p>Funds eligible Adventure chest rewards under controlled reward distribution budgets.</p></div>
         <div class="card"><div class="stat">10%</div><h3>Community Reward Vault</h3><p>Supports community events, competitions, giveaways, and approved incentives.</p></div>
-        <div class="card"><div class="stat">10%</div><h3>Economic Stability Reserve</h3><p>Holds supplementary SR for approved economic and reward-system requirements.</p></div>
+        <div class="card"><div class="stat">10%</div><h3>Content Creators Reward Pool</h3><p>Funds rewards for content creators under approved budgets. Approved top-ups from this wallet can also replenish the Active Reward Pool.</p></div>
       </div>
+      <p class="small muted">Renamed November 11, 2026: the 10% wallet formerly called the Economic Stability Reserve is now the Content Creators Reward Pool. Its address and its 10% share are unchanged.</p>
       <h3>Locked Treasury Rules</h3>
-      <p>Service checkout verifies an external SPL multisig Treasury requiring at least two signers and excluding the game custody signer. Treasury or Reserve replenishment is recognized only after a successful finalized transfer and independent administrative approval.</p>
-      <p>A wallet label is not proof of a lock. The current adapter verifies multisig restrictions, not a timelock or a prohibition on all possible signer actions. The Active Reward allocation remains in game custody with a separate Adventure funding cap; Community and Reserve use separate destinations. Boss Hunt, PvP, Sensei SOL and marketplace proceeds are not automatically funded by this pool. Activation requires approved vault configuration.</p>
+      <p>The Locked Treasury is a Squads v4 multisig vault requiring 2 of 3 signer approvals, with no single-key configuration authority. Service checkout re-verifies it at finalized commitment against the published registry and refuses payment if its signers, threshold or authority change, or if a game-controlled key is a signer. The Treasury is not time-locked so approved reward replenishment stays available. Public addresses and live verification are shown on the <a href="/treasury">Treasury transparency page</a>.</p>
+      <p>A wallet label is not proof of a lock. The current adapter verifies multisig restrictions, not a timelock or a prohibition on all possible signer actions. The 30% Active Reward allocation is sent to the Active Reward Pool wallet. Adventure chest claims are paid only from verified, independently approved top-ups into the game claim custody, which are internal transfers and are never split again. Approved top-ups can come from the Active Reward Pool, the Locked Treasury (through its Squads vote) or the Content Creators Reward Pool; each needs a finalized on-chain transfer and approval by a second authorized reviewer. Community Rewards and the Content Creators Reward Pool use separate destinations. Boss Hunt, PvP, Sensei SOL and marketplace proceeds are not automatically funded by this pool. Activation requires approved vault configuration.</p>
       <div class="callout">
         <strong>Important Accounting Distinction</strong>
         The 5% SR deduction collected from player withdrawals goes directly to the Locked Treasury. It is not split again under the 50/30/10/10 service-revenue allocation.
+      </div>
+      <h3>Where Each Payment Goes</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Payment</th><th scope="col">Locked Treasury</th><th scope="col">Active Reward Pool</th><th scope="col">Community</th><th scope="col">Content Creators Reward Pool</th><th scope="col">Other</th></tr></thead>
+          <tbody>
+            <tr><td>Summon, Fusion, Dojo, Training (SR)</td><td>50%</td><td>30%</td><td>10%</td><td>10%</td><td>—</td></tr>
+            <tr><td>Expedition early return (SR)</td><td>30%</td><td>50%</td><td>10%</td><td>10%</td><td>No burn</td></tr>
+            <tr><td>Boss Hunt entry (SR)</td><td>10%</td><td>—</td><td>—</td><td>—</td><td>80% prize pool, 10% burned</td></tr>
+            <tr><td>SR withdrawal</td><td>5% deduction</td><td>—</td><td>—</td><td>—</td><td>95% to the player</td></tr>
+            <tr><td>SR deposit</td><td>—</td><td>—</td><td>—</td><td>—</td><td>100% credited, no fee</td></tr>
+            <tr><td>Sensei and Founder boxes (SOL)</td><td>—</td><td>—</td><td>—</td><td>—</td><td>SOL Development Economy (Chapter 07)</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -378,9 +440,11 @@
       <h2 id="h-claims">24-Hour Chest Claim System</h2>
       <div class="grid">
         <div class="card"><div class="stat">24H</div><div class="stat-label">Chest Reward Claim Interval</div></div>
+        <div class="card"><div class="stat">12H</div><div class="stat-label">Claim Interval for Founders</div></div>
+        <div class="card"><div class="stat">100,000</div><div class="stat-label">Minimum SR per Claim</div></div>
         <div class="card"><div class="stat">Anytime</div><div class="stat-label">Withdrawal of Claimed SR</div></div>
       </div>
-      <p>Eligible Adventure chest rewards may be claimed once every 24 hours. This restriction applies to chest claiming, not to withdrawals of successfully claimed balances.</p>
+      <p>Eligible Adventure chest rewards may be claimed once every 24 hours (every 12 hours for Founders). This restriction applies to chest claiming, not to withdrawals of successfully claimed balances.</p>
       <ol class="steps">
         <li>Players participate in Adventure using eligible heroes.</li>
         <li>Chest rewards accumulate according to verified game rules.</li>
@@ -388,14 +452,22 @@
         <li>Successfully claimed SR becomes part of the available withdrawal balance.</li>
         <li>The next chest claim is available after the verified cooldown expires.</li>
       </ol>
-      <p>Claim cooldowns must use authoritative timestamps. Failed claims must not incorrectly consume the cooldown, and duplicate claim processing must be prevented.</p>
-      <p class="small muted">The final policy must clarify how unclaimed rewards are treated across multiple claim cycles.</p>
+      <p>Claim cooldowns use authoritative server timestamps. Failed claims do not consume the cooldown, and duplicate claim processing is prevented.</p>
+      <h3>Claim Limits</h3>
+      <ul>
+        <li><strong>Minimum claim: 100,000 SR.</strong> A claim that cannot reach it is refused rather than paid partly, and the claim timer is not used. Rewards keep adding up safely in the Chest.</li>
+        <li><strong>Maximum per claim:</strong> a base allowance plus a Dojo bonus of +100,000 SR per Dojo tier, up to +600,000 at Legendary Dojo. The bonus is added on top of the normal per-claim maximum (for example, a normal limit of 200,000 SR becomes up to 800,000 SR at Legendary Dojo).</li>
+        <li>Claims and Chest purchases share an approved daily reward budget and need a funded Active Reward Pool and custody backing.</li>
+        <li><strong>Chest Overflow:</strong> while your unclaimed Chest holds 500,000 SR or more, <em>new</em> enemy rewards are reduced: 500,000+ −10%, 750,000+ −20%, 1,000,000+ −30%. SR already in the Chest is never reduced, and claiming or spending lowers the penalty immediately.</li>
+      </ul>
+      <p><strong>Spending unclaimed rewards.</strong> Verified, unclaimed chest SR can also pay for approved game services (Summon, Fusion, Dojo upgrades, Training) at once, without waiting for the claim cooldown and without the withdrawal deduction. A single purchase can use as much of your Chest as it costs. The spend is checked against the funded reward pool, custody backing and the approved daily reward budget, is never counted as a claim, and its revenue follows the 50/30/10/10 allocation. Sensei (SOL), Boss Hunt entry and the Marketplace are excluded.</p>
+      <p class="small muted">Unclaimed rewards stay in your Chest across claim cycles; only new rewards are reduced by Chest Overflow.</p>
     </section>
 
     <!-- 06: WITHDRAWALS -->
     <section id="withdrawals" aria-labelledby="h-withdrawals">
       <span class="section-kicker">Chapter 06</span>
-      <h2 id="h-withdrawals">SR Withdrawal System</h2>
+      <h2 id="h-withdrawals">SR Deposits &amp; Withdrawals</h2>
       <p>Players may withdraw eligible, already-claimed SR balances at any time, subject to balance verification, available custody backing, network conditions, and security controls.</p>
       <div class="grid three">
         <div class="card"><div class="stat">95%</div><div class="stat-label">SR received by the player</div></div>
@@ -420,12 +492,19 @@
         <li>5% of the gross SR withdrawal is deducted.</li>
         <li>95% of the gross SR withdrawal is paid to the player.</li>
         <li>The deducted 5% is credited to the Locked SR Treasury.</li>
+        <li>The minimum withdrawal is 100,000 SR, and there is no waiting period between withdrawals.</li>
         <li>No separate SOL-denominated platform withdrawal service fee is charged.</li>
         <li>Normal Solana network or token-account creation costs remain distinct.</li>
         <li>Fees and final payout must be shown before player confirmation.</li>
       </ul>
       <h3>Security Requirements</h3>
       <p>The withdrawal system must verify ownership and balances, prevent duplicate payouts, maintain adequate backing, and reconcile fee and player-payout movements safely.</p>
+      <h3>Deposits</h3>
+      <ul>
+        <li>Deposits are free: 100% of the SR you deposit is credited to your game balance, up to 10,000,000 SR per deposit.</li>
+        <li>Every deposit and withdrawal ends with an on-screen result: successful, failed with the reason, or processing until it is confirmed on-chain.</li>
+        <li>A deposit that never reached Solana (for example after a dropped connection) is cleared automatically once the network can no longer accept it, usually within about 3 minutes. No tokens leave your wallet unless the deposit reaches Solana, and a deposit that lands late is still credited exactly once.</li>
+      </ul>
     </section>
 
     <!-- 07: SOL REVENUE -->
@@ -434,8 +513,8 @@
       <h2 id="h-sol">SOL Development Revenue</h2>
       <p>SOL revenue funds the operational side of Shinobi Bombers, reducing dependence on selling SR to maintain the game.</p>
       <div class="grid">
-        <div class="card"><h3>📦 Limited NFT Boxes</h3><p>Net proceeds from approved limited-edition NFT collections purchased with SOL.</p></div>
-        <div class="card"><h3>🧙 Sensei Service</h3><p>Sensei purchases are denominated in SOL and contribute to the SOL Development Economy.</p></div>
+        <div class="card"><h3>📦 Founder's NFT Boxes</h3><p>Net proceeds from the limited Mythic Founder and Legacy Founder boxes and other approved limited-edition NFT collections purchased with SOL.</p></div>
+        <div class="card"><h3>🧙 Sensei Service</h3><p>Sensei purchases are denominated in SOL (permanent Sensei: 0.4 SOL) and contribute to the SOL Development Economy.</p></div>
         <div class="card"><h3>✦ Eligible Creator Fees</h3><p>Actual creator-fee revenue received under applicable platform rules, when available.</p></div>
         <div class="card"><h3>🤝 Additional Funding</h3><p>Approved sponsorships, grants, and voluntary supporter programs with transparent terms.</p></div>
       </div>
@@ -530,7 +609,8 @@
         <div class="card"><div class="stat">5%</div><div class="stat-label">Of successful gross SR withdrawals</div></div>
         <div class="card"><div class="stat">Optional</div><div class="stat-label">SR bought with approved surplus SOL</div></div>
       </div>
-      <p>These streams are accounted for separately. Withdrawal deductions must not be counted again as newly collected service revenue.</p>
+      <p>These streams are accounted for separately. Withdrawal deductions must not be counted again as newly collected service revenue. Optional Expedition early returns add a further stream: 30% of each payment goes to the Locked Treasury and 50% to the Active Reward Pool, which reaches Chest rewards only through approved top-ups.</p>
+      <p>Reward flow is also limited by the approved daily reward budget, the 100,000 SR minimum claim, per-claim maximums, and Chest Overflow.</p>
       <p>Reward budgets must be constrained by actual available funds, verified player obligations, and realistic expected game revenue.</p>
       <div class="callout">
         <strong>Sustainability Is Not Guaranteed</strong>
@@ -541,43 +621,55 @@
     <!-- 11: MYTHIC -->
     <section id="mythic" aria-labelledby="h-mythic">
       <span class="section-kicker">Chapter 11</span>
-      <h2 id="h-mythic">Exclusive Mythic NFT Box</h2>
+      <h2 id="h-mythic">Founder's NFT Boxes &amp; Mythic Benefits</h2>
+      <p>The Founder's NFT Boxes replace the earlier limited Mythic NFT Box mint. Existing Mythic Box NFTs and memberships remain unchanged.</p>
+      <div class="grid">
+        <div class="card"><div class="stat">33</div><h3>Mythic Founder</h3><p>0.7 SOL until the tier sells out. 10% discount on eligible SR services, the Mythic hero Tsukiyomi, a permanent Sensei included, 10 Limited Summon Passes, a 12-hour Chest claim interval and 50% shorter Expeditions.</p></div>
+        <div class="card"><div class="stat">30</div><h3>Legacy Founder</h3><p>0.25 SOL until the tier sells out. 5% discount on eligible SR services, a 7-day Sensei trial and the Sensei at 0.2 SOL afterwards, 10 Limited Summon Passes, a 12-hour Chest claim interval and 50% shorter Expeditions.</p></div>
+      </div>
+      <p>Founder box prices stay at these offer prices until each tier sells out; they do not return to the regular 1 SOL and 0.5 SOL. One box per wallet across both tiers. Founder benefits belong to the buying wallet and are activated in-game with the FOUNDER button.</p>
       <div class="card">
         <img class="box-art" src="/play/assets/mythic-box/box-256.webp" alt="The Limited Mythic NFT Box" width="150" height="150" loading="lazy" decoding="async">
         <div class="eyebrow">Exclusive Early-Supporter Collection</div>
         <h3 style="font-size:28px;margin-top:14px">Mythic Shinobi</h3>
-        <p>The proposed limited Mythic NFT Box includes a special Mythic hero and an exclusive celestial aura design.</p>
+        <p>The limited Mythic NFT Box (no longer minted) includes a special Mythic hero and an exclusive celestial aura design.</p>
         <div class="stat">10% OFF</div>
-        <p>Qualifying Mythic NFT holders receive a proposed 10% discount on eligible in-game purchases while holding the qualifying NFT.</p>
+        <p>Qualifying Mythic NFT holders receive a 10% discount on eligible in-game purchases while holding the qualifying NFT. When the NFT moves to another wallet, the discount moves with it.</p>
         <h3>Discount Exclusions</h3>
         <ul>
           <li>Marketplace transactions.</li>
           <li>Boss Hunt entrance fees.</li>
+          <li>Expedition early-return payments.</li>
           <li>Withdrawal deductions, which are not purchases.</li>
         </ul>
-        <p>Sensei is a SOL-paid game service. Its eligibility under the holder discount must be made explicit in the final purchase terms; absent a new exclusion, it should be treated as an eligible in-game purchase.</p>
+        <p><strong>Stacking:</strong> the Mythic NFT Box discount and the Founder discount do not stack with each other (the larger applies). An approved creator's own discount (5%, or 10% once one of their referrals bought a Founder box) is applied after them.</p>
+        <p>Sensei is a SOL-paid service: the permanent Sensei costs 0.4 SOL, is included free with the Mythic Founder box, and costs Legacy Founders 0.2 SOL after their 7-day trial.</p>
       </div>
-      <p class="small muted">Final Mythic NFT supply, SOL price, issuance mechanics, discount stacking, and ownership terms require official confirmation. NFT ownership does not guarantee financial returns.</p>
+      <p class="small muted">NFT ownership does not guarantee financial returns. Founder box supply, prices and benefits are those published on the Founder page.</p>
     </section>
 
     <!-- 12: CREATORS -->
     <section id="creators" aria-labelledby="h-creators">
       <span class="section-kicker">Chapter 12</span>
       <h2 id="h-creators">Creators Portal</h2>
-      <p>The Creators Portal is a planned streamer and influencer program. Creator approval uses an administrator-managed Solana wallet allowlist rather than Discord bot integration.</p>
+      <p>The Creators Portal is a streamer and influencer program. Creator approval uses an administrator-managed Solana wallet allowlist rather than Discord bot integration.</p>
       <div class="grid">
         <div class="card"><div class="stat">15</div><div class="stat-label">Valid paid hero mints required</div></div>
         <div class="card"><div class="stat">Stage 5</div><div class="stat-label">Adventure completion required</div></div>
         <div class="card"><div class="stat">50,000 CP</div><div class="stat-label">Guaranteed once per qualified referral</div></div>
-        <div class="card"><div class="stat">5% + 5%</div><div class="stat-label">Adventure and eligible spending commissions in CP</div></div>
+        <div class="card"><div class="stat">5% + 5%</div><div class="stat-label">Adventure and eligible spending commissions in CP (10% + 10% for referrals who bought a Founder box)</div></div>
       </div>
       <h3>Creator Rewards</h3>
       <ul>
         <li>50,000 CP for each verified referral that mints 15 paid heroes and clears Stage 5.</li>
         <li>5% of qualified referrals' eligible settled Adventure SR rewards, credited as CP.</li>
         <li>5% of qualified referrals' eligible settled SR-denominated game-service spending, credited as CP.</li>
+        <li>Approved creators pay 5% less for their own game services (Summon, Fusion, Dojo, Sensei, Training), or 10% once one of their referrals bought a Founder box. It applies after a Founder or Mythic Box discount.</li>
+        <li>For a referral who bought a Founder box, both commissions are 10%. Commissions already earned from that referral at 5% are raised to 10% automatically with a one-time bonus entry.</li>
         <li>Default proposed commission window: 90 days after referral qualification.</li>
         <li>The initial 15 qualifying paid hero mints do not also generate purchase commission.</li>
+        <li>Referral links are for new players: buying a Founder box counts as a player's first order, so a referral link cannot be added afterwards, and attribution is permanent once set.</li>
+        <li>Creator wallet migration is no longer offered.</li>
       </ul>
       <h3>Creator Points Restrictions</h3>
       <p>CP is a non-transferable, non-withdrawable internal rewards balance. It cannot be exchanged directly for SR, SOL, USDC, or cash. It can only be used in the approved Creator Shop.</p>
@@ -593,6 +685,14 @@
       <span class="section-kicker">Chapter 13</span>
       <h2 id="h-roadmap">Official Game Launch Roadmap</h2>
       <p>The roadmap describes relative launch days, not confirmed calendar dates. Releases are subject to technical readiness and testing.</p>
+      <h3>Release Status — November 11, 2026</h3>
+      <div class="grid">
+        <div class="card"><span class="tag">Open</span>
+          <ul><li>Summoning Shrine and Adventure.</li><li>Heroes, Training, Fusion and the Dojo.</li><li>Sensei (SOL).</li><li>SR deposits, Chest claims, Chest purchases and withdrawals, within the limits in Chapters 05 and 06.</li><li>Founder's NFT Boxes.</li><li>Creators Portal and referrals.</li><li>Expedition Mode.</li></ul></div>
+        <div class="card"><span class="tag">Not open yet</span>
+          <ul><li>Hero Marketplace.</li><li>Boss Hunt.</li><li>Hero Passes and Starter Activation (switch on when announced).</li></ul></div>
+      </div>
+      <p class="small muted">Features open and close on the roadmap schedule and may change before the next update of this document.</p>
       <div class="roadmap">
         <div class="roadmap-item">
           <h3>DAY 1 — The Shinobi Journey Begins</h3>
@@ -667,6 +767,7 @@
       </div>
       <h3>Governance &amp; Verification</h3>
       <p>Where feasible, reports should reference on-chain transactions and reconcile public holdings with internal account balances. Lock restrictions, administrators, upgrade authority, and emergency permissions must be disclosed.</p>
+      <p>The live <a href="/treasury">Treasury transparency page</a> lists every SR wallet with its role and live Solana verification, including the Content Creators Reward Pool.</p>
       <p>The proposed reporting cadence is monthly, with more frequent dashboard updates when reliable data is available.</p>
     </section>
 
@@ -681,6 +782,8 @@
         <div class="card"><h3>Blockchain &amp; Security Risk</h3><p>Smart contracts, wallets, trading venues, custody services, and infrastructure can experience technical failures.</p></div>
         <div class="card"><h3>Withdrawal Risk</h3><p>Network disruption, insufficient backing, or security incidents may delay withdrawal settlement.</p></div>
         <div class="card"><h3>Legal &amp; Development Risk</h3><p>Financial features may require legal review, and development milestones may change after testing.</p></div>
+        <div class="card"><h3>Payment Timing Risk</h3><p>Expedition early-return payments are final on-chain. A payment confirmed after the Expedition has already ended brings no benefit and cannot be reversed. Keep the game open until the payment is confirmed.</p></div>
+        <div class="card"><h3>Game Balance Risk</h3><p>Expedition limits and prices, Chest Overflow, claim limits and reward rates may be adjusted after launch based on how the economy behaves.</p></div>
       </div>
     </section>
 
@@ -688,22 +791,18 @@
     <section id="pending" aria-labelledby="h-pending">
       <span class="section-kicker">Chapter 16</span>
       <h2 id="h-pending">Details Requiring Confirmation</h2>
-      <p>The following information must be confirmed before this document becomes a final production whitepaper.</p>
+      <p>The following information is still to be confirmed before this document becomes a final production whitepaper.</p>
       <div class="card">
         <ol>
-          <li>Official SR token mint address, supply, and distribution.</li>
-          <li>Token launch and liquidity arrangements.</li>
-          <li>Locked Treasury program and transfer permissions.</li>
+          <li>SR token supply, distribution and liquidity arrangements.</li>
+          <li>Locked Treasury program and transfer permissions beyond the 2-of-3 multisig.</li>
           <li>Daily and seasonal reward budgets.</li>
-          <li>Unclaimed chest reward handling and timer rules.</li>
-          <li>5% SR withdrawal settlement and rounding implementation.</li>
           <li>Who pays Solana network transaction costs.</li>
-          <li>Sensei SOL pricing and Mythic discount eligibility.</li>
-          <li>Final in-game SR service prices.</li>
+          <li>Final in-game SR service prices beyond those published here.</li>
+          <li>Expedition limits, durations and early-return prices after the post-launch review.</li>
           <li>Days 5–7 discount percentage and leaderboard prizes.</li>
-          <li>Mythic NFT Box supply, price, and ownership terms.</li>
           <li>Creators Portal inventory and enrollment safeguards.</li>
-          <li>Exact launch dates and deployment status.</li>
+          <li>Opening dates for the Hero Marketplace, Boss Hunt, Hero Passes and Starter Activation.</li>
           <li>Security review and legal readiness.</li>
         </ol>
       </div>
@@ -715,8 +814,8 @@
 
     <footer class="footer">
       <strong>FORGE YOUR NINJA WAY</strong>
-      <p>SHINOBI BOMBERS · WHITEPAPER v1.1</p>
-      <p>Community Review Draft · November 7, 2026</p>
+      <p>SHINOBI BOMBERS · WHITEPAPER v1.2</p>
+      <p>Community Review Draft · Updated November 11, 2026</p>
       <p>This whitepaper is informational and does not promise cryptocurrency returns, token price stability, NFT resale value, or guaranteed reward availability.</p>
       <p>© Shinobi Bombers. Project branding and visual assets remain with their respective owners.</p>
       <p><a href="/play/">Play Shinobi Bombers →</a></p>

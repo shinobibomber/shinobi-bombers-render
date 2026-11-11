@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Control · Shinobi Bombers</title>
+<link rel="stylesheet" href="/admin/control/control.css">
+<script defer src="/admin/control/wallet.js"></script>
+<script defer src="/admin/control/control.js"></script>
+</head>
+<body>
+<header class="top">
+  <strong class="brand">SHINOBI BOMBERS · CONTROL</strong>
+  <span id="who" class="who"></span>
+  <button id="signOut" type="button" class="ghost" hidden>Sign out</button>
+</header>
+<main id="main">
+  <section id="signIn" class="card">
+    <h1>Admin Control panel</h1>
+    <p>Sign in with an admin wallet (owner or approver to change switches). Signing is free and sends no transaction.</p>
+    <div id="wallets" class="wallets"></div>
+    <p id="signInStatus" class="status" role="status"></p>
+  </section>
+  <section id="panel" hidden>
+    <div id="release" class="card release"></div>
+    <p id="panelNote" class="note" hidden></p>
+    <div id="groups"></div>
+    <section class="card">
+      <h2>Change log</h2>
+      <ol id="log" class="log"></ol>
+    </section>
+  </section>
+</main>
+<dialog id="confirm">
+  <form method="dialog" id="confirmForm">
+    <h2 id="confirmTitle"></h2>
+    <p id="confirmText"></p>
+    <label for="reason">Reason (kept in the audit log)</label>
+    <textarea id="reason" rows="3" minlength="8" maxlength="300" required></textarea>
+    <p id="confirmStatus" class="status" role="status"></p>
+    <div class="actions"><button value="cancel" type="button" id="cancel" class="ghost">Cancel</button><button value="ok" id="apply" type="submit">Apply</button></div>
+  </form>
+</dialog>
+</body>
+</html>

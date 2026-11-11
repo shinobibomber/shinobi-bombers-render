@@ -51,11 +51,23 @@ A new announcement puts a gold dot on the System tab, and the Home bar shows whi
 newest Global message and System announcement is more recent. Messages are
 inserted with `textContent`, never as HTML.
 
+## Moderation (Shinobi Command Center)
+
+Staff decisions from `/admin/command-center/` (see `command-center/README.md`) are enforced here:
+
+- `chat-send` refuses a muted or banned wallet after taking the same account row lock, before the
+  rate limits run, so a send in flight and a staff decision never interleave.
+- `chat-list` never returns hidden messages. It lists recently hidden IDs in `removed`, so open
+  clients drop them, and returns the caller's own `standing` (mute, ban or recent warning).
+- `chat-report` lets a signed-in player report someone else's Global message. A wallet can file at
+  most 10 reports per hour. Each report reason can be used once per message. The report stores a
+  snapshot of the message.
+- Official announcements are inserted into `system` only after two-wallet review.
+
 ## Not included yet
 
-Moderation tools (mute, report, delete), direct messages, guild/team channels and push
-delivery (WebSockets). Polling keeps it compatible with both the Render server and
-Netlify Functions.
+Direct messages, guild/team channels, player appeal forms and push delivery (WebSockets).
+Polling keeps it compatible with both the Render server and Netlify Functions.
 
 ## Tests
 

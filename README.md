@@ -125,9 +125,72 @@ With `PRELAUNCH_MODE=on` the live server runs **only** the pre-launch portal fro
 - **Legal pages:** Referral Rules and the Privacy notice describe what the code actually does. **Terms is a draft**,
   marked as such, to be replaced with reviewed text before launch.
 
+### Admin Control panel (owner decision 2026-11-09)
+
+`/admin/control` (every stage, including pre-launch) lets an owner or approver wallet (`RYO_ADMIN_OWNERS`,
+`RYO_ADMIN_APPROVERS`; operators/viewers read-only) open or close game features: summoning, SR deposits, Boss Hunt,
+Chest claims, withdrawals, Market, the Founder sale/private testing/reward redemption, Sensei SOL, chat, fusion, dojo and
+training. A panel value overrides the Render setting until reset; every change needs a reason and is kept in a
+hash-chained log. `FEATURE_PANEL_DISABLED=on` in Render ignores all panel values. The panel cannot bypass the other locks
+(registry mint/activation, SR routing approval, custody/mint checks, the Market wallets, `FOUNDERS_REVENUE_WALLET`).
+Release (public/hold) is still `GAME_LAUNCH_HOLD` in Render.
+
+### Automatic public release (owner decision 2026-11-09)
+
+On the live server the game opens to the public by itself once the released SR mint is configured: `RYO_TOKEN_MINT`
+equal to `srMintAddress` in the reviewed treasury registry. `PRELAUNCH_MODE` and a valid `RELEASE_STAGE` are then
+overridden (an unknown `RELEASE_STAGE` still refuses to start), and `RYO_TREASURY_SECRET` is required.
+`GAME_LAUNCH_HOLD=on` keeps the pre-launch portal (rollback); for private testing with the real mint use
+`GAME_LAUNCH_HOLD=on` with `RELEASE_STAGE=private` and `RYO_PRIVATE_TEST_WALLETS`. Money features stay behind their own
+switches (see `docs/treasury/ACTIVATION_CHECKLIST.md`).
+
+### Private live testing (Stage 1: owner only, portal stays public)
+
+`RELEASE_STAGE=private` together with `PRELAUNCH_MODE=on` loads the real game on the live server while the pre-launch
+portal stays the only public page. Deploying, restarting or rebuilding never changes the stage; only the owner editing
+the environment in the Render dashboard does.
+
+| Stage | Settings | Who can enter the game |
+| --- | --- | --- |
+| Portal only (default) | `PRELAUNCH_MODE=on`, `RELEASE_STAGE` unset or `portal` | nobody; the game is not loaded |
+| **1. Private live testing** | `PRELAUNCH_MODE=on`, `RELEASE_STAGE=private`, `RYO_PRIVATE_TEST_WALLETS=<wallets>`, `SOLANA_RPC_URL`, `SOLANA_PUBLIC_RPC_URL` | only the listed wallets |
+| 2. Investor early access | not implemented; needs a separate, explicit approval | (none) |
+| 3. Public release | remove `PRELAUNCH_MODE`, set `RELEASE_STAGE=public` (separate, explicit approval) | everyone |
+
+- **Entering:** open `/private-test` (it exists only in Stage 1), sign the free wallet message, and you are sent to
+  `/play/`. The server gives a listed wallet a private pass: the same 1-hour session, as an HttpOnly, Secure,
+  SameSite=Strict cookie for the whole site. Signing out on the portal ends it.
+- **Enforcement is on the server, for every request and every hostname** (custom domain and `*.onrender.com`).
+  Without a valid pass, `/play/*`, `/api/ryo`, `/.netlify/functions/ryo`, `/admin/*` and `/beta-config.json` give
+  exactly the portal-only answers (302 to `/`, 403 `PRELAUNCH`, 404). Signed-in players and investors who are not
+  listed get the same answers.
+- **Fail closed:**
+  - an unknown `RELEASE_STAGE`, `investor`, or `public` while `PRELAUNCH_MODE=on` refuses to start;
+  - so does `private` with no valid wallets or Mainnet RPCs;
+  - on Mainnet, removing `PRELAUNCH_MODE` without `RELEASE_STAGE=public` also refuses to start.
+  - Render then keeps the previous deploy running.
+- **Money settings (owner-approved 2026-11-09):** the game's own wallet sign-in needs `RYO_TREASURY_SECRET`,
+  `RYO_TOKEN_MINT`, `RYO_STUDIO_WALLET` and `RYO_REVENUE_WALLET`.
+  - They are allowed **only** in Stage 1, with a valid `RYO_PRIVATE_TEST_WALLETS`, and only all four together.
+  - The portal-only stage still refuses them.
+  - On Mainnet they pass the same reviewed treasury-registry locks as launch: `RYO_TOKEN_MINT` must match
+    `srMintAddress` in [treasury/treasury-registry.json](treasury/treasury-registry.json). While that mint is pending,
+    a server holding money settings refuses to start. Register the mint through a reviewed commit first.
+  - `STARTER_PACK` and `SR_REVENUE_ROUTING_ENABLED` stay refused.
+  - The Mainnet launch gates (summoning, market, claims, SOL deposits and withdrawals) stay **off** unless set one by
+    one.
+  - With these set, the server-side gate is the only barrier in front of real-money code. Re-run
+    `verify-private-access.cjs` after every deploy, on every hostname.
+- **Test data:** play with dedicated tester wallets. Their records sit in the live tables under `RYO_SCOPE`, keyed by
+  wallet, and are not mixed with other players' accounts.
+- **Check after every deploy:** `node tools/deploy/verify-private-access.cjs https://<live host>` (run it on the
+  `onrender.com` address too). It reports `LOCKED`, or exits 1 on any leak. Add `--cookie "sb_pt=…"` to confirm owner
+  access.
+
 ### Opening the game (launch day)
 
-1. Remove `PRELAUNCH_MODE` and **keep `RYO_SCOPE`**. Add the money settings from the checklist below.
+1. Remove `PRELAUNCH_MODE`, set `RELEASE_STAGE=public` (the Mainnet server refuses to start without it) and **keep
+   `RYO_SCOPE`**. Add the money settings from the checklist below.
 2. Turn on each feature with its own launch gate, all **off by default on Mainnet** ([launch-gates/server.cjs](launch-gates/server.cjs)):
 
    | Gate | Feature |

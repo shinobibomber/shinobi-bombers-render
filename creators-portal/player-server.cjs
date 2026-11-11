@@ -21,27 +21,32 @@ async function identity(store, wallet) {
     return { wallet, code };
   });
 }
-async function attribute(store, wallet, code) {
+async function attribute(store, wallet, code, opts = {}) {   // opts.staff: see creators-portal attribute()
   return store.transaction(async c => {
     const { config } = await cp().program(store, c, true); await store.locked(c, wallet);
     if ((await query(c, 'SELECT 1 FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('Your referral attribution is permanent and cannot be overwritten.', 409);
     const old = await referral(store, c, wallet);
-    if (old) { const owner = (await query(c, 'SELECT code FROM ryo_player_referrers WHERE scope=$1 AND wallet=$2', [store.scope, old.referrer]))[0]; if (owner.code !== code) fail('Your referral attribution is permanent and cannot be overwritten.', 409); return { ok: true, existing: true }; }
-    if (config.enrollmentPaused) fail('New referral enrollment is paused. Accepted referral rewards remain available.', 409);
+    if (old) { const owner = (await query(c, 'SELECT code FROM ryo_player_referrers WHERE scope=$1 AND wallet=$2', [store.scope, old.referrer]))[0]; if (owner.code !== code) fail('Your referral attribution is permanent and cannot be overwritten.', 409); if (opts.onLinked) await opts.onLinked(c, true); return { ok: true, existing: true }; }
+    if (config.enrollmentPaused && !opts.staff) fail('New referral enrollment is paused. Accepted referral rewards remain available.', 409);
     const creatorCount = Number((await query(c, 'SELECT COUNT(*) AS n FROM ryo_creator_referrals WHERE scope=$1', [store.scope]))[0].n);
     if (creatorCount + await count(store, c) >= config.enrollmentLimit) fail('The public referral enrollment limit has been reached.', 409);
     const owner = (await query(c, 'SELECT * FROM ryo_player_referrers WHERE scope=$1 AND code=$2', [store.scope, code]))[0];
     if (!owner) fail('That referral link is unavailable.', 404);
     if (owner.wallet === wallet) fail('You cannot refer yourself.', 409);
     if ((await query(c, 'SELECT 1 FROM ryo_creator_wallets WHERE scope=$1 AND wallet=$2', [store.scope, wallet])).length) fail('Creator identities cannot become referred players.', 409);
-    await cp().assertNewPlayer(store, c, wallet);
-    // A player may invite friends after being referred, but circular referral chains are never valid.
-    const cycle = await query(c, `WITH RECURSIVE ancestors(wallet) AS (
-      SELECT $2::text UNION SELECT r.referrer FROM ryo_player_referrals r JOIN ancestors a ON r.wallet=a.wallet WHERE r.scope=$1
+    if (!opts.staff) await cp().assertNewPlayer(store, c, wallet);
+    // Follow both programs, including a creator's reserved wallets after migration.
+    // A referred player may now become a creator; RP-only traversal would miss mixed loops.
+    const cycle = await query(c, `WITH RECURSIVE edges(wallet,referrer) AS (
+      SELECT wallet,referrer FROM ryo_player_referrals WHERE scope=$1
+      UNION SELECT r.wallet,w.wallet FROM ryo_creator_referrals r JOIN ryo_creator_wallets w ON w.scope=r.scope AND w.creator_id=r.creator_id WHERE r.scope=$1
+    ), ancestors(wallet) AS (
+      SELECT $2::text UNION SELECT e.referrer FROM edges e JOIN ancestors a ON e.wallet=a.wallet
     ) SELECT 1 FROM ancestors WHERE wallet=$3`, [store.scope, owner.wallet, wallet]);
     if (cycle.length) fail('Circular referral chains are not allowed.', 409);
     await c.query('INSERT INTO ryo_player_referrals(scope,wallet,referrer,attributed) VALUES($1,$2,$3,$4)', [store.scope, wallet, owner.wallet, store.now()]);
     await cp().recordEvent(store, c, 'player-attributed:' + wallet, wallet, 'player-referral-attributed', { referrer: owner.wallet });
+    if (opts.onLinked) await opts.onLinked(c, false);   // staff audit in the same transaction as the link
     return { ok: true };
   });
 }
@@ -72,7 +77,11 @@ async function beginAdventure(store, c, wallet, profile, active, report) {
 async function summary(store, wallet, origin, body = {}) {
   const page = body.page ?? 0; if (!Number.isSafeInteger(page) || page < 0 || page > 100000) fail('Invalid referral page.');
   const owner = await identity(store, wallet), args = [store.scope, wallet];
-  const [stats] = await query(store.pool, `SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE qualified IS NOT NULL) AS qualified,COUNT(*) FILTER(WHERE qualified IS NULL) AS pending FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2`, args);
+  const [ownStats] = await query(store.pool, `SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE qualified IS NOT NULL) AS qualified,COUNT(*) FILTER(WHERE qualified IS NULL) AS pending FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2`, args);
+  // An approved creator's player-link referrals joined the Creator Program: show the same combined count.
+  const creatorId = (await query(store.pool, "SELECT id FROM ryo_creators WHERE scope=$1 AND wallet=$2 AND status='APPROVED'", args))[0]?.id || null;
+  const [viaCreator] = creatorId ? await query(store.pool, `SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE qualified IS NOT NULL) AS qualified,COUNT(*) FILTER(WHERE qualified IS NULL) AS pending FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2`, [store.scope, creatorId]) : [{ total: 0, qualified: 0, pending: 0 }];
+  const stats = { total: String(Number(ownStats.total) + Number(viaCreator.total)), qualified: String(Number(ownStats.qualified) + Number(viaCreator.qualified)), pending: String(Number(ownStats.pending) + Number(viaCreator.pending)), creatorProgram: !!creatorId };
   const [passes] = await query(store.pool, 'SELECT COALESCE(SUM(passes-claimed),0) AS available,COALESCE(SUM(passes),0) AS earned,COALESCE(SUM(claimed),0) AS claimed FROM ryo_player_referral_rewards WHERE scope=$1 AND wallet=$2', args);
   const refs = await query(store.pool, 'SELECT wallet,paid_mints,stage5,qualified,attributed FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2 ORDER BY attributed DESC,wallet LIMIT 20 OFFSET $3', [...args, page * 20]);
   const claims = await query(store.pool, 'SELECT id,quantity,result,created FROM ryo_player_referral_claims WHERE scope=$1 AND wallet=$2 ORDER BY created DESC,id LIMIT 20 OFFSET $3', [...args, page * 20]);

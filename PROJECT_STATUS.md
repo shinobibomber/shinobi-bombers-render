@@ -226,6 +226,71 @@ Work is isolated on `review/combat-perks-beta-2026-11-08`. New `combat-rules/` s
   Beta release validation: fresh unpack, lint, rewards guard, all 53 beta suites and website
   checks passed in one run; desktop/mobile Tsukiyomi screenshots inspected. Runtime source
   matches 0230af9 exactly. Logs: tests/out/tsukiyomi-beta-{build,lint,rewards,tests}.log.
+### Nov 8, 2026 — Creator referral sync (CODE + TESTS DONE on `release/live-treasury-2026-11-08`; awaiting owner OK to push to `live`)
+
+Implemented: convertPlayerReferrals() + syncApprovedCreators() + RP-link routing in creators-portal/server.cjs; combined counts in summary(), player-server summary(), prelaunch creatorState()/referrals(); UI notes (crd.playerLinkNote, dash.creatorSync). New tests/creator-referral-sync.cjs; prelaunch-creators/prelaunch-server expectations updated for combined counts and `via`. Remaining: full-suite result → commit → owner approval → push to live.
+
+Bug: when a player is approved as a creator, their earlier player-link (RP…) referrals did not count toward the creator referral count.
+Owner decisions: (1) CONVERT existing RP referrals into creator referrals (CP milestone/commissions instead of hero passes); (2) after approval, new sign-ups via the old RP link enroll in the creator program; (3) LIVE ONLY; ask before pushing to `live`.
+Branch `release/live-treasury-2026-11-08`. Safety: convert only unqualified RP referrals with no hero-pass reward row and whose wallet is not a creator wallet; keep join time/progress; rewarded or creator-wallet rows stay player referrals but count in the creator total; never touch the creator's own attribution.
+Steps: (1) convertPlayerReferrals() in creators-portal/server.cjs — on approval/re-approval/manual-add + one-time sync from initialize(); (2) attribute() routes approved creators' RP codes to the creator path; (3) combined counts in summary(), prelaunch creatorState()/referrals(), player-server summary(), UI notes + i18n; (4) tests/creator-referral-sync.cjs + existing referral suites + full npm test; (5) commit, patch notes, ask before push.
+
+
+### Nov 8, 2026 — LIVE treasury & wallet integration (Phase A–F), released to `live` only (pre-launch, all money paths OFF)
+
+Cherry-picked onto `live` only (owner request "commit to live server only"); the 4 beta-only main commits (combat perks, Tsukiyomi/Mythic animation) were NOT brought to live. Beta (`main`) does not have this change yet. No Render setting changed; no transaction. Known pre-existing on `live`: preservation pins for gameplay-options/server.cjs and app/server/gameplay-options.cjs do not match (live lacks main's eol=lf attributes); not part of the Render build.
+- Verified on Mainnet (read-only, finalized): Treasury `5wVBdFkQ…11aGn` = Squads v4 vault #0 of multisig
+  `38chAaSb…SZjX`, 2-of-3, no time lock, no config authority, 0 proposals. Phantom wallets 3Rzz/FZnW/B2aG: never used.
+- `treasury/`: committed public registry + validator, read-only verifier, live withdrawal/claim policy, schema,
+  `/treasury` page. `apply-treasury.cjs` runs after apply-sr-revenue. See treasury/README.md, docs/treasury/*.
+- SR router v2 (live only): destinations pinned to the registry; Squads v4 verification replaces the SPL-multisig
+  check; 4 legs (30% now leaves custody for the Active Reward Pool); claims funded only by approved top-ups
+  (source activeRewards added); 4 activation locks incl. new SR_REVENUE_ROUTING_ENABLED (refused in pre-launch).
+- Live only: withdrawals 5% → Squads Treasury in exact base units (own ledger), no 24 h withdrawal cooldown;
+  Chest claims once per 24 h within an approved `rewardBudget` (new admin kind). Beta unchanged (2% studio, 24 h).
+- Admin: typed CONFIRM required server-side for every control write; Treasury section in /admin/; read-only
+  Treasury card in the pre-launch portal (admin allowlist). Whitepaper custody wording updated.
+- Tests: new treasury-registry / treasury-live-rewards / treasury-prelaunch / treasury-page; updated sr-revenue,
+  financial-server, economic-dashboard, network-guard, creators-server; 4 preservation hashes (adventure, service,
+  store, schema) updated by design. Owner approvals still required: docs/treasury/ACTIVATION_CHECKLIST.md.
+
+- 2026-11-07 REFERRED CREATOR APPLICATIONS: owner explicitly chose to allow referred players
+  to apply. Removed the pre-launch submission block and shared admin approval/reactivation
+  block; approval still requires an authorized reviewer and audit reason. Audit records keep
+  the original attribution kind/referrer. No attribution/progress/earned entitlement is
+  deleted or converted; approval creates no rewards. RP cycle detection now follows both
+  player and creator edges, including reserved creator identities after wallet migration.
+  EN/PT-BR dashboard, application and rules explain eligibility. Regressions cover both
+  referral types, review/reactivation, unchanged qualified progress, no duplicate rewards,
+  mixed-program cycles before/after migration and the referred applicant browser flow.
+  Release target is live; main/beta, account scope, wallet security and pre-launch money
+  gates remain unchanged. No database migration or environment changes required.
+  Validation: lint and one complete npm test run passed (52 suites plus website checks).
+  Desktop/mobile EN/PT-BR application screenshots inspected. Screenshot tests now use
+  reduced motion to avoid capturing an in-progress page scroll; no production UI override.
+  A subsequent screenshot rerun exposed a test-only startup race: page load preceded the
+  dictionary route callback. The fixture now waits explicitly for interception (5s bound)
+  before checking disabled buttons; all original readiness assertions remain.
+
+- 2026-11-07 OWNER APPROVED LIVE WALLET RELEASE: the later request "deploy to live server"
+  supersedes the review-only restriction below for this reviewed change. Publish review
+  commit ef20b54 and these release notes to branch live only, not main/beta. Keep PRELAUNCH_MODE
+  on, RYO_SCOPE fixed, money settings/gates unchanged. Verify the live wallet security marker,
+  CSP/HSTS, health and closed payment routes. Warning/dependency concerns remain unresolved.
+
+- 2026-11-07 WALLET REVIEW ONLY — owner expressly said DO NOT AUTO-DEPLOY. Local branch
+  review/prelaunch-wallet-security-2026-11-07. Do not push main/live or change Render settings.
+  Phantom recommended; Solflare second; MetaMask names/isMetaMask providers temporarily hidden;
+  compatible other Wallet Standard signMessage wallets remain. No native transaction methods.
+  Strict canonical SIWS client/server binding, exact expiry, malformed cookie handling, cancelled
+  prompt/account-change guards, portal-only CSP and HTTPS HSTS. Accounts/scope/referrals/schema
+  and Mainnet pre-launch payment block unchanged. See docs/PRELAUNCH_WALLET_SECURITY_REVIEW.md.
+  Reported warning remains unresolved; do not label it a false positive or bypass any warning.
+  Verified: lint/site/rewards guard, website checks and all 52 suites across full runs plus
+  targeted reruns; final pre-launch browser test has 17 passing checks and inspected images.
+  Full-run history is disclosed in the review: existing GO OFFLINE flake passed unchanged on
+  rerun; new origin test now isolates its wallet from the 3s challenge limit. No limits or
+  guards loosened. No single uninterrupted green npm test run is claimed. No push/deploy.
 
 - 2026-11-07 OWNER CORRECTION: SR economy is LIVE ONLY, never beta. Build-stamped Mainnet
   selects 50/30/10/10; Devnet keeps 80% operations / 10% treasury / 8% burn / 2% studio and

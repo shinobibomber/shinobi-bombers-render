@@ -5,3 +5,7 @@ table:has(> tbody#transactions),table:has(> tbody#audit){min-width:700px}summary
 /* SR allocation totals and configured public addresses must wrap on phones. */
 #revenue-cards .metric{min-width:0}#revenue-cards .metric small,#revenue-cards .metric strong{overflow-wrap:anywhere}
 #revenue-cards .metric .label{min-height:2.8em;line-height:1.4}
+/* Treasury registry (read-only) */
+.tag.ok{color:#6fe3a1;border-color:rgba(111,227,161,.5)}.tag.bad{color:#ff6b6b;border-color:rgba(255,107,107,.55)}
+.facts{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:8px 0}.facts dt{opacity:.7}.facts dd{margin:0;font-weight:600;overflow-wrap:anywhere;min-width:0}
+#treasury .metrics{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}#treasury .metric strong{font-size:21px;overflow-wrap:normal;word-break:normal}

@@ -54,11 +54,17 @@ services:
         value: "22"
       - key: SOLANA_NETWORK
         value: mainnet
-      - key: PRELAUNCH_MODE         # remove (or set off) on launch day to open the game
+      - key: PRELAUNCH_MODE         # the released SR mint (RYO_TOKEN_MINT = registry srMintAddress) opens the game automatically; GAME_LAUNCH_HOLD=on keeps the portal
         value: "on"
       - key: RYO_SCOPE              # NEVER change once players register: their accounts live under it
         value: solana-mainnet:live
-      - key: RYO_SITE_ORIGIN        # https://shinobibombers.onrender.com (custom domain later); also used at build time
+      - key: RYO_SITE_ORIGIN        # https://shinobibombers.fun (official custom domain); also used at build time
+        sync: false
+      - key: FEATURE_PANEL_DISABLED  # on = ignore every admin Control panel switch value (emergency; Render settings apply)
+        sync: false
+      - key: FOUNDERS_REVENUE_WALLET # SOL receipts of Founder boxes and Sensei SOL only (never the game's RYO_REVENUE_WALLET)
+        sync: false
+      - key: RYO_SITE_REDIRECT_HOSTS # shinobibombers.onrender.com: page loads 301 to RYO_SITE_ORIGIN (not /healthz, NFT metadata/art or APIs)
         sync: false
       - key: DATABASE_URL           # a separate, paid Render Postgres (Internal Database URL)
         sync: false
@@ -81,8 +87,20 @@ services:
       - key: REFERRAL_ENROLLMENT_LIMIT   # shared referral cap (default 1000)
         value: "100000"
       # STARTER_PACK must never be set on this service.
-      # Phase 2 = OFFICIAL LAUNCH. Remove PRELAUNCH_MODE, keep RYO_SCOPE, then add:
+      # Phase 1b = PRIVATE LIVE TESTING (owner only; portal stays the public page). Set by hand in the dashboard:
+      #   RELEASE_STAGE=private, RYO_PRIVATE_TEST_WALLETS=<owner wallet(s)>, SOLANA_RPC_URL, SOLANA_PUBLIC_RPC_URL.
+      #   To sign into the game, also the 4 money settings (all or none; allowed ONLY in this stage). Launch gates stay off.
+      #   Unset RELEASE_STAGE = portal only (game not loaded). Deploys never change the stage. README "Private live testing".
+      # Phase 2 = OFFICIAL LAUNCH (separate explicit approval). Remove PRELAUNCH_MODE, set RELEASE_STAGE=public
+      #   (required on Mainnet: without it the server refuses to start), keep RYO_SCOPE, then add:
       #   SOLANA_RPC_URL, SOLANA_PUBLIC_RPC_URL, RYO_TREASURY_SECRET (NEW Mainnet keypair), RYO_TOKEN_MINT,
       #   RYO_STUDIO_WALLET, RYO_REVENUE_WALLET, optional RYO_TOKEN_SYMBOL, and open features one at a time:
       #   SUMMONING_ENABLED, MARKETPLACE_ENABLED, REWARD_CLAIMS_ENABLED, SOL_DEPOSITS_ENABLED, SOL_WITHDRAWALS_ENABLED
       #   (all default OFF on Mainnet).
+      # SR service routing has a fifth, separate switch: SR_REVENUE_ROUTING_ENABLED (default OFF, refused while
+      # PRELAUNCH_MODE is on). It also needs the committed treasury registry activation and a two-wallet admin approval.
+      # RYO_TOKEN_MINT must equal srMintAddress in treasury/treasury-registry.json. See docs/treasury/ACTIVATION_CHECKLIST.md.
+      # Founder's NFT Boxes (docs/founders-deploy-manifest.md). Every switch is OFF unless set to on, each needs its own
+      # explicit approval, and none of them opens the game: FOUNDERS_PRIVATE_TESTING_ENABLED (RYO_PRIVATE_TEST_WALLETS only),
+      # FOUNDERS_PUBLIC_SALE_ENABLED, FOUNDERS_REWARD_REDEMPTION_ENABLED, SENSEI_SOL_ENABLED. Minting also needs
+      # FOUNDERS_MINT_AUTHORITY_SECRET (a NEW dedicated keypair, never the custody/revenue/registry wallets).

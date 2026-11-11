@@ -61,7 +61,7 @@ async function beforeEnter(store, wallet) {
   if (open) fail('Finish your current hunt first.', 409);
   const profile = await store.profile(wallet);
   const chakra = require('./combat-chakra.cjs'), ready = new Set(profile.battleReady || []);
-  if (!profile.heroes.some(h => ready.has(h.tokenId) && chakra.recover(h,now,profile.dojo).value >= 1 && !(h.chakra.lockUntil > now))) fail('Rest at least one battle-ready hero before entering a Boss Hunt.');
+  if (!profile.heroes.some(h => ready.has(h.tokenId) && chakra.recover(h,now,profile.dojo).value >= 1 && !(h.chakra.lockUntil > now) && !(require('./expedition.cjs').enabled() && require('./combat-duty.cjs').away(h.chakra, now)))) fail('Rest at least one battle-ready hero before entering a Boss Hunt.');
 }
 // Record the hunt for a reserved fee (idempotent on the purchase request ID).
 async function record(store, wallet, row, body) {

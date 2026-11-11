@@ -3,7 +3,10 @@
   'use strict';
   const sprites = window.ShinobiSprites;
   const ranks = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend'];
-  const colors = ['#c5cbd5', '#48dc8b', '#45b5ff', '#bd79ff', '#ffcf63'];
+  // A Mythic hero (rank 5, e.g. the Mythic Founder's Tsukiyomi) uses the Legend opening but its own name, announcement and RED
+  // colour, border and frame (owner request 2026-11-11), so it never looks like a Legend.
+  const rankName = hero => (Number(hero.r) >= 5 ? 'Mythic' : ranks[Math.max(0, Math.min(4, Number(hero.r) || 0))]);
+  const colors = ['#c5cbd5', '#48dc8b', '#45b5ff', '#bd79ff', '#ffcf63', '#ff3b3b'];
   // Existing model identity is independent of rank and gameplay probabilities.
   const elements = {
     fire: ['Fire', '♨', '#ff6545'], shadow: ['Shadow', '☾', '#b975ff'],
@@ -79,6 +82,7 @@
     addEventListener('resize', scheduleModels, { passive: true });
     addEventListener('pagehide', cleanup);
     addEventListener('pageshow', scheduleModels);
+    addEventListener('shinobi-mythic-assets', scheduleModels);   // Tsukiyomi's art arrived: draw the Mythic card for real
     document.addEventListener('visibilitychange', () => {
       document.body.classList.toggle('cinematic-paused', document.hidden);
       if (document.hidden) { opening?.finish(); stopModels(); }
@@ -148,21 +152,21 @@
     if (!api.loaded || !canReveal()) return;
     const item = batch()[index], card = $('[data-reveal="' + index + '"]');
     if (!item?.hero || !card) return;
-    const hero = item.hero, rank = Math.max(0, Math.min(4, Number(hero.r) || 0));
+    const hero = item.hero, rank = Math.max(0, Math.min(5, Number(hero.r) || 0));
     const model = PlayerModels.modelFor(hero), element = elements[model.key] || ['Shinobi', '✦', '#d6d6ef'];
     card.classList.toggle('is-revealed', item.revealed === true);
     card.classList.remove('rare-sealed', 'rare-opening');
     card.dataset.rank = String(rank); card.dataset.element = model.key;
     card.style.setProperty('--rank-color', item.revealed ? colors[rank] : '#bda16d');
     card.style.setProperty('--element-color', element[2]);
-    card.setAttribute('aria-label', item.revealed ? hero.name + ', ' + element[0] + ', ' + ranks[rank] + ', level ' + hero.lv : 'Reveal scroll ' + (index + 1));
+    card.setAttribute('aria-label', item.revealed ? hero.name + ', ' + element[0] + ', ' + rankName(hero) + ', level ' + hero.lv : 'Reveal scroll ' + (index + 1));
     card.setAttribute('aria-pressed', String(item.revealed === true));
     card.setAttribute('aria-disabled', String(item.revealed === true));
     if (!card.querySelector('.cinematic-face')) {
       const seal = document.createElement('span'); seal.className = 'cinematic-seal';
       seal.innerHTML = '<span class="cinematic-scroll" aria-hidden="true"><i class="cinematic-scroll-cap top"></i><span class="cinematic-scroll-body"><b>忍</b></span><i class="cinematic-scroll-cap bottom"></i></span><b>SEALED SCROLL</b><small>Tap to reveal</small>';
       const face = document.createElement('span'); face.className = 'cinematic-face';
-      face.innerHTML = '<span class="cinematic-portrait cinematic-model"><canvas aria-hidden="true"></canvas><i class="cinematic-sparks" aria-hidden="true"></i></span><span class="cinematic-element"></span><strong class="cinematic-name"></strong><span class="cinematic-stars"></span><span class="cinematic-stats"></span><span class="cinematic-rank"></span><span class="cinematic-new">NEW!</span>';
+      face.innerHTML = '<span class="cinematic-portrait cinematic-model"><canvas aria-hidden="true"></canvas><i class="cinematic-sparks" aria-hidden="true"></i></span><span class="cinematic-element"></span><strong class="cinematic-name"></strong><span class="cinematic-stars"></span><span class="cinematic-stats"></span><span class="cinematic-rank"></span><span class="cinematic-new">NEW!</span><span class="cinematic-pity" hidden>Pity Guarantee!</span>';
       card.append(seal, face);
     }
     const face = card.querySelector('.cinematic-face');
@@ -175,8 +179,11 @@
     stars.removeAttribute('title');
     const number = value => Number.isFinite(Number(value)) ? Number(value).toLocaleString('en-US', { maximumFractionDigits: 1 }) : '—';
     face.querySelector('.cinematic-stats').textContent = 'Lv. ' + number(hero.lv) + ' · Power ' + number(hero.pw) + ' · Stamina ' + number(hero.st);
-    face.querySelector('.cinematic-rank').textContent = ranks[rank];
+    face.querySelector('.cinematic-rank').textContent = rankName(hero);
     const badge = face.querySelector('.cinematic-new'); badge.hidden = !(newModels || newModelFlags())[index];
+    // A Legend guaranteed by the Summoning Shrine's hard pity (shrine-pity) carries a small tag; natural Legends do not.
+    // Only in a Summoning Shrine reveal: a hero that later reaches someone else (e.g. through the Market) never shows it.
+    const pityTag = face.querySelector('.cinematic-pity'); if (pityTag) pityTag.hidden = !(item.revealed && hero.shrinePity === 'guaranteed' && S.v2.revealSource === 'summon');
     badge.title = 'First ' + model.label + ' in your current collection';
     if (item.revealed && opening?.item === item) {
       card.classList.remove('is-opening');
@@ -191,7 +198,7 @@
     const density = Math.min(2, devicePixelRatio || 1);
     const pixelWidth = Math.round(width * density), pixelHeight = Math.round(height * density);
     // Draw once per hero and display size; CSS supplies the idle motion.
-    const key = [hero.id, hero.r, hero.z, pixelWidth, pixelHeight].join('|');
+    const key = [hero.id, hero.r, hero.z, pixelWidth, pixelHeight, Number(hero.r) === 5 && window.MythicHero?.assetsReady].join('|');
     if (drawnModels.get(canvas) === key) return;
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
     const context = canvas.getContext('2d'); if (!context) return;
@@ -239,11 +246,11 @@
     if (!skipAnimations && !motion.matches && !document.hidden) {
       card.classList.add('is-opening');
       if (rank === 3) card.classList.add('cinematic-elite');
-      if (rank === 4) { card.classList.add('cinematic-legend'); dialog.classList.add('legend-opening'); }
+      if (rank >= 4) { card.classList.add('cinematic-legend'); dialog.classList.add('legend-opening'); }
     }
     if (rank >= 3) {
-      $('.cinematic-announcement').textContent = (rank === 4 ? 'LEGEND AWAKENED' : 'ELITE SHINOBI') + ' · ' + item.hero.name;
-      $('.cinematic-announcement').style.setProperty('--rank-color', colors[rank]);
+      $('.cinematic-announcement').textContent = (rank >= 5 ? 'MYTHIC AWAKENED' : rank === 4 ? 'LEGEND AWAKENED' : 'ELITE SHINOBI') + ' · ' + item.hero.name;
+      $('.cinematic-announcement').style.setProperty('--rank-color', colors[Math.min(rank, 5)]);
     }
     return new Promise(resolve => {
       const record = { item, finish() { if (record.done) return; record.done = true; clearTimeout(record.timer); timers.delete(record.timer); resolve(); } };
@@ -258,14 +265,14 @@
     if (!api.loaded || !scene?.isConnected || !batch().length || !canReveal()) return;
     const records = batch(), complete = records.every(item => item.revealed);
     scene.classList.toggle('is-complete', complete);
-    const counts = ranks.map((_, rank) => records.filter(item => item.revealed && Number(item.hero.r) === rank).length);
+    const names = [...ranks, 'Mythic'], counts = names.map((_, rank) => records.filter(item => item.revealed && Number(item.hero.r) === rank).length);
     const summary = $('.cinematic-summary');
     if (summary) {
       summary.hidden = !complete;
       const text = counts.join(',');
       if (summary.dataset.counts !== text) {
         summary.dataset.counts = text;
-        summary.innerHTML = ranks.map((name, rank) => '<span style="--rank-color:' + colors[rank] + '">' + name + ' <b>' + counts[rank] + '</b></span>').join('');
+        summary.innerHTML = names.map((name, rank) => rank === 5 && !counts[5] ? '' : '<span style="--rank-color:' + colors[rank] + '">' + name + ' <b>' + counts[rank] + '</b></span>').join('');
       }
     }
     const again = $('#revealAgain');

@@ -14,7 +14,7 @@
 'use strict';
 const crypto = require('node:crypto'), fs = require('node:fs'), path = require('node:path');
 
-const COOKIE = 'sb_pl';
+const COOKIE = 'sb_pl', PRIVATE_COOKIE = 'sb_pt';
 const RESERVED = new Set(['admin', 'administrator', 'moderator', 'mod', 'support', 'shinobi', 'shinobibombers', 'official', 'staff', 'system', 'team', 'dev', 'developer', 'null', 'undefined', 'root']);
 // Per client address per minute. Generous enough for many players behind one shared address (mobile carriers, cafés).
 const LIMITS = { all: 240, challenge: 20, register: 20 }, WINDOW = 60000;
@@ -27,7 +27,7 @@ const fail = (message, status = 400, code = 'BAD_REQUEST') => { throw Object.ass
 const CODES = [
   [/already has a creator application/i, 'CREATOR_EXISTS'], [/supported primary platform/i, 'CREATOR_PLATFORM'], [/HTTPS channel/i, 'CREATOR_URL'],
   [/applications are temporarily paused/i, 'CREATOR_PAUSED'], [/authorized creator administrator|approver role is required/i, 'ADMIN_ONLY'],
-  [/Invalid creator status transition/i, 'CREATOR_TRANSITION'], [/referred player cannot become a creator/i, 'CREATOR_REFERRED'],
+  [/Invalid creator status transition/i, 'CREATOR_TRANSITION'],
   [/creator link is unavailable|must accept the program terms/i, 'CREATOR_UNKNOWN'], [/Creator not found/i, 'CREATOR_NOT_FOUND'],
   [/Creators Portal is not enabled/i, 'CREATOR_DISABLED'], [/Enter text between/i, 'TEXT_INVALID'], [/Enter a whole number/i, 'NUMBER_INVALID'],
   [/yourself/i, 'REFERRAL_SELF'], [/Circular/i, 'REFERRAL_CYCLE'], [/permanent|cannot become referred/i, 'REFERRAL_PERMANENT'],
@@ -46,7 +46,14 @@ function readAnnouncements(file) {
   } catch { return []; }
 }
 
-function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json') } = {}) {
+/* privateAccess (only when RELEASE_STAGE=private, see network/network.cjs): { allowed(wallet) -> boolean }.
+ * The "private-access" action then hands an allowlisted, signed-in wallet the same session token in a second
+ * cookie (PRIVATE_COOKIE, Path=/) that the site host checks on every game path. Without it the action does not exist. */
+/* mode 'founders' (after the public launch, owner decision 2026-11-09): only what the /founders page needs stays
+ * mounted (status, leaderboard, sign-in, the player's own profile and the Founder sale). Referrals, creators, the
+ * treasury admin view and private access answer 404 there; the game has its own screens for them. */
+const FOUNDERS_ACTIONS = new Set(['status', 'leaderboard', 'founders-info', 'challenge', 'login', 'logout', 'me', 'register', 'preferences', 'founders-mint', 'founders-confirm']);
+function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.now, announcementsFile = path.join(__dirname, 'announcements.json'), treasuryConnection = null, privateAccess = null, mode = 'portal', foundersConnection = null, priceFetch = null, usdPrices = null } = {}) {
   const server = path.join(gameDir, 'server'), need = name => require(path.join(server, name));
   const fromApp = name => require(require.resolve(name, { paths: [server] }));
   const { Store } = need('store.cjs'), { verifySignature } = need('service.cjs'), cp = need('creators-portal.cjs'), players = need('player-referrals.cjs');
@@ -125,12 +132,19 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     const page = body.page ?? 0; if (!Number.isSafeInteger(page) || page < 0 || page > 10000) fail('Invalid page.');
     const [s] = await rows(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE qualified IS NULL) AS progress, COUNT(*) FILTER (WHERE qualified IS NOT NULL) AS qualified
       FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2`, [w]);
+    // An approved creator sees one combined count: their player-link referrals joined the Creator Program.
+    const creatorId = (await rows("SELECT id FROM ryo_creators WHERE scope=$1 AND wallet=$2 AND status='APPROVED'", [w]))[0]?.id || null;
+    const [cs] = creatorId ? await rows(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE qualified IS NULL) AS progress, COUNT(*) FILTER (WHERE qualified IS NOT NULL) AS qualified
+      FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2`, [creatorId]) : [{ total: 0, progress: 0, qualified: 0 }];
     const [r] = await rows('SELECT COALESCE(SUM(passes-claimed),0) AS available, COALESCE(SUM(claimed),0) AS earned FROM ryo_player_referral_rewards WHERE scope=$1 AND wallet=$2', [w]);
-    const list = await rows(`SELECT r.wallet, r.attributed, r.paid_mints, r.stage5, r.qualified, p.username FROM ryo_player_referrals r
-      LEFT JOIN ryo_players p ON p.scope=r.scope AND p.wallet=r.wallet WHERE r.scope=$1 AND r.referrer=$2 ORDER BY r.attributed DESC, r.wallet LIMIT 20 OFFSET $3`, [w, page * 20]);
+    const list = await rows(`SELECT r.wallet, r.attributed, r.paid_mints, r.stage5, r.qualified, r.via, p.username FROM (
+        SELECT wallet, attributed, paid_mints, stage5, qualified, 'player' AS via FROM ryo_player_referrals WHERE scope=$1 AND referrer=$2
+        UNION ALL SELECT wallet, attributed, paid_mints, stage5, qualified, 'creator' AS via FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$4) r
+      LEFT JOIN ryo_players p ON p.scope=$1 AND p.wallet=r.wallet ORDER BY r.attributed DESC, r.wallet LIMIT 20 OFFSET $3`, [w, page * 20, creatorId]);
     return { page, pageSize: 20, prelaunch: true,
-      stats: { invited: Number(s.total), inProgress: Number(s.progress), qualified: Number(s.qualified), rewardsAvailable: Number(r.available), heroesEarned: Number(r.earned) },
-      referrals: list.map(x => ({ player: x.username || cp.privateId(x.wallet), joined: Number(x.attributed),
+      stats: { invited: Number(s.total) + Number(cs.total), inProgress: Number(s.progress) + Number(cs.progress), qualified: Number(s.qualified) + Number(cs.qualified),
+        rewardsAvailable: Number(r.available), heroesEarned: Number(r.earned), creatorProgram: !!creatorId },
+      referrals: list.map(x => ({ player: x.username || cp.privateId(x.wallet), joined: Number(x.attributed), via: x.via,
         status: x.qualified ? 'QUALIFIED' : 'IN_PROGRESS', paidHeroes: Math.min(15, Number(x.paid_mints)), stage5: !!x.stage5, rewardLocked: !x.qualified })) };
   }
   async function leaderboard(body) {
@@ -149,20 +163,20 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     const out = { creator: s.creator, adminRole: s.adminRole, termsAccepted: s.termsAccepted, applicationsOpen: flags.creatorApply && !r.applicationsPaused,
       rules: { milestone: r.milestone, adventurePercent: r.adventurePercent, purchasePercent: r.purchasePercent, commissionDays: r.commissionDays, paidHeroes: r.paidHeroes, clearedStage: r.clearedStage, cpWithdrawable: false } };
     if (s.creator?.status === 'APPROVED') {
-      const list = await rows(`SELECT r.wallet, r.attributed, r.qualified, p.username FROM ryo_creator_referrals r LEFT JOIN ryo_players p ON p.scope=r.scope AND p.wallet=r.wallet
-        WHERE r.scope=$1 AND r.creator_id=$2 ORDER BY r.attributed DESC, r.wallet LIMIT 20 OFFSET $3`, [s.creator.id, page * 20]);
-      Object.assign(out, { link: s.link, page, pageSize: 20, stats: { total: Number(s.stats.total), qualified: Number(s.stats.qualified), pending: Number(s.stats.pending) },
+      const list = await rows(`SELECT r.wallet, r.attributed, r.qualified, r.via, p.username FROM (
+          SELECT wallet, attributed, qualified, 'creator' AS via FROM ryo_creator_referrals WHERE scope=$1 AND creator_id=$2
+          UNION ALL SELECT wallet, attributed, qualified, 'player' AS via FROM ryo_player_referrals WHERE scope=$1 AND referrer=$4) r
+        LEFT JOIN ryo_players p ON p.scope=$1 AND p.wallet=r.wallet ORDER BY r.attributed DESC, r.wallet LIMIT 20 OFFSET $3`, [s.creator.id, page * 20, w]);
+      Object.assign(out, { link: s.link, page, pageSize: 20, stats: { total: Number(s.stats.total), qualified: Number(s.stats.qualified), pending: Number(s.stats.pending), playerLink: Number(s.stats.playerLink?.total || 0) },
         balanceMilli: s.points.balanceMilli,
-        referrals: list.map(x => ({ player: x.username || cp.privateId(x.wallet), joined: Number(x.attributed), status: x.qualified ? 'QUALIFIED' : 'IN_PROGRESS' })) });
+        referrals: list.map(x => ({ player: x.username || cp.privateId(x.wallet), joined: Number(x.attributed), via: x.via, status: x.qualified ? 'QUALIFIED' : 'IN_PROGRESS' })) });
     }
     return out;
   }
   async function creatorApply(w, body) {
     if (!flags.creatorApply) fail('Creator applications are temporarily paused.', 403, 'CREATOR_PAUSED');
     if (!await playerRow(w)) fail('Register first.', 409, 'NOT_REGISTERED');
-    // A wallet that joined through any referral link can never be approved, so say so before it applies.
-    if ((await rows('SELECT 1 FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2 UNION ALL SELECT 1 FROM ryo_creator_referrals WHERE scope=$1 AND wallet=$2', [w])).length)
-      fail('Wallets that joined through a referral link cannot become creators.', 409, 'CREATOR_REFERRED');
+    // Referred players may apply; approval never replaces their original attribution.
     const links = (Array.isArray(body.links) ? body.links : []).filter(x => typeof x === 'string' && x.trim()).slice(0, 5);
     const audience = body.audience === '' || body.audience == null ? null : Number(body.audience);
     await cp.handle(ctx, w, 'creator-apply', { displayName: body.displayName, platform: body.platform, channelUrl: body.channelUrl, links, audience, reason: body.reason, terms: body.terms === true });
@@ -184,42 +198,146 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     return creatorAdmin(w, body);
   }
 
+  /* ---------- Treasury (Chapter 04) — read-only, admin allowlist only ---------- */
+  // The same admin allowlists (viewers, operators, approvers) as the Creator Program review on this page.
+  const adminRoleOf = w => { try { return cp.adminRole(w); } catch { return null; } };
+  let treasuryCache = null;
+  async function ledger(table, sql) {
+    if (!(await pool.query('SELECT to_regclass($1) AS t', [table])).rows[0].t) return null;
+    return (await pool.query(sql, [store.scope])).rows[0];
+  }
+  async function treasuryAdmin(w) {
+    const role = adminRoleOf(w); if (!role) fail('An authorized administrator is required.', 403, 'ADMIN_ONLY');
+    const registry = need('treasury-registry.cjs'), verify = need('treasury-verify.cjs'), gates = need('launch-gates.cjs');
+    // Pre-launch: no claim wallet exists and every money endpoint is closed, so nothing is claimable.
+    const base = { role, readOnly: true, paymentsEnabled: false, claimFunding: need('treasury-rewards.cjs').claimFundingNotConfigured(), registry: registry.publicView(), squads: registry.registry().squads,
+      flags: { prelaunch: true, srRouting: gates.srRoutingEnabled(env), activationApproved: registry.registry().activation.approved, mintRegistered: !!registry.registry().srMintAddress,
+        gates: Object.fromEntries(Object.keys(gates.GATES).map(g => [g, false])), note: 'Pre-launch: the game and every money endpoint are closed.' } };
+    if (net.key !== 'mainnet') return { ...base, applicable: false, note: 'The Chapter 04 registry describes the live Mainnet server. Not verified from the test server.' };
+    treasuryCache = treasuryCache || verify.cachedSnapshot(() => treasuryConnection || verify.mainnetConnection(env), { clock: now });
+    const [verification, revenue, topups, fees, proposals] = await Promise.all([treasuryCache(),
+      ledger('ryo_service_revenue', 'SELECT COUNT(*) AS n,COALESCE(SUM(total_raw),0) AS raw FROM ryo_service_revenue WHERE scope=$1'),
+      ledger('ryo_revenue_replenishments', 'SELECT COUNT(*) AS n,COALESCE(SUM(amount_raw),0) AS raw FROM ryo_revenue_replenishments WHERE scope=$1'),
+      ledger('ryo_withdrawal_treasury_fees', 'SELECT COUNT(*) AS n,COALESCE(SUM(fee_raw),0) AS raw FROM ryo_withdrawal_treasury_fees WHERE scope=$1'),
+      ledger('ryo_admin_proposals', "SELECT COUNT(*) FILTER(WHERE status='pending') AS n,COUNT(*) AS raw FROM ryo_admin_proposals WHERE scope=$1")]);
+    const count = r => r ? { count: Number(r.n), raw: String(r.raw) } : null;
+    return { ...base, applicable: true, verification, ledgers: { serviceRevenue: count(revenue), replenishments: count(topups), withdrawalDeductions: count(fees), proposals: proposals ? { pending: Number(proposals.n), total: Number(proposals.raw) } : null } };
+  }
+
+  /* Founder's NFT Boxes (founders.cjs): public sale state, and — only when FOUNDERS_PUBLIC_SALE_ENABLED, or
+   * FOUNDERS_PRIVATE_TESTING_ENABLED for RYO_PRIVATE_TEST_WALLETS — a reservation the buyer's wallet signs. The signed
+   * transaction comes back here and is broadcast through the private server-side RPC (SOLANA_RPC_URL), so no RPC key
+   * reaches the browser. Nothing here opens the game. */
+  let foundersCtx = null;
+  async function foundersContext() {
+    if (foundersCtx) return foundersCtx;
+    const rpc = env.SOLANA_RPC_URL || (net.key === 'devnet' ? env.SOLANA_DEVNET_RPC_URL || net.rpc : '');
+    // The SOL receipt wallet is checked where a payment is built (founders.cjs founderRevenue), never here: confirming
+    // an already-paid reservation must keep working even if FOUNDERS_REVENUE_WALLET is later removed or mistyped.
+    if (!rpc) fail('Founder box sales are not configured.', 503, 'FOUNDERS_NOT_CONFIGURED');
+    const base = foundersConnection || new (fromApp('@solana/web3.js').Connection)(rpc, 'finalized');
+    // RPC load (launch night 2026-11-09): rent-exemption amounts depend only on the account size, so each size is read
+    // once an hour instead of up to three times per Founder box (build + gas preflight). Everything else is unchanged.
+    const rent = new Map(), connection = Object.create(base);
+    connection.getMinimumBalanceForRentExemption = async (size, commitment) => {
+      const hit = rent.get(size); if (hit && now() - hit.at < 3600000) return hit.value;
+      const value = await base.getMinimumBalanceForRentExemption(size, commitment); rent.set(size, { value, at: now() }); return value;
+    };
+    if (await connection.getGenesisHash() !== net.genesis) fail('Founder box sales are temporarily offline.', 503, 'FOUNDERS_NETWORK');
+    return (foundersCtx = { store, connection, origin });
+  }
+
+  /* Release abandoned Founder reservations (blockhash can no longer land) so the public counts and the Mythic early-bird
+   * price are current, not only after the next purchase. Runs in the background (never delays a response), at most once
+   * per 30 s and 10 rows, one at a time, only while sales are open; failures are ignored (the next purchase sweeps again).
+   * Settlement still needs on-chain evidence, as in mint(). */
+  let lastFounderSweep = -Infinity, founderSweeping = false;
+  function releaseExpiredFounders() {
+    if (founderSweeping || now() - lastFounderSweep < 30000) return; lastFounderSweep = now(); founderSweeping = true;
+    (async () => { const F = need('founders.cjs'); if (F.saleMode(env) === 'off') return; await F.sweepExpired(await foundersContext(), 10); })()
+      .catch(() => {}).finally(() => { founderSweeping = false; });
+  }
+
+  /* Display-only SOL → USD rate for the Founder buttons. Never used for pricing: buyers always pay the exact SOL
+   * amount. Two independent keyless sources (Jupiter, CoinGecko) must agree within 2%, else no USD is shown.
+   * Cached 60 s (failures too), 2.5 s timeout per source, Mainnet only unless a test enables it. */
+  const SOL_MINT = 'So11111111111111111111111111111111111111112';
+  const USD_SOURCES = ['https://lite-api.jup.ag/price/v3?ids=' + SOL_MINT, 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&include_last_updated_at=true'];
+  let usdCache = { at: -Infinity, value: null }, usdPending = null;
+  async function priceJson(url) {
+    const r = await (priceFetch || fetch)(url, { signal: AbortSignal.timeout(2500), headers: { accept: 'application/json' } });
+    if (!r.ok) throw Error('price source ' + r.status);
+    return r.json();
+  }
+  function solUsd() {
+    if (!(usdPrices ?? net.key === 'mainnet')) return Promise.resolve(null);
+    if (now() - usdCache.at < 60000) return Promise.resolve(usdCache.value);
+    return usdPending || (usdPending = (async () => {
+      let value = null;
+      try {
+        const [jup, gecko] = await Promise.all(USD_SOURCES.map(priceJson));
+        const a = Number(jup?.[SOL_MINT]?.usdPrice), b = Number(gecko?.solana?.usd), updated = Number(gecko?.solana?.last_updated_at) * 1000;
+        const sane = x => Number.isFinite(x) && x > 1 && x < 100000;
+        if (sane(a) && sane(b) && Math.abs(a - b) / Math.min(a, b) <= 0.02 && !(updated && now() - updated > 15 * 60000)) value = Math.round((a + b) / 2 * 100) / 100;
+      } catch {}
+      usdCache = { at: now(), value }; usdPending = null;
+      return value;
+    })());
+  }
+
   function status() {
-    return { prelaunch: true, network: net.label, launchAt, registrationEnabled: flags.registration, referralsEnabled: flags.referrals,
+    return { prelaunch: mode !== 'founders', network: net.label, launchAt, registrationEnabled: flags.registration, referralsEnabled: flags.referrals,
       links, announcements: readAnnouncements(announcementsFile),
       referralProgram: { paidHeroes: 15, clearedStage: 5, heroesPerReferral: 2, bound: true } };
   }
 
   async function authenticated(req) {
-    const token = (String(req.headers.cookie || '').split(/;\s*/).find(c => c.startsWith(COOKIE + '=')) || '').slice(COOKIE.length + 1);
+    const token = sessionToken(req);
     if (!token) fail('Sign in with your wallet.', 401, 'SIGN_IN');
-    return { wallet: await store.authenticate(decodeURIComponent(token)), token: decodeURIComponent(token) };
+    return { wallet: await store.authenticate(token), token };
+  }
+  function sessionToken(req) {
+    const raw=(String(req.headers.cookie||'').split(/;\s*/).find(c=>c.startsWith(COOKIE+'='))||'').slice(COOKIE.length+1);
+    try { const token=decodeURIComponent(raw);return token.length<=100?token:''; }catch{return '';}
   }
   const cookie = (token, maxAge) => COOKIE + '=' + (token ? encodeURIComponent(token) : '') + '; Path=/api/prelaunch; HttpOnly; SameSite=Strict; Max-Age=' + maxAge + (secureCookie ? '; Secure' : '');
+  const siwsMessage = (w, nonce, t) => [new URL(origin).host + ' wants you to sign in with your Solana account:', w, '',
+    'Sign in to Shinobi Bombers. This is free: it does not send a transaction or move any funds.', '',
+    'URI: ' + origin, 'Version: 1', 'Chain ID: ' + net.key, 'Nonce: ' + nonce,
+    'Issued At: ' + new Date(t).toISOString(), 'Expiration Time: ' + new Date(t + 120000).toISOString()].join('\n');
+  const privateCookie = (token, maxAge) => PRIVATE_COOKIE + '=' + (token ? encodeURIComponent(token) : '') + '; Path=/; HttpOnly; SameSite=Strict; Max-Age=' + maxAge + (secureCookie ? '; Secure' : '');
 
   async function dispatch(req, body, ip) {
     const action = body.action; limit(ip, action);
+    if (mode === 'founders' && !FOUNDERS_ACTIONS.has(action)) fail('Unknown action.', 404, 'UNKNOWN_ACTION');
     if (action === 'status') return { data: status() };
     if (action === 'leaderboard') return { data: await leaderboard(body) };
+    if (action === 'founders-info') { let w = null; if (sessionToken(req)) { try { w = (await authenticated(req)).wallet; } catch {} } releaseExpiredFounders(); const [data, usd] = await Promise.all([need('founders.cjs').info(store, w, env), solUsd()]); if (usd) data.founders.usdPerSol = usd; data.founders.wallet = w; return { data }; }
     if (action === 'challenge') {
       const w = wallet(body.wallet), nonce = crypto.randomBytes(16).toString('hex'), t = now();
-      const message = [new URL(origin).host + ' wants you to sign in with your Solana account:', w, '',
-        'Sign in to Shinobi Bombers. This is free: it does not send a transaction or move any funds.', '',
-        'URI: ' + origin, 'Version: 1', 'Chain ID: ' + net.key, 'Nonce: ' + nonce,
-        'Issued At: ' + new Date(t).toISOString(), 'Expiration Time: ' + new Date(t + 120000).toISOString()].join('\n');
+      const message = siwsMessage(w, nonce, t);
       return { data: await store.challenge(w, message, nonce) };
     }
     if (action === 'login') {
       const w = wallet(body.wallet);
       if (typeof body.signature !== 'string' || body.signature.length > 100 || typeof body.nonce !== 'string') fail('Invalid wallet signature.', 400, 'SIGNATURE_INVALID');
-      const session = await store.login(w, body.nonce, message => verifySignature(w, message, body.signature));
+      const session = await store.login(w, body.nonce, message => {
+        const issued=Date.parse(message.match(/\nIssued At: ([^\n]+)\n/)?.[1]||'');
+        return Number.isFinite(issued)&&issued<=now()&&now()<issued+120000&&message===siwsMessage(w,body.nonce,issued)&&verifySignature(w,message,body.signature);
+      });
       await rows('UPDATE ryo_players SET last_login=$3 WHERE scope=$1 AND wallet=$2', [w, now()]);
       return { data: await me(w), cookie: cookie(session.token, 3600) };
     }
     if (action === 'logout') {
-      const token = (String(req.headers.cookie || '').split(/;\s*/).find(c => c.startsWith(COOKIE + '=')) || '').slice(COOKIE.length + 1);
-      if (token) await rows('DELETE FROM ryo_sessions WHERE scope=$1 AND token_hash=$2', [hash(decodeURIComponent(token))]);
+      const token = sessionToken(req);
+      if (token) await rows('DELETE FROM ryo_sessions WHERE scope=$1 AND token_hash=$2', [hash(token)]);
       return { data: { ok: true }, cookie: cookie('', 0) };
+    }
+    if (action === 'private-access') {
+      if (!privateAccess) fail('Unknown action.', 404, 'UNKNOWN_ACTION');
+      const { wallet: w, token } = await authenticated(req);
+      if (!privateAccess.allowed(w)) fail('This wallet is not authorized for private testing.', 403, 'PRIVATE_TESTING');
+      return { data: { ok: true, play: '/play/' }, cookie: privateCookie(token, 3600) };
     }
     const { wallet: w } = await authenticated(req);
     if (action === 'me') return { data: await me(w) };
@@ -230,6 +348,9 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
     if (action === 'creator-apply') { limit(ip, 'register'); return { data: await creatorApply(w, body) }; }
     if (action === 'creator-admin') return { data: await creatorAdmin(w, body) };
     if (action === 'creator-admin-action') return { data: await creatorAdminAction(w, body) };
+    if (action === 'treasury-admin') return { data: await treasuryAdmin(w) };
+    if (action === 'founders-mint') { limit(ip, 'register'); return { data: await need('founders.cjs').mint(await foundersContext(), w, body, env) }; }
+    if (action === 'founders-confirm') return { data: await need('founders.cjs').confirm(await foundersContext(), w, body, env) };
     fail('Unknown action.', 404, 'UNKNOWN_ACTION');
   }
 
@@ -257,11 +378,14 @@ function createPrelaunch({ gameDir, env = process.env, pool = null, now = Date.n
       try { const { data, cookie: c } = await dispatch(req, body, clientIp(req)); send(res, 200, data, c ? { 'Set-Cookie': c } : {}); }
       catch (e) {
         const status = Number.isInteger(e.status) && e.status >= 400 && e.status < 600 ? e.status : 500;
-        if (status >= 500) console.error('[prelaunch]', e);
-        send(res, status, { error: status >= 500 ? 'The pre-launch service is temporarily unavailable.' : e.message, code: status >= 500 ? 'SERVER_ERROR' : codeOf(e) }, status === 401 ? { 'Set-Cookie': cookie('', 0) } : {});
+        // Wallet preflight refusals (gas-safety.cjs: e.g. not enough SOL) are 503 but written for the buyer and
+        // certify that nothing was sent, so show them. Every other 5xx stays generic.
+        const buyerFacing = e.paymentNotSubmitted === true && typeof e.code === 'string' && /^SOL_GAS_[A-Z_]+$/.test(e.code);
+        if (status >= 500 && !buyerFacing) console.error('[prelaunch]', e);
+        send(res, status, { error: status >= 500 && !buyerFacing ? 'The pre-launch service is temporarily unavailable.' : e.message, code: status >= 500 && !buyerFacing ? 'SERVER_ERROR' : (buyerFacing ? e.code : codeOf(e)) }, status === 401 ? { 'Set-Cookie': cookie('', 0) } : {});
       }
     });
   }
   return { handle, store, pool, status, close: () => pool.end?.() };
 }
-module.exports = { createPrelaunch, COOKIE, readAnnouncements };
+module.exports = { createPrelaunch, COOKIE, PRIVATE_COOKIE, FOUNDERS_ACTIONS, readAnnouncements };

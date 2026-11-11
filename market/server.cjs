@@ -214,8 +214,8 @@ async function accept(store, wallet, requestId, body, prepare) {
     // The offered Ryo is already held, so the buyer's balance is not debited again.
     await c.query("UPDATE ryo_market_listings SET status='pending',buyer=$3,request_id=$4 WHERE scope=$1 AND id=$2", [store.scope, listing.id, o.buyer, requestId]);
     await c.query("UPDATE ryo_market_offers SET status='accepted',settled_at=$3 WHERE scope=$1 AND id=$2", [store.scope, id, store.now()]);
-    return (await c.query('INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,created) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *',
-      [store.scope, o.buyer, requestId, 'market', JSON.stringify(q.params), JSON.stringify(q), JSON.stringify({ product: 'market', title: q.title, outputs: [hero], consumed: [] }), JSON.stringify(after), price, tx.signature, tx.wire, tx.lastHeight, store.now()])).rows[0];
+    return (await c.query('INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,created,profile_delta) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *',
+      [store.scope, o.buyer, requestId, 'market', JSON.stringify(q.params), JSON.stringify(q), JSON.stringify({ product: 'market', title: q.title, outputs: [hero], consumed: [] }), JSON.stringify(after), price, tx.signature, tx.wire, tx.lastHeight, store.now(), JSON.stringify(require('./purchase-delta.cjs').delta(profile, after))])).rows[0];
   });
 }
 
@@ -280,8 +280,8 @@ async function buy(store, wallet, requestId, body, prepare) {
     if (own) { await c.query("UPDATE ryo_market_offers SET status='cancelled',settled_at=$3 WHERE scope=$1 AND id=$2", [store.scope, own.id, store.now()]); await credit(store, c, wallet, held, own.funding); }
     await c.query(`UPDATE ryo_accounts SET ${funding}=${funding}-$3 WHERE scope=$1 AND wallet=$2`, [store.scope, wallet, price]);
     await c.query("UPDATE ryo_market_listings SET status='pending',buyer=$3,request_id=$4 WHERE scope=$1 AND id=$2", [store.scope, id, wallet, requestId]);
-    return (await c.query('INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,created) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *',
-      [store.scope, wallet, requestId, 'market', JSON.stringify(q.params), JSON.stringify(q), JSON.stringify({ product: 'market', title: q.title, outputs: [hero], consumed: [] }), JSON.stringify(after), price, tx.signature, tx.wire, tx.lastHeight, store.now()])).rows[0];
+    return (await c.query('INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,created,profile_delta) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *',
+      [store.scope, wallet, requestId, 'market', JSON.stringify(q.params), JSON.stringify(q), JSON.stringify({ product: 'market', title: q.title, outputs: [hero], consumed: [] }), JSON.stringify(after), price, tx.signature, tx.wire, tx.lastHeight, store.now(), JSON.stringify(require('./purchase-delta.cjs').delta(profile, after))])).rows[0];
   });
 }
 // Called from store.settlePurchase (same transaction) for product 'market'.

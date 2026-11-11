@@ -13,7 +13,7 @@ const address = () => web3.Keypair.generate().publicKey.toBase58();
  const store=new Store(pool,'player-fixture',()=>now), other=new Store(pool,'other-scope',()=>now), origin='https://shinobi.example';
  const call=(wallet,action,body={})=>cp.handle({store,origin},wallet,action,body), rows=async(s,a=[]) =>(await pool.query(s,[store.scope,...a])).rows;
  async function register(wallet) {await store.transaction(async c=>{await store.locked(c,wallet);await store.profileLocked(c,wallet);const heroes=Array.from({length:10},(_,i)=>({tokenId:wallet+'-'+i,rank:4,level:1,trainingVersion:2,identityVersion:1,perks:[],look:0,baseStats:{pw:14,sp:14,st:14},bonus:{pw:0,sp:0,st:0}}));await c.query('UPDATE ryo_accounts SET balance=100000000 WHERE scope=$1 AND wallet=$2',[store.scope,wallet]);await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[store.scope,wallet,JSON.stringify({heroes,battleReady:heroes.map(h=>h.tokenId),dojo:0,sensei:false})])})}
- async function summon(wallet,quantity=1,funding='balance',status='confirmed'){if(funding==='bonus')await pool.query('UPDATE ryo_accounts SET bonus=10000000 WHERE scope=$1 AND wallet=$2',[store.scope,wallet]);now++;const id=crypto.randomUUID();const order=await store.purchase(wallet,id,'summon',{quantity},quantity*25000,async q => require('./sr-revenue-fixture.cjs').stamp(q, {signature:'fixture-'+(++serial),wire:'fixture-wire',lastHeight:100}));await store.settlePurchase(wallet,id,status);return order}
+ async function summon(wallet,quantity=1,funding='balance',status='confirmed'){if(funding==='bonus')await pool.query('UPDATE ryo_accounts SET bonus=10000000 WHERE scope=$1 AND wallet=$2',[store.scope,wallet]);now++;const id=crypto.randomUUID();const order=await store.purchase(wallet,id,'summon',{quantity},require('../app/server/economy.cjs').quote(await store.profile(wallet),'summon',{quantity}).total/* the real quote: approved creators pay their creator discount */,async q => require('./sr-revenue-fixture.cjs').stamp(q, {signature:'fixture-'+(++serial),wire:'fixture-wire',lastHeight:100}));await store.settlePurchase(wallet,id,status);return order}
  async function progress(wallet,target=100){const report=await require('./combat-report-fixture.cjs').driver(store,wallet,()=>now);let steps=0;await adventure.adventure(store,wallet,{active:true,report:report()},1e12);while(Number((await rows('SELECT proof FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2',[wallet]))[0].proof.kills)<target){now+=5000;await adventure.adventure(store,wallet,{active:true,report:report()},1e12);assert(++steps<120,'verifier progresses')}}
  try {
   const owner=address(), invitee=address(), admin=address();process.env.RYO_ADMIN_APPROVERS=admin;process.env.CREATORS_PORTAL_ENABLED='on';
@@ -43,6 +43,13 @@ const address = () => web3.Keypair.generate().publicKey.toBase58();
   const final=await summon(invitee);assert.equal((await call(owner,'creator-player-state')).passes.available,2,'two passes immediately on qualification');
   await store.settlePurchase(invitee,final.request_id,'confirmed');await progress(invitee,100);assert.equal((await call(owner,'creator-player-state')).passes.earned,2,'qualification cannot replay');
   assert.equal((await rows('SELECT COUNT(*) AS n FROM ryo_creator_ledger WHERE scope=$1'))[0].n,0,'player referrals issue no CP');
+  const creatorForm={displayName:'Referred Creator',platform:'YouTube',channelUrl:'https://youtube.com/@fixture',reason:'Honest gameplay streams with referral disclosure.',terms:true};
+  const originalReferral=await rows('SELECT * FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2',[invitee]);
+  await call(invitee,'creator-apply',creatorForm);
+  const promoted=(await call(invitee,'creator-state')).creator;
+  await cp.adminAction(store,admin,{operation:'status',creatorId:promoted.id,status:'APPROVED',reason:'Reviewed referred player channel'});
+  assert.deepEqual(await rows('SELECT * FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2',[invitee]),originalReferral,'qualified progress and attribution survive promotion');
+  assert.equal((await call(owner,'creator-player-state')).passes.earned,2,'promotion does not repeat qualification rewards');
   await summon(invitee,5);assert.equal((await call(owner,'creator-player-state')).passes.earned,2,'no ongoing player commission');
   const otherInvitee=address();await register(otherInvitee);await call(otherInvitee,'creator-attribute',{code:state.code});await summon(otherInvitee,15);await progress(otherInvitee,80);assert.equal((await call(owner,'creator-player-state')).passes.available,2,'entering Stage 5 is insufficient');
   await progress(otherInvitee,100);assert.equal((await call(owner,'creator-player-state')).passes.available,4,'either eligibility order works');
@@ -63,6 +70,24 @@ const address = () => web3.Keypair.generate().publicKey.toBase58();
   const pendingId=crypto.randomUUID();await store.purchase(owner,pendingId,'summon',{quantity:1},25000,async q => require('./sr-revenue-fixture.cjs').stamp(q, {signature:'pending-fixture',wire:'fixture-wire',lastHeight:100}));
   await assert.rejects(call(owner,'creator-player-claim',{requestId:crypto.randomUUID(),quantity:1}),/pending game purchase/);assert.equal((await call(owner,'creator-player-state')).passes.available,2);await store.settlePurchase(owner,pendingId,'refunded');
   await call(owner,'creator-player-claim',{requestId:crypto.randomUUID(),quantity:1});assert.equal((await call(owner,'creator-player-state')).passes.available,1,'individual passes can be claimed');
+  // A -> RP B (promoted creator) -> CP C. A must not join C's player link.
+  const ancestor=address(), promotedWallet=address(), descendant=address();
+  const ancestorCode=(await call(ancestor,'creator-player-state')).code;
+  await call(promotedWallet,'creator-attribute',{code:ancestorCode});
+  await call(promotedWallet,'creator-apply',creatorForm);
+  const mixedCreator=(await call(promotedWallet,'creator-state')).creator;
+  await cp.adminAction(store,admin,{operation:'status',creatorId:mixedCreator.id,status:'APPROVED',reason:'Mixed-program cycle fixture'});
+  await call(descendant,'creator-attribute',{code:mixedCreator.code});
+  const descendantCode=(await call(descendant,'creator-player-state')).code;
+  await assert.rejects(call(ancestor,'creator-attribute',{code:descendantCode}),/Circular/);
+  // Wallet migration was removed (2026-11-11); a migration completed before then is seeded as the old acceptance wrote it.
+  await assert.rejects(call(promotedWallet,'creator-migrate',{wallet:address()}),/no longer available/,'wallet migration is refused');
+  const migrated=address();
+  await rows('INSERT INTO ryo_creator_wallets(scope,wallet,creator_id) VALUES($1,$2,$3)',[migrated,mixedCreator.id]);
+  await rows('UPDATE ryo_creators SET wallet=$3 WHERE scope=$1 AND id=$2',[mixedCreator.id,migrated]);
+  await assert.rejects(call(ancestor,'creator-attribute',{code:descendantCode}),/Circular/,'reserved creator identity keeps ancestry after migration');
+  assert.equal((await rows('SELECT COUNT(*) AS n FROM ryo_player_referrals WHERE scope=$1 AND wallet=$2',[ancestor]))[0].n,0);
+  await call(address(),'creator-attribute',{code:descendantCode}); // valid mixed chain remains allowed
   // Shared emergency purchases gate blocks a new pass claim.
   await store.pool.query("INSERT INTO ryo_admin_control(scope,version,config,pauses,installed) VALUES($1,1,'{}','{\"purchases\":true}',$2) ON CONFLICT(scope) DO UPDATE SET pauses='{\"purchases\":true}'",[store.scope,now]);
   await assert.rejects(require('../app/server/economic-dashboard.cjs').guard(store,'creator-player-claim',owner,{requestId:crypto.randomUUID(),quantity:1}),/paused/);

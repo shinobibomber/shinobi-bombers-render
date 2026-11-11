@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="/pl/prelaunch.css">
 <script defer src="/pl/wallet.js"></script>
 <script defer src="/pl/prelaunch.js"></script>
+<script defer src="/pl/founders.js"></script>
 </head>
 <body>
 <a class="skip" href="#main" data-i18n="a11y.skip">Skip to content</a>
@@ -26,6 +27,7 @@
   <nav id="navLinks" class="nav-links" aria-label="Main">
     <a href="#intro" data-i18n="nav.intro">Game</a>
     <a href="#heroes" data-i18n="nav.heroes">Heroes</a>
+    <a href="#founders" data-i18n="nav.founders">Founders</a>
     <a href="#referral" data-i18n="nav.referral">Referral Program</a>
     <a href="#creators" data-i18n="nav.creators">Creators</a>
     <a href="#demo" class="demo-nav" data-i18n="nav.demo" hidden>Demo</a>
@@ -98,6 +100,7 @@
         <h3 data-i18n="dash.list">YOUR REFERRALS</h3>
         <div id="refList" class="ref-list"></div>
         <div class="pager"><button id="refPrev" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.prev" disabled>Previous</button><button id="refNext" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.next" disabled>Next</button></div>
+        <p id="creatorSyncNote" class="note" hidden data-i18n="dash.creatorSync">You are an approved creator: your referrals now count in the Creator Program and earn Creator Points.</p>
         <p class="note" data-i18n="dash.claimSoon">Reward claiming opens at the official launch.</p>
       </div>
       <div id="creatorCard" class="card creator-card">
@@ -109,6 +112,12 @@
         <form id="adminSearch" class="admin-search"><input name="search" type="search" data-i18n-attr="placeholder:adm.search;aria-label:adm.search"><button class="btn btn-ghost btn-sm" type="submit" data-i18n="adm.searchBtn">Search</button></form>
         <div id="adminList"></div>
         <div class="pager"><button id="admPrev" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.prev" disabled>Previous</button><button id="admNext" class="btn btn-ghost btn-sm" type="button" data-i18n="dash.next" disabled>Next</button></div>
+      </div>
+      <div id="treasuryPanel" class="card admin-panel treasury-panel" hidden>
+        <h3 data-i18n="trs.title">TREASURY · CHAPTER 04 · READ-ONLY</h3>
+        <p class="note" data-i18n="trs.note">Public addresses and finalized Mainnet observations. No wallet action is possible here.</p>
+        <div id="treasuryBody"></div>
+        <div class="pager"><a class="btn btn-ghost btn-sm" href="/treasury" target="_blank" rel="noopener" data-i18n="trs.public">Open the public transparency page</a><button id="treasuryRefresh" class="btn btn-ghost btn-sm" type="button" data-i18n="trs.refresh">Refresh</button></div>
       </div>
       <form id="prefsForm" class="card prefs">
         <h3 data-i18n="dash.prefs">PREFERENCES</h3>
@@ -156,6 +165,64 @@
         <img class="ranks" src="/pl/assets/ranks.webp" width="1000" height="348" alt="" loading="lazy">
         <p class="note" data-i18n="heroes.ranks">Every rank has its own aura, from Genin to Legend.</p>
       </div>
+    </div>
+  </section>
+
+  <!-- FOUNDER'S NFT BOXES (founders.js; sales stay closed until the server opens them) -->
+  <section id="founders" class="section founders" aria-labelledby="fdTitle">
+    <div class="wrap">
+      <p class="eyebrow violet" data-i18n="fd.eyebrow">LIMITED · 63 FOUNDER NFTS</p>
+      <h2 id="fdTitle" data-i18n="fd.title">FOUNDER'S NFT BOXES</h2>
+      <p class="lead" data-i18n="fd.lead">Founder offer: 33 Mythic boxes at 0.7 SOL and 30 Legacy boxes at 0.25 SOL, until each tier sells out. The price stays the same after the game opens to the public. One Founder box per wallet across both tiers.</p>
+      <div class="fd-cards">
+        <article class="fd-card fd-mythic" aria-labelledby="fdName-mythic">
+          <p class="fd-early" id="fdEarly-mythic" aria-live="polite" hidden></p>
+          <img src="/pl/assets/founders-mythic.webp" width="900" height="1125" alt="" loading="lazy">
+          <h3 id="fdName-mythic" data-i18n="fd.mythic.name">MYTHIC FOUNDER'S BOX</h3>
+          <p class="fd-tag" data-i18n="fd.mythic.tag">Premium Founder · 0.7 SOL until sold out · 33 NFTs</p>
+          <ul class="ticks" data-i18n-list="fd.mythic.points"></ul>
+          <p class="fd-left" id="fdLeft-mythic" aria-live="polite"></p>
+          <button class="btn btn-violet" id="fdBuy-mythic" type="button" data-fd-buy="mythic" disabled>Coming soon</button>
+        </article>
+        <article class="fd-card fd-legacy" aria-labelledby="fdName-legacy">
+          <p class="fd-early" id="fdEarly-legacy" aria-live="polite" hidden></p>
+          <img src="/pl/assets/founders-legacy.webp" width="900" height="1125" alt="" loading="lazy">
+          <h3 id="fdName-legacy" data-i18n="fd.legacy.name">LEGACY FOUNDER'S BOX</h3>
+          <p class="fd-tag" data-i18n="fd.legacy.tag">Accessible Founder · 0.25 SOL until sold out · 30 NFTs</p>
+          <ul class="ticks" data-i18n-list="fd.legacy.points"></ul>
+          <p class="fd-left" id="fdLeft-legacy" aria-live="polite"></p>
+          <button class="btn btn-gold" id="fdBuy-legacy" type="button" data-fd-buy="legacy" disabled>Coming soon</button>
+        </article>
+      </div>
+      <p id="fdStatus" class="fd-status" role="status" hidden></p>
+      <div class="fd-table-wrap" tabindex="0" role="region" aria-labelledby="fdCaption">
+        <table class="fd-table">
+          <caption id="fdCaption" data-i18n="fd.table.caption">Full benefits comparison</caption>
+          <thead><tr><th scope="col" data-i18n="fd.table.benefit">Benefit</th><th scope="col" data-i18n="fd.table.mythic">Mythic Box (0.7 SOL until sold out)</th><th scope="col" data-i18n="fd.table.legacy">Legacy Box (0.25 SOL until sold out)</th></tr></thead>
+          <tbody>
+            <tr><th scope="row" data-i18n="fd.r.tsuki">Mythic Tsukiyomi</th><td data-i18n="fd.v.tsukiM">1 (Exclusive)</td><td data-i18n="fd.v.no">Not included</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.legend">Legend Hero</th><td data-i18n="fd.v.one">1</td><td data-i18n="fd.v.one">1</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.elite">Elite Hero</th><td data-i18n="fd.v.one">1</td><td data-i18n="fd.v.one">1</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.passes">Limited Hero Summon Passes</th><td data-i18n="fd.v.passes">10 — no Genin, no Mythic</td><td data-i18n="fd.v.passes">10 — no Genin, no Mythic</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.chest">Chest claim cooldown</th><td data-i18n="fd.v.chest">12 hours (regular: 24 hours)</td><td data-i18n="fd.v.chest">12 hours (regular: 24 hours)</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.sensei">Sensei access</th><td data-i18n="fd.v.senseiM">Free permanent Sensei</td><td data-i18n="fd.v.senseiL">7-day free trial</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.senseiPrice">Permanent Sensei price</th><td data-i18n="fd.v.included">Included</td><td data-i18n="fd.v.senseiPriceL">0.2 SOL before the trial ends (regular 0.4 SOL)</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.discount">Game-service discount</th><td data-i18n="fd.v.discountM">10%</td><td data-i18n="fd.v.discountL">5%</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.mission">Weekly Mission Pass</th><td data-i18n="fd.v.missionM">Full rewards (arrives with the Missions update)</td><td data-i18n="fd.v.missionL">Basic rewards (arrives with the Missions update)</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.premium">Premium Hero Summon</th><td data-i18n="fd.v.premiumM">Every 2 completed qualifying weeks · 70% Elite / 30% Legend</td><td data-i18n="fd.v.premiumL">Every 4 completed qualifying weeks · 70% Elite / 30% Legend</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.council">Founder's Council</th><td data-i18n="fd.v.councilM">Full membership</td><td data-i18n="fd.v.councilL">Community access</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.privileges">Founder privileges</th><td data-i18n="fd.v.privM">Full access: previews, suggestions, priority feedback</td><td data-i18n="fd.v.privL">Selected previews and limited feedback</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.early">Early game access</th><td data-i18n="fd.v.early">Eligible when an early-access stage is approved</td><td data-i18n="fd.v.early">Eligible when an early-access stage is approved</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.supply">Limited supply</th><td data-i18n="fd.v.supplyM">33 NFTs</td><td data-i18n="fd.v.supply">30 NFTs</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.limit">Purchase limit</th><td data-i18n="fd.v.limit">1 per wallet across both tiers</td><td data-i18n="fd.v.limit">1 per wallet across both tiers</td></tr>
+            <tr><th scope="row" data-i18n="fd.r.currency">Payment currency</th><td data-i18n="fd.v.sol">SOL</td><td data-i18n="fd.v.sol">SOL</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3 data-i18n="fd.terms.title">Sale terms and restrictions</h3>
+      <ul class="fd-terms" data-i18n-list="fd.terms"></ul>
+      <figure class="fd-poster"><img src="/pl/assets/founders-comparison.webp" width="900" height="1125" alt="" loading="lazy"><figcaption data-i18n="fd.poster.note">Promotional poster. The table above is the complete, current list of benefits.</figcaption></figure>
+      <div hidden><span data-fd-text="state.soon" data-i18n="fd.state.soon">Coming soon</span><span data-fd-text="state.connect" data-i18n="fd.state.connect">Connect wallet</span><span data-fd-text="state.private" data-i18n="fd.state.private">Private testing</span><span data-fd-text="state.eligible" data-i18n="fd.state.eligible">Buy now</span><span data-fd-text="state.minting" data-i18n="fd.state.minting">Minting…</span><span data-fd-text="state.confirmed" data-i18n="fd.state.confirmed">Purchase confirmed</span><span data-fd-text="state.already" data-i18n="fd.state.already">Already purchased</span><span data-fd-text="state.soldout" data-i18n="fd.state.soldout">Sold out</span><span data-fd-text="state.paused" data-i18n="fd.state.paused">Sale paused</span><span data-fd-text="supply" data-i18n="fd.supply">[n] of [of] left</span><span data-fd-text="state.buyPrice" data-i18n="fd.state.buyPrice">Buy now · [price] SOL (≈ [usd])</span><span data-fd-text="state.buySol" data-i18n="fd.state.buySol">Buy now · [price] SOL</span><span data-fd-text="state.resume" data-i18n="fd.state.resume">Approve in wallet · [price] SOL</span><span data-fd-text="usd" data-i18n="fd.usd">[price] SOL ≈ [usd]</span><span data-fd-text="err.rejected" data-i18n="fd.err.rejected">You rejected the payment in your wallet. Nothing was charged. Press the button again within about a minute to approve it.</span><span data-fd-text="err.reconnect" data-i18n="fd.err.reconnect">Your wallet is not on the account you signed in with. Open your wallet on that account (or sign in again), then press the button again.</span><span data-fd-text="early" data-i18n="fd.early">FOUNDER OFFER · [price] SOL until sold out (regular price [regular] SOL). Artwork shows regular prices.</span><span data-fd-text="err.priceChanged" data-i18n="fd.err.priceChanged">The offer has changed, so your box is now [price] SOL. Nothing was charged. Press &quot;Approve in wallet&quot; to buy at [price] SOL, or leave the reservation to expire in about a minute.</span><span data-fd-text="step.reserve" data-i18n="fd.step.reserve">Reserving your box…</span><span data-fd-text="step.sign" data-i18n="fd.step.sign">Approve the transaction in your wallet…</span><span data-fd-text="step.confirm" data-i18n="fd.step.confirm">Confirming on Solana…</span><span data-fd-text="done.confirmed" data-i18n="fd.done.confirmed">Purchase confirmed. Your Founder box NFT is in your wallet.</span><span data-fd-text="done.expired" data-i18n="fd.done.expired">The transaction expired. Nothing was charged.</span><span data-fd-text="done.pending" data-i18n="fd.done.pending">Still confirming. Reopen this page to finish.</span><span data-fd-text="err.payer" data-i18n="fd.err.payer">This transaction is not paid by your wallet. Nothing was signed.</span><span data-fd-text="err.program" data-i18n="fd.err.program">Unexpected instruction in the transaction. Nothing was signed.</span><span data-fd-text="err.price" data-i18n="fd.err.price">The price in the transaction does not match. Nothing was signed.</span><span data-fd-text="err.wallet" data-i18n="fd.err.wallet">Your wallet cannot sign this purchase. Use Phantom or Solflare.</span><span data-fd-text="err.network" data-i18n="fd.err.network">Network error. Try again.</span></div>
     </div>
   </section>
 
@@ -299,6 +366,7 @@
       <a href="/privacy" data-i18n="foot.privacy">Privacy Policy</a>
       <a href="/rules" data-i18n="foot.rules">Referral Program Rules</a>
       <a href="/whitepaper" data-i18n="foot.whitepaper">Whitepaper</a>
+      <a href="/treasury" data-i18n="foot.treasury">Treasury transparency</a>
       <a id="supportLink" href="#" hidden data-i18n="foot.support">Contact &amp; Support</a>
     </nav>
     <p class="safety" data-i18n="foot.safety">We will never ask for your seed phrase or private key.</p>
@@ -311,6 +379,7 @@
     <h2 id="walletTitle" data-i18n="wallet.title">Connect a Solana wallet</h2>
     <p class="note" data-i18n="wallet.note">You'll sign a message to prove you own this wallet.</p>
     <div id="walletList" class="wallet-list"></div>
+    <p class="wallet-safety note" data-i18n="wallet.safety">Stop if your wallet shows a security warning. Registration never needs a transaction, spending approval or SOL transfer.</p>
     <p id="walletStatus" class="status" role="status" aria-live="polite"></p>
     <button class="btn btn-ghost btn-sm" value="cancel" data-i18n="wallet.cancel">Cancel</button>
   </form>
@@ -337,6 +406,7 @@
   <form id="creatorForm" class="dlg" novalidate>
     <h2 id="apTitle" data-i18n="ap.title">APPLY TO THE CREATOR PROGRAM</h2>
     <p class="note" data-i18n="ap.lead">Tell us about your channel.</p>
+    <p class="note" data-i18n="crd.referredNote">Referred players can apply. Team approval is required; your original referrer stays unchanged.</p>
     <label><span data-i18n="ap.name">Creator name</span><input name="displayName" required maxlength="60" autocomplete="nickname"></label>
     <label><span data-i18n="ap.platform">Main platform</span><select name="platform"><option>YouTube</option><option>Twitch</option><option>TikTok</option><option>Facebook</option><option>X</option></select></label>
     <label><span data-i18n="ap.channel">Channel or profile link (https://)</span><input name="channelUrl" type="url" required maxlength="500" placeholder="https://"></label>

@@ -103,7 +103,7 @@
     },
     {
       "path": "heroes-design/heroes-design.js",
-      "sha256": "651b01720654488ff6cbf35e910128a006589b536cc687a874a63ec76aebb307"
+      "sha256": "653b2722b94e252431e84e424763b88d5a4036f8d391d04486858c9091fb678c"
     },
     {
       "path": "heroes-design/heroes-menu.png",
@@ -203,11 +203,11 @@
     },
     {
       "path": "reveal-design/reveal-design.css",
-      "sha256": "c1df817183408571aabbe0b1b10166c8cd1200c730149dbb73d1b2f2e7c96202"
+      "sha256": "9685ca989915d7b20be002674a322eb9ad64d1dbe54bb1e379aca6bc7e51b927"
     },
     {
       "path": "reveal-design/reveal-design.js",
-      "sha256": "94788620085d72881d02c89bcff62f7bd64e8e11ae19e16d85c9d32eb4654716"
+      "sha256": "284cd69c450ab6102bbef7348bb51f6c27fe90f0c390817e5c9baf28d77eb98c"
     },
     {
       "path": "reveal-design/reveal-design.png",
@@ -223,7 +223,7 @@
     },
     {
       "path": "roster-design/roster-design.js",
-      "sha256": "be95bf7ab8be90aca325063cd4d2eae1c349d7dcfd4915e339224af100db4c98"
+      "sha256": "7e0906b7bee388dcdfdc1149243754cea2da4e2b0d8e6411e97a1801fe50c70e"
     },
     {
       "path": "roster-design/source.png",
@@ -259,7 +259,7 @@
     },
     {
       "path": "app/server/adventure.cjs",
-      "sha256": "cb318726fcf2ad49e8760c6fb122c3f2966018d4d455c273b108bf8ff17c4ff8"
+      "sha256": "cb835b3924535886e6c8b8a732143a824028e3955f6f456b6d861776e8923016"
     },
     {
       "path": "app/server/create-treasury.cjs",
@@ -271,7 +271,7 @@
     },
     {
       "path": "app/server/economy.cjs",
-      "sha256": "a99ef25141f645040d88365020d975b270444b6f18b4d349be5b644bbcbde663"
+      "sha256": "72301b1c71245723ea51e0169a2e6c7dc21ce41763fba034e40980f345bf4709"
     },
     {
       "path": "app/server/gameplay-options.cjs",
@@ -283,27 +283,27 @@
     },
     {
       "path": "app/server/netlify-handler.cjs",
-      "sha256": "9e21c28bf31d41a2e772c6b9a40a8463f4ddc2716af1faf4434dd75ba2159da5"
+      "sha256": "04fc70c5c44ae140225832c7905e7533fbb2c20a9042468002312ed76fc69bee"
     },
     {
       "path": "app/server/render-server.cjs",
-      "sha256": "44cb12ab082837de97eeb99b661a1ae56b15985f825866bf8089575a6fcd8af0"
+      "sha256": "d59d2ea7dd3a6b62d956de3c61a732cc58ffc5eea98d4d51b646eaaead9e14ff"
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "6a3185332fb730eb262032a6d3a69efd2740cc4194a796ba6c0d3a74cd48feba"
+      "sha256": "a79513a798fed8dfc5b1940b23c075b47b87796912c0417d0554eb20515032fc"
     },
     {
       "path": "app/server/service.cjs",
-      "sha256": "0a39718bb0361216fb302c8c9cceb1f3e8ccdea323bff9a8942b9ba65a2de200"
+      "sha256": "46df70d7a0564c642069570cc80dde9eef677b6111f587b978129a916b4b0497"
     },
     {
       "path": "app/server/store.cjs",
-      "sha256": "427078359c193a04d4c16ba0024337d2153d2c6757449a15c75a6615db849124"
+      "sha256": "e4f38f22297c1a979c268dac2037dcf12d53a30526484e734c0b21dedb664b0c"
     },
     {
       "path": "app/server/transaction-review.cjs",
-      "sha256": "bcde937214147886f0dfa44b75be468d0cdda7979f0e324efcb465df5c6311f6"
+      "sha256": "8644615fe142c423e1fbb1c04ae2bbf8d55b6fbf5650d35750290d5d91daf25d"
     },
     {
       "path": "login-screen/login-reference.png",

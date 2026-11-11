@@ -14,7 +14,36 @@
   const SHOWN = { '5': 'home', '3': 'codex', '2': 'summon', '6': 'fusion', '4:0': 'dojo', '1': 'heroes', '0': 'adventure', '4:1': 'market', '8': 'boss-hunt' };
   let preview = null; /* Guild/Chat preview screens (no game page) */
   let dojoView = 'dojo'; /* Dojo pages: 'dojo' (Services, landing), 'dojo-upg' (Enter Dojo), 'dojo-sen' (Manage Sensei) */
-  const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a', '#c98bff'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'];
+  const RCOL = ['#c9d2e3', '#35e06b', '#2aa8ff', '#b45cff', '#ffc13a', '#ff3b3b'], RNAME = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'];
+  /* Rank card frames (owner request 2026-11-10): every hero card on the Adventure team panel and in the Heroes Collection gets a
+   * rank-themed frame: Genin shuriken, Chunin leaves, Jonin water crescent, Elite tomoe + blossoms, Legend star + diamond,
+   * Mythic tomoe crest + wings. Drawn in code: one hidden SVG sprite (below) holds the ornament shapes, each card carries one
+   * decorative, pointer-transparent `.sbw-frame` layer. The CSS animates only transform/opacity (compositor), and only for
+   * deployed Adventure cards and the Heroes cards on screen. */
+  const ORN_SHAPES = {
+    shuriken: '<path fill-rule="evenodd" d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6zM12 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4z"/>',
+    leaf: '<path d="M3 21C3 9 11 3 21 3c0 10-6 18-18 18zM4 20C9 14 13 10 18 6" fill-rule="evenodd"/><path d="M4.5 19.5C9 14 13 10 17.5 6.5" stroke="#06041a" stroke-width="1.2" fill="none" opacity=".55"/>',
+    swirl: '<path d="M12 2.5a9.5 9.5 0 1 0 9.5 9.5 7.2 7.2 0 0 1-9.5-9.5zM12 8.2a3.8 3.8 0 1 0 3.8 3.8A3 3 0 0 1 12 8.2z" fill-rule="evenodd"/>',
+    tomoe: '<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.3"/><circle cx="12" cy="5.2" r="2.5"/><circle cx="18" cy="15.6" r="2.5"/><circle cx="6" cy="15.6" r="2.5"/>',
+    flower: '<circle cx="12" cy="6.6" r="3.6"/><circle cx="17.1" cy="10.4" r="3.6"/><circle cx="15.1" cy="16.4" r="3.6"/><circle cx="8.9" cy="16.4" r="3.6"/><circle cx="6.9" cy="10.4" r="3.6"/><circle cx="12" cy="12" r="2" fill="#fff" opacity=".85"/>',
+    star: '<path d="M12 0l2.1 9.9L24 12l-9.9 2.1L12 24l-2.1-9.9L0 12l9.9-2.1z"/>',
+    diamond: '<path d="M12 1.5l8.5 10.5L12 22.5 3.5 12z"/><path d="M12 6l4.6 6L12 18 7.4 12z" fill="#06041a" opacity=".45"/>',
+    wing: '<path d="M1 22C1 10 7 3 23 1c-4 4-4.6 6-6.4 8.2 1.6.2 3.4 0 5.4-1.4-3.6 4.2-5.6 5.6-8.4 6.4 1.8.8 3.6.8 5.8.2-3.6 4.6-8.8 7.6-17.4 7.6z"/>',
+  };
+  const ORN_SPRITE = '<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>' + Object.entries(ORN_SHAPES).map(([k, v]) => `<symbol id="sbw-o-${k}" viewBox="0 0 24 24" fill="currentColor">${v}</symbol>`).join('') + '</defs></svg>';
+  // Ornaments per rank: [position, shape, heroes-only]. t top, b bottom, l / r sides, bl / br bottom corners.
+  const ORN_SET = [
+    [['t', 'shuriken'], ['b', 'shuriken', 1]],
+    [['t', 'leaf'], ['br', 'leaf', 1], ['bl', 'leaf', 1]],
+    [['t', 'swirl'], ['b', 'swirl', 1]],
+    [['t', 'tomoe'], ['l', 'flower'], ['r', 'flower'], ['b', 'tomoe', 1]],
+    [['t', 'star'], ['b', 'diamond', 1]],
+    [['t', 'tomoe'], ['l', 'wing'], ['r', 'wing'], ['b', 'diamond', 1]],
+  ];
+  function frameHtml(rank, full) {
+    const list = ORN_SET[rank] || ORN_SET[0];
+    return `<i class="sbw-frame" aria-hidden="true">${list.filter(o => full || !o[2]).map(([pos, shape]) => `<svg class="o o-${pos} o-${shape}" viewBox="0 0 24 24" focusable="false"><use href="#sbw-o-${shape}"/></svg>`).join('')}</i>`;
+  }
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   // Reduced motion: the system setting or the player's Display & Accessibility choice.
   let RM = motionPreference.matches || !!window.DisplaySettings?.v.reduceMotion, geometryRevision = 0;
@@ -22,7 +51,7 @@
   const fmt = n => (typeof n === 'number' && Number.isFinite(n) ? Math.floor(n).toLocaleString('en-US') : '—');
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const R = (a, b) => a + Math.random() * (b - a);
-  let D = null, layer = null, cur = null, dlg = null, toastEl = null;
+  let D = null, layer = null, cur = null, dlg = null, toastEl = null, autoLow = false;   // autoLow: measured AUTO low-effects state (visual only)
   const built = {};
 
   function mk(tag, cls, parent, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; parent && parent.appendChild(e); return e; }
@@ -119,9 +148,37 @@
   function deployed() { return owned().filter(h => h.on).sort((a, b) => b.r - a.r || b.lv - a.lv || a.id - b.id); }
 
   /* ---------- the game's own controls (pressed, never re-implemented) ---------- */
-  function nativeEl(scope, test) { const root = document.querySelector(scope); if (!root) return null; return [...root.querySelectorAll('button,input,label,[onclick]')].find(e => !e.closest('#sbwLayer') && test(e)) || null; }
+  /* The native Heroes (#p1) and Fusion (#p6) roots grow with the number of heroes, and their text and controls were re-read on
+   * every paint tick (about 8 per second): innerText forces a layout over every row and the control list was rebuilt each call.
+   * They are now read once per native change (a MutationObserver; pending records are checked synchronously so a read right
+   * after a click is never stale) and the cache is dropped on every screen change. Same values, far less work. */
+  const NATIVE_CACHED = new Set(['#p1', '#p6']), nativeCache = new Map();
+  function nativeEntry(scope, root) {
+    if (!NATIVE_CACHED.has(scope)) return null;
+    let c = nativeCache.get(scope);
+    if (!c || c.root !== root) {
+      c = { root, dirty: true, text: null, els: null, rows: null, obs: null }; const entry = c;
+      c.obs = new MutationObserver(() => { entry.dirty = true; });
+      c.obs.observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'disabled', 'aria-pressed', 'onclick', 'hidden', 'style'] });
+      nativeCache.set(scope, c);
+    }
+    if (c.obs.takeRecords().length) c.dirty = true;
+    if (c.dirty) { c.dirty = false; c.text = null; c.els = null; c.rows = null; }
+    return c;
+  }
+  function nativeEl(scope, test) {
+    const root = document.querySelector(scope); if (!root) return null;
+    const c = nativeEntry(scope, root), list = c && c.els ? c.els : [...root.querySelectorAll('button,input,label,[onclick]')].filter(e => !e.closest('#sbwLayer'));
+    if (c && !c.els) c.els = list;
+    return list.find(test) || null;
+  }
   function pressOnclick(scope, code) { const e = nativeEl(scope, x => (x.getAttribute('onclick') || '') === code); if (e && !e.disabled) { e.click(); return true; } return false; }
-  function nativeText(scope, re) { const root = document.querySelector(scope); if (!root) return ''; const m = (root.innerText || '').match(re); return m ? m[0] : ''; }
+  function nativeText(scope, re) {
+    const root = document.querySelector(scope); if (!root) return '';
+    const c = nativeEntry(scope, root); let text;
+    if (c) { if (c.text === null) c.text = root.innerText || ''; text = c.text; } else text = root.innerText || '';
+    const m = text.match(re); return m ? m[0] : '';
+  }
 
   /* ---------- dialogs ---------- */
   function notice(title, text) {
@@ -142,8 +199,8 @@
       heroes.forEach(h => counts[h.rank] = (counts[h.rank] || 0) + 1);
       const qty = p.quote?.params?.quantity || heroes.length || '—', when = Number(p.created) ? new Date(Number(p.created)).toLocaleString() : '';
       const state = p.status === 'confirmed' ? '' : p.status === 'refunded' ? 'Refunded · Ryo returned' : 'Settling…';
-      const chips = heroes.map((h, j) => `<div class="sbw-sh-hero${owned.has(h.tokenId) ? '' : ' gone'}" style="--rc:${RCOL[h.rank] || RCOL[0]}"><canvas data-b="${i}" data-h="${j}"></canvas><b>${esc(h.name)}</b><small>${esc(RNAME[h.rank] || '')}${owned.has(h.tokenId) ? '' : ' · no longer in collection'}</small><em title="Power · Speed · Stamina">PWR ${stat(h.baseStats?.pw)} · SPD ${stat(h.baseStats?.sp)} · STA ${stat(h.baseStats?.st)}</em></div>`).join('');
-      return `<section class="sbw-sh-batch"><header><b>×${esc(qty)} summon</b><span>${esc(when)}</span><span>${esc(fmt(Number(p.amount)))} Ryo</span>${state ? `<em>${esc(state)}</em>` : ''}</header>${chips ? `<div class="sbw-sh-grid">${chips}</div>` : ''}</section>`;
+      const chips = heroes.map((h, j) => `<div class="sbw-sh-hero${owned.has(h.tokenId) ? '' : ' gone'}" style="--rc:${RCOL[h.rank] || RCOL[0]}"><canvas data-b="${i}" data-h="${j}"></canvas><b>${esc(h.name)}</b><small>${esc(RNAME[h.rank] || '')}${h.shrinePity === 'guaranteed' ? ' · Pity guarantee' : ''}${owned.has(h.tokenId) ? '' : ' · no longer in collection'}</small><em title="Power · Speed · Stamina">PWR ${stat(h.baseStats?.pw)} · SPD ${stat(h.baseStats?.sp)} · STA ${stat(h.baseStats?.st)}</em></div>`).join('');
+      return `<section class="sbw-sh-batch"><header><b>×${esc(qty)} summon</b><span>${esc(when)}</span><span>${esc(fmt(Number(p.amount)))} Ryo</span>${p.status === 'confirmed' && p.result?.pity ? `<span>Legend pity after: ${esc(p.result.pity.after)} / 150</span>` : ''}${state ? `<em>${esc(state)}</em>` : ''}</header>${chips ? `<div class="sbw-sh-grid">${chips}</div>` : ''}</section>`;
     });
     const total = counts.reduce((a, n) => a + n, 0);
     dlg.className = 'sbw-dialog sbw-history'; dlg.onclick = null;
@@ -176,14 +233,15 @@
     window.CreatorsPortal?.close();
     if (k.startsWith('guild') || k === 'chat') { const p = k === 'chat' ? 'chat' : 'guild'; if (D.screens[p]) { preview = p; sync(); return; } return notice(p === 'chat' ? 'Chat' : 'Guild', p === 'chat' ? SOON.chat : SOON.guild); }
     preview = null; if (k === 'dojo') dojoView = 'dojo';
+    if (k === 'dojo-upg') { go(ROUTE.dojo[0], ROUTE.dojo[1]); return MODS.dojo.focus('upg'); }   // Dojo upgrades (e.g. from the Chest claim details)
     const r = ROUTE[k]; if (r) go(r[0], r[1]);
   }
   const HOME = {
     'logo': () => {}, 'prof': editNickname, 'mng': () => go(1), 't1': () => go(1), 't2': () => go(1), 't3': () => go(1), 't4': () => go(1), 't5': () => go(1),
-    'ev': () => openBox(),
+    'ev': () => openFounders(),
     'go1': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go2': () => notice('Daily missions', 'Daily missions are not available yet.'), 'go3': () => notice('Daily missions', 'Daily missions are not available yet.'),
     'season': () => notice('Season 1', 'Seasons are not available yet.'), 'tut': () => window.CreatorsPortal?.open(), 'news': () => window.CreatorsPortal?.openPlayer(),
-    'sup': () => notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
+    'sup': () => window.HeroPasses?.ui() ? HeroPasses.open() : notice('Support', 'Open Tools in the game header for the community links.'), 'chatbar': () => toggleChat(), 'c-gld': () => goScreen('guild')
   };
   function act(k, h, el) {
     const a = h.a || '', [t, ...rest] = a.split(':'), arg = rest.join(':');
@@ -271,11 +329,29 @@
     mk('i', '', b.chat).textContent = '[Global]'; mk('b', '', b.chat); mk('span', '', b.chat);
     // EVENT: the Limited Mythic NFT Box card covers the printed banner inside the ev hotspot.
     const evArt = b.st.querySelector('[data-sbwid="ev"] > .sl');
-    if (evArt) { b.box = place(mk('div', 'sbw-boxcard', evArt), 0, 0, 369, 132); b.box.innerHTML = '<img src="assets/mythic-box/box-256.webp" alt=""><div><small>LIMITED EVENT</small><b>MYTHIC NFT BOX</b><span>Mythic Tsukiyomi · 10% off</span><em>1 SOL · 20 pcs only</em></div><i>VIEW</i>'; }
+    if (evArt) { b.box = place(mk('div', 'sbw-boxcard', evArt), 0, 0, 369, 132); b.box.innerHTML = '<img src="/founders/art/mythic.png" alt=""><div><small>LIMITED EVENT</small><b>FOUNDER BOXES</b><span>Mythic &amp; Legacy · Founder sale</span><em>Founder sale</em></div><i>VIEW</i>'; }
     b.tiles = [1270, 1345, 1420, 1494, 1569].map((x, i) => { const t = place(mk('div', 'sbw-tile', b.st), x, 302, 66, 122); const cv = mk('canvas', '', t); cv.width = 132; cv.height = 150; mk('b', '', t); t.addEventListener('click', () => go(1)); return t; });
+    // CLAIM (hero-passes.js, owner request 2026-11-11) takes the Support button's place only while the server reports the
+    // CLAIM switch on; Support stays reachable from ⚙ Tools and the Reward Center's Help & Support.
+    // EXPEDITION HALL (expedition/expedition.js, owner spec 2026-11-11) covers the printed DAILY MISSIONS panel (artwork only, no
+    // backend) in the same place and size, only while the server reports Expedition Mode on; otherwise Home is exactly as before.
+    // Inside the phone pane [1252,645,1652,860], so the phone layout moves it with that pane.
+    b.exp = place(mk('div', 'sbw-exp-panel', b.st), 1252, 645, 400, 215); b.exp.hidden = true;
+    b.sup = b.st.querySelector('[data-sbwid="sup"]');
+    if (b.sup) { b.claim = mk('span', 'sbw-claim', b.sup); b.claim.hidden = true; b.claim.innerHTML = '<span aria-hidden="true">🎁</span><span>CLAIM</span><i class="sbw-claim-badge" hidden></i>'; }
   };
   PAINT.home = (b, now) => {
-    if (b.box) { if (account() && !BOXS.busy && Date.now() - BOXS.at > 60000) boxLoad(); const i = BOXS.info; setText($('em', b.box), !i || !account() ? '1 SOL · 20 pcs only' : i.soldOut ? 'SOLD OUT · ' + i.supply + ' / ' + i.supply : (i.limitReached ? 'Owned ' + i.owned + ' · ' : (i.price || 1) + ' SOL · ') + i.remaining + ' / ' + i.supply + ' left'); b.box.classList.toggle('sold', !!i?.soldOut); }
+    if (b.exp) window.Expedition?.paintPanel(b.exp, now);
+    if (b.claim) {
+      const H = window.HeroPasses, on = !!(H && H.ui()), n = on ? H.pending() : 0, badge = $('.sbw-claim-badge', b.claim);
+      b.claim.hidden = !on; b.sup.classList.toggle('sbw-claim-on', on); b.claim.classList.toggle('ready', n > 0);
+      const label = on ? (n ? 'Claim rewards, ' + n + ' ready' : 'Claim rewards') : 'Support'; if (b.sup.getAttribute('aria-label') !== label) b.sup.setAttribute('aria-label', label);
+      badge.hidden = !n; setText(badge, String(n));
+    }
+    // EVENT card: the live Founder sale (prices and boxes left come only from the server's founders-info).
+    if (b.box) { if (!FDS.busy && Date.now() - FDS.at > 60000) foundersLoad(); const f = FDS.info, t = f && f.tiers, sold = !!(t && t.mythic.soldOut && t.legacy.soldOut);
+      if (t) setText($('span', b.box), 'Mythic ' + t.mythic.price + ' · Legacy ' + t.legacy.price + ' SOL');
+      setText($('em', b.box), !t ? 'Founder sale' : f.paused ? 'Sale paused' : sold ? 'SOLD OUT' : t.mythic.remaining + ' + ' + t.legacy.remaining + ' left'); b.box.classList.toggle('sold', sold || !!(f && f.paused)); }
     const nickName = (gs() && gs().nick) || 'Shinobi', mine = owned(), dep = deployed();
     setText(b.name, nickName); setText(b.line, `${mine.length} Shinobi · ${dep.length}/10 deployed`);
     // Message IDs share one sequence, so the higher ID is the newer of Global and System.
@@ -300,7 +376,7 @@
   const gal = (arr, cap) => `<div class="gal">${arr.map(x => `<button class="gt" type="button" data-src="${BASE + x.src}" data-t="${esc(cap(x))}"><img src="${BASE + x.src}" alt="" loading="lazy"><span>${esc(cap(x))}</span></button>`).join('')}</div>`;
   function cxHtml(i) {
     const R2 = D.ref; switch (i) {
-      case 0: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Heroes nap and recover – faster in the Dojo.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
+      case 0: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Shinobi Bombers is a grid bomber: heroes move tile by tile, blasts travel in a cross and break wooden crates, while stone blocks stop them.</p><div class="cxg"><div><b>Deploy</b><span>Up to 10 shinobi. Each one hunts automatically and spends 1 chakra per attack.</span></div><div><b>Recovery</b><span>Out of chakra? Deployed heroes rest until 10% of their chakra is back – faster in a better Dojo – then fight again. Battle-ready heroes recover on the bench; Reserve heroes do not.</span></div><div><b>Victory</b><span>Defeat every enemy to advance. Every 25th stage is a guardian encounter.</span></div></div><h4>Adventure map boards</h4>${gal(R2.maps, x => x.n)}`;
       case 1: return `<p><b>1 Attack = Hero Power Damage = 1 Chakra</b><br>Skill VFX = 0 Additional Chakra</p><p>Genin 1/1 · Chunin 2/2 · Jonin 3/3 · Elite 4/4 · Legend 5/5 · Mythic 7/7</p>${CombatRules.PERKS.map(p=>'<h4>'+esc(p.name)+'</h4><p>'+esc(p.description)+'</p>').join('')}`;
       case 2: return `<p>Element and rarity are independent: an element changes a hero's jutsu and aura colour, never their rank.</p><h4>Hero models · four directions</h4>${gal([R2.models], () => 'All 12 hero models')}`;
       case 3: return `<div class="cxg"><div><b style="color:#c9d2e3">Genin </b><span>Starting rank · 1 perk</span></div><div><b style="color:#35e06b">Chunin </b><span>2 perks</span></div><div><b style="color:#2aa8ff">Jonin </b><span>3 perks</span></div><div><b style="color:#b45cff">Elite </b><span>4 perks</span></div><div><b style="color:#ffc13a">Legend </b><span>Top summon rank · 5 perks</span></div><div><b style="color:#c98bff">Mythic</b><span>Tsukiyomi · NFT only · 7 perks</span></div></div><p>Genin 1/1 · Chunin 2/2 · Jonin 3/3 · Elite 4/4 · Legend 5/5 · Mythic 7/7</p><p>Fusion combines three heroes of the same rank. Legend is the highest rank you can summon or fuse and stays tradable. Mythic Tsukiyomi comes only with the Limited NFT Box and moves with that NFT.</p><h4>Rarity aura system</h4>${gal([R2.aura, R2.auralayer], x => (x === R2.aura ? 'Hero aura system' : 'Aura render layering'))}`;
@@ -316,7 +392,7 @@
     const panel=(cls,x,y,w,h,html)=>{const e=place(mk('div',cls,b.st,html),x,y,w,h);Object.assign(e.style,{position:'absolute',zIndex:'15',background:'linear-gradient(135deg,#111329,#030916)',color:'#dde5f7',borderRadius:'8px',boxShadow:'inset 0 0 12px #020610',padding:'9px 12px',boxSizing:'border-box',fontSize:'17px',lineHeight:'1.4'});return e;};
     panel('sbw-codex-ranks',1247,478,397,187,RNAME.map((name,i)=>'<div style="display:flex;justify-content:space-between;line-height:28px"><b style="color:'+RCOL[i]+'">'+name+'</b><span>'+[1,2,3,4,5,7][i]+' unique perk'+(i?'s':'')+'</span></div>').join(''));
     panel('sbw-codex-elements',1247,373,397,44,'Elements change cosmetic effects.').style.padding='3px 12px';
-    panel('sbw-codex-tips',1247,727,397,177,'<p style="margin:0 0 12px">One attack spends one chakra.</p><p style="margin:0 0 12px">Skill effects add no damage or cost.</p><p style="margin:0">Rest or rotate to recover chakra.</p>');
+    panel('sbw-codex-tips',1247,727,397,177,'<p style="margin:0 0 12px">One attack spends one chakra.</p><p style="margin:0 0 12px">Skill effects add no damage or cost.</p><p style="margin:0">Battle-ready heroes recover chakra on the bench; Reserve heroes do not.</p>');
 
     b.cx = place(mk('div', 'cxp', b.st), 306, 212, 896, 698); b.cx.hidden = false; b.cx.style.animation='none';
     b.cx.addEventListener('click', e => { if (e.target.closest('[data-cx=chest]')) openChest(); });
@@ -341,6 +417,8 @@
       return { quantity, card, price: footer.querySelector('strong') };
     });
     const fee = cov(b, 1277, 356, 360, 17, '#08091b', 13, '#d4d9e8');
+    b.pity = place(mk('div', 'sbw-pity', b.st), 38, 566, 232, 74); b.pity.setAttribute('role', 'status'); b.pity.hidden = true;
+    b.pity.innerHTML = '<div class="sbw-pity-top"><small>LEGEND PITY</small><b></b></div><i aria-hidden="true"><s></s></i><em></em>';
     fee.classList.add('sbw-summon-fee'); fee.textContent = liveRevenue() ? 'SR revenue: 50 / 30 / 10 / 10 · no burn' : 'Price includes the 2% studio share';
   };
   function summonQty() { const sel = nativeEl('#p2', e => /Combat\.quantity\(\d+\)/.test(e.getAttribute('onclick') || '') && e.classList.contains('selected')); const m = sel && /\((\d+)\)/.exec(sel.getAttribute('onclick')); return m ? +m[1] : 1; }
@@ -358,14 +436,37 @@
     if (b.live.cost) { b.live.cost.hidden = false; setText(b.live.cost, total || '—'); }
     if (b.live.slabel) { b.live.slabel.hidden = false; setText(b.live.slabel, 'SUMMON ' + n); }
     if (b.live.ltimer) { b.live.ltimer.hidden = false; setText(b.live.ltimer, 'Not active'); }
+    // Legend pity (shrine-pity): consecutive paid Shrine summons without a Legend, from the server profile after settlement.
+    if (b.pity) {
+      const st = window.RyoPayments?.state, raw = st?.authenticated && st.profile ? Number(st.profile.shrineLegendPity) : NaN;
+      const pity = Number.isSafeInteger(raw) && raw >= 0 && raw <= 149 ? raw : (st?.authenticated && st.profile ? 0 : null);
+      b.pity.hidden = pity === null;
+      if (b.live.ltimer && pity !== null) b.live.ltimer.hidden = true;   // the pity panel replaces the old rate-up timer text
+      if (pity !== null) {
+        setText($('b', b.pity), pity + ' / 150');
+        $('s', b.pity).style.width = (pity / 150 * 100).toFixed(1) + '%';
+        // Starter Ryo (test server) is spent first when it covers the price and never counts, so name paid summons then.
+        const starter = (Number(st.bonus) || 0) > 0;
+        setText($('em', b.pity), pity >= 149 ? (starter ? 'NEXT PAID SUMMON GUARANTEED LEGEND! Starter Ryo doesn\'t count' : 'NEXT SUMMON GUARANTEED LEGEND!')
+          : (150 - pity) + (starter ? ' paid summons to a guaranteed Legend. Starter Ryo doesn\'t count' : ' summons to a guaranteed Legend'));
+        b.pity.classList.toggle('ready', pity >= 149); b.pity.classList.toggle('starter', starter);
+      }
+    }
   };
   MODS.summon = {
     qty: a => { if (QTY.includes(+a) && window.Combat) Combat.quantity(+a); refresh(); },
     pick: a => { if (QTY.includes(+a) && window.Combat) Combat.quantity(+a); refresh(); },
-    summon: () => { if (!pressOnclick('#p2', 'Combat.summonBatch()')) toast(account() ? 'Summon is busy – try again in a moment.' : 'Sign in with your wallet to summon.'); },
+    summon: () => {
+      if (pressOnclick('#p2', 'Combat.summonBatch()')) return;
+      if (!account()) return toast('Sign in with your wallet to summon.');
+      // The native button is disabled when the game balance cannot pay the total: say so and open the Chest to deposit.
+      const total = nativeText('#p2', /Total\s+[\d,]+\s*Ryo/i).replace(/^Total\s+/i, ''), price = Number(total.replace(/[^\d]/g, ''));
+      if (window.GameCurrency && price > 0 && !GameCurrency.canAfford(price)) { toast('Not enough Ryo for this summon (' + total + '). Deposit SR from your Chest first.'); return openChest(); }
+      toast('Summon is busy – try again in a moment.');
+    },
     gallery: () => go(1), history: () => summonHistory(),
-    flashRates: () => { const r = $('.hs[data-sbwid="rates"]', built.summon.st); if (r) { r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash'); } toast('Rates: Genin 60% · Chunin 25% · Jonin 10% · Elite 4% · Legend 1%'); },
-    legend: () => notice('Legend rate-up', 'No limited-time rate-up is active. Every summon uses the fixed rates: Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1%.'),
+    flashRates: () => { const r = $('.hs[data-sbwid="rates"]', built.summon.st); if (r) { r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash'); } toast('Rates: Genin 60% · Chunin 25% · Jonin 10% · Elite 4% · Legend 1% · a Legend is guaranteed by your 150th paid summon in a row without one'); },
+    legend: () => notice('Legend pity', 'Every paid summon uses the fixed rates: Genin 60%, Chunin 25%, Jonin 10%, Elite 4%, Legend 1%. Legend pity: if 149 paid summons in a row bring no Legend, your 150th summon is a guaranteed Legend. Any Legend from the Shrine resets the count. Only Shrine summons paid with Ryo or Chest rewards count; rescues, fusion, passes and rewards never change it.'),
     featured: () => notice('Featured Shinobi', 'Featured heroes are not configured. Every summon uses the fixed rarity rates.'),
     elements: () => go(3)
   };
@@ -376,15 +477,37 @@
   /* the game's own Reserve list (#p6 .fusion-table): one row per hero, with its real checkbox */
   function fusionRows() {
     const root = document.querySelector('#p6'); if (!root) return [];
-    return [...root.querySelectorAll('.fusion-table tbody tr')].map(tr => {
+    const c = nativeEntry('#p6', root);
+    if (c && c.rows) { for (const r of c.rows) { r.checked = r.input.checked; r.disabled = r.input.disabled; } return c.rows; }   // unchanged native list: only the live checkbox state
+    const rows = [...root.querySelectorAll('.fusion-table tbody tr')].map(tr => {
       const input = tr.querySelector('input[type=checkbox]'); if (!input) return null;
       const td = [...tr.children].map(c => (c.innerText || c.textContent || '').trim()), m = /V2\.select\((\d+)/.exec(input.getAttribute('onchange') || '');
       return { input, id: m ? +m[1] : null, name: ((tr.querySelector('b') || {}).textContent || '').trim(), info: ((tr.querySelector('small') || {}).textContent || '').trim(), stats: td.slice(1, 4), jutsu: td[4] || '', checked: input.checked, disabled: input.disabled };
     }).filter(Boolean);
+    if (c) c.rows = rows;
+    return rows;
+  }
+  const FUSION_ROW_H = 60, FUSION_OVERSCAN = 4;   // .sbw-frow is a fixed 60px row
+  function fusionRowHtml(b, r, i) {
+    const rank = b.frank, locked = b.flocked(r);
+    return `<button type="button" class="sbw-frow${r.checked ? ' on' : ''}${locked ? ' locked' : ''}" data-i="${i}" ${r.disabled ? 'disabled' : ''} aria-pressed="${r.checked}" aria-label="${locked ? esc(r.name) + ', level 5 needed' : 'Select ' + esc(r.name)}"><i>${r.checked ? '✓' : locked ? '🔒' : ''}</i><canvas width="72" height="78" data-id="${r.id}"></canvas><span class="sbw-fname"><b>${esc(r.name)}</b><small style="color:${RCOL[rank]}">${esc(r.info)}</small></span>${r.stats.map(v => `<em>${esc(v)}</em>`).join('')}<span class="sbw-fj">${esc(r.jutsu)}</span></button>`;
+  }
+  /* renders only the rows in view (plus a little overscan) and positions them with padding; called on rebuild and on scroll */
+  function fusionWindow(b, now) {
+    const rows = b.frows, vp = b.fvp; if (!vp || !rows) return;
+    const top = Math.max(0, b.list.scrollTop - b.fnoteH), h = b.list.clientHeight || 360;
+    const start = Math.max(0, Math.floor(top / FUSION_ROW_H) - FUSION_OVERSCAN), end = Math.min(rows.length, Math.ceil((top + h) / FUSION_ROW_H) + FUSION_OVERSCAN);
+    const key = start + ':' + end + ':' + b.sig; if (b.fkey === key) return; b.fkey = key;
+    vp.style.paddingTop = start * FUSION_ROW_H + 'px';
+    vp.innerHTML = rows.slice(start, end).map((r, k) => fusionRowHtml(b, r, start + k)).join('');
+    const heroes = new Map(owned().map(x => [x.id, x]));
+    $$('.sbw-frow canvas', vp).forEach(cv => drawHero(cv, heroes.get(+cv.dataset.id) || null, 1.5, now == null ? performance.now() : now));
   }
   function fusionStat(label) { return nativeText('#p6', new RegExp(label + '\\s*\\n\\s*[\\d.]+\\s*[–-]\\s*[\\d.]+')).split(/\n/).pop().trim(); }
   INIT.fusion = b => {
     b.list = place(mk('div', 'sbw-flist', b.st), 46, 594, 754, 360); b.list.setAttribute('aria-label', 'Reserve heroes');
+    b.list.addEventListener('click', e => { const btn = e.target.closest('.sbw-frow'); if (!btn) return; const r = fusionRows()[+btn.dataset.i]; if (r && !r.input.disabled) { r.input.click(); b.sig = ''; refresh(); } });
+    b.list.addEventListener('scroll', () => { if (b.fraf) return; b.fraf = requestAnimationFrame(() => { b.fraf = 0; fusionWindow(b); }); }, { passive: true });
     b.slots = [347, 440, 533].map((y, j) => { const e = place(mk('div', 'sbw-fslot', b.st), 901, y, 151, 86); const cv = mk('canvas', '', e); cv.width = 116; cv.height = 116; mk('span', '', e); e.hidden = true; return e; });
     const cover = (x, y, w, h, bg, fs, color, cls = '') => { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; };
     b.title = cover(870, 302, 250, 30, '#0a0a24', 24, '#ffffff', 'sbw-left');
@@ -398,6 +521,18 @@
     b.rarity = cover(936, 760, 60, 21, '#020d1e', 17, '#ffffff', 'sbw-left');
     b.jutsu = cover(1345, 760, 60, 21, '#030e1f', 17, '#ffffff', 'sbw-left');
     b.note = cover(918, 835, 522, 17, 'linear-gradient(90deg,#1b073b,#1d0536 40%,#240846 75%,#1c063b)', 13, '#e3d8f7', 'sbw-left'); b.note.style.fontWeight = '500';
+    // Fusion Shards (fusion-shards.js): success boost and crafting, over the artwork's next-rank note box (signed in only).
+    b.fshards = place(mk('div', 'sbw-fshards', b.st), 873, 797, 608, 68); b.fshards.hidden = true; b.fshards.setAttribute('aria-label', 'Fusion Shards');
+    b.fshards.innerHTML = '<div class="sbw-fs-row"><small>SUCCESS</small><b class="sbw-fs-rate"></b><i aria-hidden="true"><s></s></i>'
+      + '<span class="sbw-fs-step"><button type="button" data-fs="-" aria-label="One Fusion Shard less per attempt">−</button><em title="Fusion Shards per attempt"></em><button type="button" data-fs="+" aria-label="One Fusion Shard more per attempt">+</button></span>'
+      + '<button type="button" class="sbw-fs-fill" data-fs="fill">FILL 100%</button></div>'
+      + '<div class="sbw-fs-row"><span class="sbw-fs-bal"></span><span class="sbw-fs-note" role="status"></span><button type="button" class="sbw-fs-craft" data-fs="craft">CRAFT</button></div>';
+    b.fshards.onclick = e => {
+      const a = e.target.closest('[data-fs]')?.dataset.fs, F = window.FusionShards; if (!a || !F) return;
+      const r = fusionRank();
+      if (a === '+') F.set(r, F.perAttempt() + 1); else if (a === '-') F.set(r, F.perAttempt() - 1); else if (a === 'fill') F.fill(r); else if (a === 'craft') F.openCraft();
+      refresh();
+    };
   };
   PAINT.fusion = (b, now) => {
     const rank = fusionRank(), rows = fusionRows();
@@ -414,16 +549,33 @@
     setText(b.lineTop, `Combine the weakest ${RNAME[rank]} heroes · 3 → 1 each · ${rank === 3 ? 'Lv 5 Elites only' : 'Reserve heroes only'} · ${success}`);
     setText(b.lineFoot, nativeText('#p6', /Up to \d+ attempts[^\n]*/) || 'Failed attempts consume heroes and charge the fee');
     setText(b.note, `The resulting hero will be a ${RNAME[rank + 1]} with improved base stats and a guaranteed rank jutsu.`);
+    if (b.fshards) {
+      const F = window.FusionShards, on = !!(F && ledger().authenticated);
+      b.fshards.hidden = !on; b.note.hidden = on;   // the panel replaces the artwork's next-rank note while signed in
+      if (on) {
+        const pl = F.plan(rank, 1), full = pl.per > 0 && pl.final >= 100;
+        setText($('.sbw-fs-rate', b.fshards), pl.per ? pl.base + '% → ' + pl.final + '%' : pl.base + '%');
+        $('s', b.fshards).style.width = pl.final + '%';
+        setText($('em', b.fshards), pl.per + ' / ' + pl.needed);
+        setText($('.sbw-fs-bal', b.fshards), '◆ ' + F.balance().toLocaleString('en-US') + ' Fusion · ' + F.upgrade().toLocaleString('en-US') + ' Upgrade Shards');
+        setText($('.sbw-fs-note', b.fshards), pl.short ? 'Need ' + pl.short + ' more Fusion Shard' + (pl.short === 1 ? '' : 's') : full ? '100% GUARANTEED SUCCESS' : pl.per ? '+' + (pl.final - pl.base) + '% · ' + pl.per + ' per attempt' : '+5% per Fusion Shard');
+        b.fshards.classList.toggle('full', full && !pl.short); b.fshards.classList.toggle('short', pl.short > 0);
+        $('[data-fs="-"]', b.fshards).disabled = pl.per < 1; $('[data-fs="+"]', b.fshards).disabled = pl.per >= pl.needed; $('[data-fs="fill"]', b.fshards).disabled = pl.per >= pl.needed;
+      }
+    }
     setText(b.rarity, RNAME[rank + 1]); b.rarity.style.color = RCOL[rank + 1];
     setText(b.jutsu, (nativeText('#p6', /JUTSU\s*\n\s*\d+/).match(/\d+$/) || ['—'])[0]);
     for (let i = 0; i < 4; i++) for (const id of ['r' + (i + 1), 'et' + (i + 1)]) { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.classList.toggle('on2', i === rank); }
     const sig = rank + '|' + rows.map(r => r.id + (r.checked ? '*' : '') + (r.disabled ? '!' : '')).join('|');
     if (sig !== b.sig) {
-      b.sig = sig;
+      b.sig = sig; b.frank = rank; b.frows = rows;
       const locked = r => /Lv 5 needed/.test(r.info), eligible = rows.filter(r => !locked(r)).length;
-      b.list.innerHTML = rows.length ? (rank === 3 && eligible < 3 ? `<p class="sbw-fnote">Elite → Legend fusion needs three level 5 Elites (${eligible} ready). Train Elites to level 5 in the Dojo.</p>` : '') + rows.map((r, i) => `<button type="button" class="sbw-frow${r.checked ? ' on' : ''}${locked(r) ? ' locked' : ''}" data-i="${i}" ${r.disabled ? 'disabled' : ''} aria-pressed="${r.checked}" aria-label="${locked(r) ? esc(r.name) + ', level 5 needed' : 'Select ' + esc(r.name)}"><i>${r.checked ? '✓' : locked(r) ? '🔒' : ''}</i><canvas width="72" height="78" data-id="${r.id}"></canvas><span class="sbw-fname"><b>${esc(r.name)}</b><small style="color:${RCOL[rank]}">${esc(r.info)}</small></span>${r.stats.map(v => `<em>${esc(v)}</em>`).join('')}<span class="sbw-fj">${esc(r.jutsu)}</span></button>`).join('')
+      b.flocked = locked; b.fkey = '';
+      // The Reserve list is windowed: only the visible rows (fixed height) and their canvases exist, whatever the number of heroes.
+      b.list.innerHTML = rows.length ? (rank === 3 && eligible < 3 ? `<p class="sbw-fnote">Elite → Legend fusion needs three level 5 Elites (${eligible} ready). Train Elites to level 5 in the Dojo.</p>` : '') + '<div class="sbw-fvp"></div>'
         : `<p class="sbw-fempty">No ${RNAME[rank]} heroes in Reserve. Move heroes to Reserve in Heroes, or summon more Shinobi.</p>`;
-      $$('.sbw-frow', b.list).forEach(btn => btn.onclick = () => { const r = fusionRows()[+btn.dataset.i]; if (r && !r.input.disabled) { r.input.click(); b.sig = ''; refresh(); } });
+      b.fvp = rows.length ? b.list.lastElementChild : null; const note = rows.length ? $('.sbw-fnote', b.list) : null; b.fnoteH = note ? note.offsetHeight + 14 : 0;
+      if (b.fvp) { b.fvp.style.height = rows.length * FUSION_ROW_H + 'px'; fusionWindow(b); }
     }
     const heroes = new Map(owned().map(h => [h.id, h])), hero = id => heroes.get(id) || null, draw = (cv, h, sc) => drawHero(cv, h, sc, now);
     $$('.sbw-frow canvas', b.list).forEach(cv => draw(cv, hero(+cv.dataset.id), 1.5));
@@ -499,15 +651,42 @@
     b.lvl = place(mk('div', 'sbw-dval', b.st), 466, 581, 70, 34);
     b.rowhl = place(mk('div', 'sbw-drowhl', b.st), 606, 0, 1012, 80);
     b.stat = DROWY.map(y => place(mk('div', 'sbw-dstat', b.st), 1306, y - 17, 108, 34));
+    // The artwork prints the original tier prices; each paid row's price is covered (artwork-matched background from
+    // the empty gap left of the prices) and redrawn from the game's live prices (GameBalance.dojoPrices).
+    b.price = DROWY.map((y, i) => { if (!i) return null; const e = place(mk('span', 'sbw-cover sbw-dprice', b.st), 1440, y - 21, 165, 42); e.dataset.mapped = '1'; artMatch(b, e, 1432); return e; });
     b.up = place(mk('button', 'sbw-dup', b.st), 78, 760, 480, 70); b.up.type = 'button'; b.up.onclick = () => MODS.dojo.upgrade();
+    // Dojo Chest Claim Limit Bonus (only while the server reports an approved base allowance): the "HEROES" column (always "All")
+    // becomes CHEST CLAIM per tier, the left card's "Resting Heroes" box shows the current bonus, and the note previews the next tier.
+    const claimCover = (cls, x, y, w, h, sx) => { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.dataset.mapped = '1'; e.hidden = true; artMatch(b, e, sx); return e; };
+    b.claimHead = claimCover('sbw-dclaimh', 1021, 143, 112, 31, 1024);
+    b.claimCol = DROWY.map(y => claimCover('sbw-dclaim', 1022, y - 18, 112, 36, 1030));
+    b.midVal = claimCover('sbw-dval sbw-dmid', 300, 578, 94, 38, 386);
+    b.midLbl = claimCover('sbw-dmidl', 248, 618, 144, 26, 386);
+    b.preview = claimCover('sbw-dprev', 66, 662, 500, 80, 70);
   };
   PAINT['dojo-upg'] = b => {
     const tier = dojoState().tier, next = tier + 1, prices = (window.GameBalance && GameBalance.dojoPrices) || [], rec = (window.GameBalance && GameBalance.dojoRecovery) || [];
     setText(b.tier, 'TIER ' + (ROMAN[tier] === '–' ? '0' : ROMAN[tier])); setText(b.name, (DOJO_NAMES[tier] || '').toUpperCase());
     b.rate.innerHTML = `<b>${rec[tier] || 1}/min</b>`; b.lvl.innerHTML = `<b>${tier}/6</b>`;
     b.rowhl.style.top = (DROWY[tier] - 41) + 'px';
+    b.price.forEach((e, i) => { if (!e) return; const v = Number(prices[i]), t = v > 0 ? fmt(v) + ' Ryo' : prices[i] === 0 ? 'Free' : ''; if (e.textContent !== t) e.textContent = t; });
     b.stat.forEach((e, i) => { const [t, c] = i < tier ? ['Unlocked', 'own'] : i === tier ? ['Active', 'act'] : i === next ? ['Next', 'nxt'] : ['—', 'lck']; if (e.textContent !== t) e.textContent = t; e.className = 'sbw-dstat ' + c; });
     const k = next <= 6 ? `<i>⌂</i><span>UPGRADE - ${fmt(prices[next])} Ryo</span>` : '<i></i><span>MAX TIER REACHED</span>'; if (b.up.dataset.k !== k) { b.up.dataset.k = k; b.up.innerHTML = k; } b.up.disabled = next > 6;
+    if (b.claimHead) {
+      const ca = window.AdventureChest?.snapshot?.chest?.claimAllowance, on = !!(ca && ca.active);
+      [b.claimHead, ...b.claimCol, b.midVal, b.midLbl, b.preview].forEach(e => { e.hidden = !on; });
+      if (on) {
+        const per = Number(ca.bonusPerTierRyo) || 100000, base = Number(ca.baseAllowanceRyo) || 0, cur = tier * per;
+        setText(b.claimHead, 'CHEST CLAIM'); b.claimCol.forEach((e, i) => setText(e, '+' + fmt(i * per)));
+        const mv = `<b>+${fmt(cur)}</b>`; if (b.midVal.innerHTML !== mv) b.midVal.innerHTML = mv; setText(b.midLbl, 'Chest Claim Bonus');
+        // Owner decision 2026-11-11: the Dojo bonus sits on top of the per-claim maximum (server: base + tier x 100,000, limited
+        // only by today's reward budget and the funded pool), so the allowance is simply base + bonus.
+        const allowance = bonus => base + bonus;
+        setText(b.preview, next <= 6
+          ? `Chest Claim Bonus: +${fmt(cur)} → +${fmt(next * per)} Ryo at Tier ${ROMAN[next]} (+${fmt(per)}). Claim allowance after the upgrade: ${fmt(allowance(next * per))} Ryo per claim. Chakra recovery unchanged.`
+          : `Legendary Dojo: +${fmt(cur)} Ryo Chest Claim Bonus. Your claim allowance: ${fmt(allowance(cur))} Ryo per claim.`);
+      }
+    }
   };
   INIT['dojo-sen'] = b => {
     dojoBack(b, 'SENSEI');
@@ -526,16 +705,56 @@
     if (b.sel.disabled !== !hired) { b.sel.disabled = !hired; b.sel.title = hired ? '' : 'Hire or rent a Sensei to choose when rested heroes return'; }
     setText(b.svc, `${DOJO_NAMES[tier]} ✓`); setText(b.cnt, hired ? '1' : '0');
     b.tg.classList.toggle('on', hired && on); b.tg.setAttribute('aria-checked', String(hired && on)); b.tg.innerHTML = `<span>${hired && on ? 'ON' : 'OFF'}</span><i></i>`;
-    const k = hired + '|' + on + '|' + rental;
+    const k = hired + '|' + on + '|' + rental + '|' + !!(window.FounderPanel && FounderPanel.sensei && FounderPanel.sensei.mode());
     if (b.st2.dataset.k !== k) { b.st2.dataset.k = k;
       b.st2.innerHTML = hired ? `<b class="ok">✓</b><strong>${rental ? 'RENTED' : 'HIRED'}</strong><small>${rental ? 'Rental active until ' + new Date(rental).toLocaleString() + '.' : 'Permanent automatic rotation and up to 12 hours of offline earnings.'}</small>`
-        : `<b class="no">!</b><strong>NOT HIRED</strong><small>Hire permanently or rent for 7 days to keep your team rotating.</small>`;
+        : `<b class="no">!</b><strong>NOT HIRED</strong><small>${window.FounderPanel && FounderPanel.sensei && FounderPanel.sensei.mode() ? 'Hire permanently with a one-time SOL payment to keep your team rotating.' : 'Hire permanently or rent for 7 days to keep your team rotating.'}</small>`;
       b.btn.textContent = !hired ? 'HIRE SENSEI' : on ? 'TURN OFF' : 'TURN ON'; }
   };
   function senseiPane() { if (window.DojoServices) DojoServices.open('sensei'); }
+  // Live: the Sensei is a one-time SOL purchase (owner decision 2026-11-09); no Ryo hire and no Ryo rental.
+  // The price comes from the server (Legacy Founder price included); the USD value is an estimate, shown when known.
+  function hireSenseiSol(sol) {
+    // The dialog element is shared with other screens: reset its style, and redraw later only while this exact Sensei
+    // dialog is still the one shown (its heading carries this opening's token).
+    const token = 'ss' + Date.now() + Math.random().toString(36).slice(2);
+    dlg.className = 'sbw-dialog';
+    const ours = () => dlg.open && !!dlg.querySelector(`h2[data-sensei="${token}"]`);
+    const draw = (o, problem) => {
+      // Before the price has loaded the button still works: the server prices the payment and the wallet shows it.
+      const label = o && o.mythicIncluded ? 'Open Founder benefits' : o ? `Hire permanently · ${o.price} SOL${o.usd ? ` (≈ $${o.usd.toFixed(2)})` : ''}` : 'Hire permanently with SOL';
+      dlg.innerHTML = `<h2 data-sensei="${token}">Hire a Sensei</h2><p>A Sensei swaps rested heroes back into battle and keeps Adventure earning while you are away (up to 12 hours).</p><p class="sbw-small" data-r="note"></p><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Cancel</button><button type="button" class="sbw-btn" data-k="sol"></button></div><p class="sbw-small">One-time payment in SOL from your wallet; your wallet shows the exact amount before you approve. The $ value is an estimate.</p>`;
+      const buy = dlg.querySelector('[data-k="sol"]'); buy.textContent = label; buy.disabled = !!o && !o.mythicIncluded && !o.enabled;
+      dlg.querySelector('[data-r="note"]').textContent = problem || (o && o.mythicIncluded ? 'Included free with your Mythic Founder box: activate it in Founder benefits.' : o && o.founderDiscount ? `Legacy Founder price (regular ${o.regularPrice} SOL) until ${new Date(o.trialEnds).toLocaleString()}.` : o && !o.enabled ? 'SOL Sensei purchases are paused right now.' : '');
+    };
+    // The purchase runs right here on the Sensei tab (owner decision 2026-11-10: not in the Founder panel); each step is
+    // shown in the dialog and the buttons stay locked until it ends. Closing the dialog never cancels a signed payment.
+    let busy = false;
+    const status = text => { if (!ours()) return; const n = dlg.querySelector('[data-r="note"]'); n.textContent = text; };
+    const lock = on => { busy = on; if (!ours()) return; dlg.querySelector('[data-k="sol"]').disabled = on; };
+    draw(sol.cached());
+    dlg.onclick = e => {
+      const k = e.target.dataset && e.target.dataset.k; if (!k) return;
+      if (k === 'x') { dlg.close(); return; }
+      if (k !== 'sol' || busy) return;
+      const o = sol.cached();
+      if (o && o.mythicIncluded) { dlg.close(); sol.buy(); return; }
+      lock(true);
+      sol.buy(status, o ? o.price : null).then(r => {
+        lock(false); status(r.message);
+        if (r.status === 'confirmed') { toast('Permanent Sensei unlocked.'); setTimeout(() => { if (ours()) dlg.close(); }, 1500); }
+      }, err => { lock(false); status((err && err.message) || 'The payment did not go through. Nothing was charged.'); });
+    };
+    if (!dlg.open) dlg.showModal();
+    if (sol.due() || !sol.cached()) sol.offer().then(o => { if (ours() && !busy) draw(o); }, err => { if (ours() && !busy) draw(sol.cached(), ((err && err.message) || 'Could not load the Sensei price.') + ' You can still hire: your wallet shows the exact price.'); });
+  }
+  // The Dojo scene's Sensei pane uses this same dialog, so there is one place to buy the Sensei.
+  window.SbwHireSensei = () => hireSensei();
   function hireSensei() {
     const perm = (window.GameBalance && GameBalance.senseiCost) || 0;
     if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    const sol = window.FounderPanel && FounderPanel.sensei;
+    if (sol && sol.mode()) return hireSenseiSol(sol);
     dlg.innerHTML = `<h2>Hire a Sensei</h2><p>A Sensei swaps rested heroes back into battle and keeps Adventure earning while you are away (up to 12 hours).</p><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Cancel</button><button type="button" class="sbw-btn sbw-alt" data-k="rent">Rent 7 days</button><button type="button" class="sbw-btn" data-k="hire">Hire permanently · ${fmt(perm)} Ryo</button></div><p class="sbw-small">Prices and confirmation come from the game's checkout.</p>`;
     dlg.onclick = e => { const k = e.target.dataset && e.target.dataset.k; if (!k) return; dlg.close(); senseiPane(); if (k === 'hire') { if (!pressOnclick('#p4', 'DojoServices.hire()')) window.DojoServices && DojoServices.hire(); } if (k === 'rent') { if (!pressOnclick('#p4', "TokenCheckout.request('sensei-rental')") && window.TokenCheckout) TokenCheckout.request('sensei-rental'); } };
     if (!dlg.open) dlg.showModal();
@@ -593,6 +812,11 @@
       if (port.dataset.aura !== rank) port.dataset.aura = rank;
       if (rank && !port.querySelector('.sbw-portrait-energy')) {
         const energy = mk('i', 'sbw-portrait-energy', port); energy.setAttribute('aria-hidden', 'true');
+      }
+      // Elite / Legend / Mythic glow of the Heroes Collection (cards + detail): decorative, CSS-only, created once per portrait.
+      if (rank && !port.matches('.sbw-at-port') && !port.querySelector('.sbw-portrait-rim')) {
+        const rim = mk('i', 'sbw-portrait-rim', port); rim.setAttribute('aria-hidden', 'true');
+        if (rank === '5') mk('b', 'sbw-rim-moon', rim);
       }
     }
     const surface = portraitSurface(c), PM = window.PlayerModels;
@@ -682,6 +906,38 @@
     }
   }
   window.MythicBoxUI = { open: openBox };
+  /* Founder NFT Boxes (owner decision 2026-11-10): the Events card shows the live Founder sale and VIEW opens this pop-up;
+   * buying happens on the /founders page (it cannot be embedded: payment page with frame protection), opened in a new
+   * tab so the game stays open. Same-origin founders-info, no sign-in; cached 60 s, one request at a time. */
+  const FDS = { info: null, at: 0, busy: false };
+  async function foundersLoad() {
+    if (FDS.busy) return FDS.info; FDS.busy = true; FDS.at = Date.now();
+    try {
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch('/api/prelaunch', { method: 'POST', credentials: 'same-origin', signal: ctl.signal, headers: { 'Content-Type': 'application/json', 'X-SB-Prelaunch': '1' }, body: JSON.stringify({ action: 'founders-info' }) });
+      clearTimeout(timer); const f = (await r.json())?.data?.founders; if (f?.tiers?.mythic && f.tiers.legacy) FDS.info = f;
+    } catch {} finally { FDS.busy = false; }
+    return FDS.info;
+  }
+  // Benefit lines as on the Founders page (prelaunch/i18n/en.json fd.mythic.points / fd.legacy.points).
+  const FD_TIERS = { mythic: { name: "Mythic Founder's Box", art: '/founders/art/mythic.png', points: ['Exclusive Mythic Tsukiyomi + 1 Legend hero + 1 Elite hero', '10 Limited Hero Summon Passes (no Genin, no Mythic)', 'Free permanent Sensei', '10% game-service discount', '12-hour Chest claim cooldown'] },
+    legacy: { name: "Legacy Founder's Box", art: '/founders/art/legacy.png', points: ['1 Legend hero + 1 Elite hero', '10 Limited Hero Summon Passes (no Genin, no Mythic)', '7-day free Sensei trial; permanent Sensei for 0.2 SOL before it ends', '5% game-service discount', '12-hour Chest claim cooldown'] } };
+  function openFounders() {
+    if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body);
+    const token = 'fd' + Date.now() + Math.random().toString(36).slice(2), ours = () => dlg.open && !!dlg.querySelector(`h2[data-founders="${token}"]`);
+    dlg.className = 'sbw-dialog sbw-fddlg';
+    const draw = () => {
+      const f = FDS.info, t = f && f.tiers, closed = !!(t && (f.paused || (t.mythic.soldOut && t.legacy.soldOut)));
+      const row = k => { const x = t && t[k], price = x ? Number(x.price) + ' SOL' + (Number(x.regularPrice) > Number(x.price) ? ` <s>${Number(x.regularPrice)} SOL</s>` : '') : '…';
+        const left = !x ? '' : x.soldOut ? 'SOLD OUT' : `${Number(x.remaining)} of ${Number(x.supply)} left`;
+        return `<div class="fd-tier ${k}${x && x.soldOut ? ' sold' : ''}"><img src="${FD_TIERS[k].art}" alt=""><div><b>${FD_TIERS[k].name}</b><span class="fd-price">${price}</span>${left ? `<em>${left}</em>` : ''}<ul>${FD_TIERS[k].points.map(p => `<li>${p}</li>`).join('')}</ul></div></div>`; };
+      dlg.innerHTML = `<h2 data-founders="${token}">Founder NFT Boxes</h2><p>Founder prices until each tier sells out. One box per wallet across both tiers.</p><div class="fd-tiers">${row('mythic')}${row('legacy')}</div>${f && f.paused ? '<p class="sbw-small">The Founder sale is paused right now.</p>' : ''}<div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt" data-k="x">Cancel</button><button type="button" class="sbw-btn" data-k="go">${closed ? 'View the Founders page ↗' : 'Buy on the Founders page ↗'}</button></div><p class="sbw-small">Opens the Founders page in a new tab; your game stays open here.</p>`;
+    };
+    draw();
+    dlg.onclick = e => { const k = e.target.closest('[data-k]')?.dataset.k; if (k === 'x') dlg.close(); else if (k === 'go') { window.open('/founders', '_blank', 'noopener'); dlg.close(); } };
+    if (!dlg.open) dlg.showModal();
+    foundersLoad().then(() => { if (ours()) draw(); });
+  }
 
   /* ---------- Heroes (game page 1) ---------- */
   const HF = [-1, -3, -2, 0, 1, 2, 3, 4], HFL = ['ALL', 'BATTLE-READY', 'RESERVE', 'GENIN', 'CHUNIN', 'JONIN', 'ELITE', 'LEGEND'];
@@ -703,32 +959,21 @@
         tog: tg, up: btn(/^up\(/), list: btn(/openListing/), mode: btn(/hero-mode-button/) };
     });
   }
-  // Tsukiyomi (Mythic, rank 5): his box NFT (or starter copy), the aura switch and his four skills.
+  // Tsukiyomi (Mythic, rank 5): his box NFT (or starter copy) and the aura switch.
   const shortMint = m => m ? m.slice(0, 4) + '…' + m.slice(-4) : '';
   function mythicBlock(h) {
-    const MH = window.MythicHero, aura = MH ? MH.auraEnabled : true, skills = MH ? MH.skills : [];
+    const MH = window.MythicHero, aura = MH ? MH.auraEnabled : true;
     return `<div class="sbw-myth"><div class="sbw-myth-top"><b class="sbw-mythic">MYTHIC </b><span>FIRST GENERATION NFT</span></div>
       <div class="sbw-myth-nft"><span>${h.starter && !h.nft ? 'Starter Mythic · test server' : h.nft?.mint ? '✔ NFT verified · ' + esc(shortMint(h.nft.mint)) : 'NFT hero'}</span><button type="button" data-k="mcheck">Check NFT</button><button type="button" data-k="maura" aria-pressed="${aura}">Aura: ${aura ? 'On' : 'Off'}</button></div>
       <div class="sbw-myth-generation">TSUKIYOMI<small>Lunar / Celestial / Void</small></div>
-      <ul class="sbw-myth-skills" aria-label="Automatic abilities">${[{name:'Melee Attack',icon:'⚔',text:'Basic purple crescent attack.'},{name:'Ranged Attack',icon:'✧',text:'Basic celestial projectile.'},...skills].map((k,i) => `<li class="${k.ultimate ? 'ult' : ''}"><button type="button" data-k="mability${i}" title="${esc(k.text)}"><span aria-hidden="true">${esc(k.icon)}</span> ${esc(k.name)}${k.cooldownMs!=null?'<small class="sbw-myth-cooldown">'+k.cooldownMs/1000+'s testing cooldown</small>':''}</button></li>`).join('')}</ul><small class="sbw-myth-auto">All four rotate on melee or ranged attacks · Skill VFX add no damage or chakra cost</small></div>`;
-  }
-  function mythicAbility(index) {
-    const mh=window.MythicHero;if(!mh?.animationSource)return;
-    const basic=[{name:'Melee Attack',state:'ATTACK',text:'Basic purple crescent slash.'},{name:'Ranged Attack',state:'RANGED_ATTACK',text:'Basic celestial projectile.'}],skill=mh.skills[index-2];
-    const item=basic[index]||skill,definition=skill&&window.MythicAutomaticSkills.definitions[skill.key],state=basic[index]?.state||definition?.state;
-    if(!item||!state)return;
-    if(!dlg)dlg=mk('dialog','sbw-dialog',document.body);dlg.onclick=null;dlg.classList.add('sbw-myth-preview');
-    const cd=definition&&mh.automaticSkills?.rules[skill.key]?.cooldownMs;
-    dlg.innerHTML=`<h2>${esc(item.name)}</h2><p>${definition?.ultimate?'Ultimate':definition?'Signature skill':'Basic attack'} · Automatic activation</p><canvas width="420" height="260" aria-label="Cosmetic animation preview"></canvas><p>${esc(item.text)}</p><p>${definition?cd==null?'Extra skill cooldown: pending balance approval. Native attack timing applies.':'Beta testing cooldown: '+cd/1000+'s. Native attacks continue while it recharges.':'Uses native attack timing.'}</p><p>1 Attack = Hero Power Damage = 1 Chakra<br>Skill VFX = 0 Additional Chakra</p><small>Cosmetic preview only. No attacks, chakra use or rewards.</small><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`;
-    const canvas=$('canvas',dlg),c=canvas.getContext('2d'),hero={id:'mythic-menu-preview',r:5},start=performance.now();let frame;
-    const paint=time=>{if(!dlg.open||!canvas.isConnected)return;const clip=mh.animationSource.states[state],elapsed=(time-start)%(clip.durationMs+500),t=Math.min(.999,elapsed/clip.durationMs);c.clearRect(0,0,420,260);c.fillStyle='#100923';c.fillRect(0,0,420,260);const body=mh.renderFrame(hero,state,Math.floor(t*clip.frames),'front');ShinobiSprites.blit(c,body,210,235,3.5,false,1);if(skill)c.drawImage(mh.skillFrame(skill.key,Math.floor(t*definition.frames)),95,0,230,230);frame=requestAnimationFrame(paint)};
-    const close=()=>{cancelAnimationFrame(frame);dlg.classList.remove('sbw-myth-preview')};dlg.onclose=close;$('.sbw-btn',dlg).onclick=()=>dlg.close();dlg.showModal();mh.preload().then(()=>{if(dlg.open)frame=requestAnimationFrame(paint)}).catch(()=>{});
+    </div>`;
   }
   function heroPageButton(previous) { return document.querySelector('#p1 .heroes-pagination button[aria-label="' + (previous ? 'Previous page' : 'Next page') + '"]'); }
   INIT.heroes = b => {
     b.tabs = b.s.hs.filter(h => /^tf\d$/.test(h.id)).map((h, i) => cov(b, h.r[0] + 5, h.r[1] + 6, h.r[2] - h.r[0] - 10, h.r[3] - h.r[1] - 12, i === 0 ? '#342003' : '#04172e', 15, '#e8eefc'));
     b.summary = cov(b, 24, 288, 600, 24, '#06071d', 15, '#cfd8ee', 'sbw-left');
     b.page = cov(b, 1342, 288, 130, 24, '#000108', 15, '#ffffff');
+    b.sortLabel = cov(b, 1360, 240, 104, 28, '#04172e', 15, '#ffffff');   // the artwork's fixed "By Rarity" text is covered by the live sort name
     b.page.setAttribute('role', 'status'); b.page.setAttribute('aria-live', 'polite');
     b.grid = cv(b, 26, 322, 1036, 684, 'sbw-hgrid');
     /* detail panel: one clean panel over the artwork's (portrait, stats, perks, Train, Sell) */
@@ -740,7 +985,7 @@
   function heroCardHtml(c, i, on) {
     const h = c.h || {}, r = h.r || 0, col = RCOL[r] || RCOL[0], [cc, cm] = (c.ch || '0/1').split('/').map(x => +x.trim() || 0), pct = cm ? Math.round(100 * cc / cm) : 0;
     const btn = (k, label, cls = '', dis) => `<button type="button" class="sbw-hb ${cls}" data-k="${k}" data-i="${i}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
-    return `<div class="sbw-hcard${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">
+    return `<div class="sbw-hcard r${r}${on ? ' on' : ''}${r === 5 ? ' mythic' : ''}" data-i="${i}" style="--rc:${col}">${frameHtml(r, true)}
       <div class="sbw-hc-top"><b>${esc(RNAME[r].toUpperCase())}</b><i>${esc(c.status || '')}</i></div>
       <div class="sbw-hc-portrait"><canvas width="170" height="120" data-i="${i}"></canvas>${r === 5 ? '<b class="sbw-nft" title="Limited NFT Box hero">NFT</b>' : ''}${h.referralBound ? '<b class="sbw-bound" title="Referral-bound hero: cannot be listed, sold or transferred">🔒</b>' : ''}</div>
       <div class="sbw-hc-name">${esc(c.name)}</div><div class="sbw-hc-sub">Lv. ${esc((c.lvl || '1').split('/')[0])}<span>${esc(r === 5 ? '4 automatic skills' : c.attack || c.style)}</span></div>
@@ -755,6 +1000,7 @@
     b.tabs.forEach((t, i) => { t.style.color = i === b.tabIdx ? '#ffd257' : '#e8eefc'; const hs = $(`.hs[data-sbwid="tf${i}"]`, b.st); if (hs) hs.classList.toggle('on2', i === b.tabIdx); });
     setText(b.summary, nativeText('#p1', /\d+[–-]\d+ of \d+ heroes[^\n]*/) || nativeText('#p1', /\d+ of \d+ heroes[^\n]*/) || `${cards.length} heroes`);
     const pageSelect = root.querySelector('.heroes-page-select'); setText(b.page, pageSelect?.selectedOptions[0]?.textContent || '1 / 1');
+    setText(b.sortLabel, 'By ' + (root.querySelector('.heroes-sort')?.selectedOptions[0]?.textContent || 'Rarity'));
     for (const id of ['pp', 'pn']) { const e = $(`.hs[data-sbwid="${id}"]`, b.st), button = heroPageButton(id === 'pp'); if (e) { const disabled = !button || button.disabled; e.setAttribute('aria-disabled', String(disabled)); e.classList.toggle('dim', disabled); } }
     if (b.sel >= cards.length) b.sel = 0;
     const sig = cards.map(c => [c.idx, c.status, c.lvl, c.pw, c.tog && c.tog.textContent, c.up && c.up.textContent, c.mode && c.mode.textContent].join(',')).join('|') + '#' + b.sel;
@@ -769,7 +1015,7 @@
     }
     $$('.sbw-hcard canvas', b.grid).forEach(c => { const card = cards[+c.dataset.i]; drawHero(c, card && card.h, 2.7, now, 2); });
     const c = cards[b.sel];
-    const dsig = c ? [c.idx, c.lvl, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint,ledger().profile?.upgradeShards].join(',') : 'none';
+    const dsig = c ? [c.idx, c.lvl, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint,ledger().profile?.upgradeShards, window.Expedition?.sig(c.h)].join(',') : 'none';
     if (dsig !== b.dsig) {
       b.dsig = dsig;
       const portrait = $('.sbw-h2-port canvas', b.det);
@@ -786,6 +1032,7 @@
             <div class="sbw-h2-port"><canvas width="292" height="344"></canvas></div></div>
           <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
           <div class="sbw-shard-balance" title="Account-bound items for hero training"><span>UPGRADE SHARDS</span><b>${ledger().profile?.upgradeShards || 0}</b></div>
+          ${window.Expedition?.detailHtml(h) || ''}
           <h4>PERKS</h4>
           <ul class="sbw-perks2">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
           <div class="sbw-h2-btns">
@@ -811,7 +1058,6 @@
     drawCentered($('.sbw-h2-port canvas', b.det), c && c.h, now, 6);
   };
   MODS.heroes = {
-    mability0:()=>mythicAbility(0),mability1:()=>mythicAbility(1),mability2:()=>mythicAbility(2),mability3:()=>mythicAbility(3),mability4:()=>mythicAbility(4),mability5:()=>mythicAbility(5),
     tab: a => { const v = HF[+a]; if (v != null) window.HeroFilters && HeroFilters.choose(v); built.heroes.sel = 0; built.heroes.sig = ''; },
     search: () => { const inp = document.querySelector('#p1 .heroes-search'); if (!inp) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.onclick = null; dlg.innerHTML = '<h2>Search heroes</h2><form><input type="search" placeholder="Hero name"><div class="sbw-acts"><button type="button" class="sbw-btn sbw-alt">Clear</button><button class="sbw-btn">Search</button></div></form>'; const q = $('input', dlg); q.value = inp.value; const run = v => { inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); built.heroes.sig = ''; dlg.close(); }; $('.sbw-alt', dlg).onclick = () => run(''); $('form', dlg).onsubmit = e => { e.preventDefault(); run(q.value); }; dlg.showModal(); q.focus(); },
     sort: () => { const s = document.querySelector('#p1 .heroes-sort'); if (!s) return; s.selectedIndex = (s.selectedIndex + 1) % s.options.length; s.dispatchEvent(new Event('change', { bubbles: true })); toast('Sort: ' + s.options[s.selectedIndex].text); built.heroes.sig = ''; },
@@ -866,12 +1112,20 @@
     b.slots.forEach((e, i) => {
       const c = cards[i], h = c && heroAt(c.idx);
       if (!c || !h) { if (e.dataset.k !== 'empty') { e.dataset.k = 'empty'; e.className = 'sbw-at-card empty'; e.style.removeProperty('--rc'); e.innerHTML = `<b>+</b><div><strong>Empty slot ${i + 1}</strong><span>Deploy a battle-ready hero</span></div>`; } return; }
-      const a2 = c.a, meta = ((a2.querySelector('.roster-hero-meta') || {}).textContent || '').replace(/\s+/g, ' ').trim(), bar = ((a2.querySelector('.bar i') || {}).style || {}).width || '0%', btn = a2.querySelector('.roster-team-action'), el = a2.querySelector('.roster-element-icon');
-      const k = [c.idx, h.id, h.r, h.lv, meta, bar, btn && btn.textContent, btn && btn.disabled, c.deployed].join('|');
+      const a2 = c.a, away = !!window.Expedition?.away(h), meta = (away && window.Expedition.cardMeta(h)) || ((a2.querySelector('.roster-hero-meta') || {}).textContent || '').replace(/\s+/g, ' ').trim(), bar = ((a2.querySelector('.bar i') || {}).style || {}).width || '0%', btn = a2.querySelector('.roster-team-action'), el = a2.querySelector('.roster-element-icon');
+      // Structure key: a slot's markup is rebuilt only when the hero, level, button or deployed state changes. The live numbers
+      // (chakra text and bar), which change on nearly every paint while heroes fight, are updated in place below; rebuilding
+      // all ten slots each time re-parsed their HTML and forced a style recalculation (performance, owner request 2026-11-10).
+      const k = [c.idx, h.id, h.r, h.lv, btn && btn.textContent, btn && btn.disabled, c.deployed, away].join('|');
+      if (e.dataset.k === k) {
+        const small = e.querySelector('.sbw-at-info small'), fill = e.querySelector('.sbw-bar i');
+        if (small && small.textContent !== meta) small.textContent = meta;
+        if (fill && fill.style.width !== bar) fill.style.width = bar;
+      }
       if (e.dataset.k !== k) {
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
-        e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
-        e.innerHTML = `<i class="sbw-at-aura"></i><div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${esc(h.r===5?'MYTHIC':RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
+        e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${away ? ' on-expedition' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
+        e.innerHTML = `<i class="sbw-at-aura"></i>${frameHtml(h.r, false)}<div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${esc(h.r===5?'MYTHIC':RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
         if (keep && e.dataset.sbwHero === String(h.id)) e.querySelector('canvas').replaceWith(keep);
         e.dataset.sbwHero = String(h.id);
       }
@@ -883,7 +1137,7 @@
   };
   MODS.adventure = {
     stage: () => notice('Stages', 'Stages advance automatically as your team clears each map. Eight battlefields rotate as you progress.'),
-    stageinfo: () => { const a = advInfo(); notice(`Stage ${a.stage || 1} · ${a.name}`, `Enemies remaining: ${a.enemies || '—'}. Ryo earned this session: ${a.gained || '+0'}. Deployed heroes fight automatically and spend chakra; rest them in the Dojo to recover.`); },
+    stageinfo: () => { const a = advInfo(); notice(`Stage ${a.stage || 1} · ${a.name}`, `Enemies remaining: ${a.enemies || '—'}. Ryo earned this session: ${a.gained || '+0'}. Deployed heroes fight automatically and spend chakra; out of chakra, they rest until 10% of their chakra is back – faster in a better Dojo – then fight again.`); },
     work: () => { if (!pressOnclick('#p0', 'Experience.workAll()')) toast('No rested heroes to send to work.'); },
     rest: () => { if (!pressOnclick('#p0', 'Experience.restAll()')) toast('No deployed heroes to rest.'); },
     hero: () => go(1)
@@ -1312,7 +1566,7 @@
   function fitText(e) { const base = +e.dataset.fs; if (!base) return; let fs = base; e.style.fontSize = fs + 'px'; while (e.scrollWidth > e.clientWidth + 1 && fs > 8) { fs -= 1; e.style.fontSize = fs + 'px'; } }
   function syncEffects() {
     if (!layer) return;
-    const paused = String(document.hidden || RM || window.Arena3D?.cfg.fx === 0);
+    const paused = String(document.hidden || RM || autoLow || window.Arena3D?.cfg.fx === 0);
     const quality = String(window.Arena3D?.cfg.fx ?? 1);
     if (layer.dataset.effectsPaused !== paused) layer.dataset.effectsPaused = paused;
     if (layer.dataset.effectsQuality !== quality) layer.dataset.effectsQuality = quality;
@@ -1362,7 +1616,7 @@
     summon: [[1252, 118, 1652, 372], [318, 568, 540, 755, { half: 1 }], [552, 568, 768, 755, { half: 1 }], [778, 568, 1000, 755, { half: 1 }], [1010, 568, 1232, 755, { half: 1 }],
       [300, 100, 1245, 560, { fit: 1 }], [1252, 378, 1652, 605], [1252, 612, 1652, 752], [15, 128, 285, 450], [28, 462, 280, 705, { half: 1 }], [28, 715, 280, 875, { half: 1 }]],
     fusion: [[20, 115, 640, 225, { fit: 1 }], [40, 238, 815, 352, { pan: 0.75 }], [42, 358, 815, 540, { pan: 0.75 }], [40, 548, 815, 972, { pan: 0.75 }], [845, 222, 1510, 632],
-      [860, 640, 1500, 870], [860, 874, 1500, 972]],
+      [860, 640, 1500, 795], { flow: '.sbw-fshards' }, [860, 874, 1500, 972]],
     dojo: [[70, 118, 820, 350, { fit: 1 }], [72, 365, 785, 1012], [800, 365, 1508, 1012]],
     'dojo-upg': [[55, 98, 440, 142, { fit: 1 }], [45, 132, 584, 860], [596, 130, 1632, 852, { pan: 0.65 }]],
     'dojo-sen': [[56, 96, 330, 144], [826, 140, 1604, 372, { fit: 1 }], { parts: [[858, 374, 1120, 420], [1306, 374, 1584, 420]] }, [858, 420, 1592, 452, { fit: 1 }],
@@ -1547,6 +1801,18 @@
   // The same request returns new System announcements (Legend summons) for the System tab.
   let chatPop = null, chatTab = 'Global', chatAfter = 0, sysAfter = 0, sysPrimed = false, sysUnread = false, chatOwner = null, chatTimer = 0, chatFetching = false, chatSending = false;
   const chatMsgs = [], sysMsgs = [], CHAT_KEEP = 50, WELCOME = 'Welcome to Shinobi Bombers! Forge your ninja way!';
+  // Moderation (enforced by the chat server): `removed` drops messages staff hid; `standing` is this
+  // wallet's own mute / ban / recent warning, shown so a refused send is never a surprise.
+  let chatStanding = null;
+  const chatBlocked = () => !!(chatStanding && (chatStanding.banned || chatStanding.mutedUntil > Date.now()));
+  const standingText = () => !chatStanding ? '' : chatStanding.banned ? 'You can no longer send messages in Global chat. You can still read it. Contact support to appeal.'
+    : chatStanding.mutedUntil > Date.now() ? 'You are muted in Global chat until ' + new Date(chatStanding.mutedUntil).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + '.'
+    : chatStanding.warning ? chatStanding.warning.text : '';
+  function applyModeration(feed) {
+    if (!feed) return;
+    if (Array.isArray(feed.removed) && feed.removed.length) { const gone = new Set(feed.removed); for (const list of [chatMsgs, sysMsgs]) for (let i = list.length - 1; i >= 0; i--) if (gone.has(list[i].id)) list.splice(i, 1); }
+    chatStanding = feed.standing || null;
+  }
   function chatBar() { return cur && built[cur] ? built[cur].sec.querySelector('[data-sbwid="chatbar"]') : null; }
   const chatReady = () => !!(window.RyoPayments?.chat && RyoPayments.state.authenticated);
   function chatNote(text, isError = false) { if (!chatPop) return; const n = $('.sbw-cp-note', chatPop); n.textContent = text; n.classList.toggle('sbw-cp-error', isError); n.setAttribute('role', isError ? 'alert' : 'status'); }
@@ -1571,18 +1837,19 @@
     }
     log.replaceChildren(...nodes); if (stick) log.scrollTop = log.scrollHeight;
     const sysTab = $$('[role="tab"]', chatPop)[2]; sysTab.classList.toggle('sbw-cp-unread', sysUnread); sysTab.setAttribute('aria-label', sysUnread ? 'System, new announcement' : 'System');
-    const input = $('input', chatPop), on = chatTab === 'Global' && chatReady();
+    const input = $('input', chatPop), on = chatTab === 'Global' && chatReady() && !chatBlocked();
     input.disabled = !on; $('button[type="submit"]', chatPop).disabled = !on || chatSending;
-    input.placeholder = chatTab !== 'Global' ? 'Switch to Global to chat' : chatReady() ? 'Type your message…' : 'Sign in to chat';
+    input.placeholder = chatTab !== 'Global' ? 'Switch to Global to chat' : !chatReady() ? 'Sign in to chat' : chatBlocked() ? 'Sending is restricted' : 'Type your message…';
   }
   function addMessages(target, list) {
     const seen = new Set(target.map(m => m.id)), added = (list || []).filter(m => !seen.has(m.id));
     target.push(...added); target.sort((a, b) => a.id - b.id); if (target.length > CHAT_KEEP) target.splice(0, target.length - CHAT_KEEP);
     return added.length;
   }
-  function mergeChat(list, system) {
+  function mergeChat(list, system, feed) {
     const account = RyoPayments.state.account;
-    if (account !== chatOwner) { chatOwner = account; chatMsgs.length = sysMsgs.length = 0; chatAfter = sysAfter = 0; sysPrimed = sysUnread = false; }
+    if (account !== chatOwner) { chatOwner = account; chatMsgs.length = sysMsgs.length = 0; chatAfter = sysAfter = 0; sysPrimed = sysUnread = false; chatStanding = null; }
+    applyModeration(feed);
     addMessages(chatMsgs, list); chatAfter = chatMsgs.at(-1)?.id || chatAfter;
     if (system) {
       // Announcements already present at first load are history, not new.
@@ -1598,9 +1865,10 @@
       try {
         if (RyoPayments.state.account !== chatOwner) mergeChat([]);
         const feed = await RyoPayments.chat('chat-list', { channel: 'global', after: chatAfter, systemAfter: sysAfter });
-        mergeChat(feed.messages, feed.system);
-        if (open && !chatSending && $('.sbw-cp-note', chatPop).classList.contains('sbw-cp-error')) chatNote('');
-        if (onScreen && !chatSending) csNote('');
+        mergeChat(feed.messages, feed.system, feed);
+        const standing = standingText();
+        if (open && !chatSending && (standing || $('.sbw-cp-note', chatPop).classList.contains('sbw-cp-error'))) chatNote(standing, chatBlocked());
+        if (onScreen && !chatSending && !csReporting) csNote(standing, chatBlocked());
       } catch { if (open) chatNote('Chat is temporarily unavailable. Retrying…', true); if (onScreen) csNote('Chat is temporarily unavailable. Retrying…', true); }
       finally { chatFetching = false; }
     }
@@ -1611,8 +1879,9 @@
     if (!text || chatSending || !chatReady()) return;
     chatSending = true; renderChat();
     try {
-      mergeChat((await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter })).messages);
-      input.value = ''; chatNote(''); updateCount();
+      const sent = await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter });
+      mergeChat(sent.messages, undefined, sent);
+      input.value = ''; chatNote(standingText()); updateCount();
     } catch (err) { chatNote(err.message || 'Message could not be sent.', true); }
     finally { chatSending = false; renderChat(); input.focus(); }
   }
@@ -1659,7 +1928,7 @@
   const CS_ANN = [['🎁', 'Weekend Boost Event!', 'Increased drop rates and rewards!', '3d 12h 45m', 'gold'], ['⚔️', 'Guild War Sign-Up!', 'Register your guild by Jan 28!', '1d 18h 30m', 'cyan'], ['⚙️', 'Maintenance Notice', 'Server maintenance on Jan 27, 03:00 – 05:00 (UTC).', '', 'purple']];
   const CS_NINJAS = [['NinjaMaster', 68, '🏯 In Dojo', 'ok'], ['ShadowKage', 72, '⚔️ Boss Hunt', 'warn'], ['RyoSenpai', 70, '🏪 In Market', 'ok'], ['KuroFox', 75, '🌿 In Adventure', 'ok'], ['EmberLeaf', 65, '💤 Idle', 'idle']];
   const CS_EMOJI = ['😀', '😂', '😎', '🔥', '⚔️', '💥', '🍃', '🌸', '👍', '🙏', '🎉', '💎'];
-  let csTab = 'Global';
+  let csTab = 'Global', csReporting = null;
   const csHue = n => { let h = 0; for (const c of n) h = (h * 31 + c.codePointAt(0)) % 360; return h; };
   function csAvatar(parent, name, cls) { const a = mk('span', 'sbw-cs-av' + (cls ? ' ' + cls : ''), parent); a.textContent = ([...name][0] || '?').toUpperCase(); a.style.setProperty('--h', csHue(name)); a.setAttribute('aria-hidden', 'true'); return a; }
   function csNote(text, isError = false) { const b = built.chat, n = b && b.cs && b.cs.note; if (!n) return; n.textContent = text; n.classList.toggle('sbw-cs-error', isError); n.setAttribute('role', isError ? 'alert' : 'status'); }
@@ -1679,6 +1948,10 @@
         <div class="sbw-cs-ann">${CS_ANN.map(([i, t, d, c, k]) => `<article class="sbw-cs-card ${k}"><i aria-hidden="true">${i}</i><div><b></b><span></span>${c ? '<em>⏱ </em>' : ''}</div></article>`).join('')}</div>
         <div class="sbw-cs-log" role="log" aria-live="polite" tabindex="0" aria-label="Messages"></div>
         <p class="sbw-cs-note" role="status"></p>
+        <form class="sbw-cs-report" hidden aria-label="Report a message"><p class="sbw-cs-report-q"></p>
+          <select aria-label="Report reason"><option value="spam">Spam</option><option value="scam">Scam or phishing</option><option value="harassment">Harassment</option><option value="impersonation">Impersonation</option><option value="offensive">Offensive language</option><option value="other">Other rule break</option></select>
+          <input type="text" maxlength="300" autocomplete="off" placeholder="Optional details for moderators" aria-label="Report details">
+          <button type="submit">Send report</button><button type="button" class="sbw-cs-report-x">Cancel</button></form>
         <form class="sbw-cs-form">
           <select class="sbw-cs-ch2" aria-label="Send to channel"><option>Global</option></select>
           <span class="sbw-cs-emoji-wrap"><button type="button" class="sbw-cs-ico sbw-cs-emoji" aria-label="Emoji" aria-expanded="false">😊</button><span class="sbw-cs-emoji-pop" hidden></span></span>
@@ -1690,7 +1963,7 @@
       <aside class="sbw-cs-side" id="sbwCsSide" aria-label="Social">
         <section class="sbw-cs-panel"><h3>👥 ONLINE NINJAS <span class="sbw-cs-tag">Preview data</span><button type="button" class="sbw-cs-link" data-soon="Full online-player list">View All ›</button></h3><ul class="sbw-cs-ninjas"></ul></section>
         <section class="sbw-cs-panel sbw-cs-guild"><h3>🔖 MY GUILD <span class="sbw-cs-tag">Preview</span></h3><div><span class="sbw-cs-crest" aria-hidden="true">忍</span><p><b>ShadowLegacy</b><small>Members: 48 / 50</small><small class="ok">● 12 online</small></p><button type="button" data-soon="Guild chat">💬 Guild Chat</button></div></section>
-        <section class="sbw-cs-panel"><h3>⚡ QUICK ACTIONS</h3><div class="sbw-cs-qa"><button type="button" data-soon="Create Party">➕ Create Party</button><button type="button" data-soon="Invite">✉️ Invite</button><button type="button" data-soon="Whisper">💬 Whisper</button><button type="button" data-soon="Report">⚠️ Report</button></div></section>
+        <section class="sbw-cs-panel"><h3>⚡ QUICK ACTIONS</h3><div class="sbw-cs-qa"><button type="button" data-soon="Create Party">➕ Create Party</button><button type="button" data-soon="Invite">✉️ Invite</button><button type="button" data-soon="Whisper">💬 Whisper</button><button type="button" class="sbw-cs-report-help">⚠️ Report</button></div></section>
       </aside>`;
     // Announcement cards: text through textContent (static placeholder content).
     $$('.sbw-cs-card', r).forEach((c, i) => { $('b', c).textContent = CS_ANN[i][1]; $('span', c).textContent = CS_ANN[i][2]; const em = $('em', c); if (em) em.append(CS_ANN[i][3]); });
@@ -1713,7 +1986,7 @@
       e.preventDefault(); const n = all[(i + d + all.length) % all.length]; n.focus(); setTab(n.dataset.ch);
     });
     pick.onchange = () => setTab(pick.value);
-    const form = $('form', r), input = $('input', form), pop = $('.sbw-cs-emoji-pop', r), eb = $('.sbw-cs-emoji', r);
+    const form = $('.sbw-cs-form', r), input = $('input', form), pop = $('.sbw-cs-emoji-pop', r), eb = $('.sbw-cs-emoji', r);
     pop.replaceChildren(...CS_EMOJI.map(em => { const x = mk('button', '', null); x.type = 'button'; x.textContent = em; x.setAttribute('aria-label', 'Insert ' + em); x.onclick = () => { if (!input.disabled && [...input.value].length < 199) { input.value += em; csCount(); } input.focus(); }; return x; }));
     eb.onclick = () => { pop.hidden = !pop.hidden; eb.setAttribute('aria-expanded', String(!pop.hidden)); };
     r.addEventListener('keydown', e => { if (e.key === 'Escape' && !pop.hidden) { pop.hidden = true; eb.setAttribute('aria-expanded', 'false'); eb.focus(); } });
@@ -1721,29 +1994,51 @@
     r.addEventListener('click', e => { const s = e.target.closest('[data-soon]'); if (s) notice(s.dataset.soon, 'This is a preview of the design. It opens when the feature launches.'); });
     $('.sbw-cs-sticker', r).dataset.soon = 'Stickers';
     input.addEventListener('input', csCount); form.onsubmit = csSend;
+    // Reporting a Global message: a persistent panel (the log re-renders on every poll), sent to the
+    // server's chat-report action. Moderators review it; reporting never hides anything by itself.
+    const rep = $('.sbw-cs-report', r), closeReport = () => { rep.hidden = true; csReporting = null; };
+    $('.sbw-cs-log', r).addEventListener('click', e => {
+      const btn = e.target.closest('[data-report]'); if (!btn) return;
+      const m = chatMsgs.find(x => x.id === Number(btn.dataset.report)); if (!m) return;
+      csReporting = m; rep.hidden = false; $('.sbw-cs-report-q', rep).textContent = 'Report ' + m.name + ' (' + m.from + '): “' + m.text + '”';
+      $('input', rep).value = ''; $('select', rep).focus();
+    });
+    $('.sbw-cs-report-x', rep).onclick = closeReport;
+    rep.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeReport(); } });
+    rep.onsubmit = async e => {
+      e.preventDefault(); const m = csReporting; if (!m || !chatReady()) return;
+      const send = $('button[type="submit"]', rep); send.disabled = true;
+      try {
+        const res = await RyoPayments.chat('chat-report', { messageId: m.id, category: $('select', rep).value, details: $('input', rep).value.trim() || undefined });
+        closeReport(); csNote(res.status === 'duplicate' ? 'You already reported this message for that reason.' : res.status === 'removed' ? 'Moderators already removed this message.' : 'Thanks — moderators will review this message.');
+      } catch (err) { csNote(err.message || 'The report could not be sent.', true); }
+      finally { send.disabled = false; }
+    };
+    $('.sbw-cs-report-help', r).onclick = () => csNote('To report a message, choose ⚑ next to it in Global chat.');
     b.cs = { tabs, pick, log: $('.sbw-cs-log', r), note: $('.sbw-cs-note', r), input, send: $('.sbw-cs-send', r), count: $('.sbw-cs-count', r), title: $('.sbw-cs-title', r), online: $('.sbw-cs-online b', r), ch2: $('.sbw-cs-ch2', r) };
     renderChatScreen();
   }
   function renderChatScreen() {
     const b = built.chat, c = b && b.cs; if (!c || cur !== 'chat') return;
     const log = c.log, stick = log.scrollHeight - log.scrollTop - log.clientHeight < 40, nodes = [];
-    const msg = (cls, who, text, created, from, mine) => {
+    const msg = (cls, who, text, created, from, mine, reportId) => {
       const a = document.createElement('article'); a.className = 'sbw-cs-msg ' + cls + (mine ? ' mine' : '');
       if (cls === 'sys') mk('span', 'sbw-cs-av sys', a).textContent = '⚙'; else csAvatar(a, who);
       const h = mk('p', 'sbw-cs-mh', a); mk('b', '', h).textContent = who; if (from) mk('small', 'sbw-cs-lvb', h).textContent = from; if (created) csTime(h, created);
+      if (reportId) { const rb = mk('button', 'sbw-cs-rep', h); rb.type = 'button'; rb.textContent = '⚑'; rb.dataset.report = reportId; rb.title = 'Report message'; rb.setAttribute('aria-label', 'Report message from ' + who); }
       mk('p', 'sbw-cs-mt', a).textContent = text; return a;
     };
-    if (csTab === 'Global') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of chatMsgs) nodes.push(msg('', m.name, m.text, m.created, m.from, m.mine)); }
+    if (csTab === 'Global') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of chatMsgs) nodes.push(msg('', m.name, m.text, m.created, m.from, m.mine, !m.mine && chatReady() ? m.id : 0)); }
     else if (csTab === 'System') { nodes.push(msg('sys', '[System]', WELCOME)); for (const m of sysMsgs) { const n = msg('sys legend', '[System]', m.text, m.created); nodes.push(n); } }
     else if (csTab === 'Help') for (const t of CS_HELP) nodes.push(msg('sys', '[Help]', t));
     else { const p = document.createElement('p'); p.className = 'sbw-cs-empty'; p.textContent = CS_SOON[csTab]; nodes.push(p); }
     log.replaceChildren(...nodes); if (stick) log.scrollTop = log.scrollHeight;
-    const ready = chatReady(), live = csTab === 'Global' && ready;
+    const ready = chatReady(), live = csTab === 'Global' && ready && !chatBlocked();
     $$('.sbw-cs-tab', c.tabs).forEach(t => { const on = t.dataset.ch === csTab; t.classList.toggle('on', on); t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1;
       const bd = $('.sbw-cs-badge', t); bd.hidden = !(t.dataset.ch === 'System' && sysUnread); bd.textContent = 'NEW'; });
     c.title.textContent = csTab.toUpperCase() + ' CHAT'; c.pick.value = csTab; c.ch2.replaceChildren(new Option(csTab === 'Global' ? 'Global' : csTab));
     c.input.disabled = !live; c.send.disabled = !live || chatSending;
-    c.input.placeholder = csTab !== 'Global' ? 'Switch to Global to chat' : ready ? 'Type your message…' : 'Sign in to chat';
+    c.input.placeholder = csTab !== 'Global' ? 'Switch to Global to chat' : !ready ? 'Sign in to chat' : chatBlocked() ? 'Sending is restricted' : 'Type your message…';
     const op = document.getElementById('onlinePlayers'); c.online.textContent = ((op && /\d[\d,]*/.exec(op.textContent)) || ['—'])[0];
   }
   async function csSend(e) {
@@ -1751,8 +2046,9 @@
     if (!text || chatSending || !chatReady() || csTab !== 'Global') return;
     chatSending = true; renderChatScreen();
     try {
-      mergeChat((await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter })).messages);
-      c.input.value = ''; csNote(''); csCount();
+      const sent = await RyoPayments.chat('chat-send', { channel: 'global', text, name: (gs() && gs().nick) || 'Shinobi', after: chatAfter });
+      mergeChat(sent.messages, undefined, sent);
+      c.input.value = ''; csNote(standingText()); csCount();
     } catch (err) { csNote(err.message || 'Message could not be sent.', true); }
     finally { chatSending = false; renderChatScreen(); c.input.focus(); }
   }
@@ -1777,7 +2073,7 @@
     if (k !== cur) {
       if (chatPop && !chatPop.hidden) toggleChat(false);
       if (cur && built[cur]) built[cur].sec.classList.remove('on');
-      cur = k; if (k === 'home' || k === 'chat') pollChat();
+      cur = k; nativeCache.forEach(c => c.obs.disconnect()); nativeCache.clear(); if (k === 'home' || k === 'chat') pollChat();
       if (k) { const b = built[k] || build(k); b.sec.classList.add('on'); if (!RM) { b.sec.classList.remove('enter'); void b.sec.offsetWidth; b.sec.classList.add('enter'); } }
       layer.hidden = !k; markNav();
       document.body.classList.toggle('sbw-active', !!k);
@@ -1792,6 +2088,7 @@
     if (window.GameLoading && GameLoading.ready) await GameLoading.ready;
     D = await fetch(BASE + 'screens.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('screens.json ' + r.status); return r.json(); });
     layer = mk('div', '', document.body); layer.id = 'sbwLayer'; layer.hidden = true;
+    layer.insertAdjacentHTML('afterbegin', ORN_SPRITE);
     if (D.header) buildHeader();
     const prior = window.go;
     if (typeof prior === 'function') { window.go = function (...args) { preview = null; if (args[0] !== 4 || args[1]) dojoView = 'dojo'; const r = prior.apply(this, args); queueMicrotask(sync); return r; }; }
@@ -1800,17 +2097,64 @@
     addEventListener('shinobi-beta-wallet', () => refresh());
     addEventListener('shinobi-chest', () => { refresh(); welcomeBack(); });
     // Defeats trigger verified Chest syncs in gameplay-options/options.js (KillReport).
-    addEventListener('resize', fit);
+    let fitFrame = 0; addEventListener('resize', () => { if (!fitFrame) fitFrame = requestAnimationFrame(() => { fitFrame = 0; fit(); }); });   // one fit() per frame while resizing
     motionPreference.addEventListener('change', event => { RM = event.matches || !!window.DisplaySettings?.v.reduceMotion; refresh(); });
     addEventListener('sb-display-change', () => { RM = motionPreference.matches || !!window.DisplaySettings?.v.reduceMotion; refresh(); });
     document.addEventListener('visibilitychange', () => { syncEffects(); if (!document.hidden) sync(); });
     const nt = document.getElementById('toast'); if (nt) new MutationObserver(() => { if (cur && nt.textContent.trim()) toast(nt.textContent.trim()); }).observe(nt, { childList: true, characterData: true, subtree: true });
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('click', e => { const g = e.target.closest('#sbwLayer .gt'); if (!g) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.innerHTML = `<h2>${esc(g.dataset.t)}</h2><img class="sbw-lb" src="${g.dataset.src}" alt="${esc(g.dataset.t)}"><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`; $('button', dlg).onclick = () => dlg.close(); dlg.showModal(); });
-    setInterval(() => { sync(); placeTrigger(); }, 700);
-    let last = 0; const loop = now => { if (!document.hidden) { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+    setInterval(() => { if (document.hidden) return; sync(); placeTrigger(); }, 700);
+    /* AUTO low-effects: if the page sustains under ~33 fps for 4 s (measured, not assumed), the decorative ambient layers (petals,
+     * embers, glow sweeps, filter pulses) are paused until it sustains over ~45 fps for 10 s. Gameplay, the simulation, rewards and
+     * the player's own display settings are never touched; this only stops purely decorative CSS animations. */
+    const auto = { samples: [], at: performance.now(), low: false, since: 0, prev: 0 };
+    const autoQuality = now => {
+      if (document.hidden) { auto.prev = 0; auto.samples.length = 0; return; }
+      if (auto.prev) { const dt = now - auto.prev; if (dt < 1000) auto.samples.push(dt); }   // ignore long gaps (tab switches, dialogs)
+      auto.prev = now;
+      const span = auto.low ? 10000 : 4000; if (now - auto.at < span) return;
+      auto.at = now; const s = auto.samples.splice(0).sort((a, b) => a - b), median = s.length > 30 ? s[s.length >> 1] : 0;
+      if (!median) return;
+      if (!auto.low && median > 30) { auto.low = true; autoLow = true; layer.setAttribute('data-auto-low', '1'); syncEffects(); }
+      else if (auto.low && median < 22 && now - auto.since > 10000) { auto.low = false; autoLow = false; layer.removeAttribute('data-auto-low'); syncEffects(); }
+      if (auto.low && !layer.hasAttribute('data-auto-low')) layer.setAttribute('data-auto-low', '1');
+      if (auto.low && !auto.since) auto.since = now; if (!auto.low) auto.since = 0;
+    };
+    window.__sbwAutoQuality = () => ({ low: auto.low });
+    let last = 0; const loop = now => { autoQuality(now); if (!document.hidden) { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     sync();
-    window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync, open: goScreen };
+    // Dojo Chest Claim Limit Bonus: one notice when the server-confirmed profile shows a higher Dojo tier (the upgrade settled),
+    // only while a base claim allowance is approved. Server values only; once per upgrade.
+    let dojoSeen = null;
+    addEventListener('shinobi-ryo-ledger', () => {
+      const st = ledger(); if (!st.authenticated || !st.profile) { dojoSeen = null; return; }
+      const t = Math.max(0, Math.min(6, Number(st.profile.dojo) || 0));
+      if (!dojoSeen || dojoSeen.a !== st.account) { dojoSeen = { a: st.account, t }; return; }
+      if (t <= dojoSeen.t) { dojoSeen.t = t; return; }
+      dojoSeen.t = t; const ca = window.AdventureChest?.snapshot?.chest?.claimAllowance;
+      if (ca && ca.active) notice('DOJO UPGRADE COMPLETE!', `Your Dojo is now Tier ${ROMAN[t]}. Chest Claim Bonus: +${fmt(t * (Number(ca.bonusPerTierRyo) || 100000))} Ryo. Your personal Chest claim allowance has increased, subject to reward-pool funding and today's approved budget. Open your Chest to review your available claim.`);
+    });
+    // Withdrawal result popup (owner request 2026-11-11): a withdrawal that was still pending finalizes later (here, in the Chest or
+    // from the Ryo Wallet panel). One notice per request when the server status moves from pending to confirmed or refunded in this
+    // page session; withdrawals that answer at once are shown by the Chest's own result popup. Server status only.
+    let payoutSeen = null;
+    // The shared dialog may be showing a checkout, a form or another notice: queue behind it instead of replacing it.
+    const noticeWhenFree = (title, text) => { if (dlg && dlg.open) { setTimeout(() => noticeWhenFree(title, text), 1500); return; } notice(title, text); };
+    addEventListener('shinobi-ryo-ledger', () => {
+      const st = ledger(); if (!st.authenticated || !Array.isArray(st.withdrawals)) { payoutSeen = null; return; }
+      if (!payoutSeen || payoutSeen.a !== st.account) payoutSeen = { a: st.account, s: new Map(), done: new Set() };
+      for (const w of st.withdrawals) {
+        const id = w && w.request_id; if (!id) continue;
+        const was = payoutSeen.s.get(id); payoutSeen.s.set(id, w.status);
+        if (was !== 'pending' || w.status === 'pending' || payoutSeen.done.has(id)) continue;
+        payoutSeen.done.add(id); const amount = fmt(Math.floor(Number(w.amount) || 0));
+        if (w.status === 'confirmed') noticeWhenFree('WITHDRAWAL SUCCESSFUL', `Your withdrawal of ${amount} Ryo has finalized and was sent to your connected wallet.`);
+        else if (w.status === 'refunded') noticeWhenFree('WITHDRAWAL FAILED', `Your withdrawal of ${amount} Ryo did not go through. Your reserved Ryo was returned to your Game Balance.`);
+      }
+    });
+    window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync, open: goScreen,
+      drawHero: (c, h, sc, now) => drawHero(c, h, sc, now) };   // the Expedition Hall draws the same original portraits
   }
   init().catch(e => console.error('Website designs could not be applied:', e));
 })();

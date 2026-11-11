@@ -7,7 +7,7 @@ function replaceOne(s,a,b){const n=s.split(a).length-1;if(n!==1)throw Error('Com
 function refreshSources(app=path.join(__dirname,'app')){
  const dest=path.join(app,'public/assets/combat-rules');fs.mkdirSync(dest,{recursive:true});
  for(const f of ['rules.js','client.js'])fs.copyFileSync(path.join(__dirname,'combat-rules',f),path.join(dest,f));
- for(const [src,name]of [['rules.js','combat-rules.cjs'],['identity.cjs','combat-identity.cjs'],['chakra.cjs','combat-chakra.cjs'],['adventure.cjs','combat-adventure.cjs'],['hunt.cjs','combat-hunt.cjs'],['transfer.cjs','combat-transfer.cjs']])fs.copyFileSync(path.join(__dirname,'combat-rules',src),path.join(app,'server',name));
+ for(const [src,name]of [['rules.js','combat-rules.cjs'],['identity.cjs','combat-identity.cjs'],['chakra.cjs','combat-chakra.cjs'],['adventure.cjs','combat-adventure.cjs'],['hunt.cjs','combat-hunt.cjs'],['transfer.cjs','combat-transfer.cjs'],['duty.cjs','combat-duty.cjs']])fs.copyFileSync(path.join(__dirname,'combat-rules',src),path.join(app,'server',name));
 }
 function applyCombatRules(app=path.join(__dirname,'app')){
  refreshSources(app);
@@ -21,6 +21,8 @@ function applyCombatRules(app=path.join(__dirname,'app')){
   return replaceOne(s,'return {pending:d.pending/1000,',"return {combatVersion:1,deployed:d.team||[],chakra:require('./combat-chakra.cjs').snapshot(profile,store.now()),attackAck:Object.fromEntries(Object.entries(d.combatSessions?.[report?.killSession]?.heroes||{}).map(([id,v])=>[id,v.seen])),pending:d.pending/1000,");
  });
  patch('server/store.cjs',s=>{
+  // Chakra rules (owner decision 2026-11-10): a hero moved to Reserve stops recovering; moved back, it recovers from now.
+  s=replaceOne(s,'else if(!ready)p.battleReady=p.battleReady.filter(n=>n!==id);',"else if(!ready)p.battleReady=p.battleReady.filter(n=>n!==id);require('./combat-chakra.cjs').setReserve(p.heroes.find(h=>h.tokenId===id),!p.battleReady.includes(id),this.now(),p.dojo);");
   s=replaceOne(s,"return require('./economy.cjs').normalizeProfile(row.data)","const before=JSON.stringify(row.data),profile=require('./economy.cjs').normalizeProfile(row.data);if(before!==JSON.stringify(profile))await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[this.scope,wallet,JSON.stringify(profile)]);return profile");
   s=replaceOne(s,"if(ready&&!p.battleReady.includes(id))", "if(p.heroes.find(h=>h.tokenId===id)?.chakra?.lockUntil>this.now())fail('Finish the Boss Hunt before changing its roster.',409);if(ready&&!p.battleReady.includes(id))");
   return replaceOne(s,"else await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[this.scope,wallet,JSON.stringify(row.profile_after)]);","else {const current=await this.profileLocked(c,wallet),latest=new Map(current.heroes.map(h=>[h.tokenId,h]));for(const h of row.profile_after.heroes){const old=latest.get(h.tokenId);if(old?.chakra)h.chakra=old.chakra}await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[this.scope,wallet,JSON.stringify(require('./economy.cjs').normalizeProfile(row.profile_after))]);}");

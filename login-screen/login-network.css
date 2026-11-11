@@ -1,0 +1,27 @@
+/* Live network line over the painted Devnet note of the artwork (art y 804–833, x 590–946 on 1536 × 1024). */
+#loginScreen.reference-login-exact .login-content { container-type: inline-size; }
+#loginScreen.reference-login-exact .login-network-note {
+  position: absolute;
+  left: 38.4114583333%;
+  width: 23.1770833333%;
+  top: 78.515625%;
+  height: 2.83203125%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(#0c0f31, #111340);
+  border-radius: 4px;
+  box-shadow: 0 0 6px 4px #0e1037;
+  color: #d6d3ee;
+  font: 500 calc(min(100vw, 150dvh) * 0.0098) / 1 system-ui, sans-serif;
+  font-size: 0.98cqw;   /* same scale as the artwork */
+  letter-spacing: .01em;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+/* Portrait phones already show the page's own notice (with the network line) over this part of the artwork. */
+@media (max-width: 650px) and (orientation: portrait) {
+  #loginScreen.reference-login-exact .login-network-note { display: none; }
+}

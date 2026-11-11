@@ -16,8 +16,16 @@
 #sbwLayer .hs.top{z-index:40}
 #sbwLayer .hs.act>.sl{animation:sbw-actGlow 2.4s ease-in-out infinite}
 #sbwLayer .sh>.sl::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.3) 50%,transparent 60%);background-size:250% 100%;background-position:130% 0;animation:sbw-sweep 6.5s infinite;animation-delay:calc(var(--i,0)*.37s)}
+/* Performance (owner request 2026-11-10): these glows used to animate filter / box-shadow / background-position, which
+ * repaint on the main thread every frame. They now animate only transform and opacity (compositor-only); the glow is a
+ * static shadow on a pseudo-element whose opacity pulses. */
+#sbwLayer .sh>.sl:not(:has(*)){overflow:hidden}
+#sbwLayer .sh>.sl:not(:has(*))::after{inset:0 auto 0 0;width:250%;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.3) 50%,transparent 60%);background-size:auto;background-position:0 0;transform:translateX(-78%);will-change:transform;animation:sbw-sweepT 6.5s infinite;animation-delay:calc(var(--i,0)*.37s)}
 #sbwLayer .pu>.sl{animation:sbw-pulse 2.4s ease-in-out infinite}
+#sbwLayer .pu>.sl::before,#sbwLayer .chestbtn>.sl::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;background:rgba(255,236,170,.12);box-shadow:0 0 12px 1px rgba(255,180,40,.85)}
+#sbwLayer .pu>.sl::before{animation:sbw-glowO 2.4s ease-in-out infinite}
 #sbwLayer .pu:hover>.sl{animation:none}
+#sbwLayer .pu:hover>.sl::before{animation:none}
 #sbwLayer .bob>.sl{animation:sbw-bob 2.8s ease-in-out infinite;animation-delay:calc(var(--i,0)*-.35s)}
 #sbwLayer .breathe>.sl{animation:sbw-breathe 3.2s ease-in-out infinite}
 #sbwLayer .sway>.sl{transform-origin:50% 4%;animation:sbw-sway 5s ease-in-out infinite}
@@ -37,14 +45,16 @@
 #sbwLayer .chestbtn{z-index:8}
 #sbwLayer .chestbtn .cbt{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;font-weight:700;line-height:1;color:#f6f0ff;text-shadow:0 1px 2px #000;pointer-events:none;overflow:hidden;font-family:Rajdhani,'Arial Narrow','Roboto Condensed',system-ui,sans-serif}
 #sbwLayer .chestbtn .cdot{position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff7a7a,#e8142a 60%,#a00a1a);border:1.5px solid #ffc2c2;box-shadow:0 0 10px #ff2a2a;pointer-events:none;animation:sbw-dp 1.4s ease-in-out infinite;z-index:3}
-#sbwLayer .chestbtn>.sl{animation:sbw-chestGlow 2.2s ease-in-out infinite}
+#sbwLayer .chestbtn>.sl::before{animation:sbw-glowO 2.2s ease-in-out infinite}
+#sbwLayer .chestbtn:hover>.sl::before{animation:none}
+#sbwLayer .chestbtn .cdot::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;box-shadow:0 0 18px 4px #ff2a2a;opacity:0;animation:sbw-glowO 1.4s ease-in-out infinite}
 #sbwLayer .chestbtn:hover>.sl{filter:brightness(1.25) drop-shadow(0 0 12px #ffb02a)}
 #sbwLayer .fx{position:absolute;pointer-events:none;z-index:3}
-#sbwLayer .fx.glow{border-radius:50%;background:radial-gradient(closest-side,rgba(var(--c),.85),rgba(var(--c),.3) 45%,transparent);mix-blend-mode:screen;opacity:var(--o,1);animation:sbw-flick var(--d,1.2s) ease-in-out infinite alternate}
-#sbwLayer .fx.moon{border-radius:50%;background:radial-gradient(closest-side,rgba(205,225,255,.75),rgba(150,180,255,.2) 50%,transparent);mix-blend-mode:screen;animation:sbw-flick 4s ease-in-out infinite alternate}
-#sbwLayer .fx.zap{border-radius:50%;background:radial-gradient(closest-side,rgba(120,220,255,.95),rgba(60,120,255,.35) 45%,transparent);mix-blend-mode:screen;animation:sbw-zap 4.6s infinite}
+#sbwLayer .fx.glow{border-radius:50%;background:radial-gradient(closest-side,rgba(var(--c),.85),rgba(var(--c),.3) 45%,transparent);opacity:var(--o,1);animation:sbw-flick var(--d,1.2s) ease-in-out infinite alternate}
+#sbwLayer .fx.moon{border-radius:50%;background:radial-gradient(closest-side,rgba(205,225,255,.75),rgba(150,180,255,.2) 50%,transparent);animation:sbw-flick 4s ease-in-out infinite alternate}
+#sbwLayer .fx.zap{border-radius:50%;background:radial-gradient(closest-side,rgba(120,220,255,.95),rgba(60,120,255,.35) 45%,transparent);animation:sbw-zap 4.6s infinite}
 #sbwLayer .fx.shim,#sbwLayer .fx.bar,#sbwLayer .fx.chev{overflow:hidden;border-radius:6px}
-#sbwLayer .fx.shim::after,#sbwLayer .fx.bar::after,#sbwLayer .fx.chev::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%);animation:sbw-shim var(--d,2.4s) ease-in-out infinite;mix-blend-mode:screen}
+#sbwLayer .fx.shim::after,#sbwLayer .fx.bar::after,#sbwLayer .fx.chev::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%);animation:sbw-shim var(--d,2.4s) ease-in-out infinite}
 #sbwLayer .fx.bar::after{background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.8) 50%,transparent 70%)}
 #sbwLayer .fx.chev::after{background:linear-gradient(90deg,transparent 20%,rgba(255,200,60,.9) 50%,transparent 80%);animation-duration:1.2s}
 #sbwLayer .fx.ring{border:2px solid #ffd35a;border-radius:50%;animation:sbw-ping 1.8s infinite}
@@ -52,7 +62,7 @@
 #sbwLayer .fx.avatar{border-radius:8px;box-shadow:0 0 18px 2px #9b5cff,inset 0 0 12px #9b5cff;animation:sbw-br 2.6s infinite}
 #sbwLayer .fx.twinkle{width:0;height:0}
 #sbwLayer .fx.twinkle::after{content:"✦";position:absolute;left:-11px;top:-14px;font-size:22px;color:#fff7c8;text-shadow:0 0 8px #ffd35a,0 0 14px #ff9a2a;animation:sbw-tw 1.8s infinite;animation-delay:var(--dl,0s)}
-#sbwLayer .fx.ellipse{border-radius:50%;--a:0deg;background:conic-gradient(from var(--a),transparent 0 8%,rgba(var(--c),.95) 18%,transparent 30% 55%,rgba(var(--c),.95) 68%,transparent 80%);-webkit-mask:radial-gradient(closest-side,transparent 86%,#000 90%,#000 97%,transparent);mask:radial-gradient(closest-side,transparent 86%,#000 90%,#000 97%,transparent);filter:drop-shadow(0 0 6px rgba(var(--c),.9));mix-blend-mode:screen;animation:sbw-spinA 3.2s linear infinite}
+#sbwLayer .fx.ellipse{border-radius:50%;--a:0deg;background:conic-gradient(from var(--a),transparent 0 8%,rgba(var(--c),.95) 18%,transparent 30% 55%,rgba(var(--c),.95) 68%,transparent 80%);-webkit-mask:radial-gradient(closest-side,transparent 86%,#000 90%,#000 97%,transparent);mask:radial-gradient(closest-side,transparent 86%,#000 90%,#000 97%,transparent);filter:drop-shadow(0 0 6px rgba(var(--c),.9));animation:sbw-spinA 3.2s linear infinite}
 #sbwLayer .fx.spinc{border-radius:50%;background-repeat:no-repeat;animation:sbw-spin 6s linear infinite;z-index:4}
 #sbwLayer .fx.embers i{position:absolute;bottom:-6px;width:5px;height:5px;border-radius:50%;background:rgb(var(--c));box-shadow:0 0 8px 3px rgba(var(--c),.8);animation:sbw-rise linear infinite;opacity:0}
 #sbwLayer .petals{position:absolute;inset:0;pointer-events:none;z-index:20;overflow:hidden}
@@ -60,15 +70,19 @@
 #sbwLayer .picked>.sl{box-shadow:0 0 0 3px #ffcf4a,0 0 26px 6px rgba(255,190,60,.85);transform:translateY(-5px)}
 #sbwLayer .md{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:12px;font:600 16px Rajdhani,system-ui,sans-serif;color:#f5efff}
 @keyframes sbw-scrIn{from{opacity:0;filter:blur(6px) brightness(1.6)}}
+/* AUTO low-effects (website-design.js autoQuality): decorative ambient animations pause when the page is struggling */
+#sbwLayer[data-auto-low] .fx, #sbwLayer[data-auto-low] .fx *, #sbwLayer[data-auto-low] .fx::before, #sbwLayer[data-auto-low] .fx::after, #sbwLayer[data-auto-low] .fx *::before, #sbwLayer[data-auto-low] .fx *::after, #sbwLayer[data-auto-low] .petals i, #sbwLayer[data-auto-low] .glowp>.sl, #sbwLayer[data-auto-low] .hs.act>.sl,
+#sbwLayer[data-auto-low] .sh>.sl::after, #sbwLayer[data-auto-low] .breathe { animation-play-state: paused !important; }
 @keyframes sbw-sweep{0%,55%{background-position:130% 0}100%{background-position:-130% 0}}
 @keyframes sbw-sweepB{from{background-position:130% 0}to{background-position:-130% 0}}
-@keyframes sbw-pulse{50%{filter:brightness(1.3) drop-shadow(0 0 10px rgba(255,180,40,.9));transform:scale(1.03)}}
+@keyframes sbw-pulse{50%{transform:scale(1.03)}}
+@keyframes sbw-glowO{50%{opacity:1}}
+@keyframes sbw-sweepT{0%,55%{transform:translateX(-78%)}100%{transform:translateX(78%)}}
 @keyframes sbw-bob{50%{transform:translateY(-6px)}}
 @keyframes sbw-breathe{50%{transform:scale(1.045);filter:brightness(1.18)}}
 @keyframes sbw-sway{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.6deg)}}
 @keyframes sbw-actGlow{50%{filter:brightness(1.25) drop-shadow(0 0 10px rgba(180,110,255,.9))}}
 @keyframes sbw-glowP{50%{filter:drop-shadow(0 0 12px #9b5cff)}}
-@keyframes sbw-chestGlow{50%{filter:brightness(1.22) drop-shadow(0 0 10px #ffae2a)}}
 @keyframes sbw-flick{from{opacity:calc(var(--o,1)*.45);transform:scale(.9)}to{opacity:var(--o,1);transform:scale(1.1)}}
 @keyframes sbw-zap{0%,100%{opacity:0}4%{opacity:.9}6%{opacity:.1}9%{opacity:.8}14%{opacity:0}60%{opacity:0}62%{opacity:.7}66%{opacity:0}}
 @keyframes sbw-shim{from{transform:translateX(-120%)}to{transform:translateX(120%)}}
@@ -85,7 +99,7 @@
 @keyframes sbw-shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 @keyframes sbw-stShake{20%{translate:-5px 3px}40%{translate:5px -3px}60%{translate:-4px -2px}80%{translate:4px 2px}}
 @keyframes sbw-tick{50%{transform:scale(1.12);color:#fff}}
-@keyframes sbw-dp{50%{transform:scale(1.18);box-shadow:0 0 18px 4px #ff2a2a}}
+@keyframes sbw-dp{50%{transform:scale(1.18)}}
 @keyframes sbw-pop{from{transform:scale(.6);opacity:0}}
 @keyframes sbw-fadeIn{from{opacity:0}}
 @keyframes sbw-fadeUp{from{opacity:0;transform:translateY(16px)}}
@@ -131,3 +145,11 @@
 #sbwLayer .faq summary{font-size:19px;font-weight:700;cursor:pointer}
 #sbwLayer .faq p{margin:6px 0 0}
 @keyframes sbw-dring{0%{opacity:0;transform:scale(1.04)}15%{opacity:1;transform:scale(1)}70%{opacity:1}100%{opacity:0}}
+/* Header Chest button: its box-shadow pulse (from the chest UI) repainted the header every frame. The base shadow stays; the
+ * stronger glow is a pseudo-element whose opacity pulses (compositor-only), same colours and timing. */
+header.gc-header .gc-global-chest{position:relative;animation:none}
+header.gc-header .gc-global-chest::after{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 1px #efb84c,inset 0 0 18px #ee93252b,0 0 9px #ffc151,0 0 19px #ed96195c;opacity:0;animation:sbw-gcGlow 3.2s ease-in-out infinite alternate}
+@keyframes sbw-gcGlow{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){header.gc-header .gc-global-chest::after{animation:none}}
+/* On website screens the real Chest button is an invisible hit area over the website's own Chest artwork: no glow layer there. */
+body.sbw-active header.gc-header .gc-global-chest::after{display:none}
