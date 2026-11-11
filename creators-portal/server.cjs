@@ -496,6 +496,8 @@ async function adminSnapshot(store, wallet, body) {
   return { role, creators: creators.map(r => ({ ...publicCreator(r), wallet: r.wallet, application: r.application, reviewedBy: r.reviewed_by })), referrals: refs.map(r => ({ ...r, proof: { kills: r.proof?.kills || 0, verifiedStage: r.proof?.map || 1 } })), capacity,
     program: await program(store), shop: await query(store.pool, "SELECT * FROM ryo_creator_shop WHERE scope=$1 AND id='hero-pass' ORDER BY id", [store.scope]), audits, unreferred, ledger: entries, signals: signals.map(r => ({ ...r, signal: 'High referral enrollment in 24 hours; review, not proof of abuse' })), page: page(body) };
 }
+/** Staff hero grants per approver per rolling 24 h (STAFF_GRANT_DAILY_CAP in Render, whole 0..1000; default 5). */
+function staffGrantCap(env = process.env) { const v = Number(env.STAFF_GRANT_DAILY_CAP); return Number.isSafeInteger(v) && v >= 0 && v <= 1000 ? v : 5; }
 async function adminAction(store, wallet, body) {
   const access = adminRole(wallet, true), action = text(body.operation, 40), reason = text(body.reason, 500);
   if (['adjust', 'config', 'shop', 'manual-add', 'attribute-referral', 'grant-rescue-hero'].includes(action) && access !== 'approver') fail('An approver role is required for CP, inventory and program changes.', 403);
@@ -514,8 +516,15 @@ async function adminAction(store, wallet, body) {
   if (action === 'grant-rescue-hero') {
     const player = await resolvePlayer(store, body.player), rank = typeof body.rank === 'number' ? body.rank : NaN;
     if (player.wallet === wallet) fail('Staff cannot grant heroes to their own wallet.', 403);
-    const grant = await require('./prison-rescue.cjs').staffGrant(store, player.wallet, { rank, requestId: requestId(body.requestId) }, (c, row) =>
-      audit(store, c, wallet, 'admin.grant-rescue-hero', privateId(player.wallet), reason, { username: player.username, wallet: player.wallet, rank, hero: row.hero?.tokenId, grant: row.id }));
+    const grant = await require('./prison-rescue.cjs').staffGrant(store, player.wallet, { rank, requestId: requestId(body.requestId) }, async (c, row) => {
+      // Owner decision 2026-11-11: each approver may grant at most STAFF_GRANT_DAILY_CAP heroes (default 5) per rolling 24 h.
+      // Checked inside the grant transaction under the approver's own account lock (exact under concurrency, never the order
+      // other Creators flows use); a refusal rolls the grant back. Replays of a request return before this and never count.
+      await store.locked(c, wallet);
+      const used = Number((await c.query("SELECT COUNT(*) AS n FROM ryo_creator_audit WHERE scope=$1 AND actor=$2 AND action='admin.grant-rescue-hero' AND created>$3", [store.scope, wallet, store.now() - 86400000])).rows[0].n);
+      if (used >= staffGrantCap()) fail('Daily staff grant limit reached (' + staffGrantCap() + ' heroes per approver per 24 hours). Try again later.', 429);
+      await audit(store, c, wallet, 'admin.grant-rescue-hero', privateId(player.wallet), reason, { username: player.username, wallet: player.wallet, rank, hero: row.hero?.tokenId, grant: row.id });
+    });
     return { ok: true, replay: !!grant.replay, player: privateId(player.wallet), username: player.username, rank: grant.rank, hero: { name: grant.hero?.name, rank: grant.rank } };
   }
   // Owner request 2026-11-10: staff link a player to a referrer by hand (e.g. players who used a mistyped link). The game's own

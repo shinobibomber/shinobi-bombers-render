@@ -15,7 +15,7 @@ const address = () => web3.Keypair.generate().publicKey.toBase58();
   const pool = { async query(s, a) { const release = await lock(); try { return await db.query(s, a); } finally { release(); } }, async connect() { const release = await lock(); return { query: (s, a) => db.query(s, a), release }; } };
   const store = new Store(pool, 'rescue-staff-test', () => now);
   const approver = address(), operator = address();
-  Object.assign(process.env, { RYO_ADMIN_APPROVERS: approver, RYO_ADMIN_OPERATORS: operator, CREATORS_PORTAL_ENABLED: 'on' });
+  Object.assign(process.env, { RYO_ADMIN_APPROVERS: approver, RYO_ADMIN_OPERATORS: operator, CREATORS_PORTAL_ENABLED: 'on', STAFF_GRANT_DAILY_CAP: '100' });   // the cap itself: last section
   const rows = async (s, a = []) => (await pool.query(s, [store.scope, ...a])).rows;
   const player = async name => { const w = address(); await pool.query("INSERT INTO ryo_players(scope,wallet,player_id,username,username_key,created,last_login) VALUES($1,$2,$3,$4,$5,$6,$6)", [store.scope, w, crypto.randomUUID(), name, name.toLowerCase(), now]); await store.profile(w); return w; };
   const grant = (actor, body) => cp.adminAction(store, actor, { operation: 'grant-rescue-hero', reason: 'Prisoner freed before server rescue heroes', requestId: crypto.randomUUID(), ...body });
@@ -60,7 +60,20 @@ const address = () => web3.Keypair.generate().publicKey.toBase58();
   await assert.rejects(grant(approver, { player: 'Boss', rank: 4 }), /own wallet/, 'an approver cannot grant to their own wallet');
   for (const loose of [true, '', null, '3', [1]]) await assert.rejects(grant(approver, { player: 'LostHero', rank: loose }), /Genin, Chunin, Jonin, Elite or Legend/, 'rank must be a number: ' + JSON.stringify(loose));
   await assert.rejects(require('../app/server/prison-rescue.cjs').claim(store, w, { requestId: 'staff-' + crypto.randomUUID() }), /Invalid request ID/, 'player rescue ids cannot use the staff prefix');
+
+  // Owner decision 2026-11-11: at most STAFF_GRANT_DAILY_CAP grants per approver per rolling 24 h (default 5).
+  delete process.env.STAFF_GRANT_DAILY_CAP;
+  now += 2 * 86400000; const capPlayer = await player('CapFan'), sameId = crypto.randomUUID();
+  for (let i = 0; i < 5; i++) await grant(approver, { player: 'CapFan', rank: 0, ...(i === 0 ? { requestId: sameId } : {}) });
+  await assert.rejects(grant(approver, { player: 'CapFan', rank: 0 }), /Daily staff grant limit reached \(5 heroes per approver per 24 hours\)/, 'the 6th grant in 24 h is refused');
+  assert.equal((await rescues(capPlayer)).length, 5, 'the refused grant created no hero');
+  assert.equal((await grant(approver, { player: 'CapFan', rank: 0, requestId: sameId })).replay, true, 'a replay of an earlier grant still answers and never counts');
+  const second = address(); process.env.RYO_ADMIN_APPROVERS = approver + ',' + second;
+  assert.equal((await grant(second, { player: 'CapFan', rank: 1 })).rank, 1, 'another approver has their own limit');
+  now += 86400000 + 1; assert.equal((await grant(approver, { player: 'CapFan', rank: 0 })).rank, 0, 'the limit rolls after 24 hours');
+  process.env.STAFF_GRANT_DAILY_CAP = '0'; await assert.rejects(grant(second, { player: 'CapFan', rank: 0 }), /limit reached \(0 heroes/, 'STAFF_GRANT_DAILY_CAP=0 stops staff grants');
   await db.close();
   for (const [k, v] of [['RYO_ADMIN_APPROVERS', prior.a], ['RYO_ADMIN_OPERATORS', prior.o], ['CREATORS_PORTAL_ENABLED', prior.p]]) if (v === undefined) delete process.env[k]; else process.env[k] = v;
-  console.log('PASS: staff rescue grant — approver only with a reason, chosen rarity Genin..Legend (never Mythic), account-bound rescue hero, exactly once per request, refused during a settling purchase or with a full collection, audited in the same transaction.');
+  delete process.env.STAFF_GRANT_DAILY_CAP;
+  console.log('PASS: staff rescue grant — approver only with a reason, chosen rarity Genin..Legend (never Mythic), account-bound rescue hero, exactly once per request, refused during a settling purchase or with a full collection, audited in the same transaction, at most 5 per approver per 24 h (STAFF_GRANT_DAILY_CAP; replays never count).');
 })().catch(e => { console.error(e); process.exitCode = 1; });
