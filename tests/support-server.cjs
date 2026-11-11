@@ -215,8 +215,9 @@ const PREVIOUS = { service: '46df70d7a0564c642069570cc80dde9eef677b6111f587b9781
   const audit = (await call('owner', 'cc-audit', { limit: 100, prefix: 'cc.support' })).data.entries;
   assert(audit.length >= 8); assert(audit.every(e => e.hashValid));
   const repAudit = audit.find(e => e.action === 'cc.support.reply');
-  assert.equal(repAudit.data.length, [...STAFF_TEXT].length); assert.equal(repAudit.data.sha256, crypto.createHash('sha256').update(STAFF_TEXT).digest('hex')); assert.equal(repAudit.data.role, 'support');
-  const noteAudit = audit.find(e => e.action === 'cc.support.note'); assert.match(noteAudit.data.sha256, /^[0-9a-f]{64}$/);
+  assert.equal(repAudit.data.length, [...STAFF_TEXT].length); assert.equal(repAudit.data.sha256, undefined, 'no hash of the reply text is kept'); assert.equal(repAudit.data.role, 'support');
+  const noteAudit = audit.find(e => e.action === 'cc.support.note'); assert.equal(noteAudit.data.sha256, undefined); assert(audit.filter(e => e.action === 'cc.support.note').some(e => e.data.length === [...SECRET_NOTE].length), 'a note records its length');
+  assert(audit.every(e => e.data.sha256 === undefined), 'no support audit record keeps a hash of the text');
   const auditJson = JSON.stringify((await call('owner', 'cc-audit', { limit: 100 })).data.entries);
   for (const text of [STAFF_TEXT, SECRET_NOTE, 'It happened again today.', 'Reply number 5']) assert(!auditJson.includes(text), 'no ticket text in the audit chain: ' + text);
   assert(audit.some(e => e.action === 'cc.support.update' && e.data.reason && e.data.to), 'status changes keep their reason');

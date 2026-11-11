@@ -148,7 +148,8 @@ Help & Support, shipped ON, two-way replies, ticket text kept 30 days after the 
   rewards, withdrawals, wallets or NFTs, and `tests/support-server.cjs` proves the ledger is unchanged.
 - **Players never see staff wallets or internal notes.** A staff message reaches the player as "team".
 - **Audit.** Staff writes land on the shared hash chain as `cc.support.reply`, `cc.support.note` and `cc.support.update`. Message
-  text never enters the chain, only its length and SHA-256.
+  text never enters the chain, and neither does a hash of it (a short reply could be confirmed by guessing). Only its length is recorded, so
+  the permanent chain cannot outlive the 30-day text retention.
 - **Retention.** Ticket text (subject, order link and every message, internal notes included) is replaced with "[expired]" 30 days
   after the ticket is resolved or closed. There is no scheduler: it runs inside the ticket actions, and every player read and every
   staff read or write applies it first, so expired text is never shown. Open tickets are kept. A reply that reopens a resolved ticket

@@ -503,7 +503,7 @@ async function updateIncident(ctx, wallet, body) {
 /* ---------- Support tickets: staff writes (support/server.cjs holds the rules) ----------
  * reply: a message the player sees (status becomes awaiting_player unless one is chosen); note: internal, never shown to the
  * player; update: status and/or assignment, with a reason. All three run through write() and land on the audit chain as
- * cc.support.*; message text never enters the chain, only its length and SHA-256. */
+ * cc.support.*; message text never enters the chain, and neither does a hash of it (a short reply could be confirmed by guessing): only its length. */
 async function supportWrite(ctx, wallet, action, body, kind) {
   const S = require('./support.cjs'), id = Number.isSafeInteger(body.id) && body.id > 0 ? body.id : fail('Choose a ticket.');
   const message = kind === 'update' ? null : S.clean(body.message, 'The message', 1, S.LIMITS.bodyMax, true), expected = kind === 'note' ? null : version(body.expectedVersion);
@@ -517,7 +517,7 @@ async function supportWrite(ctx, wallet, action, body, kind) {
   }
   return write(ctx, wallet, action, body, 'support.write', async (c, { now }) => {
     const r = await S.staffChange(c, { scope: ctx.store.scope, wallet, now, id, expected, kind, message, status, assign });
-    return { result: r, audit: 'support.' + kind, data: { id, from: r.from, to: r.status, ...(message ? { length: [...message].length, sha256: S.sha(message) } : {}), ...(why ? { reason: why } : {}), ...(assign ? { assign } : {}) } };
+    return { result: r, audit: 'support.' + kind, data: { id, from: r.from, to: r.status, ...(message ? { length: [...message].length } : {}), ...(why ? { reason: why } : {}), ...(assign ? { assign } : {}) } };
   });
 }
 

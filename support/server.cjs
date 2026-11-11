@@ -15,7 +15,6 @@
  * rewards, withdrawals, wallets or NFTs. Every staff write is audited there (message text never enters the audit chain).
  * Retention: ticket text (subject, order link and every message) is replaced with "[expired]" 30 days after the ticket was
  * resolved or closed. It runs lazily inside the ticket actions (there is no scheduler); open tickets are kept. */
-const crypto = require('node:crypto');
 
 const CATEGORIES = ['payment', 'withdrawal', 'hero', 'reward', 'bug', 'account', 'other'];
 const STATUSES = ['submitted', 'triaged', 'investigating', 'awaiting_player', 'resolved', 'closed'];
@@ -52,7 +51,6 @@ const category = v => (CATEGORIES.includes(v) ? v : fail('Choose a category: ' +
 const status = v => (STATUSES.includes(v) ? v : fail('Choose a status: ' + STATUSES.join(', ') + '.'));
 /** Serializes one wallet's ticket writes. An advisory lock, so a ticket never creates or locks the wallet's money account row. */
 const lockWallet = (c, scope, wallet) => c.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['ryo_support:' + scope + ':' + wallet]);
-const sha = t => crypto.createHash('sha256').update(String(t)).digest('hex');
 
 /** Control and bidi-override characters become spaces. Multi-line text keeps its line breaks (never more than one blank line). */
 function clean(value, label, min, max, multiline = false) {
@@ -199,4 +197,4 @@ async function staffChange(c, { scope, wallet, now, id, expected, kind, message,
   return { id, from: t.status, status: next, version: expected + 1 };
 }
 
-module.exports = { SCHEMA, CATEGORIES, STATUSES, LIMITS, RETENTION_MS, EXPIRED, clean, status, sha, expire, playerState, submit, view, reply, staffList, staffView, staffChange };
+module.exports = { SCHEMA, CATEGORIES, STATUSES, LIMITS, RETENTION_MS, EXPIRED, clean, status, expire, playerState, submit, view, reply, staffList, staffView, staffChange };
