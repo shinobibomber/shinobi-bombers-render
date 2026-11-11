@@ -158,7 +158,12 @@ const address = () => web3.Keypair.generate().publicKey.toBase58();
   const used = await T.budgetUsed(store, store.pool, now), cap = used + 40000;   // everything spent or claimed above counts
   assert(used >= 4 * summonPrice, 'chest spends and claims of the last 24 h are both counted: ' + used);
   await fixture.budget(store, { dailyCapRyo: cap, perClaimMaxRyo: 50000, evidence: 'fixture' });
-  await store.transaction(async c => assert.equal(await T.chestLimit(store, c), Math.min(50000, cap - used), 'chest spends use the daily budget'));
+  await store.transaction(async c => assert.equal(await T.chestLimit(store, c), cap - used, 'chest spends use the daily budget'));
+  // Owner decision 2026-11-11: no per-purchase cap on Chest-funded purchases (the per-claim maximum no longer applies to them);
+  // only the remaining daily budget, the player's Chest, the funded pool and custody.
+  await fixture.budget(store, { dailyCapRyo: used + 400000, perClaimMaxRyo: 50000, evidence: 'fixture' });
+  await store.transaction(async c => assert.equal(await T.chestLimit(store, c), 400000, 'a Chest-funded purchase may use more than the per-claim maximum'));
+  await fixture.budget(store, { dailyCapRyo: cap, perClaimMaxRyo: 50000, evidence: 'fixture' });
   await pool.query("INSERT INTO ryo_chest_spends(scope,wallet,request_id,product,amount,status,created) VALUES($1,$2,'budget-refunded','summon',1000000,'refunded',$3)", [store.scope, address(), now]);
   assert.equal(await T.budgetUsed(store, store.pool, now), used, 'refunded spends release the budget');
   const fresh = await player(10);

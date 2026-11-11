@@ -28,7 +28,7 @@ claims, so one wallet's claims, spends and withdrawals serialize):
 - the funded reward pool (income minus everything claimed or chest-spent);
 - custody tokens minus liabilities (balances, pending withdrawals, pending purchases);
 - on live, the **approved daily reward budget, shared with claims**: the rolling 24-hour sum of claims plus pending or confirmed
-  chest spends, capped by the per-claim maximum.
+  chest spends. Since 2026-11-11 (owner decision) a chest spend has no per-purchase cap: it is limited by the player's Chest, the remaining daily budget, the funded pool and custody.
 
 Reconciliation (economic dashboard) needs no new term. The chest liability (Σ pending) moves to a pending-purchase liability and
 then leaves custody at settlement. "Spent" includes the confirmed purchase, and the pool falls by the spent amount.

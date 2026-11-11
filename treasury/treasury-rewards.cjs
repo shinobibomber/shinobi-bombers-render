@@ -73,7 +73,10 @@ async function assertMinimumClaim(store, c, credited, chestRyo) {
 }
 /* Dojo Chest Claim Limit Bonus: every Dojo tier adds 100,000 Ryo to the personal claim allowance (Legendary, tier 6: +600,000),
  * derived from the saved profile in the claim transaction (never stored, never from the browser). Only when the approved
- * budget sets basePersonalAllowanceRyo; the per-claim maximum, the daily budget, pool funding and custody always still apply. */
+ * budget sets basePersonalAllowanceRyo (the allowance without a Dojo, at most the per-claim maximum).
+ * Owner decision 2026-11-11 ("every dojo tier increase by 100k without affecting the maximum claim of 200k"): the bonus is added
+ * ON TOP of the per-claim maximum, so a player's own cap is base + tier x 100,000 (the per-claim maximum caps players without a
+ * personal allowance only). The daily budget, the minimum claim, pool funding and custody always still apply. */
 const DOJO_CLAIM_BONUS_RYO = 100000, DOJO_MAX_TIER = 6;
 async function dojoTier(store, c, wallet) {
   const t = Number((await c.query("SELECT data->'dojo' AS dojo FROM ryo_profiles WHERE scope=$1 AND wallet=$2", [store.scope, wallet])).rows[0]?.dojo);
@@ -112,7 +115,7 @@ async function claimLimit(store, c, wallet) {
   const remaining = budget.dailyCapRyo - await budgetUsed(store, c, now);
   if (remaining < 1) fail("Today's approved Chest reward budget has been fully claimed. Your earnings stay in your Chest; try again later.", 409);
   const personal = personalAllowance(budget, await dojoTier(store, c, wallet));
-  return Math.min(budget.perClaimMaxRyo, remaining, personal ?? Infinity);
+  return Math.min(personal ?? budget.perClaimMaxRyo, remaining);
 }
 /** Global rolling-24 h use of the approved reward budget: chest claims plus SR spent directly from chests on game services
  * (owner decision 2026-11-11: chest spending shares the daily budget, never the per-player claim timer). */
@@ -122,15 +125,17 @@ async function budgetUsed(store, c, now) {
     used += Number((await c.query("SELECT COALESCE(SUM(amount),0) AS n FROM ryo_chest_spends WHERE scope=$1 AND status IN ('pending','confirmed') AND created>$2", [store.scope, now - DAY])).rows[0].n);
   return used;
 }
-/** Maximum whole SR one chest-funded purchase may use (Infinity on beta): the approved daily budget and per-claim maximum,
- * without the per-player claim timer. Throws when no budget is approved or today's budget is used up. */
+/** Maximum whole SR one chest-funded purchase may use (Infinity on beta): what is left of the approved daily budget, without the
+ * per-player claim timer. Owner decision 2026-11-11: no per-purchase cap (the per-claim maximum no longer applies) as long as the
+ * player has the Chest balance; the shared daily budget, the funded pool and custody still apply (chest-spending.cjs).
+ * Throws when no budget is approved or today's budget is used up. */
 async function chestLimit(store, c) {
   if (!live()) return Infinity;
   const budget = await rewardBudget(store, c);
   if (!budget) fail('Chest rewards await an approved reward budget. Your earnings stay in your Chest.', 503);
   const remaining = budget.dailyCapRyo - await budgetUsed(store, c, store.now());
   if (remaining < 1) fail("Today's approved Chest reward budget is used up. Your earnings stay in your Chest; try again later.", 409);
-  return Math.min(budget.perClaimMaxRyo, remaining);
+  return remaining;
 }
 /** Live only: when this wallet may claim next (0 = now). null on beta (field omitted). */
 async function nextClaimAt(store, c, wallet) {
@@ -154,13 +159,13 @@ async function claimAllowance(store, c, wallet, known) {
   if (!budget || !Number.isSafeInteger(budget.basePersonalAllowanceRyo)) return { active: false };
   const tier = await dojoTier(store, c, wallet), bonus = tier * DOJO_CLAIM_BONUS_RYO;
   const remaining = Math.max(0, budget.dailyCapRyo - await budgetUsed(store, c, store.now())), personal = personalAllowance(budget, tier);
-  const effective = Math.min(budget.perClaimMaxRyo, remaining, personal ?? Infinity);
-  // What sets today's maximum: the remaining daily budget (below the other caps), the hard per-claim ceiling (below the
-  // personal allowance), or the personal allowance itself.
-  const ownCap = Math.min(budget.perClaimMaxRyo, personal ?? Infinity);
-  const limitedBy = remaining < ownCap ? 'budget' : personal !== null && personal > budget.perClaimMaxRyo ? 'ceiling' : personal !== null ? 'personal' : 'ceiling';
-  return { active: personal !== null, dojoTier: tier, dojoBonusRyo: bonus, bonusPerTierRyo: DOJO_CLAIM_BONUS_RYO, baseAllowanceRyo: budget.basePersonalAllowanceRyo ?? null,
-    personalAllowanceRyo: personal, hardCeilingRyo: budget.perClaimMaxRyo, dailyRemainingRyo: remaining, effectiveRyo: effective, limitedBy };
+  // The Dojo bonus sits on top of the per-claim maximum: the personal allowance is the player's own cap; only the remaining
+  // daily budget can lower it. hardCeilingRyo = the highest personal allowance (Legendary Dojo), for the Dojo screen.
+  const effective = Math.min(personal, remaining);
+  const limitedBy = remaining < personal ? 'budget' : 'personal';
+  return { active: true, dojoTier: tier, dojoBonusRyo: bonus, bonusPerTierRyo: DOJO_CLAIM_BONUS_RYO, baseAllowanceRyo: budget.basePersonalAllowanceRyo,
+    personalAllowanceRyo: personal, hardCeilingRyo: budget.basePersonalAllowanceRyo + DOJO_MAX_TIER * DOJO_CLAIM_BONUS_RYO, perClaimMaxRyo: budget.perClaimMaxRyo,
+    dailyRemainingRyo: remaining, effectiveRyo: effective, limitedBy };
 }
 
 /** Fields merged into the public `config` action on live (beta: none, so its payload is unchanged). */

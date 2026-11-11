@@ -51,12 +51,12 @@ export function ChestManager({snapshot:s,initialPage,onClose}:{snapshot:Snapshot
  </Modal>
 }
 /* Dojo Chest Claim Limit Bonus: the claim allowance the server applies (personal allowance = base + Dojo tier x 100,000, always
- * within the per-claim maximum, today's budget and the funded pool). Shown only while the approved budget sets a base allowance. */
+ * on top of the per-claim maximum since 2026-11-11 (owner), within today's budget and the funded pool). Shown only while the approved
+ * budget sets a base allowance. */
 const DOJO=['No Dojo','Apprentice Dojo','Shinobi Dojo','Veteran Dojo','Master Dojo','Grandmaster Dojo','Legendary Dojo'],ROMAN=['0','I','II','III','IV','V','VI'];
 function ClaimDetails({c,wait}:{c:NonNullable<Snapshot['chest']>;wait:boolean}){
  const a=c.claimAllowance!,cap=a.effectiveRyo??0,available=Math.max(0,Math.min(Math.floor(c.pending),cap,Math.floor(c.pool)));
- const note=a.limitedBy==='ceiling'?'Your Dojo allows '+money(a.personalAllowanceRyo??0)+' Ryo per claim, but the approved per-claim maximum is '+money(a.hardCeilingRyo??0)+' Ryo.'
-  :a.limitedBy==='budget'?'Today\'s approved reward budget limits this claim to '+money(a.dailyRemainingRyo??0)+' Ryo. Your remaining rewards stay safely recorded in your Chest.'
+ const note=a.limitedBy==='budget'?'Today\'s approved reward budget limits this claim to '+money(a.dailyRemainingRyo??0)+' Ryo. Your remaining rewards stay safely recorded in your Chest.'
   :c.pool<cap&&c.pending>=cap?'Reward pool funding limits this claim right now. Your remaining rewards stay safely recorded in your Chest.':'';
  const openDojo=()=>{const w=window as unknown as {GlobalChestUI?:{close():void};WebsiteDesign?:{open(k:string):void}};w.GlobalChestUI?.close();w.WebsiteDesign?.open('dojo-upg')};
  return <section className="gc-overview gc-claim-details" data-gc-claim-details><h2><Icon name="chest"/>Chest Claim Details <span className="gc-dojo-badge">Dojo Bonus</span></h2>

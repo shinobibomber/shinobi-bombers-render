@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Dojo claim bonus on top of the maximum, bigger Chest purchases
+
+- **Every Dojo tier now adds +100,000 Ryo to how much you can claim at once.** The bonus is added on top of the normal claim limit, so higher tiers always count: with the normal 200,000 Ryo limit, Legendary Dojo (Tier VI) lets you claim up to **800,000 Ryo** at once. Dojo tiers you already own count automatically.
+- **No per-purchase cap when paying with Chest rewards.** A single Summon, Fusion, Dojo or Training purchase can use as much of your Chest Ryo as it costs (for example a full ×15 summon), within today's reward budget.
+- Claims and Chest payments still share today's reward budget and need a funded reward pool. Claim timers (24 hours, Founders 12 hours) and the 100,000 Ryo minimum claim are unchanged.
+
 ## November 11, 2026 — Deposit and withdrawal results, Shrine fix, safer purchases
 
 - **Deposit and withdrawal results on screen.** After every deposit or withdrawal, a popup tells you how it went:

@@ -2,7 +2,7 @@
 /* Dojo Chest Claim Limit Bonus (owner request 2026-11-11), assembled server modules on simulated Mainnet (PGlite, controllable
  * clock, no RPC): personal allowance = approved base + Dojo tier x 100,000 (tiers 0..6, existing owners automatically), always
  * within the per-claim maximum, the remaining daily budget, pool/custody and the Chest; unset base = claims exactly as before;
- * 24 h / Founder 12 h cooldowns unchanged; failed claims consume nothing; concurrent claims; Chest spending limit unaffected;
+ * 24 h / Founder 12 h cooldowns unchanged; failed claims consume nothing; concurrent claims; Chest spending: no per-purchase cap, daily budget still applies;
  * the claim details sent to the Chest UI. */
 const fixture = require('./sr-revenue-fixture.cjs'); fixture.liveEconomy();
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
@@ -51,11 +51,17 @@ const H = 3600000, DAY = 24 * H;
   }
   // Never above the Chest.
   const small = await player(6, 250000); assert.equal((await claim(small)).credited, 250000, 'never more than the verified Chest');
-  // The hard per-claim ceiling below the personal allowance wins, and is reported.
-  await setBudget({ dailyCapRyo: 50000000, perClaimMaxRyo: 600000, basePersonalAllowanceRyo: 500000 });
-  const capped = await player(6, 2000000);
-  assert.equal((await T.claimInfo(store, store.pool, capped)).claimAllowance.limitedBy, 'ceiling');
-  assert.equal((await claim(capped)).credited, 600000, 'Legendary Dojo capped by the per-claim maximum');
+  // Owner decision 2026-11-11: the Dojo bonus is added ON TOP of the per-claim maximum ("every dojo tier increase by 100k without
+  // affecting the maximum claim of 200k"). Base 200,000 = per-claim maximum 200,000: no Dojo 200,000 ... Legendary 800,000.
+  await setBudget({ dailyCapRyo: 50000000, perClaimMaxRyo: 200000, basePersonalAllowanceRyo: 200000 });
+  for (const tier of [0, 1, 3, 6]) {
+    const w = await player(tier, 2000000), info = (await T.claimInfo(store, store.pool, w)).claimAllowance;
+    assert.deepEqual([info.personalAllowanceRyo, info.effectiveRyo, info.hardCeilingRyo, info.limitedBy], [200000 + tier * 100000, 200000 + tier * 100000, 800000, 'personal'], 'tier ' + tier + ' details');
+    assert.equal((await claim(w)).credited, 200000 + tier * 100000, 'tier ' + tier + ': the 200,000 maximum + ' + tier * 100000 + ' Dojo bonus');
+  }
+  // Players without a base allowance are still capped by the per-claim maximum (unchanged).
+  await setBudget({ dailyCapRyo: 50000000, perClaimMaxRyo: 200000 });
+  assert.equal((await claim(await player(6, 2000000))).credited, 200000, 'no base allowance: the per-claim maximum, as before');
   // The remaining daily budget wins, and is reported.
   const used = await T.budgetUsed(store, store.pool, now);
   await setBudget({ dailyCapRyo: used + 350000, perClaimMaxRyo: used + 350000 > 1100000 ? 1100000 : used + 350000, basePersonalAllowanceRyo: 500000 });
@@ -83,9 +89,17 @@ const H = 3600000, DAY = 24 * H;
   const both = await Promise.allSettled([claim(dup), claim(dup)]);
   assert.equal(both.filter(x => x.status === 'fulfilled').length, 1, 'one claim per cooldown under concurrency');
   assert.equal(await pending(dup), 3000000 - 1000000);
-  // Chest-funded purchases keep their own limit (no Dojo bonus).
-  assert.equal(await T.chestLimit(store, store.pool), 1100000, 'Chest spending limit = per-claim maximum, unaffected by Dojo');
+  // Chest-funded purchases (owner decision 2026-11-11, "no limit on chest-funded purchase as long as they have balance"): no
+  // per-purchase cap; only what is left of the shared daily budget (the Chest balance, pool and custody are checked by
+  // chest-spending.cjs). The Dojo bonus does not apply to them.
+  const left = 50000000 - await T.budgetUsed(store, store.pool, now);
+  assert.equal(await T.chestLimit(store, store.pool), left, 'Chest spending: the remaining daily budget, not the per-claim maximum');
+  await setBudget({ dailyCapRyo: 50000000, perClaimMaxRyo: 200000, basePersonalAllowanceRyo: 200000 });
+  assert(await T.chestLimit(store, store.pool) > 200000, 'a Chest-funded purchase is not capped at the 200,000 per-claim maximum');
+  const usedNow = await T.budgetUsed(store, store.pool, now);
+  await setBudget({ dailyCapRyo: usedNow + 1000, perClaimMaxRyo: usedNow + 1000 > 200000 ? 200000 : usedNow + 1000 });
+  assert.equal(await T.chestLimit(store, store.pool), 1000, 'the shared daily budget still limits Chest spending');
 
   network.built = builtBefore; await db.close();
-  console.log('PASS: Dojo claim bonus — base + tier x 100,000 for tiers 0..6 (existing owners automatic), never above the Chest, the per-claim maximum or the remaining daily budget (reported), unset base = exactly as before, budget validation, 24 h / Founder 12 h cooldowns unchanged, failed claims consume nothing, one claim under concurrency, Chest spending limit unaffected.');
+  console.log('PASS: Dojo claim bonus — base + tier x 100,000 for tiers 0..6 (existing owners automatic), on top of the per-claim maximum (base 200,000 = maximum 200,000: Legendary 800,000), never above the Chest or the remaining daily budget (reported), unset base = exactly as before, budget validation, 24 h / Founder 12 h cooldowns unchanged, failed claims consume nothing, one claim under concurrency, Chest spending: no per-purchase cap.');
 })().catch(e => { console.error(e); process.exitCode = 1; });

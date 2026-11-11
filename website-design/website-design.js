@@ -618,13 +618,15 @@
       const ca = window.AdventureChest?.snapshot?.chest?.claimAllowance, on = !!(ca && ca.active);
       [b.claimHead, ...b.claimCol, b.midVal, b.midLbl, b.preview].forEach(e => { e.hidden = !on; });
       if (on) {
-        const per = Number(ca.bonusPerTierRyo) || 100000, base = Number(ca.baseAllowanceRyo) || 0, ceiling = Number(ca.hardCeilingRyo) || 0, cur = tier * per;
+        const per = Number(ca.bonusPerTierRyo) || 100000, base = Number(ca.baseAllowanceRyo) || 0, cur = tier * per;
         setText(b.claimHead, 'CHEST CLAIM'); b.claimCol.forEach((e, i) => setText(e, '+' + fmt(i * per)));
         const mv = `<b>+${fmt(cur)}</b>`; if (b.midVal.innerHTML !== mv) b.midVal.innerHTML = mv; setText(b.midLbl, 'Chest Claim Bonus');
-        const allowance = bonus => Math.min(ceiling, base + bonus), capped = bonus => base + bonus > ceiling ? ` The approved per-claim maximum of ${fmt(ceiling)} Ryo applies.` : '';
+        // Owner decision 2026-11-11: the Dojo bonus sits on top of the per-claim maximum (server: base + tier x 100,000, limited
+        // only by today's reward budget and the funded pool), so the allowance is simply base + bonus.
+        const allowance = bonus => base + bonus;
         setText(b.preview, next <= 6
-          ? `Chest Claim Bonus: +${fmt(cur)} → +${fmt(next * per)} Ryo at Tier ${ROMAN[next]} (+${fmt(per)}). Claim allowance after the upgrade: ${fmt(allowance(next * per))} Ryo per claim.${capped(next * per)} Chakra recovery unchanged.`
-          : `Legendary Dojo: +${fmt(cur)} Ryo Chest Claim Bonus. Your claim allowance: ${fmt(allowance(cur))} Ryo per claim.${capped(cur)}`);
+          ? `Chest Claim Bonus: +${fmt(cur)} → +${fmt(next * per)} Ryo at Tier ${ROMAN[next]} (+${fmt(per)}). Claim allowance after the upgrade: ${fmt(allowance(next * per))} Ryo per claim. Chakra recovery unchanged.`
+          : `Legendary Dojo: +${fmt(cur)} Ryo Chest Claim Bonus. Your claim allowance: ${fmt(allowance(cur))} Ryo per claim.`);
       }
     }
   };
