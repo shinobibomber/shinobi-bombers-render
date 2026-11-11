@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 12, 2026 — Shinobi Activation card no longer blocks your phone screen
+
+- **On phones, the Shinobi Activation card now starts as a small pill** (⚡ Activation 3/15) in the corner. Tap it to see the full card.
+- **Minimize it anytime:** the full card has a – button that shrinks it back to the pill, on phones and computers. The game remembers your choice.
+- Your activation progress, reward rate and notices are unchanged.
+
 ## November 12, 2026 — Easier sign-in on phones and computers
 
 - **Sign in from your phone browser.** In Safari or Chrome on a phone, tapping **Phantom** or **Solflare** now opens Shinobi Bombers inside that wallet app, where you sign in as usual. If the app is not installed, the wallet's page offers the download.
