@@ -51,6 +51,7 @@ suites.push('mythic-poster-release.cjs');
 suites.push('command-center-server.cjs','command-center-ui.cjs','command-center-founders.cjs');
 suites.push('expedition-duty.cjs','expedition-server.cjs','expedition-ui.cjs');
 suites.push('perf-ui.cjs','auto-update.cjs','reward-pool.cjs','compression.cjs');
+suites.push('launch-stats-report.cjs');
 console.log('Global Chest regression runner · Node '+process.version+' · isolated fixtures only');
 const concurrency=Math.max(1,Math.min(2,Number(process.env.SHINOBI_TEST_CONCURRENCY)||1));
 if(concurrency===1){
