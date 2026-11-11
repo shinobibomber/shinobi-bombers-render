@@ -13,6 +13,7 @@ change financial configuration. Financial governance stays in the Observatory's 
 |---|---|
 | `server.cjs` | Staff API, copied to `app/server/command-center.cjs`. Every `cc-*` action re-derives wallet, roles and scope on the server. |
 | `schema.sql` | Additive, idempotent tables (`ryo_cc_*`) and `ryo_chat.hidden`. Appended once to `app/server/schema.sql`. |
+| `ops-views.cjs` | Batch A read-only views, copied to `app/server/command-center-views.cjs`: Game configuration status, Security center, Creators summary. |
 | `public/` | The console (`index.html`, `cc.js`, `cc-report.js`, `cc.css`). It is served from a fixed file map with `script-src 'self'` and `style-src 'self'`. |
 | `../apply-command-center.cjs` | Build step, run by `unpack.cjs` in two parts. Code and routes are applied before the network step; the schema is appended after the last schema step. It adds two exact-match routes to `service.cjs`: `cc-*` after `admin-*`, and the player `chat-report`. |
 | `../chat/server.cjs` | Enforces moderation. `chat-send` refuses muted or banned wallets under the sender's account row lock, `chat-list` hides hidden messages and returns `removed` plus the player's own `standing`, and `chat-report` files a report. |
@@ -118,13 +119,26 @@ command and the tab therefore always agree.
 - **Not audited.** Like other reads in this console, viewing a report writes no audit record.
 - **Not recorded by the game.** Sign-ups over time and daily active players are not recorded, so the tab doesn't show them.
 
+## Batch A: Game configuration, Security center, Creators summary
+
+Three views, built to the same rules as the Stats report: they read, they return no wallet lists and no environment values
+(only booleans, the release stage and the variable NAMES of switches), and anything the game does not record is shown as
+"Not implemented", never invented. A section that cannot be read says "unavailable" and is never shown as healthy.
+
+| View | Action | Permission | What it shows |
+|---|---|---|---|
+| Game configuration | `cc-config` | `config.read` (Owner, Approver, Operator, Viewer) | Every feature switch with its group (money, founders, rewards, gameplay), the effective value, where it comes from (default, environment or Control panel), the last change, and the hash-verified switch log; the release stage, launch hold and the public launch gates. **It never changes a switch.** Changes stay in `/admin/control`, which asks for a fresh wallet signature before it opens anything that touches money. |
+| Security center | `cc-security` | `security.read` (Owner, Approver, Operator) | Verification of the last 200 admin audit records (hashes and links) and of the switch log; staff role counts; active session counts (no tokens); staff write activity; findings (broken chain, critical incidents, one-wallet approval on). Failed sign-ins and request floods are not stored, so they are listed as not implemented. |
+| Incident register | `cc-incidents`, `cc-incident-open`, `cc-incident-update` | read: `security.read`; write: `security.manage` (Owner, Operator) | A staff notebook (title, severity, details, status). It changes nothing in the game. Writes use the standard staff-write rules (reason, idempotent request ID, version check, 30 a minute) and land on the audit chain as `cc.incident.*`. A resolved incident is final; at most 50 are open. Table: `ryo_cc_incidents`, additive. |
+| Creators summary | `cc-creators` | `creators.read` (Owner, Approver, Operator) | Aggregates from the Creators Portal: applications by status, Creator Points issued, spent and held, creator and player referrals, shop redemptions, Hero Pass campaigns and passes, rescue heroes, program settings. No names, wallets or applications. Approvals, adjustments and grants stay in the Creators Portal admin. Paid marketing campaigns have no backend and are listed as not implemented. |
+
 ## Not implemented (shown as such, never simulated)
 
 The following have no backend yet:
 
 - Guild, Team, DM, Trade and Event chat.
-- The Weekly Mission Pass, Founder's Council votes, Early Access scheduling, economy and treasury controls, creators and
-  marketing, events, game configuration, support tickets and the security center.
+- The Weekly Mission Pass, Founder's Council votes, Early Access scheduling, economy and treasury controls, paid marketing campaigns and
+  payouts, events and support tickets.
 - Player appeal forms.
 - Search by referral code or NFT serial.
 - New sign-up and daily/weekly active counts. The game records no creation time, and presence is
@@ -155,6 +169,10 @@ The following have no backend yet:
   - no wallets in the answer;
   - read-only SQL.
   `tests/command-center-ui.cjs` also generates the report as a Viewer under `style-src 'self'`.
+- `tests/command-center-views.cjs` covers Batch A: the role matrix, aggregates only (a secret, a launch-hold text, a database URL
+  and every wallet are absent from each answer), tamper detection on the audit chain and the switch log, the incident rules
+  (two writers, stale version, closed is final, idempotent replay, cap) and degradation when a table is missing.
+  `tests/command-center-ui.cjs` also opens an incident and resolves it in Chrome.
 - `tests/chat-screen.cjs` checks the player's side: reporting, the hidden-message drop, and the muted composer.
 - The `prelaunch-server`, `private-testing` and `site-check` suites assert that the console stays closed
   in the portal stage, follows the private pass, and serves only its four files.

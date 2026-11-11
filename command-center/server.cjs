@@ -42,6 +42,11 @@ const PERMISSIONS = Object.freeze({
   'founders.read': ['owner', 'approver', 'operator'],   // Founder NFT management (founders.cjs); full wallets, so not viewers
   'founders.manage': ['owner'],
   'stats.read': ['owner', 'approver', 'operator', 'viewer'],   // Stats report: totals only (stats-report.cjs), never wallets
+  // Batch A (ops-views.cjs): read-only views. None of them lists a wallet or an environment value.
+  'config.read': ['owner', 'approver', 'operator', 'viewer'],   // Game configuration status (switches, release stage, gates)
+  'security.read': ['owner', 'approver', 'operator'],           // Security center and the incident register
+  'security.manage': ['owner', 'operator'],                     // open / update incidents (notes only, no effect on the game)
+  'creators.read': ['owner', 'approver', 'operator'],           // Creators summary (aggregates only)
 });
 const envList = name => String(process.env[name] || '').split(',').map(s => s.trim()).filter(Boolean);
 async function rolesOf(store, db, wallet) {
@@ -452,6 +457,46 @@ async function changeRole(ctx, wallet, body, grant) {
   });
 }
 
+/* ---------- Incident register (Security center) ----------
+ * A staff notebook: title, severity, status and notes. It changes nothing in the game and moves nothing. Every change is an
+ * audited staff write (write(): row lock, idempotency, 30 per minute, hash-chained cc.incident.* record). */
+const INCIDENT_SEVERITIES = ['low', 'medium', 'high', 'critical'], INCIDENT_OPEN_CAP = 50;
+function staffText(value, label, min, max, multiline = false) {
+  // Control and bidi-override characters become spaces. Multi-line text keeps its line breaks (at most one blank line in a row).
+  const bad = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g, text = String(value ?? '').replace(/\r\n?/g, '\n').replace(bad, ' ');
+  const v = multiline ? text.split('\n').map(l => l.replace(/[ \t]+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim() : text.replace(/\s+/g, ' ').trim();
+  if ([...v].length < min || [...v].length > max) fail(label + ' must be ' + min + ' to ' + max + ' characters.');
+  return v;
+}
+async function incidents(ctx, body) {
+  const { store } = ctx, status = ['open', 'investigating', 'resolved'].includes(body.status) ? body.status : null;
+  const rows = (await store.pool.query('SELECT id,title,details,severity,status,version,opener,reason,created,updated,updated_by,resolution FROM ryo_cc_incidents WHERE scope=$1' + (status ? ' AND status=$2' : '') + " ORDER BY (status='resolved'), id DESC LIMIT 100", status ? [store.scope, status] : [store.scope])).rows;
+  return envelope(store, { incidents: rows.map(r => ({ id: Number(r.id), title: r.title, details: r.details, severity: r.severity, status: r.status, version: Number(r.version), openedBy: short(r.opener), reason: r.reason, created: num(r.created), updated: num(r.updated), updatedBy: short(r.updated_by), resolution: r.resolution })) });
+}
+async function openIncident(ctx, wallet, body) {
+  const title = staffText(body.title, 'The title', 3, 120), details = body.details ? staffText(body.details, 'The details', 1, 2000, true) : '', why = reason(body.reason);
+  if (!INCIDENT_SEVERITIES.includes(body.severity)) fail('Choose a severity: ' + INCIDENT_SEVERITIES.join(', ') + '.');
+  return write(ctx, wallet, 'cc-incident-open', body, 'security.manage', async (c, { now }) => {
+    const { store } = ctx;
+    if (Number((await c.query("SELECT COUNT(*) AS n FROM ryo_cc_incidents WHERE scope=$1 AND status<>'resolved'", [store.scope])).rows[0].n) >= INCIDENT_OPEN_CAP) fail('Fifty incidents are already open. Resolve some first.', 429);
+    const row = (await c.query('INSERT INTO ryo_cc_incidents(scope,title,details,severity,opener,reason,created,updated,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$7,$5) RETURNING id', [store.scope, title, details, body.severity, wallet, why, now])).rows[0];
+    return { result: { id: Number(row.id), status: 'open', version: 0 }, audit: 'incident.opened', data: { id: Number(row.id), title, severity: body.severity, reason: why } };
+  });
+}
+async function updateIncident(ctx, wallet, body) {
+  const id = Number.isSafeInteger(body.id) && body.id > 0 ? body.id : fail('Choose an incident.'), expected = version(body.expectedVersion), why = reason(body.reason);
+  if (!['investigating', 'resolved'].includes(body.status)) fail('Choose investigating or resolved.');
+  return write(ctx, wallet, 'cc-incident-update', body, 'security.manage', async (c, { now }) => {
+    const { store } = ctx, row = (await c.query('SELECT status,version FROM ryo_cc_incidents WHERE scope=$1 AND id=$2 FOR UPDATE', [store.scope, id])).rows[0];
+    if (!row) fail('That incident does not exist.', 404);
+    if (row.status === 'resolved') fail('A resolved incident is closed. Open a new one instead.', 409);
+    if (row.status === body.status) fail('The incident is already ' + row.status + '.', 409);
+    if (Number(row.version) !== expected) fail('This incident changed since you opened it. Refresh and try again.', 409);
+    await c.query('UPDATE ryo_cc_incidents SET status=$3,version=version+1,updated=$4,updated_by=$5,resolution=$6 WHERE scope=$1 AND id=$2', [store.scope, id, body.status, now, wallet, body.status === 'resolved' ? why : null]);
+    return { result: { id, status: body.status, version: expected + 1 }, audit: 'incident.' + body.status, data: { id, from: row.status, to: body.status, reason: why } };
+  });
+}
+
 /* ---------- Stats report (read-only) ----------
  * The same code as tools/launch-stats-report.cjs (copied to stats-report.cjs): one REPEATABLE READ READ ONLY transaction,
  * SELECT only, always rolled back, totals and per-hour/day series without wallets. The game shares a small connection
@@ -537,6 +582,13 @@ async function handle(ctx, wallet, action, body = {}) {
     case 'cc-founders-pause': need(roles, 'founders.manage'); return envelope(store, await require('./founders.cjs').adminPause(store, wallet, body.paused === true, body.reason));
     case 'cc-founders-revoke': need(roles, 'founders.manage'); return envelope(store, await require('./founders.cjs').adminRevoke(store, wallet, body.wallet, body.revoke === true, body.reason));
     case 'cc-stats-report': need(roles, 'stats.read'); return envelope(store, await statsReport(ctx, body));
+    // Batch A: read-only views (command-center-views.cjs), and the incident register (the only write).
+    case 'cc-config': need(roles, 'config.read'); return envelope(store, await require('./command-center-views.cjs').configStatus(ctx));
+    case 'cc-security': need(roles, 'security.read'); return envelope(store, await require('./command-center-views.cjs').securityView(ctx));
+    case 'cc-creators': need(roles, 'creators.read'); return envelope(store, await require('./command-center-views.cjs').creatorsView(ctx));
+    case 'cc-incidents': need(roles, 'security.read'); return incidents(ctx, body);
+    case 'cc-incident-open': need(roles, 'security.manage'); return openIncident(ctx, wallet, body);
+    case 'cc-incident-update': need(roles, 'security.manage'); return updateIncident(ctx, wallet, body);
     default: fail('Unknown Command Center action.', 404);
   }
 }

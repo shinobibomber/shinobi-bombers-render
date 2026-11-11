@@ -27,6 +27,9 @@
       'health.title': 'Server health', 'health.sub': 'Sanitized checks with their source. A failing check is never shown as healthy.',
       'audit.title': 'Audit logs', 'audit.sub': 'Append-only, hash-chained records shared with the economic dashboard.',
       'roles.title': 'Staff roles', 'roles.sub': 'The Owner grants Moderator and Support. Financial roles are set in the hosting environment.',
+      'nav.config': 'Game configuration', 'config.title': 'Game configuration', 'config.sub': 'Read-only status of every feature switch, the release stage and the launch gates. Switches are changed in the Control panel, never here.',
+      'nav.security': 'Security center', 'security.title': 'Security center', 'security.sub': 'Integrity of the audit chain and the switch log, staff roles and sessions as counts, findings, and the incident register. No wallet lists and no secrets.',
+      'nav.creators': 'Creators summary', 'creators.title': 'Creators summary', 'creators.sub': 'Read-only totals from the Creators Portal, referrals and Hero Passes. No names, wallets or applications are shown.',
       'nav.report': 'Stats report', 'report.title': 'Stats report', 'report.sub': 'Read-only totals from the live database: Ryo spent, deposits, summons, free heroes, SOL sales, revenue, Chest and withdrawals. No wallets are shown.',
       'report.range': 'Range', 'report.launch': 'Since launch (9 Nov 2026, 22:40 UTC+8)', 'report.24h': 'Last 24 hours', 'report.7d': 'Last 7 days', 'report.30d': 'Last 30 days', 'report.custom': 'Custom',
       'report.from': 'From', 'report.to': 'To (empty = now)', 'report.group': 'Group by', 'report.hour': 'Hour', 'report.day': 'Day', 'report.generate': 'Generate report',
@@ -52,6 +55,9 @@
       'health.title': 'Saúde do servidor', 'health.sub': 'Verificações sanitizadas com sua origem. Uma falha nunca aparece como saudável.',
       'audit.title': 'Registros de auditoria', 'audit.sub': 'Registros somente de acréscimo, encadeados por hash e compartilhados com o painel econômico.',
       'roles.title': 'Funções da equipe', 'roles.sub': 'O Proprietário concede Moderador e Suporte. Funções financeiras são definidas no ambiente de hospedagem.',
+      'nav.config': 'Configuração do jogo', 'config.title': 'Configuração do jogo', 'config.sub': 'Status somente leitura de cada chave de recurso, da etapa de lançamento e dos portões. As chaves são alteradas no painel de Controle, nunca aqui.',
+      'nav.security': 'Centro de segurança', 'security.title': 'Centro de segurança', 'security.sub': 'Integridade da cadeia de auditoria e do registro de chaves, funções e sessões da equipe em números, alertas e o registro de incidentes. Sem listas de carteiras nem segredos.',
+      'nav.creators': 'Resumo de criadores', 'creators.title': 'Resumo de criadores', 'creators.sub': 'Totais somente leitura do Portal de Criadores, indicações e Hero Passes. Nenhum nome, carteira ou inscrição é exibido.',
       'nav.report': 'Relatório de estatísticas', 'report.title': 'Relatório de estatísticas', 'report.sub': 'Totais somente leitura do banco de dados ao vivo: Ryo gasto, depósitos, invocações, heróis grátis, vendas em SOL, receita, Baú e saques. Nenhuma carteira é exibida.',
       'report.range': 'Período', 'report.launch': 'Desde o lançamento (9 nov 2026, 22:40 UTC+8)', 'report.24h': 'Últimas 24 horas', 'report.7d': 'Últimos 7 dias', 'report.30d': 'Últimos 30 dias', 'report.custom': 'Personalizado',
       'report.from': 'De', 'report.to': 'Até (vazio = agora)', 'report.group': 'Agrupar por', 'report.hour': 'Hora', 'report.day': 'Dia', 'report.generate': 'Gerar relatório',
@@ -136,12 +142,12 @@
     ['overview', 'nav.overview', 'overview.read'], ['players', 'nav.players', 'player.read'], ['chat', 'nav.chat', 'moderation.read'],
     ['announcements', 'nav.announcements', ['announcement.read', 'announcement.propose', 'announcement.review']], ['health', 'nav.health', 'ops.read'],
     ['audit', 'nav.audit', ['audit.read', 'audit.own']], ['roles', 'nav.roles', 'roles.manage'], ['founders', 'nav.founders', 'founders.read'],
-    ['report', 'nav.report', 'stats.read'],
+    ['report', 'nav.report', 'stats.read'], ['config', 'nav.config', 'config.read'], ['security', 'nav.security', 'security.read'], ['creators', 'nav.creators', 'creators.read'],
   ];
   // Modules from the specification that have no backend yet. They are listed, never simulated.
   const PLANNED = [
 ['pass', 'Weekly Mission Pass', 2], ['economy', 'Economy & treasury controls', 3],
-    ['creators', 'Creators & marketing', 3], ['events', 'Events', 4], ['config', 'Game configuration', 4], ['support', 'Support center', 4], ['security', 'Security center', 4],
+    ['creators', 'Marketing campaigns & payouts', 3], ['events', 'Events', 4], ['support', 'Support center', 4],
     ['guild', 'Guild / Team / DM / Trade chat', null],
   ];
   const allowed = perm => (Array.isArray(perm) ? perm : [perm]).some(can);
@@ -373,6 +379,94 @@
       }); } }, h('label', { for: 'sr-range' }, t('report.range'), range), h('label', { for: 'sr-bucket' }, t('report.group'), bucket), generate, dl, cp);
       fill(view, head('report.title', 'report.sub'), card(form, custom, status), out);
       draw();
+    },
+
+    /* ---------- Batch A: Game configuration status (read-only) ---------- */
+    async config(view) {
+      const d = (await api('cc-config')).data, rel = d.release, onOff = v => (v === null || v === undefined ? '—' : v ? 'On' : 'Off');
+      const relRow = h('div', { class: 'row-actions' }, badge('Stage: ' + (rel.stage || '—'), 'info'), badge('Pre-launch ' + onOff(rel.prelaunch), rel.prelaunch ? 'warn' : 'ok'), badge('Launch hold ' + onOff(rel.hold), rel.hold ? 'warn' : 'ok'),
+        badge('Mint released ' + onOff(rel.mintReleased), 'info'), badge('Launched ' + onOff(rel.launched), rel.launched ? 'ok' : 'warn'), d.srRevenueRouting === null ? null : badge('SR revenue routing ' + onOff(d.srRevenueRouting), 'info'));
+      const gates = d.gates ? h('div', { class: 'row-actions' }, Object.entries(d.gates).map(([k, v]) => badge(k + ': ' + (v ? 'open' : 'closed'), v ? 'ok' : 'info'))) : h('p', { class: 'muted', text: 'The launch gates could not be read.' });
+      const sw = d.switches, rows = sw.status === 'ready' ? sw.list.map(x => h('tr', {}, h('td', {}, h('strong', { text: x.label }), h('div', { class: 'muted mono', text: x.envName })),
+        h('td', {}, badge(x.group, x.money ? 'warn' : 'info')), h('td', {}, badge(x.effective ? 'On' : 'Off', x.effective ? 'ok' : 'info')), h('td', { text: x.source }), h('td', { text: onOff(x.environment) }), h('td', { text: onOff(x.panel) }),
+        h('td', {}, x.lastChange ? [onOff(x.lastChange.enabled), ' · v' + x.lastChange.version, ' · ', x.lastChange.by || '—', ' · ', when(x.lastChange.updated)] : h('span', { class: 'muted', text: 'never changed' })))) : [];
+      const log = d.log.status === 'ready' ? d.log.entries.map(e => h('tr', {}, h('td', { text: '#' + e.seq }), h('td', { text: e.key }), h('td', { text: onOff(e.enabled) }), h('td', { class: 'mono', text: e.actor || '—' }), h('td', { text: e.reason }), h('td', {}, when(e.created)),
+        h('td', {}, e.intact && e.linked ? badge('verified', 'ok') : badge('BROKEN', 'crit')))) : [];
+      fill(view, head('config.title', 'config.sub', refreshBtn(() => RENDER.config(view)), h('a', { class: 'btn', href: '/admin/control', target: '_blank', rel: 'noopener', text: 'Control panel ↗' })),
+        card(h('h3', { text: 'Release' }), relRow, h('h3', { text: 'Launch gates' }), gates, h('p', { class: 'muted', text: 'Only on/off states are shown. Environment values, wallets and keys are never returned.' })),
+        card(h('h3', { text: 'Feature switches' }),
+          sw.status !== 'ready' ? stateBox(t('state.unavailable'), 'The switch state could not be read.') : [
+            sw.loaded ? null : h('p', { class: 'muted', text: 'The switch cache is still loading; money switches read as closed until it has.' }),
+            sw.panelDisabled ? h('p', { class: 'muted', text: 'The Control panel overrides are disabled on this server: only the environment decides.' }) : null,
+            scroll('table-wide', ['Switch', 'Group', 'Effective', 'Source', 'Environment', 'Panel', 'Last change'], rows.length ? rows : empty(7))]),
+        card(h('h3', { text: 'Recent switch changes' }), d.log.status !== 'ready' ? stateBox(t('state.unavailable')) : [
+          h('p', { class: d.log.intact ? 'muted' : 'error', text: d.log.intact ? 'The hash chain of the last ' + d.log.entries.length + ' changes verified.' : 'The hash chain failed verification. Investigate before trusting this log.' }),
+          scroll('table-wide', ['#', 'Switch', 'Set to', 'By', 'Reason', 'When', 'Chain'], log.length ? log : empty(7))]));
+    },
+
+    /* ---------- Batch A: Security center (read-only views + the incident register) ---------- */
+    async security(view) {
+      // The register is loaded on its own: if it fails (for example its table is missing), the rest of the page still shows.
+      const [secRes, incRes] = await Promise.all([api('cc-security'), api('cc-incidents').catch(() => null)]), d = secRes.data, list = incRes ? incRes.data.incidents : null, ok = x => x && x.status === 'ready';
+      const sev = { critical: 'crit', high: 'warn', medium: 'info', low: 'info', warn: 'warn' };
+      const kpi = (label, value, sub, bad) => h('article', { class: 'card kpi' + (bad ? ' state-unavailable' : '') }, h('div', { class: 'eyebrow', text: label }), h('strong', { text: value }), h('div', { class: 'src', text: sub || '' }));
+      const a = d.audit, sl = d.switchLog, kpis = h('div', { class: 'grid kpis' },
+        kpi('Audit chain', ok(a) ? (a.intact ? (a.complete ? 'Verified' : 'Verified (newest ' + n(a.checked) + ')') : 'FAILED') : '—', ok(a) ? (a.complete ? 'all ' : 'newest ') + n(a.checked) + ' of ' + n(a.total) + ' records · ' + a.hashesValid + ' hashes, ' + a.linksIntact + '/' + a.links + ' links' : 'unavailable', ok(a) && !a.intact),
+        kpi('Switch log', ok(sl) ? (sl.intact ? 'Verified' : 'FAILED') : '—', ok(sl) ? 'last ' + sl.checked + ' changes' : 'unavailable', ok(sl) && !sl.intact),
+        kpi('Active sessions', ok(d.sessions) ? n(d.sessions.game) : '—', ok(d.sessions) ? 'game · Control panel ' + n(d.sessions.controlPanel) : 'unavailable'),
+        kpi('Staff writes (24 h)', ok(d.staff) ? n(d.staff.writesLast24h) : '—', ok(d.staff) ? n(d.staff.writesLastHour) + ' in the last hour · ' + n(d.staff.activeStaffLast24h) + ' staff' : 'unavailable'),
+        kpi('Open incidents', ok(d.incidents) ? n(d.incidents.open) : '—', ok(d.incidents) ? n(d.incidents.critical) + ' critical · ' + n(d.incidents.high) + ' high' : 'unavailable'));
+      const findings = d.findings.length ? h('ul', {}, d.findings.map(x => h('li', {}, badge(x.severity === 'critical' ? 'critical' : 'review', sev[x.severity] || 'warn'), ' ', x.text)))
+        : h('p', { class: 'muted', text: 'No findings from the checks on this page.' });
+      const roleRows = ok(d.roles) ? [...Object.entries(d.roles.environment).map(([r, c]) => h('tr', {}, h('td', { text: r }), h('td', { text: 'Hosting environment' }), h('td', { text: n(c) }), h('td', { text: '—' }))),
+        ...Object.entries(d.roles.backend).map(([r, c]) => h('tr', {}, h('td', { text: r }), h('td', { text: 'Backend grant' }), h('td', { text: n(c.active) }), h('td', { text: n(c.revoked) })))] : [];
+      const recent = ok(a) ? a.recent.map(e => h('tr', {}, h('td', { text: '#' + e.sequence }), h('td', { class: 'mono', text: e.action }), h('td', { class: 'mono', text: e.actor || '—' }), h('td', {}, when(e.created)))) : [];
+      const open = () => run(async () => {
+        if (await guarded({ title: 'Open an incident', detail: 'A staff note only. It changes nothing in the game.', confirm: 'Open incident', fields: [
+          { name: 'title', label: 'Title (3–120 characters)', max: 120 },
+          { name: 'severity', label: 'Severity', options: [['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['critical', 'Critical']] },
+          { name: 'details', label: 'Details (optional)', multiline: true, optional: true, max: 2000 }],
+          submit: v => write('cc-incident-open', { title: v.title, severity: v.severity, details: v.details, reason: v.reason }) })) { notice('Incident opened.'); await RENDER.security(view); }
+      });
+      const move = (inc, status) => run(async () => {
+        if (await guarded({ title: (status === 'resolved' ? 'Resolve' : 'Investigate') + ' incident #' + inc.id, detail: inc.title, confirm: status === 'resolved' ? 'Resolve' : 'Mark investigating',
+          submit: v => write('cc-incident-update', { id: inc.id, status, expectedVersion: inc.version, reason: v.reason }) })) { notice('Incident updated.'); await RENDER.security(view); }
+      });
+      const incRows = (list || []).map(i => h('tr', {}, h('td', { text: '#' + i.id }), h('td', {}, badge(i.severity, sev[i.severity] || 'info')), h('td', {}, h('strong', { text: i.title }), i.details ? h('div', { class: 'muted pre', text: i.details }) : null, i.resolution ? h('div', { class: 'muted', text: 'Resolution: ' + i.resolution }) : null),
+        h('td', {}, badge(i.status, i.status === 'resolved' ? 'ok' : i.status === 'open' ? 'warn' : 'info')), h('td', { class: 'mono', text: i.openedBy || '—' }), h('td', {}, when(i.updated)),
+        h('td', {}, can('security.manage') && i.status !== 'resolved' ? h('div', { class: 'row-actions' }, i.status === 'open' ? h('button', { type: 'button', class: 'small', text: 'Investigating', onclick: () => move(i, 'investigating') }) : null, h('button', { type: 'button', class: 'small', text: 'Resolve', onclick: () => move(i, 'resolved') })) : null)));
+      fill(view, head('security.title', 'security.sub', refreshBtn(() => RENDER.security(view)), can('security.manage') ? h('button', { type: 'button', class: 'primary', text: 'Open incident', onclick: open }) : null),
+        card(h('h3', { text: 'Findings' }), findings), kpis,
+        card(h('h3', { text: 'Incident register' }), list === null ? stateBox(t('state.unavailable'), 'The incident register could not be read. The checks above are not affected.') : scroll('table-wide', ['#', 'Severity', 'Incident', 'Status', 'Opened by', 'Updated', ''], incRows.length ? incRows : empty(7, 'No incidents recorded.'))),
+        h('div', { class: 'grid cols' },
+          card(h('h3', { text: 'Staff roles (counts)' }), ok(d.roles) ? scroll('table-wide', ['Role', 'Source', 'Active', 'Revoked'], roleRows.length ? roleRows : empty(4)) : stateBox(t('state.unavailable'))),
+          card(h('h3', { text: 'Not recorded by the game' }), h('ul', {}, d.notRecorded.map(x => h('li', {}, statusBadge(x.status), ' ', x.text))))),
+        card(h('h3', { text: 'Latest audit records' }), ok(a) ? [h('p', { class: 'muted' }, 'The full, filterable log is under ', h('a', { href: '#audit', text: 'Audit logs' }), '.'), scroll('table-wide', ['#', 'Action', 'Actor', 'When'], recent.length ? recent : empty(4))] : stateBox(t('state.unavailable'))));
+    },
+
+    /* ---------- Batch A: Creators summary (aggregates only) ---------- */
+    async creators(view) {
+      const d = (await api('cc-creators')).data, ok = x => x && x.status === 'ready';
+      const kpi = (label, value, sub) => h('article', { class: 'card kpi' }, h('div', { class: 'eyebrow', text: label }), h('strong', { text: value }), h('div', { class: 'src', text: sub || '' }));
+      const app = d.applications, cp = d.creatorPoints, rf = d.referrals, rd = d.redemptions, hp = d.heroPasses, rs = d.rescues, pr = d.program;
+      const kv = o => Object.entries(o || {}).map(([k, v]) => k + ' ' + n(v)).join(' · ') || '—';
+      const kpis = h('div', { class: 'grid kpis' },
+        kpi('Creator applications', ok(app) ? n(app.total) : '—', ok(app) ? kv(app.byStatus) : 'unavailable'),
+        kpi('Creator Points issued', ok(cp) ? n(cp.issued) : '—', ok(cp) ? n(cp.spent) + ' spent · ' + n(cp.held) + ' held by creators · adjustments ' + n(cp.adjustmentsNet) : 'unavailable'),
+        kpi('Creator referrals', ok(rf) && rf.creator ? n(rf.creator.total) : '—', ok(rf) && rf.creator ? n(rf.creator.qualified) + ' qualified · ' + n(rf.creator.paidMints) + ' paid mints' : 'unavailable'),
+        kpi('Player referrals', ok(rf) && rf.player ? n(rf.player.total) : '—', ok(rf) && rf.player ? n(rf.player.qualified) + ' qualified' : 'unavailable'),
+        kpi('Shop redemptions', ok(rd) ? n(Object.values(rd.byStatus).reduce((a, b) => a + b, 0)) : '—', ok(rd) ? kv(rd.byStatus) : 'unavailable'),
+        kpi('Rescue heroes', ok(rs) && rs.total !== null ? n(rs.total) : '—', ok(rs) && rs.staffGrants !== null ? n(rs.staffGrants) + ' granted by staff' : 'unavailable'));
+      const passRows = ok(hp) ? Object.entries(hp.entitlements).map(([st, v]) => h('tr', {}, h('td', { text: st }), h('td', { text: n(v.entitlements) }), h('td', { text: n(v.passes) }))) : [];
+      fill(view, head('creators.title', 'creators.sub', refreshBtn(() => RENDER.creators(view))),
+        d.portalPresent ? null : card(stateBox(t('state.unavailable'), 'The Creators Portal tables do not exist on this server, so there is nothing to summarize.')), kpis,
+        h('div', { class: 'grid cols' },
+          card(h('h3', { text: 'Program settings' }), ok(pr) ? h('dl', { class: 'kv' }, h('dt', { text: 'Version' }), h('dd', { text: pr.version === null ? '—' : String(pr.version) }), h('dt', { text: 'Applications paused' }), h('dd', { text: pr.applicationsPaused ? 'Yes' : 'No' }),
+            h('dt', { text: 'Enrollment paused' }), h('dd', { text: pr.enrollmentPaused ? 'Yes' : 'No' }), h('dt', { text: 'Enrollment limit' }), h('dd', { text: pr.enrollmentLimit === null ? '—' : n(pr.enrollmentLimit) }), h('dt', { text: 'Commission days' }), h('dd', { text: pr.commissionDays === null ? '—' : n(pr.commissionDays) })) : stateBox(t('state.unavailable'))),
+          card(h('h3', { text: 'Hero Passes' }), ok(hp) ? [h('p', { class: 'muted', text: 'Campaigns: ' + kv(hp.campaigns) + (hp.balances ? ' · passes held ' + n(hp.balances.passes) + ', used ' + n(hp.balances.used) : '') }),
+            scroll('table-wide', ['Entitlement status', 'Entitlements', 'Passes'], passRows.length ? passRows : empty(3))] : stateBox(t('state.unavailable')))),
+        card(h('h3', { text: 'Creator Points ledger by kind' }), ok(cp) ? scroll('table-wide', ['Kind', 'Entries', 'Points (net)'], cp.byKind.length ? cp.byKind.map(k => h('tr', {}, h('td', { text: k.kind }), h('td', { text: n(k.entries) }), h('td', { text: n(k.points) }))) : empty(3)) : stateBox(t('state.unavailable'))),
+        card(h('h3', { text: 'Not implemented' }), h('ul', {}, d.notImplemented.map(x => h('li', {}, statusBadge(x.status), ' ', x.text))), h('p', { class: 'muted', text: 'Creator management (approvals, adjustments, grants) stays in the Creators Portal admin, which is audited there.' })));
     },
 
     async roles(view) {

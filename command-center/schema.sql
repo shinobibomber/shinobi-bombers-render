@@ -54,3 +54,13 @@ CREATE TABLE IF NOT EXISTS ryo_cc_requests (
 );
 -- Hidden chat messages stay in the table (restricted evidence) but are no longer served to players.
 ALTER TABLE ryo_chat ADD COLUMN IF NOT EXISTS hidden BIGINT;
+
+-- Incident register (Security center): a staff notebook. Changes nothing in the game. Additive and idempotent.
+CREATE TABLE IF NOT EXISTS ryo_cc_incidents (
+ id BIGSERIAL PRIMARY KEY, scope TEXT NOT NULL, title TEXT NOT NULL, details TEXT NOT NULL DEFAULT '',
+ severity TEXT NOT NULL CHECK(severity IN ('low','medium','high','critical')),
+ status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','investigating','resolved')),
+ version INTEGER NOT NULL DEFAULT 0, opener TEXT NOT NULL, reason TEXT NOT NULL, created BIGINT NOT NULL,
+ updated BIGINT NOT NULL, updated_by TEXT NOT NULL, resolution TEXT
+);
+CREATE INDEX IF NOT EXISTS ryo_cc_incidents_status ON ryo_cc_incidents(scope,status,id);

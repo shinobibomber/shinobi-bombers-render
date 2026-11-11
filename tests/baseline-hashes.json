@@ -291,7 +291,7 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "a79513a798fed8dfc5b1940b23c075b47b87796912c0417d0554eb20515032fc"
+      "sha256": "6da29ccdca263826840e6da0e9fe4e66928a7e3f6f74d96f584d29a58e93ebb5"
     },
     {
       "path": "app/server/service.cjs",

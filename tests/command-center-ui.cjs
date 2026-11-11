@@ -136,6 +136,25 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
     await p.getByRole('tab', { name: 'Premium weeks' }).click(); await waitText(p, '#view', /Weekly Mission Pass[\s\S]*Not implemented/);
     await shot(p, 'founders-weeks');
 
+    // ---- Batch A: Game configuration status, Security center + incident register, Creators summary ----
+    await p.goto(base + '#config'); await waitText(p, '#view', /Feature switches[\s\S]*Recent switch changes/);
+    assert.ok(await p.locator('#view tbody tr').count() >= 20, 'every feature switch is listed'); assert.match(await p.locator('#view').innerText(), /Withdrawals[\s\S]*money|money[\s\S]*Withdrawals/i);
+    assert.match(await p.locator('#view').innerText(), /Stage:/); assert.equal(await p.locator('#view button:not(:text-is("Refresh"))').count(), 0, 'read-only: no button besides Refresh');
+    assert.equal(await p.locator('#view a[href="/admin/control"]').count(), 1, 'changes are made in the Control panel'); await shot(p, 'config-status');
+    await p.goto(base + '#security'); await waitText(p, '#view', /Incident register/); assert.match(await p.locator('#view').innerText(), /Audit chain\s*Verified/i);
+    assert.match(await p.locator('#view').innerText(), /Failed sign-ins are not stored/, 'unrecorded signals are labelled not implemented');
+    await p.getByRole('button', { name: 'Open incident' }).first().click(); await p.waitForSelector('#dialog[open]');
+    await p.locator('#dialog-body [name="title"]').fill('Suspicious referral burst'); await p.locator('#dialog-body [name="severity"]').selectOption('high');
+    await p.locator('#dialog-body [name="details"]').fill('Twelve referrals from one creator in a minute.'); await p.locator('#dialog-body [name="reason"]').fill('Noticed on the Creators summary');
+    await p.locator('#dialog-ok').click(); await waitText(p, '#view', /Suspicious referral burst/); assert.match(await p.locator('#view').innerText(), /high[\s\S]*Suspicious referral burst[\s\S]*open/i);
+    await shot(p, 'security-center');
+    await p.locator('tr', { hasText: 'Suspicious referral burst' }).getByRole('button', { name: 'Resolve' }).click(); await p.waitForSelector('#dialog[open]'); await p.locator('#dialog-body [name="reason"]').fill('Verified as a legitimate promotion');
+    await p.locator('#dialog-ok').click(); await waitText(p, '#view', /Resolution: Verified as a legitimate promotion/);
+    assert.equal(await p.getByRole('button', { name: 'Resolve' }).count(), 0, 'a resolved incident has no more actions');
+    await p.goto(base + '#creators'); await waitText(p, '#view', /Creator applications[\s\S]*Not implemented/); assert.match(await p.locator('#view').innerText(), /Marketing campaigns|Paid marketing campaigns/);
+    assert.equal(await p.locator('#view button:not(:text-is("Refresh"))').count(), 0, 'the Creators summary has no action buttons'); await shot(p, 'creators-summary');
+    assert.equal(await p.locator('#sidebar a[href="#planned-security"], #sidebar a[href="#planned-config"]').count(), 0, 'built modules left the planned list');
+
     await p.locator('#lang').selectOption('pt'); await waitText(p, '#sidebar', /Visão geral/); assert.equal(await p.evaluate(() => document.documentElement.lang), 'pt-BR');
     await p.locator('#lang').selectOption('en');
 
@@ -160,6 +179,10 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
     assert.equal(await v.p.locator('#sidebar a[href="#roles"]').count(), 0, 'staff roles are only listed for the Owner');
     await v.p.goto(base + '#founders'); await waitText(v.p, '#view', /Permission required/); assert.equal(await v.p.locator('#view .tabs').count(), 0, 'viewers get no Founder data (full wallets)');
     await v.p.goto(base + '#audit'); await v.p.waitForSelector('#view tbody tr');
+    // Batch A: viewers read the configuration status but get nothing from Security or Creators.
+    await v.p.goto(base + '#config'); await waitText(v.p, '#view', /Feature switches/);
+    await v.p.goto(base + '#security'); await waitText(v.p, '#view', /Permission required/); assert.equal(await v.p.locator('#view button').count(), 0);
+    await v.p.goto(base + '#creators'); await waitText(v.p, '#view', /Permission required/);
     // Stats report: viewers may generate it (totals only, no wallets).
     await v.p.goto(base + '#report'); await waitText(v.p, '#view', /Choose a range and generate the report/);
     assert.equal(await v.p.locator('#sr-download').isDisabled(), true, 'nothing to download before a report exists');
