@@ -42,7 +42,7 @@ async function figures(store, c, wallet, custodyRyo) {
   const d = (await rows(c, 'SELECT data FROM ryo_adventures WHERE scope=$1 AND wallet=$2', [store.scope, wallet]))[0]?.data || {};
   const chestRyo = Math.floor(Math.max(0, Number(d.pending) || 0) / 1000);
   const income = await require('./sr-revenue.cjs').income(store, c);
-  const used = (await rows(c, "SELECT COALESCE(SUM((data->>'claimed')::numeric),0) AS n FROM ryo_adventures WHERE scope=$1", [store.scope]))[0];
+  const used = { n: await require('./reward-pool.cjs').claimedTotal(store, c) };   // exact; indexed column (reward-pool.cjs)
   const pool = Math.max(0, Math.floor(Number(income.n) - Number(used.n)));
   // The same liabilities as a claim (adventure.cjs): balances + pending withdrawals + pending purchases.
   const liabilities = Number((await rows(c, "SELECT (SELECT COALESCE(SUM(balance),0) FROM ryo_accounts WHERE scope=$1)+(SELECT COALESCE(SUM(amount),0) FROM ryo_withdrawals WHERE scope=$1 AND status='pending')+(SELECT COALESCE(SUM(amount),0) FROM ryo_purchases WHERE scope=$1 AND status='pending') AS n", [store.scope]))[0].n);

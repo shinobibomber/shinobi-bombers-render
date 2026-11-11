@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Faster Chest updates as the game grows
+
+- **The server now works out the reward pool much faster.** Every Chest update used to recount every claim and purchase in the game; it now reads totals the database keeps ready. Chest updates and claims stay quick as more players join.
+- **Nothing changes in your rewards:** the same Ryo per kill, the same reward rate, the same claim limits and the same Chest amounts.
+
 ## November 11, 2026 — Automatic refresh after updates
 
 - **The game now refreshes itself after an update.** When a new version goes live, a small banner appears: "New update available. Reloading in 10 s", with a **Reload now** button. The page then reloads, signs you back in and returns you to your Adventure map with the same team.

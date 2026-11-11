@@ -203,7 +203,7 @@ async function claimFunding({ store, connection, mint, treasuryAddress, checkNet
   const inflight = (async () => {
     const c = store.pool;
     const income = await require('./sr-revenue.cjs').income(store, c);
-    const claimed = Number((await c.query("SELECT COALESCE(SUM((data->>'claimed')::numeric),0) AS n FROM ryo_adventures WHERE scope=$1", [store.scope])).rows[0].n);
+    const claimed = await require('./reward-pool.cjs').claimedTotal(store, c);   // exact; indexed column (reward-pool.cjs)
     const ledger = Math.max(0, Math.floor(Number(income.n) - claimed)), liabilities = Number((await c.query(LIABILITIES_SQL, [store.scope])).rows[0].n);
     let custody = null;
     try {

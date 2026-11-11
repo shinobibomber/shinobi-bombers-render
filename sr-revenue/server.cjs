@@ -131,8 +131,9 @@ const INCOME_SQL = "SELECT COALESCE(SUM((quote->>'operations')::numeric),0) AS n
 // Live v2: the 30% left custody for the Active Reward Pool wallet, so it funds claims only once topped up.
 const LIVE_INCOME_SQL = INCOME_SQL + " AND COALESCE(quote->'revenueDistribution'->>'version','1')<>'2'";
 async function income(store, c) {
- if (!enabled()) return { n:Number((await c.query(INCOME_SQL, [store.scope])).rows[0].n) };
- const base = (await c.query(LIVE_INCOME_SQL, [store.scope])).rows[0];
+ // Same totals as INCOME_SQL / LIVE_INCOME_SQL, read from the indexed generated column (reward-pool.cjs verifies them once per process).
+ if (!enabled()) return { n: await require('./reward-pool.cjs').purchaseIncome(store, c, false) };
+ const base = { n: await require('./reward-pool.cjs').purchaseIncome(store, c, true) };
  const topups = (await c.query('SELECT COALESCE(SUM(amount_raw),0) AS n FROM ryo_revenue_replenishments WHERE scope=$1', [store.scope])).rows[0];
  return { n: Number(base.n) + Number(topups.n) / Number(UNIT) };
 }
