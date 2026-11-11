@@ -8,13 +8,13 @@
  *
  * Paid acceleration (spec sections 7 to 10) has its own Expedition-only payment policy. It never changes the existing
  * 50/30/10/10 SR service router (sr-revenue.cjs), the Boss Hunt split or any other service:
- *   40% Locked Treasury, 30% Active Reward Pool, 10% Community Rewards, 10% Economic Reserve, 10% genuine SPL burn.
- * The four transfers and a Token-2022 / SPL BurnChecked instruction from the game custody token account are one atomic
- * custody-signed transaction (the same signer and burn instruction Boss Hunt already uses), so either every allocation and the
- * burn happen or none do. Amounts are exact integer base units; the burn takes the remainder, so the parts always sum to the
- * payment. Payment is taken only from the player's deposited game balance (never Starter Ryo, never the Chest) after a
+ *   50% Active Reward Pool, 30% Locked Treasury, 10% Community Rewards, 10% Economic Reserve. No burn (owner decision
+ *   2026-11-11, replacing the first 40/30/10/10/10 policy with a 10% SPL burn).
+ * The four transferChecked instructions from the game custody token account are one atomic custody-signed transaction, so
+ * either every allocation happens or none does. Amounts are exact integer base units; the Economic Reserve takes the
+ * remainder (as in the SR router), so the parts always sum to the payment. Payment is taken only from the player's deposited game balance (never Starter Ryo, never the Chest) after a
  * server-computed quote the player confirmed; the hero is released only at finalized, successful settlement.
- * The 30% Active Reward Pool share leaves custody like the live v2 router: it is NOT counted as Adventure reward income
+ * The 50% Active Reward Pool share leaves custody like the live v2 router: it is NOT counted as Adventure reward income
  * (operations 0, adventureEligible false) and funds Chest claims only through the existing approved top-up process.
  *
  * Locks (all required; every one is closed by default):
@@ -28,9 +28,9 @@ const crypto = require('node:crypto');
 const D = require('./combat-duty.cjs');
 const { fail } = require('./store.cjs');
 
-const MARKER = 'shinobi-expedition-acceleration-v1', VERSION = 1, UNIT = 1000000n;
-const RATES = Object.freeze({ lockedTreasury: 4000, activeRewards: 3000, communityRewards: 1000, economicReserve: 1000, burn: 1000 });
-const TRANSFERS = Object.freeze(['lockedTreasury', 'activeRewards', 'communityRewards', 'economicReserve']);
+const MARKER = 'shinobi-expedition-acceleration-v2', VERSION = 2, UNIT = 1000000n;
+const RATES = Object.freeze({ activeRewards: 5000, lockedTreasury: 3000, communityRewards: 1000, economicReserve: 1000 });
+const TRANSFERS = Object.freeze(['activeRewards', 'lockedTreasury', 'communityRewards', 'economicReserve']);   // the last takes the remainder
 // Provisional test-server prices (whole Ryo for a FULL regular-length Expedition of that rarity); subject to economy review.
 // They are never used on the live build: there, prices must be set explicitly in EXPEDITION_ACCELERATION_PRICES.
 const PROVISIONAL_PRICES = Object.freeze([5000, 10000, 20000, 40000, 75000, 150000]);
@@ -41,8 +41,10 @@ const MIN_REMAINING_MS = 15 * 60000;
 const QUOTE_STEP_MS = 60000;          // quotes use the remaining time rounded UP to the minute: one stable price per minute
 const RECENT_MS = 24 * D.HOUR;        // the Completed tab shows Expeditions completed in the last 24 hours
 
-const SCHEMA = `CREATE TABLE IF NOT EXISTS ryo_expedition_revenue(scope TEXT NOT NULL,wallet TEXT NOT NULL,request_id TEXT NOT NULL,signature TEXT NOT NULL,hero_id TEXT NOT NULL,expedition_start BIGINT NOT NULL,total_raw NUMERIC(40,0) NOT NULL CHECK(total_raw>0),allocations JSONB NOT NULL,destinations JSONB NOT NULL,burn_raw NUMERIC(40,0) NOT NULL CHECK(burn_raw>0),released BOOLEAN NOT NULL,network TEXT NOT NULL,created BIGINT NOT NULL,PRIMARY KEY(scope,wallet,request_id),UNIQUE(scope,signature));
-CREATE INDEX IF NOT EXISTS ryo_expedition_revenue_created ON ryo_expedition_revenue(scope,created);`;
+const SCHEMA = `CREATE TABLE IF NOT EXISTS ryo_expedition_revenue(scope TEXT NOT NULL,wallet TEXT NOT NULL,request_id TEXT NOT NULL,signature TEXT NOT NULL,hero_id TEXT NOT NULL,expedition_start BIGINT NOT NULL,total_raw NUMERIC(40,0) NOT NULL CHECK(total_raw>0),allocations JSONB NOT NULL,destinations JSONB NOT NULL,released BOOLEAN NOT NULL,network TEXT NOT NULL,created BIGINT NOT NULL,PRIMARY KEY(scope,wallet,request_id),UNIQUE(scope,signature));
+CREATE INDEX IF NOT EXISTS ryo_expedition_revenue_created ON ryo_expedition_revenue(scope,created);
+-- v2: no burn. The v1 table (created empty on 2026-11-11; acceleration was never opened) loses its burn column.
+ALTER TABLE ryo_expedition_revenue DROP COLUMN IF EXISTS burn_raw;`;
 
 const truthy = v => /^(1|true|on|yes)$/i.test(String(v ?? '').trim());
 const sw = key => { try { return require('./feature-switches.cjs').effective(key); } catch { return false; } };
@@ -80,18 +82,18 @@ function accelerationProblems(env = process.env) {
   if (!prices(env)) problems.push(live() ? 'Approved acceleration prices are not configured (EXPEDITION_ACCELERATION_PRICES).' : 'EXPEDITION_ACCELERATION_PRICES is invalid.');
   return problems;
 }
-/** Exact base-unit split: floor the four transfers, the remainder is burned, so the parts always sum to the total. */
+/** Exact base-unit split: floor the first three shares, the remainder goes to the Economic Reserve (as in the SR router). */
 function splitRaw(total) {
   if (typeof total !== 'bigint' || total < 1n) fail('Invalid Expedition payment amount.');
   const allocations = {}; let used = 0n;
-  for (const name of TRANSFERS) { const n = total * BigInt(RATES[name]) / 10000n; allocations[name] = String(n); used += n; }
-  allocations.burn = String(total - used);
+  for (const name of TRANSFERS.slice(0, -1)) { const n = total * BigInt(RATES[name]) / 10000n; allocations[name] = String(n); used += n; }
+  allocations.economicReserve = String(total - used);
   return allocations;
 }
 function conserved(allocations, totalRaw) {
-  const names = [...TRANSFERS, 'burn'];
+  const names = TRANSFERS;
   if (!allocations || Object.keys(allocations).length !== names.length || names.some(k => !/^[0-9]+$/.test(String(allocations[k])))) return false;
-  return names.reduce((n, k) => n + BigInt(allocations[k]), 0n) === BigInt(totalRaw) && BigInt(allocations.burn) > 0n;
+  return names.reduce((n, k) => n + BigInt(allocations[k]), 0n) === BigInt(totalRaw);
 }
 /** Remaining-time price: the rarity price for a full REGULAR Expedition, pro rata to the remaining time (rounded up to the
  * minute, then up to a whole Ryo). A Founder's shorter Expedition therefore costs less naturally; no other Founder,
@@ -120,7 +122,7 @@ function quote(profile, params = {}, now = clock()) {
   const totalRaw = BigInt(q.total) * UNIT, allocations = splitRaw(totalRaw), ryo = k => Number(BigInt(allocations[k]) / UNIT) + Number(BigInt(allocations[k]) % UNIT) / Number(UNIT);
   return {
     economyVersion: 2, product: 'expedition', params: { heroId: h.tokenId, expeditionStart: q.start }, title: 'Expedite ' + h.name + ' (' + D.RANKS[D.rank(h)] + ')',
-    base: q.total, total: q.total, studioFee: 0, treasury: ryo('lockedTreasury'), burn: ryo('burn'), operations: 0, adventureEligible: false, noBonus: true,
+    base: q.total, total: q.total, studioFee: 0, treasury: ryo('lockedTreasury'), burn: 0, operations: 0, adventureEligible: false, noBonus: true,
     remainingMs: q.remainingMs,
     expeditionDistribution: { marker: MARKER, version: VERSION, basis: 'full-acceleration-payment', totalRaw: String(totalRaw), allocations, ratesBps: RATES }
   };
@@ -128,18 +130,18 @@ function quote(profile, params = {}, now = clock()) {
 
 /* ---------------- Paid acceleration: the atomic custody transaction ---------------- */
 const hash = v => crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
-/** Called by the service purchase handler inside Store.purchase (wallet-locked). Builds the 4 transfers + burn + memo.
- * `transferTo(owner, raw)` and `burn(raw)` are the service's custody instruction builders (transferChecked to the owner's
- * associated token account, BurnChecked from the custody token account with the official mint, 6 decimals, the
+/** Called by the service purchase handler inside Store.purchase (wallet-locked). Builds the 4 transfers + memo (no burn).
+ * `transferTo(owner, raw)` is the service's custody instruction builder (transferChecked to the owner's
+ * associated token account from the custody token account with the official mint, 6 decimals, the
  * registered token program and the custody key as authority). Any failure here means nothing was signed or sent. */
-async function instructions(ctx, q, requestId, transferTo, memo, burn) {
+async function instructions(ctx, q, requestId, transferTo, memo) {
   try {
     const problems = accelerationProblems();
     if (problems.length) fail('Expedition acceleration is not activated: ' + problems.join(' ') + ' No payment was submitted.', 503);
     const d = q.expeditionDistribution;
     if (q.product !== 'expedition' || !d || d.version !== VERSION || d.marker !== MARKER || q.studioFee !== 0 || q.operations !== 0) fail('Refresh the Expedition acceleration quote.', 409);
     const totalRaw = BigInt(q.total) * UNIT, expected = splitRaw(totalRaw);
-    if (d.totalRaw !== String(totalRaw) || Object.keys(expected).some(k => d.allocations?.[k] !== expected[k]) || !conserved(expected, totalRaw)) fail('Expedition payment amounts do not match the fixed 40/30/10/10/10 policy.', 409);
+    if (d.totalRaw !== String(totalRaw) || Object.keys(expected).some(k => d.allocations?.[k] !== expected[k]) || !conserved(expected, totalRaw)) fail('Expedition payment amounts do not match the fixed 50/30/10/10 Expedition policy.', 409);
     const reg = require('./treasury-registry.cjs').registry(), sr = require('./sr-revenue.cjs');
     let destinations, lockProof;
     if (live()) {
@@ -163,7 +165,6 @@ async function instructions(ctx, q, requestId, transferTo, memo, burn) {
     q.expeditionDistribution = { ...d, destinations, lockProof, network: live() ? 'mainnet' : 'devnet', configHash: hash(destinations) };
     return [
       ...TRANSFERS.flatMap(k => transferTo(destinations[k], BigInt(expected[k]))),
-      burn(BigInt(expected.burn)),
       memo(MARKER + ':' + hash({ scope: ctx.store.scope, wallet: ctx.wallet, requestId }) + ':' + hash({ hero: q.params.heroId, start: q.params.expeditionStart }).slice(0, 16))
     ];
   } catch (error) { error.paymentNotSubmitted = true; throw error; }
@@ -181,9 +182,9 @@ async function settled(store, c, row, profile) {
   if (d.totalRaw !== String(totalRaw) || Object.keys(expected).some(k => d.allocations?.[k] !== expected[k]) || !conserved(d.allocations, totalRaw)) fail('Persisted Expedition allocation is inconsistent.', 503);
   const h = (profile?.heroes || []).find(x => x.tokenId === row.params?.heroId);
   const released = !!h && D.accelerate(require('./combat-chakra.cjs').state(h, store.now()), row.params.expeditionStart, store.now(), row.request_id);
-  await c.query(`INSERT INTO ryo_expedition_revenue(scope,wallet,request_id,signature,hero_id,expedition_start,total_raw,allocations,destinations,burn_raw,released,network,created)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(scope,wallet,request_id) DO NOTHING`,
-    [store.scope, row.wallet, row.request_id, row.signature, row.params.heroId, row.params.expeditionStart, String(totalRaw), JSON.stringify(d.allocations), JSON.stringify(d.destinations), d.allocations.burn, released, d.network || 'unknown', store.now()]);
+  await c.query(`INSERT INTO ryo_expedition_revenue(scope,wallet,request_id,signature,hero_id,expedition_start,total_raw,allocations,destinations,released,network,created)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT(scope,wallet,request_id) DO NOTHING`,
+    [store.scope, row.wallet, row.request_id, row.signature, row.params.heroId, row.params.expeditionStart, String(totalRaw), JSON.stringify(d.allocations), JSON.stringify(d.destinations), released, d.network || 'unknown', store.now()]);
 }
 
 /* ---------------- Read-only views ---------------- */
@@ -213,7 +214,7 @@ function build(profile, data, now) {
   const heroes = (profile.heroes || []).map(h => heroView(h, profile, now, list, ready, deployed));
   return { expedition: { version: VERSION, enabled: enabled(), serverTime: now, capMs: D.DUTY_CAP_MS, founder: founder(profile), founderBps: D.FOUNDER_BPS,
     durations: D.HOURS.map((hours, rank) => ({ rank, name: D.RANKS[rank], regularMs: hours * D.HOUR, founderMs: hours * D.HOUR * D.FOUNDER_BPS / 10000 })),
-    acceleration: { available: !acceleration.length, minRemainingMs: MIN_REMAINING_MS, policy: { marker: MARKER, ratesBps: RATES, burn: 'spl-burn-checked', funding: 'deposited-balance' } },
+    acceleration: { available: !acceleration.length, minRemainingMs: MIN_REMAINING_MS, policy: { marker: MARKER, ratesBps: RATES, burn: 'none', funding: 'deposited-balance' } },
     heroes } };
 }
 async function handle(store, wallet, action) {

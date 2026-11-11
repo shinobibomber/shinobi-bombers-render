@@ -1,7 +1,7 @@
 /* Expedition Hall in the real game page (owner spec 2026-11-11). While Expedition Mode is off, Home is unchanged (the printed
  * DAILY MISSIONS art, no panel). When on: the EXPEDITION HALL panel covers exactly that panel, lists up to three heroes in the
  * required priority (on Expedition, near the 18-hour limit, recently completed) with a notification dot; View All opens the
- * full Expedition Hall with its three tabs; the optional Expedite flow shows the server quote and the 40/30/10/10/10 split and
+ * full Expedition Hall with its three tabs; the optional Expedite flow shows the server quote and the 50/30/10/10 split and
  * sends only the server's quote after an explicit confirmation; the Heroes Collection detail shows Combat Duty and the
  * Expedition; a hero on an Expedition cannot be deployed or picked by Work All. Desktop + phone. The view is built by the
  * real server module (expedition.cjs build) from the fixture profile. Isolated fixture (server logic: expedition-*.cjs). */
@@ -50,7 +50,7 @@ process.env.EXPEDITIONS_ENABLED = 'on'; process.env.EXPEDITION_ACCELERATION_ENAB
     await p.locator('[data-exp-tab="away"]').click(); await p.locator('[data-exp-expedite]').click();
     await p.waitForFunction(() => /Pay [\d,]+ Ryo/.test(document.querySelector('.sbw-exp-confirm')?.innerText || ''));
     const confirm = (await p.locator('.sbw-exp-confirm').innerText()).replace(/\s+/g, ' ');
-    assert.match(confirm, /optional: the Expedition is free/); assert.match(confirm, /40% Locked Treasury · 30% Active Reward Pool · 10% Community Rewards · 10% Economic Reserve · 10% permanently burned \(on-chain SPL burn\)/);
+    assert.match(confirm, /optional: the Expedition is free/); assert.match(confirm, /50% Active Reward Pool · 30% Locked Treasury · 10% Community Rewards · 10% Economic Reserve\./); assert.doesNotMatch(confirm, /burn/i);
     assert.equal(f.requests.filter(r => r.action === 'purchase').length, 0, 'nothing is charged before the confirmation');
     await p.screenshot({ path: path.join(root, 'tests/out/expedition-confirm' + (phone ? '-phone' : '') + '.png') });
     await p.locator('[data-exp-pay]').click();

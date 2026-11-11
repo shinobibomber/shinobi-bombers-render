@@ -14,14 +14,14 @@ Owner spec 2026-11-11. Branch `feature/expedition-mode` from production commit `
 | Founder | `profile.founderTier` is kept in step with a valid, unrevoked entitlement by `founders.applyTier`. Every Founder benefit also requires the `foundersRedemption` switch. | The 50% duration uses exactly that rule (owner decision 2026-11-11). It is snapshotted when the Expedition starts. |
 | Payments | Services are paid from the deposited off-chain balance. The **custody key** signs one transaction per purchase. Settlement waits for finalized status; refunds are automatic. One pending purchase per wallet; request IDs are idempotent. | Acceleration is a new product, `expedition`, on this pipeline. |
 | Revenue router | `sr-revenue.cjs` is fixed at 50/30/10/10 and refuses any burn; its settlement fails if allocations differ. | Expedition has its **own** policy, transaction builder and evidence table. The router is untouched. |
-| Burn | Boss Hunt already makes a genuine `BurnChecked` from the custody token account (Token-2022 on live). | The Expedition 10% uses the same signer and instruction (owner decision 2026-11-11). |
+| Burn | Boss Hunt already makes a genuine `BurnChecked` from the custody token account (Token-2022 on live). | First used for an Expedition 10% burn; **removed** by owner decision 2026-11-11 (see section 3). |
 
 ## 2. Rules as implemented
 
 - **Combat Duty definition:** each attack the server accepts adds that hero's attack cooldown (0.6 to 1.6 seconds). This covers online Adventure, offline Sensei and Boss Hunt.
   - Rest (including the automatic 10% rest), Chakra recovery, the bench, Reserve, idle time and Expedition time accept no attacks, so they never count.
   - An isolated attack counts one cooldown; an idle gap counts nothing.
-- **Limit:** 18 hours, set by `EXPEDITION_DUTY_HOURS` (1 to 168, default 18).
+- **Limit:** set by `EXPEDITION_DUTY_HOURS` (1 to 168; code default 18). **Live uses 10 hours** (owner decision 2026-11-11).
   - The attack that completes the limit is accepted. The Expedition starts at that attack's server time.
 - **Expedition durations:**
 
@@ -56,19 +56,19 @@ Owner spec 2026-11-11. Branch `feature/expedition-mode` from production commit `
   - Store.purchase re-quotes it, so preview and charge always agree.
 - **Funding:** deposited game balance only. Starter Ryo and Chest rewards are refused.
 - **Transaction:** one custody-signed transaction:
-  - 4 × `transferChecked`: 40% Locked Treasury, 30% Active Reward Pool, 10% Community Rewards, 10% Economic Reserve, all to the reviewed registry addresses;
-  - 1 × `BurnChecked` of 10%: official mint, 6 decimals, custody authority, registry token program (Token-2022 on live);
+  - 4 × `transferChecked`: **50% Active Reward Pool, 30% Locked Treasury, 10% Community Rewards, 10% Economic Reserve**, all to the reviewed registry addresses (official mint, 6 decimals, custody authority, registry token program);
+  - **no burn** (owner decision 2026-11-11, replacing the first 40/30/10/10/10 policy with a 10% SPL burn);
   - an Expedition memo.
-  - Amounts are integer base units: the four transfers are floored and the burn takes the remainder (at most 4 extra base units), so the parts always sum to the payment.
+  - Amounts are integer base units: the first three shares are floored and the Economic Reserve takes the remainder (at most 3 extra base units), so the parts always sum to the payment.
   - On live, the approved SR vault configuration, the Squads vault and every destination are re-verified at each checkout.
 - **Settlement (finalized only):**
   - The exact Expedition paid for is released.
-  - Evidence is booked once in `ryo_expedition_revenue`: signature, allocations, destinations, burn amount, network.
+  - Evidence is booked once in `ryo_expedition_revenue`: signature, allocations, destinations, network. (The empty v1 table's burn column is dropped by the schema.)
   - A failed transaction is refunded in full, and the hero stays away.
   - Settlement runs when the player's game next talks to the server; it polls while a payment is pending. Two cases give the player no benefit:
     - the player closes the game before settlement and returns after the Expedition has ended;
     - the hero leaves the wallet while the payment is pending.
-  - In both cases the transfers and burn stand: they are final on-chain and cannot be refunded. The evidence row records `released=false`, so these cases can be listed and compensated by the owner.
+  - In both cases the transfers stand: they are final on-chain and cannot be refunded. The evidence row records `released=false`, so these cases can be listed and compensated by the owner.
   - The 30% Active Reward Pool share is **not** counted as claimable Adventure income. It funds Chest claims only through the existing approved top-up process.
 - **Locks (all closed by default):**
   - switch `expeditions`;
@@ -111,9 +111,9 @@ Owner spec 2026-11-11. Branch `feature/expedition-mode` from production commit `
 2. Turn `expeditions` on, on the test server first.
 3. Before any paid acceleration:
    - independent review sign-off;
-   - update the public disclosures: the treasury page says "No automatic burn", and the `config` purchase rates describe service purchases only;
+   - publish the Expedition split (50/30/10/10) to players; the `config` purchase rates describe service purchases only;
    - set `EXPEDITION_ACCELERATION_PRICES`, then `EXPEDITION_ROUTING_ENABLED=on`, then the `expeditionAcceleration` switch.
-4. After the first live acceleration, check the finalized transaction on an explorer: four transfers, one burn, mint supply down by the burn.
+4. After the first live acceleration, check the finalized transaction on an explorer: exactly four transfers with the 50/30/10/10 amounts, no burn.
 
 ## 7. Security and financial checklist
 
@@ -124,7 +124,7 @@ Owner spec 2026-11-11. Branch `feature/expedition-mode` from production commit `
 - [x] An Expedition blocks attacks, deploys, Boss Hunt entry and Work All. The browser Sensei swap skips heroes on Expeditions too.
 - [x] Integer base-unit split with conservation over 200+ random totals up to 2^64.
 - [x] Exact instruction set verified on the signed wire: Token-2022 live, SPL live and devnet.
-- [x] No duplicate charge, transaction, burn or settlement (idempotent request IDs, one pending purchase, unique signature, `ON CONFLICT DO NOTHING`).
+- [x] No duplicate charge, transaction or settlement (idempotent request IDs, one pending purchase, unique signature, `ON CONFLICT DO NOTHING`).
 - [x] Refund keeps the hero away and books no evidence.
 - [x] The existing 50/30/10/10 router, the Boss Hunt split and other services are unchanged (a summon's transaction is checked in the same test).
 - [x] No secrets in code, logs or responses.
@@ -147,7 +147,7 @@ Verified as correct by the reviewer:
 - duty accounting, replay and device safety;
 - the switch-off path for heroes without Expedition data;
 - the snapshot at start, transfers, purchase-delta and the pending-purchase guards;
-- exact split and conservation, the burn instruction and destination checks;
+- exact split and conservation, the instruction set and destination checks (reviewed with the earlier burn; the burn was removed afterwards);
 - every lock, refunds, the reward-income exclusion, and no secrets in code, logs or responses.
 
 ## 9. Findings for the owner
@@ -161,7 +161,17 @@ Verified as correct by the reviewer:
     | 3 | 4.4 d | 4.7 d | 5.6 d | 5.9 d | 6.7 d | 8.9 d |
     | 6 | 2.4 d | 2.6 d | 3.0 d | 3.3 d | 3.7 d | 4.7 d |
 
-  - `EXPEDITION_DUTY_HOURS` can lower the limit after review.
+  - **Decision (2026-11-11): live uses 10 hours.** Simulated days of non-stop fighting to reach 10 hours:
+
+    | Dojo | Genin | Chunin | Jonin | Elite | Legend | Mythic |
+    |---|---|---|---|---|---|---|
+    | 0 | 17.0 | 18.1 | 21.9 | 16.6 | 19.2 | 25.9 |
+    | 1 | 8.7 | 9.3 | 11.1 | 10.1 | 11.7 | 15.7 |
+    | 2 | 3.7 | 3.9 | 4.7 | 4.8 | 5.5 | 7.4 |
+    | 3 | 2.5 | 2.6 | 3.1 | 3.3 | 3.7 | 4.9 |
+    | 4 | 1.9 | 2.0 | 2.4 | 2.5 | 2.9 | 3.7 |
+    | 5 | 1.6 | 1.7 | 1.9 | 2.1 | 2.4 | 3.0 |
+    | 6 | 1.4 | 1.4 | 1.7 | 1.8 | 2.0 | 2.6 |
 - **Performance:** the expensive part is the existing offline Sensei settlement: about 0.45 to 0.5 s of CPU per player for a 12-hour catch-up.
   - Expedition Mode adds about 11 to 14%.
   - 1,000 players returning together after 30 minutes took about 21 s with the mode on, versus about 19 s off.

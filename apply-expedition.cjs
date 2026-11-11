@@ -2,8 +2,8 @@
  * 2026-11-11. Copies expedition/server.cjs to app/server/expedition.cjs and expedition/expedition.{js,css} to the client,
  * appends the additive schema, and adds exact-string hooks (each must match exactly once, or the build stops):
  *   adventure.cjs  hands the Expedition window (duty on/off, verified Founder benefit) to both advance() calls.
- *   service.cjs    the read-only player action `expedition`; the Expedition-only atomic custody transaction (4 transfers +
- *                  SPL BurnChecked + memo) for product 'expedition'. Every other product keeps its existing instructions.
+ *   service.cjs    the read-only player action `expedition`; the Expedition-only atomic custody transaction (4 transfers,
+ *                  50/30/10/10, + memo; no burn) for product 'expedition'. Every other product keeps its existing instructions.
  *   store.cjs      Expedition acceleration is never paid with Starter Ryo; confirmed settlement books the evidence and
  *                  releases the exact Expedition paid for (after the current chakra is restored, so it is not overwritten).
  *   economy.cjs    quote() routes product 'expedition' to expedition.cjs (Store.purchase re-quotes it, so preview = charge).
@@ -27,7 +27,7 @@ const serverHooks = {
   'service.cjs': [
     ["  if(action==='hero-salvage'){", "  if(action==='expedition')return " + X + ".handle(store,wallet,action);\n  if(action==='hero-salvage'){"],
     ["return signedTransaction(q.revenueDistribution?await require('./sr-revenue.cjs').instructions(",
-     "return signedTransaction(q.expeditionDistribution?await " + X + ".instructions({store,client:c,wallet,connection,mint,treasuryAddress,studioAddress,revenueAddress,checkNetwork},q,id,transferTo,memo,raw=>spl.createBurnCheckedInstruction(treasuryAta,key(mint),treasury.publicKey,raw,6,[],require('./live-economy.cjs').programId())):q.revenueDistribution?await require('./sr-revenue.cjs').instructions("],
+     "return signedTransaction(q.expeditionDistribution?await " + X + ".instructions({store,client:c,wallet,connection,mint,treasuryAddress,studioAddress,revenueAddress,checkNetwork},q,id,transferTo,memo):q.revenueDistribution?await require('./sr-revenue.cjs').instructions("],
   ],
   'store.cjs': [
     ['bonusPaid=!chestPaid&&Number(account.bonus||0)>=q.total;', 'bonusPaid=!chestPaid&&q.noBonus!==true&&Number(account.bonus||0)>=q.total;'],

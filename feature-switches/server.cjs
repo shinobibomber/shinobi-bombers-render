@@ -50,10 +50,10 @@ const CATALOG = Object.freeze({
   starterTracking:      { env: 'STARTER_TRACKING_ENABLED', group: 'gameplay', label: 'Starter Activation: paid-summon tracking', default: 'on' },
   starterUi:            { env: 'STARTER_UI_ENABLED', group: 'gameplay', label: 'Starter Activation: activation panel', default: 'on' },
   // Expedition Mode (expedition/server.cjs, owner spec 2026-11-11): OFF everywhere until opened here. Combat Duty accrues and
-  // heroes leave on free Expeditions only while `expeditions` is on. Paid acceleration (40/30/10/10/10 with an SPL burn) also
+  // heroes leave on free Expeditions only while `expeditions` is on. Paid acceleration (50/30/10/10, no burn) also
   // needs EXPEDITION_ROUTING_ENABLED=on and approved prices; it is a money switch, so it is never opened by default.
   expeditions:            { env: 'EXPEDITIONS_ENABLED', group: 'gameplay', label: 'Expedition Mode: 18-hour Combat Duty and free Expeditions', default: 'off' },
-  expeditionAcceleration: { env: 'EXPEDITION_ACCELERATION_ENABLED', group: 'money', label: 'Expedition Mode: optional paid acceleration (40/30/10/10/10, SPL burn)', default: 'off' },
+  expeditionAcceleration: { env: 'EXPEDITION_ACCELERATION_ENABLED', group: 'money', label: 'Expedition Mode: optional paid acceleration (50% Reward Pool / 30% Treasury / 10% / 10%)', default: 'off' },
 });
 const KEYS = Object.freeze(Object.keys(CATALOG));
 
