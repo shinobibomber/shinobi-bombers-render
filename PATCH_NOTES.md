@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Deposits unblocked on phones
+
+- **Fixed: deposits could stay blocked on a phone.** Sometimes a deposit you approved in your wallet never reached Solana: the connection dropped, or the page paused while you were in the wallet app. The game then kept waiting for it, showed "deposit(s) remain unresolved", and wouldn't let you make another deposit on that phone.
+- Now a deposit that never reached Solana is cleared automatically once it can no longer go through, usually within about 3 minutes. The popup says **DEPOSIT FAILED**, and you can deposit again right away.
+- Nothing was lost: no tokens leave your wallet unless the deposit actually reaches Solana. If a cleared deposit does show up on Solana later, the game picks it up again and credits it as usual.
+
 ## November 11, 2026 — Expedition Mode prepared (not active yet)
 
 - **Coming soon: Expedition Mode.** After 18 hours of real combat, a hero will leave on a free Expedition to rest, then come back on its own. Only actual fighting counts; resting and recovering Chakra never do. Founders' Expeditions will take half the time.

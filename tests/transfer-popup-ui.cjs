@@ -73,4 +73,18 @@ const back = async p => p.getByRole('button', { name: 'Back to Chest', exact: tr
     assert.deepEqual(errors, []);
     console.log('PASS: deposit popup: processing while the receipt finalizes, then successful once it is credited; a credited deposit whose refresh timed out is never shown as failed; a wallet rejection is failed.');
   });
+  await withGame(async ({ p, f, errors, assert }) => {
+    // Owner report 2026-11-11 (a phone could not deposit): a deposit that never reached Solana is cleared by the wallet once it
+    // can no longer be processed. The popup then says FAILED (no tokens left the wallet), never credited.
+    f.holdAdventure = false; f.depositNotFinalized = true; await login(p); await open(p);
+    await p.getByRole('button', { name: 'Deposit Ryo', exact: true }).click(); await p.locator('#gc-transfer-amount').fill('100000');
+    await p.getByRole('button', { name: 'Review deposit', exact: true }).click(); await p.getByRole('button', { name: 'Confirm deposit', exact: true }).click();
+    assert.match(await result(p, 'deposit-processing'), /Deposit processing/i);
+    await p.evaluate(() => BetaWallet.expireAll());
+    assert.match(await result(p, 'deposit-failed'), /Deposit failed[\s\S]*never reached Solana and can no longer be processed[\s\S]*No tokens left your wallet\. You can deposit again\./i);
+    assert.equal(f.deposits.length, 0, 'nothing credited'); assert.equal(f.balance, 500000);
+    assert.equal(await p.locator('[data-gc-result="deposit-success"]').count(), 0, 'never shown as credited');
+    await ok(p); assert.deepEqual(errors, []);
+    console.log('PASS: a deposit cleared because it never reached Solana is shown as failed (no tokens left the wallet), never as credited.');
+  });
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -125,6 +125,53 @@ const clientPatches = [
   ['const ata=sdk.getAssociatedTokenAddressSync(key(state.tokenAddress),key(account));', 'const ata=sdk.getAssociatedTokenAddressSync(key(state.tokenAddress),key(account),false,tokenProgram);', 1],
   ['source=sdk.getAssociatedTokenAddressSync(mint,owner),destination=sdk.getAssociatedTokenAddressSync(mint,treasury);',
    'source=sdk.getAssociatedTokenAddressSync(mint,owner,false,tokenProgram),destination=sdk.getAssociatedTokenAddressSync(mint,treasury,false,tokenProgram);', 1],
+  // Unsent transactions no longer block deposits forever (owner report 2026-11-11: a phone could not deposit). A transaction is
+  // saved as pending before it is sent; when the send never reached Solana (send or simulation failed, the page was paused in
+  // the wallet app, the connection dropped) only a finalized receipt cleared it, so every later deposit on that browser stayed
+  // blocked ("deposit(s) remain unresolved"). Solana refuses a transaction once the chain is past its blockhash's last valid
+  // block height (the review already refuses a wallet that changed the blockhash), so a pending transaction is now cleared only
+  // when the FINALIZED chain is more than 150 blocks past that height (margin for a lagging RPC node) AND Solana reports no
+  // status for its signature: it never landed and never can, and no tokens moved. Records saved before this fix carry no
+  // height: the first check records the finalized height and assumes the transaction can be valid 150 blocks past it.
+  // A cleared record is kept for 7 days and every recovery in that time checks it again and restores it if it ever finalizes,
+  // so it is credited as usual. An RPC error during the expiry check keeps the record pending and never stops the recovery
+  // of the other records (independent review 2026-11-11). Heights come from getLatestBlockhash (allowed on the RPC relay): its lastValidBlockHeight is
+  // the block height + 150, so "finalized height > limit + 150" is "finalized lastValidBlockHeight > limit + 300".
+  ['record={hash,kind,network:NETWORK,account:ctx.account,tokenAddress:ctx.tokenAddress,...extra};',
+   'record={hash,kind,network:NETWORK,account:ctx.account,tokenAddress:ctx.tokenAddress,lastValidBlockHeight:block.lastValidBlockHeight,...extra};', 1],
+  ['async function waitFor(ctx,record){',
+   `const expiredKey=pendingKey+'-expired';
+ function readExpired(){try{const data=JSON.parse(localStorage.getItem(expiredKey)||'[]');return Array.isArray(data)?data:[]}catch{return []}}
+ function archiveExpired(record){localStorage.setItem(expiredKey,JSON.stringify([...readExpired().filter(r=>r&&r.hash!==record.hash),{...record,clearedAt:Date.now()}].slice(-20)))}
+ async function finalizedValid(){const h=Number((await connection.getLatestBlockhash('finalized'))?.lastValidBlockHeight);if(!Number.isSafeInteger(h)||h<1)throw Error('Solana block height is unavailable. Refresh later; pending records are preserved.');return h}
+ async function neverLands(record){try{
+  const now=await finalizedValid();let limit=record.lastValidBlockHeight;
+  if(!Number.isSafeInteger(limit)){if(!Number.isSafeInteger(record.seenValid)){store({...record,seenValid:now});return false}limit=record.seenValid+150}
+  if(!(now>limit+300))return false;
+  const status=(await connection.getSignatureStatuses([record.hash],{searchTransactionHistory:true}))?.value;
+  return Array.isArray(status)&&status.length===1&&status[0]===null;
+ }catch{return false}}   // any RPC error: keep it pending, and never stop the recovery of the other records
+ async function reviveExpired(){
+  const list=readExpired(),now=Date.now(),keep=[];let changed=false;
+  for(const r of list){
+   if(!r||typeof r.hash!=='string'||!(now-Number(r.clearedAt)<604800000)){changed=true;continue}
+   if(r.network===NETWORK&&r.account===state.account){
+    let receipt=null;try{receipt=await connection.getParsedTransaction(r.hash,{commitment:'finalized',maxSupportedTransactionVersion:0})}catch{}
+    if(receipt){changed=true;if(!receipt.meta?.err){const {clearedAt,...record}=r;store(record)}continue}
+   }
+   keep.push(r);
+  }
+  if(changed)localStorage.setItem(expiredKey,JSON.stringify(keep));
+ }
+ async function waitFor(ctx,record){`, 1],
+  ['const records=readPending().filter(record=>record.network===NETWORK&&record.account===state.account);',
+   'await reviveExpired();const records=readPending().filter(record=>record.network===NETWORK&&record.account===state.account);', 1],
+  ['const ctx=await context(),redeemed=[];let unresolved=0,failed=0;', 'const ctx=await context(),redeemed=[];let unresolved=0,failed=0,cleared=0;', 1],
+  ['if(!receipt){unresolved++;continue}', 'if(!receipt){if(await neverLands(record)){archiveExpired(record);acknowledge(record.hash);cleared++;continue}unresolved++;continue}', 1],
+  ['}await refreshFresh();notify(unresolved?',
+   "}await refreshFresh();notify(cleared&&!unresolved&&!redeemed.length?'Recovery check complete. '+cleared+' transaction(s) never reached Solana and can no longer be processed, so they were cleared. No tokens left your wallet; you can try again.':unresolved?", 1],
+  ['window.BetaWallet={get pendingDeposits(){',
+   "window.BetaWallet={clearedDeposits(since){return readExpired().filter(r=>r&&r.kind==='deposit'&&r.network===NETWORK&&r.account===state.account&&Number(r.clearedAt)>=since).length},get pendingDeposits(){", 1],
 ];
 // Live (Mainnet build) wording, applied by apply-network.cjs after apply-treasury's live text.
 // (The fee-free notice and the deposit fee line are part of apply-treasury's live patches, which own those strings.)

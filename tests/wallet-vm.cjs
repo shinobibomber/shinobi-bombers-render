@@ -4,6 +4,7 @@ const web3=require('../app/node_modules/@solana/web3.js'),spl=require('../app/no
 const GENESIS='EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',UNIT=1000000n;
 const owner=web3.Keypair.generate(),tester=web3.Keypair.generate(),other=web3.Keypair.generate(),studio=web3.Keypair.generate(),mints=new Map(),accounts=new Map(),receipts=new Map(),submitted=[];
 let genesis=GENESIS,reject=false,changeAfterSend=false,failNext=false,tamper=false,walletAppend=null,walletPriority=false,rpcFetchMode='ok',capturedRpcFetch;
+let chainValid=1000,heightBroken=false,sendThrow=false,statusError=false;const statuses=new Map();
 let solLamports=1000000000,feeUnavailable=false,gasRpcError=false,signCalls=0,solAfterSign=null,rpcDelay=0;const calls={genesis:0,balance:0,account:0,tokenBalance:0},slow=()=>rpcDelay?new Promise(r=>setTimeout(r,rpcDelay)):null;
 const storage=new Map(),localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v))};
 function mintInfo(mint){const value=mints.get(mint.toBase58());if(!value)return null;const data=Buffer.alloc(spl.MINT_SIZE);spl.MintLayout.encode({...value,mintAuthorityOption:value.authority?1:0,mintAuthority:value.authority||web3.PublicKey.default,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:web3.PublicKey.default},data);if(value.program)return {data:require('./sr-revenue-fixture.cjs').token2022(data,'mint',['MetadataPointer','TokenMetadata']),owner:value.program,lamports:1000000,executable:false};return {data,owner:spl.TOKEN_PROGRAM_ID,lamports:1000000,executable:false};}
@@ -15,9 +16,11 @@ class Connection {
  async getAccountInfo(address){calls.account++;await slow();return mints.has(address.toBase58())?mintInfo(address):accounts.has(address.toBase58())?{owner:spl.TOKEN_PROGRAM_ID}:null}
  async getTokenAccountBalance(address){calls.tokenBalance++;await slow();return {value:{amount:accounts.get(address.toBase58()).amount.toString()}}}
  async getMinimumBalanceForRentExemption(size){return size===0?890880:size===165?2039280:1461600}
- async getLatestBlockhash(){return {blockhash:web3.Keypair.generate().publicKey.toBase58(),lastValidBlockHeight:1000}}
+ async getLatestBlockhash(commitment){return {blockhash:web3.Keypair.generate().publicKey.toBase58(),lastValidBlockHeight:heightBroken&&commitment==='finalized'?undefined:chainValid}}
+ async getSignatureStatuses(hashes,options){assert.equal(options?.searchTransactionHistory,true,'signature status searches the history');if(statusError)throw Error('status unavailable');return {value:hashes.map(h=>statuses.has(h)?statuses.get(h):receipts.has(h)?{confirmationStatus:'finalized'}:null)}}
  async getParsedTransaction(hash){return receipts.get(hash)||null}
  async sendRawTransaction(bytes){
+  if(sendThrow){sendThrow=false;throw Error('failed to send transaction: Transaction simulation failed')}
   assert.equal(genesis,GENESIS);const tx=web3.Transaction.from(bytes);assert.ok(tx.verifySignatures());assert.ok(bytes.length<=1232);submitted.push(tx);
   const hash=bs58.encode(tx.signature),message=tx.compileMessage(),keys=message.accountKeys.map((pubkey,index)=>({pubkey,signer:message.isAccountSigner(index),writable:message.isAccountWritable(index)})),pre=[],post=[],instructions=[];
   const receipt={transaction:{signatures:[hash],message:{accountKeys:keys,instructions}},meta:{err:null,preTokenBalances:pre,postTokenBalances:post}};
@@ -105,6 +108,58 @@ const html=fs.readFileSync(require('node:path').join(__dirname,'../app/public/in
   await client.installConfig(mint);assert.equal(client.state.tokenAddress,mint);}
  await client.recoverPending();assert.match(client.state.message,/No pending/);assert.equal(client.state.busy,false);
  const preserved=JSON.stringify([deposits[0].record]);storage.set('shinobi-solana-pending-v1',preserved);rpcFetchMode='rate';await assert.rejects(client.recoverPending(),/rate-limit/);assert.equal(client.state.busy,false);assert.equal(storage.get('shinobi-solana-pending-v1'),preserved);rpcFetchMode='timeout';await assert.rejects(client.recoverPending(),/timed out/);assert.equal(client.state.busy,false);assert.equal(storage.get('shinobi-solana-pending-v1'),preserved);rpcFetchMode='ok';assert.equal(client.pendingDeposits,1,'failed status refresh never erases native pending record');await client.recoverPending();client.acknowledge(deposits[0].record.hash);
+ // ---- Unsent transactions no longer block deposits forever (owner report 2026-11-11: a phone could not deposit). A deposit
+ // saved as pending whose send never reached Solana is cleared only when the finalized chain is > 150 blocks past its expiry
+ // height and Solana has no status for it; a cleared one that finalizes later is restored and recovered as usual.
+ {
+  const KEY='shinobi-solana-pending-v1',EXP=KEY+'-expired',pending=()=>JSON.parse(storage.get(KEY)||'[]'),expired=()=>JSON.parse(storage.get(EXP)||'[]');
+  storage.set(KEY,'[]');storage.set(EXP,'[]');chainValid=1000;
+  const t0=Date.now(),sentBefore=submitted.length;sendThrow=true;
+  await assert.rejects(client.deposit(20000,other.publicKey.toBase58(),crypto.randomUUID(),null),/simulation failed/);
+  assert.equal(submitted.length,sentBefore,'the send failed: nothing reached the chain');
+  assert.equal(client.pendingDeposits,1,'the signed deposit is kept as pending (it might have arrived)');
+  const rec=pending()[0];assert.equal(rec.lastValidBlockHeight,1000,'the pending record keeps its blockhash expiry height');
+  for(const v of [1000,1300]){chainValid=v;await client.recoverPending();assert.equal(client.pendingDeposits,1,'kept until the chain is more than 150 blocks past expiry ('+v+')')}
+  assert.match(client.state.message,/not finalized yet/);
+  chainValid=1301;statuses.set(rec.hash,{confirmationStatus:'processed'});await client.recoverPending();assert.equal(client.pendingDeposits,1,'kept while Solana reports any status for the signature');statuses.delete(rec.hash);
+  statusError=true;await client.recoverPending();statusError=false;assert.equal(client.pendingDeposits,1,'an unavailable status check keeps the record');
+  heightBroken=true;await client.recoverPending();heightBroken=false;assert.equal(client.pendingDeposits,1,'an unavailable block height keeps the record');
+  // Independent review: a failing expiry check never stops the recovery of another record that did land.
+  {const landed={...rec,hash:'landed'+crypto.randomUUID().replace(/-/g,''),requestId:crypto.randomUUID()};storage.set(KEY,JSON.stringify([rec,landed]));
+   receipts.set(landed.hash,{transaction:{signatures:[landed.hash],message:{accountKeys:[],instructions:[]}},meta:{err:null,preTokenBalances:[],postTokenBalances:[]}});
+   for(const fail of ['status','height']){if(fail==='status')statusError=true;else heightBroken=true;
+    const found=await client.recoverPending();statusError=false;heightBroken=false;
+    assert.deepEqual(Array.from(found,x=>x.record.hash),[landed.hash],'the landed deposit is still recovered when the '+fail+' check fails');assert.equal(client.pendingDeposits,2,'and the expired one is kept')}
+   client.acknowledge(landed.hash);receipts.delete(landed.hash);assert.equal(client.pendingDeposits,1)}
+  assert.equal(client.clearedDeposits(t0),0);
+  await client.recoverPending();assert.equal(client.pendingDeposits,0,'past expiry with no status anywhere: cleared');
+  assert.match(client.state.message,/never reached Solana.*No tokens left your wallet/);assert.equal(client.state.busy,false);
+  assert.equal(client.clearedDeposits(t0),1,'the cleared deposit is reported');assert.equal(client.clearedDeposits(Date.now()+1000),0,'only since the given time');
+  assert.deepEqual(expired().map(r=>r.hash),[rec.hash],'the cleared record is kept aside');
+  // A cleared transaction that finalizes later after all is restored and returned for crediting (the server credits a signature once).
+  receipts.set(rec.hash,{transaction:{signatures:[rec.hash],message:{accountKeys:[],instructions:[]}},meta:{err:null,preTokenBalances:[],postTokenBalances:[]}});
+  const back=await client.recoverPending();assert.deepEqual(Array.from(back,r=>r.record.hash),[rec.hash],'restored and recovered');assert.equal(client.pendingDeposits,1);assert.deepEqual(expired(),[]);
+  assert.equal(back[0].record.clearedAt,undefined,'restored as the original pending record');client.acknowledge(rec.hash);receipts.delete(rec.hash);
+  // A cleared one that later shows up FAILED is dropped from the side list and never restored.
+  storage.set(EXP,JSON.stringify([{...rec,clearedAt:Date.now()}]));receipts.set(rec.hash,{transaction:{signatures:[rec.hash]},meta:{err:{InstructionError:[0,'Custom']}}});
+  await client.recoverPending();assert.deepEqual(expired(),[]);assert.equal(client.pendingDeposits,0);receipts.delete(rec.hash);
+  // A record saved before this fix (no height): the first check notes the finalized height, then the same rule applies 150 blocks later.
+  const legacy={...rec,hash:'legacy'+crypto.randomUUID().replace(/-/g,'')};delete legacy.lastValidBlockHeight;storage.set(KEY,JSON.stringify([legacy]));
+  chainValid=5000;await client.recoverPending();assert.equal(pending()[0].seenValid,5000,'first check records the finalized height');assert.equal(client.pendingDeposits,1);
+  chainValid=5450;await client.recoverPending();assert.equal(client.pendingDeposits,1,'kept until 450 blocks after the first check');
+  chainValid=5451;await client.recoverPending();assert.equal(client.pendingDeposits,0,'then cleared');assert.deepEqual(expired().map(r=>r.hash),[legacy.hash]);
+  // The side list: this account's deposits only are counted; entries older than 7 days are dropped; other accounts' stay unchecked.
+  const old={...rec,hash:'old1',clearedAt:Date.now()-8*86400000},foreign={...rec,hash:'foreign1',account:other.publicKey.toBase58(),clearedAt:Date.now()};
+  storage.set(EXP,JSON.stringify([old,foreign,...expired()]));assert.equal(client.clearedDeposits(0),2);
+  await client.recoverPending();assert.deepEqual(expired().map(r=>r.hash),['foreign1',legacy.hash]);assert.equal(client.clearedDeposits(0),1);
+  // Re-checked for the whole 7 days: one cleared 3 days ago that finalizes is still restored and recovered.
+  {const late={...rec,hash:'late'+crypto.randomUUID().replace(/-/g,''),clearedAt:Date.now()-3*86400000};storage.set(EXP,JSON.stringify([...expired(),late]));
+   receipts.set(late.hash,{transaction:{signatures:[late.hash],message:{accountKeys:[],instructions:[]}},meta:{err:null,preTokenBalances:[],postTokenBalances:[]}});
+   const found=await client.recoverPending();assert.deepEqual(Array.from(found,x=>x.record.hash),[late.hash]);assert(!expired().some(r=>r.hash===late.hash));client.acknowledge(late.hash);receipts.delete(late.hash)}
+  // A successful deposit is never touched by the rule, however far the chain moves on.
+  {chainValid=9000;const r=await client.deposit(10000,other.publicKey.toBase58(),crypto.randomUUID(),null);chainValid=99999;const found=await client.recoverPending();assert.deepEqual(Array.from(found,x=>x.record.hash),[r.record.hash]);client.acknowledge(r.record.hash)}
+  storage.set(EXP,'[]');chainValid=1000;
+ }
  // ---- Slow phone connection (owner report 2026-11-10: mobile players wait too long to sign in). Every Solana call takes 1.5 s;
  // the full balance check is 6 calls in a row (about 9 s). Sign-in waits at most ~3 s for it, runs it once, still raises
  // errors that happen within that time, and shows a later error as the wallet message without crashing.
