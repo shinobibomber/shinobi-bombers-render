@@ -107,6 +107,8 @@ const revealedCount = p => p.evaluate(() => S.v2.revealBatch.filter(item => item
     assert.equal(count(f, 'purchase'), 1, 'revealing never purchases again');
 
     const saved = await snapshot(p);
+    // A new visit without a saved tab sign-in (the same tab would resume it; see session-resume.cjs).
+    await p.evaluate(() => sessionStorage.removeItem('shinobi-ryo-session-v1'));
     await p.reload(); await ready(p);
     assert.equal(await p.evaluate(() => RevealDesign.canReveal()), false, 'saved token results remain private before wallet authentication');
     assert.equal(await p.locator('#summonReveal[open]').count(), 0);

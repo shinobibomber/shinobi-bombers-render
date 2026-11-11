@@ -101,8 +101,9 @@ const observeKills = (p, details=false) => p.evaluate(details => {
     assert(closing.length >= 1 && closing.some(r => r.active === false && Array.isArray(r.killTotals)), 'leaving the game sends the final kill totals');
     assert.equal(f.advData.reportedKills, atClose.kills, 'kills from the last seconds before closing are credited');
     assert(atClose.gained > 0, 'Session gained counted this visit');
+    // Reopening in the same tab resumes the saved sign-in (session renewal, 2026-11-11): no new signature or click.
     await p.reload(); await p.waitForFunction(() => window.GameLoading && !GameLoading.active);
-    await signIn();
+    await p.waitForFunction(() => RyoPayments.state.authenticated && !RyoPayments.state.busy && !LoginScreen.active && window.WebsiteDesign?.ready);
     await p.waitForFunction(() => AdventureChest.snapshot.chest && !AdventureChest.snapshot.busy);
     assert.equal(await p.evaluate(() => SessionRyo.gained), 0, 'Session gained starts at 0 each time the game is opened');
     assert(await p.evaluate(() => AdventureChest.snapshot.chest.pending) > 0, 'the Chest keeps every credited reward');

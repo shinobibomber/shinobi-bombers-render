@@ -18,6 +18,7 @@ suites.push('combat-rules.cjs','combat-identity.cjs','combat-native.cjs','combat
 suites.push('hero-upgrades-server.cjs','hero-upgrades-ui.cjs');
 suites.push('founders-server.cjs','founders-prelaunch.cjs','founders-pricing-ui.cjs','founder-discount.cjs');
 suites.push('login-recovery.cjs');
+suites.push('session-renewal.cjs','session-resume.cjs');
 suites.push('salvage-restore.cjs');
 suites.push('hero-card-frames.cjs');
 suites.push('founder-reveal.cjs');

@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Stay signed in while you play
+
+- **Fixed: players were signed out in the middle of the game.** Every sign-in ended exactly one hour after the wallet signature, even while you were playing. Your sign-in now renews itself while the game is open, for up to 24 hours. After 24 hours, one new wallet signature starts a fresh day.
+- **Reloading the page keeps you signed in.** Refreshing, or coming back to a tab your phone reloaded, no longer asks for a new signature. Phantom players go straight back into the game. Solflare players tap their wallet button once, and no signature is needed. This only applies in the same browser tab: closing the tab, switching wallet accounts or disconnecting your wallet still signs you out.
+
 ## November 11, 2026 — Faster sign-in, works on more networks
 
 - **Fixed: sign-in could stay on "Recovering pending transactions and refreshing your Ryo balance…"**, for some players unless they used a VPN. The game now opens as soon as your signature is accepted, with your verified balance and heroes already loaded. The pending-transaction check finishes in the background. If it finds a problem, a message appears in game.
