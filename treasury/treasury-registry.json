@@ -31,11 +31,11 @@
     },
     {
       "role": "economicReserve",
-      "label": "Economic Stability Reserve",
+      "label": "Content Creators Reward Pool",
       "bps": 1000,
       "address": "B2aGUT7xVA8ZRzoa2XaTKUinNbyoV4VvgAvWBn1dSN8M",
       "custody": "phantom-single-key",
-      "purpose": "Approved economic and reward-system support."
+      "purpose": "Funds rewards for content creators under approved budgets; approved top-ups from this wallet can also replenish the Active Reward Pool."
     }
   ],
   "squads": {

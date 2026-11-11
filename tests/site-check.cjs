@@ -61,7 +61,7 @@ async function startServer() {
         for (const alias of ['/whitepaper/', '/whitepaper.html']) { const x = await fetch(url + alias, { redirect: 'manual' }); assert.equal(x.status, 308); assert.equal(x.headers.get('location'), '/whitepaper'); }
         const w = await page(); await w.setViewportSize({ width: 1280, height: 900 }); await w.goto(url + '/whitepaper');
         assert.equal(await w.locator('main section[id]').count(), 16); assert.equal(await w.locator('.sidebar a').count(), 16);
-        assert.match(await w.title(), /Whitepaper v1\.1/); assert.match(await w.locator('.notice').textContent(), /Community Review Draft/);
+        assert.match(await w.title(), /Whitepaper v1\.2/); assert.match(await w.locator('.notice').textContent(), /Community Review Draft/);
         assert.equal(await w.locator('#netAmount').textContent(), '9,500 SR'); assert.equal(await w.locator('#feeAmount').textContent(), '500 SR');
         await w.locator('#withdrawAmount').fill('1234.567891'); assert.equal(await w.locator('#feeAmount').textContent(), '61.728394 SR'); assert.equal(await w.locator('#netAmount').textContent(), '1,172.839497 SR');
         assert.equal((await w.locator('body').textContent()).includes('★'), false, 'Mythic shows no star count');

@@ -1,16 +1,25 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Whitepaper v1.2 and Treasury page updated
+
+- **The whitepaper is up to date.** Version 1.2 now covers everything released so far: Expedition Mode, the Chest claim limits (100,000 Ryo minimum, Dojo claim bonus, Chest Overflow), fee-free deposits, Fusion Shards and Legend pity, Training and Upgrade Shards, the Founder's NFT Boxes, creator discounts, and a release status list showing what is open and what is not yet.
+- **New: "Where Each Payment Goes"** shows how every kind of payment is split: services, Expedition early return, Boss Hunt entries, withdrawals and deposits.
+- **Renamed: Economic Stability Reserve is now the Content Creators Reward Pool.** It is the same wallet and the same 10% share. It funds rewards for content creators. The new name appears in the whitepaper and on the Treasury page.
+
 ## November 11, 2026 — Deposits unblocked on phones
 
 - **Fixed: deposits could stay blocked on a phone.** Sometimes a deposit you approved in your wallet never reached Solana: the connection dropped, or the page paused while you were in the wallet app. The game then kept waiting for it, showed "deposit(s) remain unresolved", and wouldn't let you make another deposit on that phone.
 - Now a deposit that never reached Solana is cleared automatically once it can no longer go through, usually within about 3 minutes. The popup says **DEPOSIT FAILED**, and you can deposit again right away.
 - Nothing was lost: no tokens leave your wallet unless the deposit actually reaches Solana. If a cleared deposit does show up on Solana later, the game picks it up again and credits it as usual.
 
-## November 11, 2026 — Expedition Mode prepared (not active yet)
+## November 11, 2026 — Expedition Mode is live
 
-- **Coming soon: Expedition Mode.** After 10 hours of real combat, a hero will leave on a free Expedition to rest, then come back on its own. Only actual fighting counts; resting and recovering Chakra never do. Founders' Expeditions will take half the time.
-- An **Expedition Hall** will take the place of the Daily Missions panel on the main menu. You'll see each hero's Combat Duty, who is away and who is back.
-- Nothing changes in the game today: Expedition Mode stays switched off until its launch is announced. Your heroes, Chakra, rewards and Sensei work exactly as before.
+- **Your heroes now rotate.** After **10 hours of real combat**, a hero leaves on a **free Expedition** to rest, then comes back on its own. Only actual fighting counts; resting and recovering Chakra never do.
+- **Expedition times:** Genin 2h · Chunin 3h · Jonin 4h · Elite 5h · Legend 6h · Mythic 8h. **Founders' Expeditions take half the time.**
+- While a hero is away, **Sensei swaps in another hero**. Its Chakra keeps recovering, its rank, stats and perks never change, and its Combat Duty starts again from zero when it returns.
+- The **Expedition Hall** replaces the Daily Missions panel on the main menu. It shows each hero's Combat Duty, who is away and who is back, and Combat Duty also appears in the Heroes Collection.
+- **Optional early return.** Expeditions are always free, but you can pay Ryo from your game balance to bring a hero back early. A full Expedition costs Genin 2,000 · Chunin 6,000 · Jonin 15,000 · Elite 28,000 · Legend 45,000 · Mythic 90,000 Ryo, and you only pay for the time left. You see the price and confirm before anything is charged.
+- Early-return payments go 50% to the Active Reward Pool, 30% to the Locked Treasury, 10% to Community Rewards and 10% to the Content Creators Reward Pool. Nothing is burned.
 
 ## November 11, 2026 — Adventure stage restored after sign-in
 

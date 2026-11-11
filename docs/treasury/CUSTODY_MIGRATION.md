@@ -11,7 +11,7 @@ approval, and a small test transfer before real funds move.
 | Locked Treasury 50% | `5wVBdFkQ…11aGn` | Squads v4 vault #0 of multisig `38chAaSb…SZjX` | 2-of-3 approval, no config authority, **no time lock** (by policy) |
 | Active Reward Pool 30% | `3Rzz25x1…Ti56` | Phantom (single key) | none on-chain |
 | Community Reward Vault 10% | `FZnW5DvU…vDyL` | Phantom (single key) | none on-chain |
-| Economic Stability Reserve 10% | `B2aGUT7x…N8M` | Phantom (single key) | none on-chain |
+| Content Creators Reward Pool 10% (formerly Economic Stability Reserve) | `B2aGUT7x…N8M` | Phantom (single key) | none on-chain |
 
 Squads members: `7Hd7D6Gs…nEWm`, `9Lepjwaf…SPiY`, `CM92voUX…7LMNHy` (the creator / fee payer).
 **Owner to confirm:** all three are yours, on separate devices (ideally hardware wallets), and none is the

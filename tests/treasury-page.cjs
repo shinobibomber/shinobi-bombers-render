@@ -33,7 +33,7 @@ const reg = pendingRegistry(R), DIR = path.join(__dirname, '../treasury/public')
     p.on('pageerror', e => errors.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !/404|Content Security Policy/.test(m.text())) errors.push(m.text()); });
     await p.goto(base + '/treasury'); await p.waitForFunction(() => document.querySelector('#status').classList.contains('ok'));
     const text = await p.locator('main').innerText();
-    for (const v of ['Locked Treasury (Squads Account 1)', '50%', '30%', 'Active Reward Pool', 'Community Reward Vault', 'Economic Stability Reserve', reg.addresses.lockedTreasury, reg.addresses.economicReserve, '2 of 3 signers', 'None (changes need a vote)', 'Not launched yet', 'Mint pending', '2.5 SOL', 'Not funded yet'])
+    for (const v of ['Locked Treasury (Squads Account 1)', '50%', '30%', 'Active Reward Pool', 'Community Reward Vault', 'Content Creators Reward Pool', reg.addresses.lockedTreasury, reg.addresses.economicReserve, '2 of 3 signers', 'None (changes need a vote)', 'Not launched yet', 'Mint pending', '2.5 SOL', 'Not funded yet'])
       assert(text.includes(v), v);
     for (const m of reg.squads.members) assert(!text.includes(m), 'member keys are not shown publicly');
     assert.equal(await p.locator('#held').innerText(), 'Mint pending', 'no placeholder SR total before the mint exists');

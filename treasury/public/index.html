@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Treasury Transparency · Shinobi Bombers</title>
-<meta name="description" content="Read-only, finalized on-chain view of the Shinobi Bombers Chapter 04 SR wallets: Squads Treasury, Active Reward Pool, Community Reward Vault and Economic Stability Reserve.">
+<meta name="description" content="Read-only, finalized on-chain view of the Shinobi Bombers Chapter 04 SR wallets: Squads Treasury, Active Reward Pool, Community Reward Vault and Content Creators Reward Pool.">
 <link rel="stylesheet" href="/treasury/treasury.css">
 <script src="/treasury/treasury.js" defer></script>
 </head>
@@ -26,6 +26,7 @@
     <h2 id="split-title">Approved service revenue split</h2>
     <p class="note">Eligible net SR revenue from approved game services only. Treasury → reward pool replenishment is an internal transfer and is never split again. No automatic burn.</p>
     <div id="split" class="split" aria-label="50 / 30 / 10 / 10 allocation"></div>
+    <p class="note">Optional Expedition early-return payments use their own split: 50% Active Reward Pool, 30% Locked Treasury, 10% Community Reward Vault, 10% Content Creators Reward Pool. Nothing is burned. The 10% wallet was previously called the Economic Stability Reserve; its address and share are unchanged.</p>
   </section>
 
   <section aria-labelledby="funding-title">
@@ -36,7 +37,7 @@
       <article class="panel"><h3>Available for player reward claims</h3><div id="claimable" class="big">—</div><p id="claimNote" class="note"></p><div id="claimState" class="row"></div></article>
     </div>
     <article id="custodyPanel" class="panel custody" hidden><h3>Game claim wallet</h3><p id="custodyAddr" class="mono"></p><div id="custodyCopy"></div><dl id="custodyFacts" class="facts"></dl>
-      <p class="note">The game's own hot wallet. At launch it will also hold players' deposited SR, so its balance is <b>not</b> all available for rewards. It receives reward SR only through approved top-ups from the Active Reward Pool.</p></article>
+      <p class="note">The game's own hot wallet. It also holds players' deposited SR, so its balance is <b>not</b> all available for rewards. It receives reward SR only through approved top-ups from the Active Reward Pool.</p></article>
   </section>
 
   <section aria-labelledby="wallets-title">
@@ -56,9 +57,9 @@
     <ul id="rules" class="rules"></ul>
     <ul class="rules">
       <li>Withdrawals of claimed SR return <b>5%</b> to the Locked Treasury. That deduction has its own ledger and is never counted as service revenue.</li>
-      <li>The Active Reward Pool, Community Reward Vault and Economic Stability Reserve are currently single-key wallets: they carry no on-chain spending restriction.</li>
+      <li>The Active Reward Pool, Community Reward Vault and Content Creators Reward Pool are currently single-key wallets: they carry no on-chain spending restriction.</li>
       <li>Balances are finalized observations, refreshed at most once a minute. If the chain cannot be read, values show as unavailable — never as zero.</li>
-      <li>SR revenue routing, Chest claims and withdrawals open only after the official launch and the owner's explicit activation.</li>
+      <li>SR revenue routing, Chest claims and withdrawals run under the approved vault configuration, funded reward pools and the daily limits described in the whitepaper.</li>
     </ul>
   </section>
 </main>
