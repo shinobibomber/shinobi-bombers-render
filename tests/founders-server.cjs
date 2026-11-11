@@ -476,6 +476,10 @@ const ok = label => pass.push(label);
   await assert.rejects(F.senseiBuy(ctx, W(alice), { requestId: 'sensei-req-000003' }, SOLS), /already owned/, 'Mythic Founders already have permanent Sensei');
   // Legacy: trial (once) → 0.2 SOL during the trial; 0.4 SOL after it.
   assert.equal((await F.senseiInfo(store, W(bob), SOLS)).senseiSol.price, 0.4, 'no discount before the trial starts');
+  // Refused while a purchase is pending (a pending Sensei rental would settle its rental end over the trial's 7 days).
+  await pool.query("INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,status,created) VALUES($1,$2,'trial-pending-000001','sensei-rental','{}','{}','{}','{}',1,'sig-trial-pending','w',1,'pending',$3)", [store.scope, W(bob), now]);
+  await assert.rejects(F.senseiTrial(store, W(bob), ON), /pending purchase to settle before starting the Sensei trial/);
+  await pool.query("DELETE FROM ryo_purchases WHERE scope=$1 AND request_id='trial-pending-000001'", [store.scope]);
   now += HOUR; const trial = await F.senseiTrial(store, W(bob), ON);
   assert.equal(trial.trial.ends, now + 7 * DAY); assert(economy.senseiActive(await store.profile(W(bob)), now + 7 * DAY - 1));
   await assert.rejects(F.senseiTrial(store, W(bob), ON), e => e.code === 'TRIAL_USED');

@@ -2057,6 +2057,24 @@
       dojoSeen.t = t; const ca = window.AdventureChest?.snapshot?.chest?.claimAllowance;
       if (ca && ca.active) notice('DOJO UPGRADE COMPLETE!', `Your Dojo is now Tier ${ROMAN[t]}. Chest Claim Bonus: +${fmt(t * (Number(ca.bonusPerTierRyo) || 100000))} Ryo. Your personal Chest claim allowance has increased, subject to reward-pool funding and today's approved budget. Open your Chest to review your available claim.`);
     });
+    // Withdrawal result popup (owner request 2026-11-11): a withdrawal that was still pending finalizes later (here, in the Chest or
+    // from the Ryo Wallet panel). One notice per request when the server status moves from pending to confirmed or refunded in this
+    // page session; withdrawals that answer at once are shown by the Chest's own result popup. Server status only.
+    let payoutSeen = null;
+    // The shared dialog may be showing a checkout, a form or another notice: queue behind it instead of replacing it.
+    const noticeWhenFree = (title, text) => { if (dlg && dlg.open) { setTimeout(() => noticeWhenFree(title, text), 1500); return; } notice(title, text); };
+    addEventListener('shinobi-ryo-ledger', () => {
+      const st = ledger(); if (!st.authenticated || !Array.isArray(st.withdrawals)) { payoutSeen = null; return; }
+      if (!payoutSeen || payoutSeen.a !== st.account) payoutSeen = { a: st.account, s: new Map(), done: new Set() };
+      for (const w of st.withdrawals) {
+        const id = w && w.request_id; if (!id) continue;
+        const was = payoutSeen.s.get(id); payoutSeen.s.set(id, w.status);
+        if (was !== 'pending' || w.status === 'pending' || payoutSeen.done.has(id)) continue;
+        payoutSeen.done.add(id); const amount = fmt(Math.floor(Number(w.amount) || 0));
+        if (w.status === 'confirmed') noticeWhenFree('WITHDRAWAL SUCCESSFUL', `Your withdrawal of ${amount} Ryo has finalized and was sent to your connected wallet.`);
+        else if (w.status === 'refunded') noticeWhenFree('WITHDRAWAL FAILED', `Your withdrawal of ${amount} Ryo did not go through. Your reserved Ryo was returned to your Game Balance.`);
+      }
+    });
     window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync, open: goScreen };
   }
   init().catch(e => console.error('Website designs could not be applied:', e));

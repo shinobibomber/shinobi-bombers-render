@@ -554,6 +554,8 @@ async function senseiTrial(store, wallet, env = process.env) {
     if (!valid(e) || e.activated == null) fail('Activate your Founder benefits first.', 403, 'FOUNDERS_INACTIVE');
     if (e.tier !== 'legacy') fail('The Sensei trial belongs to the Legacy Founder box (Mythic includes permanent Sensei).', 409);
     if (e.trial_started != null) fail('The 7-day Sensei trial was already used.', 409, 'TRIAL_USED');
+    // A pending Sensei rental would settle its own rental end over the trial's 7 days (purchase-delta writes changed fields).
+    if ((await c.query("SELECT 1 FROM ryo_purchases WHERE scope=$1 AND wallet=$2 AND status='pending' LIMIT 1", [store.scope, wallet])).rows.length) fail('Wait for the pending purchase to settle before starting the Sensei trial.', 409);
     const profile = await store.profileLocked(c, wallet), now = nowOf(store), ends = now + SENSEI_TRIAL_MS;
     if (profile.sensei !== true) { profile.senseiRentalSince = Number(profile.senseiRentalUntil || 0) > now ? profile.senseiRentalSince : now; profile.senseiRentalUntil = Math.max(now, Number(profile.senseiRentalUntil || 0)) + SENSEI_TRIAL_MS; }
     await saveProfile(c, store, wallet, profile);

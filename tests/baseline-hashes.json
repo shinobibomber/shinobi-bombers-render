@@ -291,7 +291,7 @@
     },
     {
       "path": "app/server/schema.sql",
-      "sha256": "915fa17c57990352cf7427769b3967b2450179bdb357944eeb91f55b474977a5"
+      "sha256": "0e29197e9593c44e5f10edad642214200433d04bb869679017019afe2697080c"
     },
     {
       "path": "app/server/service.cjs",
@@ -299,7 +299,7 @@
     },
     {
       "path": "app/server/store.cjs",
-      "sha256": "a05eb85619bf92a9c37948cf806aa7719456ad99b1c261d5c96fac2f5d4623bd"
+      "sha256": "0878bd7b0f3bddb244c7960f3406bb1580e9a48ec0eeb918527e3d92b8d87389"
     },
     {
       "path": "app/server/transaction-review.cjs",

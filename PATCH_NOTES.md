@@ -1,5 +1,17 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Deposit and withdrawal results, Shrine fix, safer purchases
+
+- **Deposit and withdrawal results on screen.** After every deposit or withdrawal, a popup tells you how it went:
+  - **SUCCESSFUL:** the Ryo was added to your Game Balance, or sent to your wallet.
+  - **FAILED:** with the reason. Nothing was charged, or your reserved Ryo was returned.
+  - **PROCESSING:** it's still being confirmed on-chain. The popup updates by itself when it finishes, and nothing is lost.
+  
+  A withdrawal that finishes later shows its result when it settles, even if you've closed the Chest.
+- **Summoning Shrine fix.** When your Chest held 450,000 Ryo or more, the Chest Overflow alert covered the ×5 / ×10 / ×15 buttons, so pressing ×5 opened the Chest. The alert now appears in the middle of the screen. Press **Continue** to close it, or **Open Chest** to go to your Chest. The Shrine buttons work normally.
+- **No more lost rewards during a purchase.** Rewards and changes that arrived while a purchase was still confirming could be undone when the purchase finished. That included Boss Hunt heroes, Founder heroes and a Mythic hero sync. Now only the purchase's own result is applied, and everything else on your account stays as it is.
+- The Legacy Founder 7-day Sensei trial now waits until a pending purchase has finished, so the trial's days can't be overwritten.
+
 ## November 11, 2026 — Shinobi Starter Activation (starts at the announced launch time)
 
 - New players who join from the launch time on get **10 FREE GENIN HEROES**. They start at Level 1 with Power 1, Speed 1 and Stamina 1, and you can make them stronger with Training.
