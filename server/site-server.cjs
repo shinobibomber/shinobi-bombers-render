@@ -25,6 +25,8 @@ const ADMIN_DIR = path.join(ROOT, 'economic-dashboard');
 const CC_DIR = path.join(ROOT, 'command-center', 'public');   // Shinobi Command Center staff console
 const GAME_DIR = path.resolve(process.env.GAME_RUNTIME_DIR || path.join(ROOT, 'app'));   // assembled by `npm run build`
 const MOUNT = '/play';
+// Identifies the running deploy (Render sets RENDER_GIT_COMMIT). Without it (local runs) one id per process, so a page never reloads in a loop.
+const BUILD_VERSION = String(process.env.RENDER_GIT_COMMIT || '').slice(0, 40) || 'local-' + Date.now().toString(36);
 const GAME_ROOT_PATHS = new Set(['/.netlify/functions/ryo', '/api/ryo', '/beta-config.json', '/healthz']);
 const network = require(path.join(ROOT, 'network', 'network.cjs'));
 const NET = network.resolve();
@@ -333,6 +335,12 @@ const server = http.createServer((req, res) => {
   let url; try { url = new URL(req.url, 'http://localhost'); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   if (canonicalRedirect(req, res, url, name)) return;
+  // The running version, so open game pages can reload themselves after a deploy (auto-update/auto-update.js). No-store, no secrets.
+  if (name === '/version.json') {
+    if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...SITE_HEADERS });
+    return res.end(req.method === 'HEAD' ? undefined : JSON.stringify({ v: BUILD_VERSION }));
+  }
   // Same-origin Solana RPC relay for the game page's wallet (rpc-relay/server.cjs): limited methods, same origin only.
   if (!PRELAUNCH && rpcRelay && name === '/api/rpc') return rpcRelay.handle(req, res).catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   if (control && name === '/api/control') return control.handle(req, res);

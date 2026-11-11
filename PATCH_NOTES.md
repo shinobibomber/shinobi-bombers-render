@@ -1,5 +1,12 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Automatic refresh after updates
+
+- **The game now refreshes itself after an update.** When a new version goes live, a small banner appears: "New update available. Reloading in 10 s", with a **Reload now** button. The page then reloads, signs you back in and returns you to your Adventure map with the same team.
+- **It never interrupts you.** The countdown waits while a payment, a deposit, a Fusion or Summon result, Boss Hunt or any other dialog is open, and your last kills are sent to the Chest before it reloads.
+- Phantom signs back in by itself. Solflare and other wallets show the login screen once and need one click. Sign-ins older than 24 hours need a new signature.
+- The game also stops checking Expedition and Hero Pass status while its tab is hidden, and refreshes them the moment you come back.
+
 ## November 11, 2026 — Faster Fusion and Heroes, smoother on slow devices
 
 - **Fusion is much smoother with big collections.** The Reserve list now draws only the heroes you can see, so scrolling and selecting stay quick even with hundreds of heroes.

@@ -17,6 +17,7 @@ assert.equal(html.split(require('../apply-starter-activation.cjs').marker).lengt
 // Hero Passes (applied after Chest Overflow): RyoPayments.heroPasses.
 for(const [before,after]of require('../apply-hero-passes.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact hero passes hook');html=html.replace(after,()=>before)}
 assert.equal(html.split(require('../apply-hero-passes.cjs').marker).length-1,1,'one hero passes script marker');
+assert.equal(html.split(require('../apply-auto-update.cjs').marker).length-1,1,'one auto-update script marker');
 // Chest Overflow (applied after Fusion Shards): its own script only.
 assert.equal(html.split(require('../apply-chest-overflow.cjs').marker).length-1,1,'one chest overflow script marker');
 // Fusion Shards (applied after Shrine pity): RyoPayments.fusionShardCraft and the checkout note.
