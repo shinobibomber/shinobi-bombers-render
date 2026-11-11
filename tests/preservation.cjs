@@ -5,6 +5,9 @@ for(const file of baseline.files){assert.equal(sha(fs.readFileSync(path.join(roo
 let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 // The last build step points image URLs at their WebP versions; restore the original names first.
 html=require('../apply-performance.cjs').restoreReferences(html);
+// Sign-in (applied last, after reward pool): wallet time limits, network-free login signature, friendly cancel, config fetch limit.
+for(const [before,after]of require('../apply-signin.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact sign-in hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
+assert.equal(html.split(require('../apply-signin.cjs').marker).length-1,1,'one sign-in asset marker');
 // Session renewal (applied after Expedition Mode): saved tab session, silent wallet reconnect, resume on the login screen.
 for(const [before,after]of require('../apply-session-renewal.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact session renewal hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
 // Expedition Mode (applied after the feature switches, after live economy): RyoPayments.expedition and the deploy/Sensei/Work All skips.

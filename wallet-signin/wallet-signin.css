@@ -1,0 +1,16 @@
+/* Sign-in on every browser (apply-signin.cjs). Loaded after login-exact.css; the approved artwork is unchanged.
+   The phone hint uses the login screen's own status box (#loginMessage, styled by login-exact.css). */
+
+/* Landscape phones: the poster used to shrink to the screen height, leaving ~27 px wallet buttons. Show it at full screen
+   width (at least 780 px, cropped evenly at the sides; scroll for the bottom links) so the buttons get a comfortable 44 px
+   touch target and stay apart. */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  #loginScreen.reference-login-exact { overflow: hidden auto; place-items: start center; }
+  #loginScreen.reference-login-exact .login-content { width: max(100vw, 780px); }   /* ≥ 780 px keeps the two 44 px buttons apart */
+  /* Very short screens (e.g. 568 × 320): lift the poster so the Solflare button (ends at 64.6 % of the poster height,
+     height = width × 2/3) stays fully visible; only sky at the top is cropped. */
+  #loginScreen.reference-login-exact .login-content { margin-top: min(0px, calc(100vh - max(100vw, 780px) * 0.4467)); }
+  #loginScreen.reference-login-exact .login-content { margin-top: min(0px, calc(100dvh - max(100vw, 780px) * 0.4467)); }
+  #loginScreen.reference-login-exact :is(#loginPhantom, #loginSolflare) { min-height: 44px; }
+  #loginScreen.reference-login-exact #loginMessage { padding: 5px 7px; font-size: 11px; }
+}

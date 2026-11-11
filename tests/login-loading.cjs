@@ -64,7 +64,7 @@ const signedIn = p => p.waitForFunction(() => RyoPayments.state.authenticated &&
       BetaWallet.recoverPending = async (...args) => { testLoginCalls.recovery++; return recover(...args); };
     });
     await p.evaluate(() => { document.getElementById('loginPhantom').click(); document.getElementById('loginPhantom').click(); });
-    await p.waitForFunction(() => document.getElementById('loginMessage').textContent.includes('rejected') && !document.getElementById('loginPhantom').disabled);
+    await p.waitForFunction(() => document.getElementById('loginMessage').textContent.startsWith('Sign-in cancelled in your wallet.') && !document.getElementById('loginPhantom').disabled);   // a rejection shows the friendly message (apply-signin.cjs), not the raw wallet error
     assert.deepEqual(await p.evaluate(() => testLoginCalls.providers), ['phantom'], 'rapid clicks retain the native login guard');
     assert.equal(await p.evaluate(() => testLoginCalls.signatures), 1);
     assert.equal(f.loginSerial, 0, 'rejected signature never authenticates');

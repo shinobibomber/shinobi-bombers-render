@@ -1,5 +1,13 @@
 # Shinobi Bombers patch notes
 
+## November 12, 2026 — Easier sign-in on phones and computers
+
+- **Sign in from your phone browser.** In Safari or Chrome on a phone, tapping **Phantom** or **Solflare** now opens Shinobi Bombers inside that wallet app, where you sign in as usual. If the app is not installed, the wallet's page offers the download.
+- **No more frozen sign-in.** If your wallet does not answer (popup closed, wallet locked, app in the background), sign-in now stops with a clear message and the buttons work again — no page reload needed. Cancelling shows "Sign-in cancelled in your wallet".
+- **Faster sign-in on slow networks.** The sign-in signature no longer waits for Solana network checks (signing in sends nothing to the blockchain). Every payment still checks the network fully.
+- **Bigger buttons on landscape phones**, fully visible even on small screens, and a short tip for phone players.
+- **No wallet on your computer?** The sign-in buttons now link to the official Phantom and Solflare downloads.
+
 ## November 11, 2026 — Faster Chest updates as the game grows
 
 - **The server now works out the reward pool much faster.** Every Chest update used to recount every claim and purchase in the game; it now reads totals the database keeps ready. Chest updates and claims stay quick as more players join.
