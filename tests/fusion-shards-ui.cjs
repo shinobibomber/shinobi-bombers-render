@@ -23,6 +23,15 @@ const open = async p => {
     // The panel sits fully inside the Fuse panel, above the price row, and the old note text is hidden.
     const box = await panel(p).evaluate(e => { const r = e.getBoundingClientRect(), now = document.querySelector('.sbw-scr.on .hs[data-sbwid="fuse"], .sbw-scr.on .hs[data-sbwid*="fuse"]')?.getBoundingClientRect(); return { w: r.width > 400, h: r.height > 50, inView: r.bottom <= innerHeight && r.right <= innerWidth, rows: [...e.querySelectorAll('.sbw-fs-row')].every(x => x.scrollWidth <= x.clientWidth + 1), noteHidden: [...document.querySelectorAll('.sbw-scr.on .sbw-cover')].filter(c => /resulting hero will be/.test(c.textContent)).every(c => c.hidden) }; });
     assert.deepEqual(box, { w: true, h: true, inView: true, rows: true, noteHidden: true }, 'panel layout');
+    // "+" stops at the owned balance: 1 Fusion Shard owned, so the first press works and the second says to craft first.
+    await panel(p).locator('[data-fs="+"]').click();
+    await p.waitForFunction(() => /1 \/ 2/.test(document.querySelector('.sbw-scr.on .sbw-fshards')?.textContent || ''));
+    assert.equal(await panel(p).locator('[data-fs="+"]').getAttribute('aria-disabled'), 'true', '+ looks disabled at the balance');
+    await panel(p).locator('[data-fs="+"]').click({ force: true });
+    await p.waitForFunction(() => /Not enough Fusion Shards\. Craft first\. You have 1, need 2\./.test(document.querySelector('.sbw-scr.on .sbw-fshards .sbw-fs-note')?.textContent || ''));
+    assert.match(await text(), /1 \/ 2/, 'blocked press leaves the amount unchanged');
+    await panel(p).locator('[data-fs="-"]').click();
+    await p.waitForFunction(() => /0 \/ 2/.test(document.querySelector('.sbw-scr.on .sbw-fshards')?.textContent || ''));
     // Craft Max: confirmation first, then the server balances.
     await panel(p).locator('[data-fs="craft"]').click();
     const dlg = p.locator('dialog.fusion-craft[open]'); await dlg.waitFor();
@@ -82,6 +91,10 @@ const open = async p => {
     const fit = await panel(p).evaluate(e => { const r = e.getBoundingClientRect(); return r.width > 150 && r.left >= -1 && r.right <= innerWidth + 1 && [...e.querySelectorAll('button')].every(b => { const x = b.getBoundingClientRect(); return x.width > 10 && x.height > 10; }); });
     assert.equal(fit, true, 'phone: panel inside the screen with usable buttons');
     await panel(p).scrollIntoViewIfNeeded();
+    // No Fusion Shards at all: "+" changes nothing and tells the player to craft first.
+    await panel(p).locator('[data-fs="+"]').click({ force: true });
+    await p.waitForFunction(() => /Not enough Fusion Shards\. Craft first\. You have 0, need 2\./.test(document.querySelector('.sbw-scr.on .sbw-fshards .sbw-fs-note')?.textContent || ''));
+    assert.match((await panel(p).innerText()).replace(/\s+/g, ' '), /0 \/ 2/, 'phone: amount stays 0');
     await p.screenshot({ path: path.join(root, 'tests/out/fusion-shards-phone.png') });
     await panel(p).locator('[data-fs="craft"]').click();
     const dlg = p.locator('dialog.fusion-craft[open]'); await dlg.waitFor();

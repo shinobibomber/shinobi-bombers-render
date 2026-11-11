@@ -19,6 +19,12 @@
     const base = BASE[rank] ?? 0, need = needed(rank), n = Math.min(per, need), total = n * Math.max(1, attempts);
     return { base, needed: need, per: n, final: Math.min(100, base + STEP * n), total, short: Math.max(0, total - balance()) };
   }
+  /* Can the player add one more Fusion Shard per attempt? Only while it stays within the balance (one attempt, as the Fusion
+   * panel shows). have = balance, need = shards for 100% at this rank. The server still re-checks everything at quote. */
+  function canAdd(rank) {
+    const have = balance(), need = needed(rank);
+    return { ok: per + 1 <= Math.min(need, have), have, need };
+  }
   function set(rank, n) { per = Math.max(0, Math.min(needed(rank), Math.trunc(Number(n) || 0))); return per; }
 
   /* The chosen Fusion Shards travel with the fusion quote; the server re-checks them at purchase and settlement. */
@@ -153,7 +159,7 @@ p.fusion-shard-cost{color:#ffcf63}`;
   }
 
   window.FusionShards = Object.freeze({
-    VERSION, STEP, RATE, BASE, needed, plan, set, balance, upgrade, decorate, openCraft,
+    VERSION, STEP, RATE, BASE, needed, plan, set, canAdd, balance, upgrade, decorate, openCraft,
     perAttempt: () => per, fill: rank => set(rank, needed(rank)),
   });
   if (!wrap()) { const t = setInterval(() => { if (wrap()) clearInterval(t); }, 200); setTimeout(() => clearInterval(t), 30000); }

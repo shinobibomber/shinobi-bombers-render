@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 12, 2026 — Fusion Shards: clear "craft first" message
+
+- **The + button now stops at the Fusion Shards you own.** If you don't have enough, nothing changes and a message tells you to craft first and shows how many Fusion Shards you have and how many you need.
+- Craft more with the **CRAFT** button next to it (2 Upgrade Shards = 1 Fusion Shard).
+- Fusion odds, prices and your shard balances are unchanged.
+
 ## November 12, 2026 — Shinobi Activation card no longer blocks your phone screen
 
 - **On phones, the Shinobi Activation card now starts as a small pill** (⚡ Activation 3/15) in the corner. Tap it to see the full card.

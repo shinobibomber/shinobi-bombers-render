@@ -1149,6 +1149,7 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 #sbwLayer .sbw-fs-step em{min-width:38px;font-style:normal;text-align:center;color:#fff}
 #sbwLayer .sbw-fshards button{min-width:26px;height:24px;padding:0 8px;border:1px solid #ffcf63;border-radius:6px;background:#1a1226;color:#ffe9a8;font:900 13px Rajdhani,sans-serif;cursor:pointer;pointer-events:auto}
 #sbwLayer .sbw-fshards button:disabled{opacity:.4;cursor:default}
+#sbwLayer .sbw-fshards button.sbw-fs-nostock{opacity:.4;cursor:not-allowed}
 #sbwLayer .sbw-fshards .sbw-fs-fill,#sbwLayer .sbw-fshards .sbw-fs-craft{background:linear-gradient(#fcc126,#f7a51a 55%,#fb8f0b);color:#2a1000}
 #sbwLayer .sbw-fs-bal{white-space:nowrap;color:#e8d9ff}
 #sbwLayer .sbw-fs-note{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:#ffe9a8}

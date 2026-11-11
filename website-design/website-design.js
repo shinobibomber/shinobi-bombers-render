@@ -529,8 +529,14 @@
       + '<div class="sbw-fs-row"><span class="sbw-fs-bal"></span><span class="sbw-fs-note" role="status"></span><button type="button" class="sbw-fs-craft" data-fs="craft">CRAFT</button></div>';
     b.fshards.onclick = e => {
       const a = e.target.closest('[data-fs]')?.dataset.fs, F = window.FusionShards; if (!a || !F) return;
-      const r = fusionRank();
-      if (a === '+') F.set(r, F.perAttempt() + 1); else if (a === '-') F.set(r, F.perAttempt() - 1); else if (a === 'fill') F.fill(r); else if (a === 'craft') F.openCraft();
+      const r = fusionRank(); b.fsWarn = null;   // any new action clears an old craft-first message
+      if (a === '+') {
+        const c = F.canAdd(r);
+        if (!c.ok) {   // not enough Fusion Shards: nothing changes, and the player is told to craft first
+          const t = 'Not enough Fusion Shards. Craft first. You have ' + c.have.toLocaleString('en-US') + ', need ' + c.need.toLocaleString('en-US') + '.';
+          b.fsWarn = { t, until: performance.now() + 4000 }; toast(t);
+        } else F.set(r, F.perAttempt() + 1);
+      } else if (a === '-') F.set(r, F.perAttempt() - 1); else if (a === 'fill') F.fill(r); else if (a === 'craft') F.openCraft();
       refresh();
     };
   };
@@ -558,9 +564,10 @@
         $('s', b.fshards).style.width = pl.final + '%';
         setText($('em', b.fshards), pl.per + ' / ' + pl.needed);
         setText($('.sbw-fs-bal', b.fshards), '◆ ' + F.balance().toLocaleString('en-US') + ' Fusion · ' + F.upgrade().toLocaleString('en-US') + ' Upgrade Shards');
-        setText($('.sbw-fs-note', b.fshards), pl.short ? 'Need ' + pl.short + ' more Fusion Shard' + (pl.short === 1 ? '' : 's') : full ? '100% GUARANTEED SUCCESS' : pl.per ? '+' + (pl.final - pl.base) + '% · ' + pl.per + ' per attempt' : '+5% per Fusion Shard');
-        b.fshards.classList.toggle('full', full && !pl.short); b.fshards.classList.toggle('short', pl.short > 0);
-        $('[data-fs="-"]', b.fshards).disabled = pl.per < 1; $('[data-fs="+"]', b.fshards).disabled = pl.per >= pl.needed; $('[data-fs="fill"]', b.fshards).disabled = pl.per >= pl.needed;
+        const ca = F.canAdd(rank), warn = b.fsWarn && now < b.fsWarn.until && !ca.ok ? b.fsWarn.t : '';   // gone once crafting covers it
+        setText($('.sbw-fs-note', b.fshards), warn ? warn : pl.short ? 'Need ' + pl.short + ' more Fusion Shard' + (pl.short === 1 ? '' : 's') : full ? '100% GUARANTEED SUCCESS' : pl.per ? '+' + (pl.final - pl.base) + '% · ' + pl.per + ' per attempt' : '+5% per Fusion Shard');
+        b.fshards.classList.toggle('full', full && !pl.short); b.fshards.classList.toggle('short', pl.short > 0 || !!warn);
+        $('[data-fs="-"]', b.fshards).disabled = pl.per < 1; const plus = $('[data-fs="+"]', b.fshards); plus.disabled = pl.per >= pl.needed; plus.classList.toggle('sbw-fs-nostock', !plus.disabled && !ca.ok); plus.setAttribute('aria-disabled', String(plus.disabled || !ca.ok)); $('[data-fs="fill"]', b.fshards).disabled = pl.per >= pl.needed;
       }
     }
     setText(b.rarity, RNAME[rank + 1]); b.rarity.style.color = RCOL[rank + 1];
