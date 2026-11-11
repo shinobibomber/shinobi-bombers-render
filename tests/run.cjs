@@ -4,7 +4,7 @@ suites.push('economic-dashboard.cjs');
 suites.push('gas-preflight.cjs');
 suites.push('creators-server.cjs','creators-portal.cjs');
 suites.push('player-referrals.cjs');
-suites.push('network-guard.cjs');
+suites.push('network-guard.cjs','beta-rpc-config.cjs');
 suites.push('sr-revenue.cjs','sr-revenue-ui.cjs');
 suites.push('beta-economy.cjs');
 suites.push('referral-bound.cjs','prelaunch-server.cjs','prelaunch-creators.cjs','prelaunch-page.cjs','private-testing.cjs');

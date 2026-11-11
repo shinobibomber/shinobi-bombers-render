@@ -107,6 +107,25 @@ function loadGame() {
   return { listener: server.listeners('request')[0], ready };
 }
 
+/* Test server only (Devnet): SOLANA_DEVNET_PUBLIC_RPC_URL replaces the browser's Devnet RPC in /beta-config.json,
+ * e.g. a provider key restricted to this domain, because Solana's free public RPC refuses some players' networks
+ * (HTTP 403 "Access forbidden"). Unset, invalid or on Mainnet: ignored, and the game's own answer is served unchanged.
+ * The response mirrors app/server/render-server.cjs exactly except rpcUrl; the client still verifies the Devnet genesis
+ * before any transaction, so a wrong-network URL fails closed. Server-side RPC stays SOLANA_DEVNET_RPC_URL. */
+const DEVNET_PUBLIC_RPC = (() => {
+  const raw = String(process.env.SOLANA_DEVNET_PUBLIC_RPC_URL || '').trim();
+  if (!raw || NET.key !== 'devnet') return null;
+  try { const u = new URL(raw); if (u.protocol === 'https:' && !u.username && !u.password) return u.href; } catch {}
+  console.warn('[site] Ignoring SOLANA_DEVNET_PUBLIC_RPC_URL: it must be an https:// URL.');
+  return null;
+})();
+function betaConfig(req, res) {
+  const send = (status, data) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' }); res.end(req.method === 'HEAD' ? undefined : JSON.stringify(data)); };
+  if (!['GET', 'HEAD'].includes(req.method)) return send(405, { error: 'GET or HEAD required.' });
+  if (!process.env.RYO_TOKEN_MINT || !process.env.RYO_STUDIO_WALLET) return send(503, { error: 'Public token configuration is not ready.' });
+  return send(200, { network: 'solana-devnet', rpcUrl: DEVNET_PUBLIC_RPC, tokenAddress: process.env.RYO_TOKEN_MINT, studioAddress: process.env.RYO_STUDIO_WALLET });
+}
+
 /* website config: only http(s) URLs or same-origin absolute paths are accepted */
 function siteConfig() {
   const raw = (process.env.GAME_URL ?? (game ? MOUNT + '/' : '')).trim();
@@ -412,6 +431,8 @@ function route(req, res, url, name, gameOpen) {
   if (name === '/whitepaper/' || name === '/whitepaper.html') { res.writeHead(308, { Location: '/whitepaper' + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
   if (name === '/whitepaper') return serveSite(req, res, '/whitepaper.html').catch(() => { if (!res.headersSent) sendSite(req, res, 503, 'Service is temporarily unavailable.'); });
   if (game && gameOpen) {
+    // Test server (Devnet) browser RPC override, then the Mainnet RPC-only answer; each applies on one network only.
+    if ((name === '/beta-config.json' || name === MOUNT + '/beta-config.json') && DEVNET_PUBLIC_RPC) return betaConfig(req, res);
     if ((name === '/beta-config.json' || name === MOUNT + '/beta-config.json') && rpcOnlyConfig(req, res)) return;
     if (GAME_ROOT_PATHS.has(name)) return game.listener(req, res);
     if (name === '/' && !PRELAUNCH) { res.writeHead(302, { Location: MOUNT + '/' + url.search, 'Cache-Control': 'no-store', ...SITE_HEADERS }); return res.end(); }

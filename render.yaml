@@ -29,6 +29,12 @@ services:
         sync: false
       - key: RYO_REVENUE_WALLET
         sync: false
+      # Optional: Solana's free public Devnet RPC refuses some networks (403 "Access forbidden"). Set a provider
+      # Devnet URL (key restricted to this domain) for the browser, and optionally another for the server.
+      - key: SOLANA_DEVNET_PUBLIC_RPC_URL   # browser RPC in /beta-config.json; unset = public Devnet RPC
+        sync: false
+      - key: SOLANA_DEVNET_RPC_URL          # server-side Devnet RPC; unset = public Devnet RPC
+        sync: false
 
   # LIVE server. Phase 1 = PRE-LAUNCH portal only (landing page, wallet sign-in, registration, referrals).
   # The game API is not mounted and no money setting may exist; the server refuses to start otherwise.
