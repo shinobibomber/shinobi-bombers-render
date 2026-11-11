@@ -1,5 +1,13 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Faster Fusion and Heroes, smoother on slow devices
+
+- **Fusion is much smoother with big collections.** The Reserve list now draws only the heroes you can see, so scrolling and selecting stay quick even with hundreds of heroes.
+- **The Heroes tab opens about twice as fast.**
+- **Slow devices keep up.** If the game runs slowly, it now pauses only the decorative effects (falling petals, glows, hero frames and auras) and brings them back automatically when it speeds up again. Your own display settings are never changed.
+- **The Expedition Hall shows long hero lists 60 at a time**, with a "Show more" button.
+- Nothing changed in combat, Chakra, Chests, Ryo or rewards.
+
 ## November 11, 2026 — Stay signed in while you play
 
 - **Fixed: players were signed out in the middle of the game.** Every sign-in ended exactly one hour after the wallet signature, even while you were playing. Your sign-in now renews itself while the game is open, for up to 24 hours. After 24 hours, one new wallet signature starts a fresh day.

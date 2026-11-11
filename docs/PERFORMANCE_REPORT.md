@@ -2,6 +2,8 @@
 
 Branch `feature/performance-optimization`, worktree `tmp/perf`, based on production `f0b62b7`. **Nothing is committed, pushed or deployed.** No gameplay, combat, reward, Chakra, wallet or treasury code was changed. Server money paths were deliberately left out (see section 6).
 
+> **Correction (2026-11-11, after deploy).** The compression numbers above were measured against the origin server on its own. In production the site sits behind Cloudflare, which already compresses responses at the edge: the test server (old code, no compression) also answers `Content-Encoding: br` through Cloudflare, and the deployed `/play/` is 2.59 MB on the wire. So **players behind Cloudflare get little or no extra saving from `server/compress.cjs`**; it only helps requests that hit `onrender.com` directly. It is harmless and was left in. The Fusion/Heroes/AUTO gains are browser measurements and are unaffected. The deployment-checklist item about the game API having no `Content-Encoding` cannot be read through Cloudflare, because the edge adds it; the unit tests prove the origin never touches POST.
+
 ## 1. How it was measured
 
 - `tools/perf-bench.cjs`: drives the real built game in Playwright Chrome against the isolated fixture server. One account with 376 heroes. Profiles: desktop (1440×1000) and phone (390×844, DPR 2, **4× CPU throttle**, touch).
@@ -27,9 +29,9 @@ Branch `feature/performance-optimization`, worktree `tmp/perf`, based on product
 | Fusion DOM nodes / canvases | 7,404 / 494 | 5,627 / 312 | −24% / −37% |
 | All menu transitions, p95 (desktop / phone) | 1,149 / 5,780 ms | 626 / ~4,000 ms | −46% / −31% |
 | JS heap after transitions | 8.7 MB | 8.7 MB | none |
-| Initial transfer: HTML + JS + CSS + JSON | 5.90 MB | 3.01 MB (brotli) | −49% |
-| Game page `/play/` | 3.81 MB | 2.47 MB (brotli) | −35% |
-| Other text assets (JS/CSS/JSON) | 2.09 MB | 0.54 MB | −74% |
+| Origin transfer without a CDN: HTML + JS + CSS + JSON | 5.90 MB | 3.01 MB (brotli) | −49% **on the origin only; see correction below** |
+| Game page `/play/`, origin without a CDN | 3.81 MB | 2.47 MB (brotli) | −35% **origin only** |
+| Other text assets, origin without a CDN | 2.09 MB | 0.54 MB | −74% **origin only** |
 | p99 frame time, desktop (all screens but Fusion) | 16.8 to 17.2 ms | 16.8 to 17.0 ms | none |
 | API latency | NOT MEASURED | NOT MEASURED | no server API code changed |
 | Initial load time in a real network | NOT MEASURED | NOT MEASURED | only bytes were measured |
