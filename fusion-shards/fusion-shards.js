@@ -160,7 +160,7 @@ p.fusion-shard-cost{color:#ffcf63}`;
 
   window.FusionShards = Object.freeze({
     VERSION, STEP, RATE, BASE, needed, plan, set, canAdd, balance, upgrade, decorate, openCraft,
-    perAttempt: () => per, fill: rank => set(rank, needed(rank)),
+    perAttempt: () => per, fill: rank => set(rank, Math.min(needed(rank), balance())),   // up to the 100% amount, never past what the player owns
   });
   if (!wrap()) { const t = setInterval(() => { if (wrap()) clearInterval(t); }, 200); setTimeout(() => clearInterval(t), 30000); }
   let account = null;   // a different signed-in account starts with no Fusion Shards chosen
