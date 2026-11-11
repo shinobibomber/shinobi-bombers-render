@@ -74,7 +74,7 @@ function applyExpedition(appDir = path.join(__dirname, 'app')) {
     html = html.replace('</head>', marker + '\n' + tags + '\n</head>');
   }
   fs.writeFileSync(index, html);
-  console.log('Expedition Mode applied: 18-hour Combat Duty, free Expeditions, Expedition Hall (switch `expeditions` OFF by default; paid acceleration locked).');
+  console.log('Expedition Mode applied: Combat Duty, free Expeditions, Expedition Hall (switch `expeditions` OFF by default; paid acceleration locked).');
 }
 module.exports = { applyExpedition, serverHooks, clientHooks, marker, tags };
 if (require.main === module) applyExpedition();

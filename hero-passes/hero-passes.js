@@ -149,5 +149,6 @@ dialog.hp-center::backdrop{background:#000b}
     const a = e.detail?.authenticated ? (window.RyoPayments?.state?.account || e.detail.account || null) : null;
     if (a !== account) { account = a; state = null; claimIds.clear(); useIds.clear(); lastClaim = null; if (dialog?.open) dialog.close(); if (a) refresh(); else changed(); }
   });
-  setInterval(() => { if (authed()) refresh(); }, 60000);
+  setInterval(() => { if (!document.hidden && authed()) refresh(); }, 60000);   // paused while the tab is hidden, caught up when it is visible again
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && authed()) refresh(); });
 })();

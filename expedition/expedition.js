@@ -218,8 +218,10 @@
   }
   // Home panel and Heroes detail buttons (their markup is rebuilt by the menu layer, so listen once on the document).
   document.addEventListener('click', e => { const t = e.target.closest?.('[data-exp-open]'); if (!t || (hall && hall.contains(t))) return; e.preventDefault(); e.stopPropagation(); open(t.dataset.expOpen || 'duty', t.dataset.expHero || null); }, true);
-  setInterval(() => { if (hall && !confirmBox) render(false); }, 1000);
-  setInterval(() => refresh(), 5000);
+  // Read-only polling pauses while the tab is hidden and catches up the moment it is visible again (performance, 2026-11-11).
+  setInterval(() => { if (!document.hidden && hall && !confirmBox) render(false); }, 1000);
+  setInterval(() => { if (!document.hidden) refresh(); }, 5000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); if (hall && !confirmBox) render(false); } });
   addEventListener('shinobi-ryo-ledger', () => { if (owner !== (state()?.account || null)) reset(); refresh(); });
   window.Expedition = Object.freeze({ paintPanel, open, close, away, info, detailHtml, cardMeta, sig, refresh: () => refresh(true), get view() { return view; } });
 })();

@@ -87,6 +87,19 @@ const X = require('../app/server/expedition.cjs');
     assert.equal(await p.evaluate(() => document.querySelector('#sbwLayer').dataset.effectsPaused), 'false', 'effects resume when the page is healthy again');
     assert.equal(await gameplay(), before, 'visual quality changes never touch hero stats, chakra or the combat rules');
 
+    // ---- 5. Hidden tab: read-only polling pauses, and catches up the moment the tab is visible again
+    const calls = []; p.on('request', r => { try { if (r.method() === 'POST' && /"action":"expedition"/.test(r.postData() || '')) calls.push(Date.now()); } catch {} });
+    await open('home'); await p.evaluate(() => Expedition.open('duty')); await p.waitForTimeout(500);   // with the Hall open the state is polled every 20 s
+    const live = calls.length; await p.waitForTimeout(23000);
+    assert(calls.length - live >= 1, 'a visible tab keeps polling Expedition state (' + (calls.length - live) + ' calls in 23 s)');
+    await p.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
+    await p.waitForTimeout(600); const hiddenFrom = calls.length; await p.waitForTimeout(23000);
+    assert.equal(calls.length, hiddenFrom, 'a hidden tab makes no Expedition poll requests');
+    await p.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); document.dispatchEvent(new Event('visibilitychange')); });
+    await p.waitForTimeout(1500);
+    assert(calls.length > hiddenFrom, 'coming back to the tab refreshes Expedition state at once');
+    await p.evaluate(() => Expedition.close());
+
     assert.deepEqual(errors, [], 'no page errors');
   });
   console.log('PASS: performance UI — windowed Fusion list (visible rows only, scroll, select, live counter), shared Heroes backdrop, paged Expedition Hall, measured AUTO low-effects (decorative only, released, gameplay unchanged).');
