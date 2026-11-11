@@ -36,6 +36,7 @@ suites.push('min-claim.cjs');
 suites.push('starter-activation.cjs','starter-activation-ui.cjs');
 suites.push('purchase-delta.cjs');
 suites.push('transfer-popup-ui.cjs','shrine-overflow-click.cjs');
+suites.push('adventure-stage-restore.cjs');
 suites.push('canonical-host.cjs');
 suites.push('live-economy.cjs','financial-server-2022.cjs');
 suites.push('control-panel.cjs');

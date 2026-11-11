@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Adventure stage restored after sign-in
+
+- **Fixed: some players were back at Adventure stage 1.** Until now the game kept your current stage only on the device you played on. A new phone or browser, a wallet's built-in browser or cleared site data started you at stage 1.
+- Your stage is now restored automatically when you sign in, from the stage the server has verified for your account. You'll see "Adventure progress restored: stage N".
+- Your rewards were never affected: the server always paid by your verified stage. Your progress only goes forward; it is never moved back.
+
 ## November 11, 2026 — Dojo claim bonus on top of the maximum, bigger Chest purchases
 
 - **Every Dojo tier now adds +100,000 Ryo to how much you can claim at once.** The bonus is added on top of the normal claim limit, so higher tiers always count: with the normal 200,000 Ryo limit, Legendary Dojo (Tier VI) lets you claim up to **800,000 Ryo** at once. Dojo tiers you already own count automatically.

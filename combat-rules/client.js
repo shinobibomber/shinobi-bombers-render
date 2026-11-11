@@ -29,6 +29,19 @@
  // a background sync sent as offline first made the server drop the last in-flight defeat).
  RyoPayments.adventure=function(active=false,claim=false){own();if(leaving&&!active)offlineSent=true;const request=originalAdventure.call(this,active&&!(leaving&&offlineSent),claim);pending.add(request);request.then(()=>pending.delete(request),()=>pending.delete(request));return request;};
  addEventListener('shinobi-ryo-ledger',own);
+ // Owner report 2026-11-11 ("some players get back to stage 1 of adventurers map"): the stage the game plays (S.map) lived only in
+ // this browser's save, so a new device/browser, a wallet's in-app browser or cleared site data started at stage 1, while the
+ // server kept the verified stage (never lowered; it decides rewards). The signed-in owner's verified Chest stage is now adopted
+ // whenever it is higher than the local one (stages only go up by clearing a map, so this never takes a player backwards).
+ function restoreStage(){
+  const st=RyoPayments.state,s=window.AdventureChest?.snapshot,m=Number(s?.chest?.map);
+  if(!st?.authenticated||!s?.chest||s.owner!==st.account||!Number.isSafeInteger(m)||m<1||m>1000000)return;
+  if(typeof S!=='object'||!S||!(m>(Number(S.map)||1)))return;
+  try{if(window.V2?.isBossActive?.())return;}catch{/* Boss Hunt state unavailable: adopt now */}
+  S.map=m;try{newMap();save();}catch{/* the next frame redraws; the next sync retries the save */}
+  try{toast('Adventure progress restored: stage '+m);}catch{}
+ }
+ addEventListener('shinobi-chest',()=>setTimeout(restoreStage,0));
  setInterval(()=>{own();if(leaving||!RyoPayments.state.authenticated||!window.AdventureChest)return;const signature=deployed().join('|'),now=performance.now();if(signature===lastTeam||now-lastSync<1500||AdventureChest.snapshot.busy)return;lastTeam=signature;lastSync=now;AdventureChest.refresh();},300);
  addEventListener('shinobi-enemy-defeated',e=>{const id=e.detail?.heroId,kind=e.detail?.kind;if(!id||kind<2||kind>6||!RyoPayments.state.authenticated)return;own();const h=S.h.find(h=>h.tokenId===id);if(h)record(h,heroes).kills[kind-2]++;});
  ShinobiSprites.ready.then(()=>{
