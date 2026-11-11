@@ -1,5 +1,10 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Faster sign-in, works on more networks
+
+- **Fixed: sign-in could stay on "Recovering pending transactions and refreshing your Ryo balance…"**, for some players unless they used a VPN. The game now opens as soon as your signature is accepted, with your verified balance and heroes already loaded. The pending-transaction check finishes in the background. If it finds a problem, a message appears in game.
+- **Works on more networks.** Some internet providers and networks refuse the connection to Solana or show their own block page. The game now notices this and connects through its own secure connection instead, so you shouldn't need a VPN to play.
+
 ## November 11, 2026 — Whitepaper v1.2 and Treasury page updated
 
 - **The whitepaper is up to date.** Version 1.2 now covers everything released so far: Expedition Mode, the Chest claim limits (100,000 Ryo minimum, Dojo claim bonus, Chest Overflow), fee-free deposits, Fusion Shards and Legend pity, Training and Upgrade Shards, the Founder's NFT Boxes, creator discounts, and a release status list showing what is open and what is not yet.

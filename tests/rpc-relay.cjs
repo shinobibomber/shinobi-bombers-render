@@ -147,6 +147,26 @@ const rpc = (method, params = [], id = 1) => ({ jsonrpc: '2.0', id, method, para
   { const p = page(ok, busy, new Map([['shinobi-rpc-relay', String(Date.now() + 60000)]])); assert.match(await p.send('getBalance'), /direct/, 'relay-first but relay rate-limited: back to direct'); }
   { const p = page(ok, silent, new Map([['shinobi-rpc-relay', String(Date.now() + 60000)]])); assert.match(await p.send('getParsedTransaction'), /direct/, 'relay-first but relay silent: back to direct'); }
   { const p = page(silent, async () => new Response('{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"Solana RPC did not answer in time. Pending transactions are preserved."}}', { status: 504 })); assert.match(await p.send('getBalance'), /Pending transactions are preserved/, "the relay's own failure answer (with the safe text) is passed on"); }
+  // Owner report 2026-11-11 (sign-in only worked on a VPN): a provider or network that ANSWERS with a refusal or with
+  // something that is not a JSON-RPC reply counts as blocked: the relay answers, relay-first for 10 minutes.
+  { const forbidden = async () => new Response('Forbidden', { status: 403 }), legal = async () => new Response('{"error":"blocked"}', { status: 451 }),
+      proxy = async () => new Response('', { status: 407 }), unauthorized = async () => new Response('{"jsonrpc":"2.0","id":1,"error":{"code":-32401,"message":"Unauthorized"}}', { status: 401 }),
+      blockPage = async () => new Response('<html><body>This site is blocked by your provider</body></html>', { status: 200 }), portal = async () => new Response('', { status: 200 });
+    for (const [direct, label] of [[forbidden, '403'], [legal, '451'], [proxy, '407'], [unauthorized, '401'], [blockPage, 'HTML block page (200)'], [portal, 'empty 200 answer']]) {
+      const p = page(direct); assert.match(await p.send('getGenesisHash'), /relay/, 'provider answering ' + label + ': the relay answers'); assert.deepEqual(p.route(), ['direct', 'relay']);
+      assert(Number(p.store.get('shinobi-rpc-relay')) > Date.now() + 9 * 60000, 'relay-first after ' + label);
+    }
+    { const p = page(forbidden); assert.match(await p.send('sendTransaction'), /relay/, 'a refused payment goes through the relay (never processed; one signature)'); assert(p.timeouts.includes(25000)); }
+    // The relay cannot help: the provider's original answer is returned unchanged (same behaviour as before this change).
+    { const p = page(forbidden, unavailable); assert.equal(await p.send('getBalance'), 'Forbidden', 'relay unavailable: the original 403 answer'); assert.equal(p.store.has('shinobi-rpc-relay'), false); }
+    { const p = page(blockPage, silent); assert.match(await p.send('getBalance'), /blocked by your provider/, 'relay silent: the original answer'); }
+    // Real JSON-RPC answers are never relayed, including errors and server errors with a JSON body.
+    for (const [status, body] of [[200, '{"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"Invalid params"}}'], [500, '{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"Internal"}}'], [200, '[{"jsonrpc":"2.0","id":1,"result":1}]']]) {
+      const p = page(async () => new Response(body, { status })); assert.equal(await p.send('getBalance'), body, 'a JSON-RPC answer (' + status + ') is passed on'); assert.deepEqual(p.route(), ['direct']); assert.equal(p.store.size, 0);
+    }
+    { const p = page(busy); await assert.rejects(p.send('getBalance'), /rate-limiting/, 'a rate limit (429) is still not relayed'); assert.deepEqual(p.route(), ['direct']); }
+    // A provider gateway error page (5xx HTML) may come after the payment was forwarded: never re-sent, unchanged behaviour.
+    for (const status of [502, 503, 504]) { const p = page(async () => new Response('<html>Bad Gateway</html>', { status })); assert.match(await p.send('sendTransaction'), /Bad Gateway/, status + ' HTML: passed on, not relayed'); assert.deepEqual(p.route(), ['direct']); assert.equal(p.store.size, 0); } }
 
   console.log('PASS: RPC relay — the page\'s methods only (incl. the gas check), one same-origin call, size/per-IP/overall limits, forwards to the public browser RPC with the site Origin (never the server key), "do not pay again" on upstream errors, mounted at /api/rpc; the page falls back to it when the provider is blocked, rate-limited or silent, relay-first for 10 minutes, back to direct when the relay is unavailable, and never re-sends a timed-out payment.');
 })().catch(e => { console.error(e); process.exitCode = 1; });

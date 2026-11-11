@@ -170,6 +170,13 @@ const clientPatches = [
   ['if(!receipt){unresolved++;continue}', 'if(!receipt){if(await neverLands(record)){archiveExpired(record);acknowledge(record.hash);cleared++;continue}unresolved++;continue}', 1],
   ['}await refreshFresh();notify(unresolved?',
    "}await refreshFresh();notify(cleared&&!unresolved&&!redeemed.length?'Recovery check complete. '+cleared+' transaction(s) never reached Solana and can no longer be processed, so they were cleared. No tokens left your wallet; you can try again.':unresolved?", 1],
+  // Sign-in opens the game right away (owner report 2026-11-11: a player stayed on "Recovering pending transactions and
+  // refreshing your Ryo balance…" unless on a VPN). RyoPayments.login() already loaded the verified server state (balance,
+  // heroes, Chest), so the game no longer waits for the recovery step: it runs in the background (pending deposits are
+  // still recovered and sent to the server, legacy packs still credited, the balance refreshed). A real error from it is
+  // shown in game and in the Ryo status instead of keeping the player on the sign-in screen.
+  ["await RyoPayments.login();message.textContent='Recovering pending transactions and refreshing your Ryo balance…';await ShinobiBetaUI.recover();enter()",
+   "await RyoPayments.login();enter();ShinobiBetaUI.recover().catch(e=>{const m=String((e&&e.message)||'');if(m&&!/another (ryo|wallet) (operation|action) is in progress/i.test(m))try{toast('Pending transaction check: '+m)}catch{}})", 1],
   ['window.BetaWallet={get pendingDeposits(){',
    "window.BetaWallet={clearedDeposits(since){return readExpired().filter(r=>r&&r.kind==='deposit'&&r.network===NETWORK&&r.account===state.account&&Number(r.clearedAt)>=since).length},get pendingDeposits(){", 1],
 ];
@@ -197,12 +204,20 @@ const liveClientPatches = [
   // may have arrived, so the player refreshes and the pending check recovers it. After an immediate failure (blocked,
   // refused) it may be re-sent the other way: one signed transaction has one signature, so Solana can never charge it
   // twice. Relayed calls wait longer than the relay's own 20 s upstream limit (reads 22 s, payments 25 s).
+  // Owner report 2026-11-11 (a player could only sign in on a VPN): a provider or network that ANSWERS with a refusal
+  // (HTTP 401/403/407/451: an IP block, a proxy, a legal block) or with a 2xx answer that is not a JSON-RPC reply (an ISP
+  // block page, a captive portal) counts as blocked too and goes to the relay. Other error statuses (e.g. a provider's
+  // 502/504 page, which may come after it forwarded a payment) keep the previous behaviour (independent review). A payment answered that way may be re-sent
+  // through the relay like any immediate failure: one signed transaction has one signature, so Solana can never charge it
+  // twice. Rate limits (429) and timed-out payments keep their rules above. If the relay cannot help, the original answer
+  // is returned exactly as before.
   ['async function rpcFetch(input,options={}){',
    `async function rpcFetch(input,options={}){const relay=location.origin+'/api/rpc';let method='',until=0;try{method=JSON.parse(options.body).method}catch{}try{until=Number(sessionStorage.getItem('shinobi-rpc-relay'))||0}catch{}
   if(String(input)===relay)return rpcFetchDirect(input,options,22000);
   const viaRelay=async()=>{let r=null;try{r=await rpcFetchDirect(relay,options,method==='sendTransaction'?25000:22000)}catch(err){if(method==='sendTransaction'&&/timed out/.test(String(err&&err.message)))throw err}if(r&&(r.ok||r.status===502||r.status===504))return r;try{sessionStorage.removeItem('shinobi-rpc-relay')}catch{}return null};
   if(until>Date.now()){const r=await viaRelay();if(r)return r}
-  try{return await rpcFetchDirect(input,options,method==='sendTransaction'?15000:12000)}catch(e){const m=String(e&&e.message);if(/rate-limiting/.test(m)||(method==='sendTransaction'&&/timed out/.test(m)))throw e;try{sessionStorage.setItem('shinobi-rpc-relay',String(Date.now()+600000))}catch{}const r=await viaRelay();if(r)return r;throw e}}
+  const refused=async r=>{if([401,403,407,451].includes(r.status))return true;if(!r.ok)return false;try{const j=JSON.parse(await r.clone().text());return !(j&&typeof j==='object')}catch{return true}};
+  try{const d=await rpcFetchDirect(input,options,method==='sendTransaction'?15000:12000);if(!(await refused(d)))return d;throw Object.assign(Error('Solana RPC refused this connection (HTTP '+d.status+').'),{refusedResponse:d})}catch(e){const m=String(e&&e.message);if(/rate-limiting/.test(m)||(method==='sendTransaction'&&/timed out/.test(m)))throw e;try{sessionStorage.setItem('shinobi-rpc-relay',String(Date.now()+600000))}catch{}const r=await viaRelay();if(r)return r;if(e&&e.refusedResponse)return e.refusedResponse;throw e}}
  async function rpcFetchDirect(input,options={},rpcTimeout=15000){`, 1],
   ['timer=setTimeout(()=>controller.abort(),15000);', 'timer=setTimeout(()=>controller.abort(),rpcTimeout);', 1],
 ];
