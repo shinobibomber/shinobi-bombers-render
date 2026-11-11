@@ -29,10 +29,10 @@ stage it needs the same private pass as `/admin/`.
 | Role | Source | Phase 1 permissions |
 |---|---|---|
 | Owner | `RYO_ADMIN_OWNERS` (new env list) | Everything below, plus granting or revoking Moderator and Support. Cannot review its own announcement. |
-| Financial Approver | `RYO_ADMIN_APPROVERS` (existing) | Overview, health, player economy and transactions (read-only), announcements (read), and the full audit log. |
-| Game Operator | `RYO_ADMIN_OPERATORS` (existing) | Overview, health, players, chat moderation, announcement review, and the full audit log. |
+| Financial Approver | `RYO_ADMIN_APPROVERS` (existing) | Overview, health, player economy and transactions (read-only), announcements (read), support tickets (read-only), and the full audit log. |
+| Game Operator | `RYO_ADMIN_OPERATORS` (existing) | Overview, health, players, chat moderation, announcement review, support tickets, and the full audit log. |
 | Moderator | Backend grant (`ryo_cc_roles`) | Overview, health, player identity and chat standing, chat moderation, proposing announcements, and its own audit records. |
-| Support | Backend grant (`ryo_cc_roles`) | Overview, health, player identity and heroes, reading moderation, dismissing reports, and its own audit records. |
+| Support | Backend grant (`ryo_cc_roles`) | Overview, health, player identity and heroes, reading moderation, dismissing reports, answering support tickets, and its own audit records. |
 | Viewer | `RYO_ADMIN_VIEWERS` (existing) | Read-only: overview, health, redacted players, announcements and the audit log. No chat evidence. |
 
 - **Backend roles stay out of finance.** Roles granted in the backend never reach the economic
@@ -132,13 +132,38 @@ Three views, built to the same rules as the Stats report: they read, they return
 | Incident register | `cc-incidents`, `cc-incident-open`, `cc-incident-update` | read: `security.read`; write: `security.manage` (Owner, Operator) | A staff notebook (title, severity, details, status). It changes nothing in the game. Writes use the standard staff-write rules (reason, idempotent request ID, version check, 30 a minute) and land on the audit chain as `cc.incident.*`. A resolved incident is final; at most 50 are open. Table: `ryo_cc_incidents`, additive. |
 | Creators summary | `cc-creators` | `creators.read` (Owner, Approver, Operator) | Aggregates from the Creators Portal: applications by status, Creator Points issued, spent and held, creator and player referrals, shop redemptions, Hero Pass campaigns and passes, rescue heroes, program settings. No names, wallets or applications. Approvals, adjustments and grants stay in the Creators Portal admin. Paid marketing campaigns have no backend and are listed as not implemented. |
 
+## Batch B: Support tickets
+
+Players send tickets from the game (Reward Center, Help & Support, Contact Support) and the team answers in a two-way thread. The
+rules live in `support/server.cjs` (copied to `app/server/support.cjs` by `apply-support.cjs`). Owner decisions 2026-11-12: entry in
+Help & Support, shipped ON, two-way replies, ticket text kept 30 days after the ticket is resolved or closed, English-only player UI.
+
+| Part | Action | Who | What it does |
+|---|---|---|---|
+| Player | `support-state`, `support-submit`, `support-view`, `support-reply` | any signed-in wallet, behind the `supportTickets` switch (default ON) | The wallet always comes from the session. Limits: 3 new tickets and 20 replies per 24 hours, 5 open tickets, 60 messages per ticket, 1000 characters. An optional order link (request ID or signature) is accepted only if it is one of THIS wallet's purchases, deposits or withdrawals; anything else is the same 404. A repeated `requestId` returns the stored result. A reply reopens a resolved ticket; a closed ticket is final. |
+| Staff read | `cc-support-list`, `cc-support-ticket` | `support.read` (Owner, Approver, Operator, Support) | Queue with status, category and wallet filters, "needs a reply" marker, the thread with internal notes, and what the linked order is. |
+| Staff write | `cc-support-reply`, `cc-support-note`, `cc-support-update` | `support.write` (Owner, Operator, Support; never Approver) | Reply (the player sees it, the ticket becomes awaiting the player, investigating or resolved), internal note (never shown to the player), status and assignment (a reason is required). Reply and update check the ticket version (stale page gets 409); closed is final for staff too. |
+
+- **No money access.** Staff can change only a ticket's status, assignee and messages. Nothing in this module touches balances,
+  rewards, withdrawals, wallets or NFTs, and `tests/support-server.cjs` proves the ledger is unchanged.
+- **Players never see staff wallets or internal notes.** A staff message reaches the player as "team".
+- **Audit.** Staff writes land on the shared hash chain as `cc.support.reply`, `cc.support.note` and `cc.support.update`. Message
+  text never enters the chain, only its length and SHA-256.
+- **Retention.** Ticket text (subject, order link and every message, internal notes included) is replaced with "[expired]" 30 days
+  after the ticket is resolved or closed. There is no scheduler: it runs inside the ticket actions, and every player read and every
+  staff read or write applies it first, so expired text is never shown. Open tickets are kept. A reply that reopens a resolved ticket
+  stops the clock.
+- **The switch gates players only.** If `supportTickets` is switched OFF in the Control panel, players get a "not open right now"
+  message, but staff can still read, answer and close the existing tickets.
+- Tables: `ryo_support_tickets`, `ryo_support_messages` (additive, appended to the end of `schema.sql`).
+
 ## Not implemented (shown as such, never simulated)
 
 The following have no backend yet:
 
 - Guild, Team, DM, Trade and Event chat.
 - The Weekly Mission Pass, Founder's Council votes, Early Access scheduling, economy and treasury controls, paid marketing campaigns and
-  payouts, events and support tickets.
+  payouts and events.
 - Player appeal forms.
 - Search by referral code or NFT serial.
 - New sign-up and daily/weekly active counts. The game records no creation time, and presence is
@@ -173,6 +198,12 @@ The following have no backend yet:
   and every wallet are absent from each answer), tamper detection on the audit chain and the switch log, the incident rules
   (two writers, stale version, closed is final, idempotent replay, cap) and degradation when a table is missing.
   `tests/command-center-ui.cjs` also opens an incident and resolves it in Chrome.
+- `tests/support-server.cjs` covers Support tickets through the real dispatcher on PGlite: build integrity (reversing the support hooks and
+  schema block gives the previously pinned `service.cjs` and `schema.sql`), the switch, validation, every limit, order-reference
+  ownership, idempotency, reopen and closed rules, notes and staff wallets hidden from players, the staff role matrix, audit without
+  text, 30-day retention (including a read at the moment of expiry) and no economic mutation. `tests/support-ui.cjs` drives the player
+  dialog in Chrome (text shown as text, readable errors, switch OFF, phone fit), and `tests/command-center-ui.cjs` covers the staff tab
+  (queue, filters, thread, reply, internal note, assign, status, read-only Approver, Support role, phone layout).
 - `tests/chat-screen.cjs` checks the player's side: reporting, the hidden-message drop, and the muted composer.
 - The `prelaunch-server`, `private-testing` and `site-check` suites assert that the console stays closed
   in the portal stage, follows the private pass, and serves only its four files.
@@ -184,6 +215,10 @@ The following have no backend yet:
    and rebuild. This restores `service.cjs` and the schema.
 2. Remove the `/admin/command-center/` map from `server/site-server.cjs`, so the console is no longer served.
 3. Revert the edits to `chat/server.cjs` and `website-design/website-design.js`.
+4. Support tickets: switch `supportTickets` OFF in the Control panel (or set `SUPPORT_TICKETS_ENABLED=off`) for an immediate stop with no
+   rebuild. To remove it fully, drop the `applySupport` call from `unpack.cjs` and revert the three pins it moved (the `app/server/service.cjs` and
+   `app/server/schema.sql` entries in `tests/baseline-hashes.json`, and `PREVIOUS.schema` in `tests/reward-pool.cjs`). The `ryo_support_*` tables are
+   additive and can stay.
 
 The `ryo_cc_*` tables and the `ryo_chat.hidden` column are additive and can stay (they are ignored),
 or be dropped by the hosting owner after an export. No other table is touched.

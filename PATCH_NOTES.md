@@ -1,5 +1,14 @@
 # Shinobi Bombers patch notes
 
+## November 12, 2026 — Contact Support from inside the game
+
+- **Send a ticket without leaving the game.** Open the Reward Center, tap **Help & Support**, then **Contact Support**. Pick what it is about, write what happened, and send.
+- **Got a payment, deposit or withdrawal problem?** Paste the request ID or transaction signature in the optional order field. It only works for your own orders.
+- **The team replies in the same place.** Open your ticket to read their answer and reply back. A closed ticket is final; if you still need help, send a new one.
+- **Fair limits:** up to 3 new tickets and 20 replies per day, 5 open tickets at once, and 1000 characters per message.
+- **Your privacy:** the text of a ticket and its replies is deleted 30 days after it is resolved or closed.
+- Support can only read and answer tickets. Nothing in this feature touches your Ryo, Chest, rewards, heroes or withdrawals.
+
 ## November 12, 2026 — Fusion Shards: clear "craft first" message
 
 - **The + button now stops at the Fusion Shards you own.** If you don't have enough, nothing changes and a message tells you to craft first and shows how many Fusion Shards you have and how many you need.

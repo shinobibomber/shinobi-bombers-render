@@ -30,7 +30,7 @@
       'nav.config': 'Game configuration', 'config.title': 'Game configuration', 'config.sub': 'Read-only status of every feature switch, the release stage and the launch gates. Switches are changed in the Control panel, never here.',
       'nav.security': 'Security center', 'security.title': 'Security center', 'security.sub': 'Integrity of the audit chain and the switch log, staff roles and sessions as counts, findings, and the incident register. No wallet lists and no secrets.',
       'nav.creators': 'Creators summary', 'creators.title': 'Creators summary', 'creators.sub': 'Read-only totals from the Creators Portal, referrals and Hero Passes. No names, wallets or applications are shown.',
-      'nav.report': 'Stats report', 'report.title': 'Stats report', 'report.sub': 'Read-only totals from the live database: Ryo spent, deposits, summons, free heroes, SOL sales, revenue, Chest and withdrawals. No wallets are shown.',
+      'nav.support': 'Support tickets', 'support.title': 'Support tickets', 'support.sub': 'Tickets players send from the game. Reply, add internal notes, assign and close. Staff can change only a ticket\'s status, assignee and messages; nothing here touches balances, rewards, withdrawals or NFTs.', 'nav.report': 'Stats report', 'report.title': 'Stats report', 'report.sub': 'Read-only totals from the live database: Ryo spent, deposits, summons, free heroes, SOL sales, revenue, Chest and withdrawals. No wallets are shown.',
       'report.range': 'Range', 'report.launch': 'Since launch (9 Nov 2026, 22:40 UTC+8)', 'report.24h': 'Last 24 hours', 'report.7d': 'Last 7 days', 'report.30d': 'Last 30 days', 'report.custom': 'Custom',
       'report.from': 'From', 'report.to': 'To (empty = now)', 'report.group': 'Group by', 'report.hour': 'Hour', 'report.day': 'Day', 'report.generate': 'Generate report',
       'report.download': 'Download JSON', 'report.copy': 'Copy JSON', 'report.copied': 'Report JSON copied.', 'report.empty': 'Choose a range and generate the report.',
@@ -58,7 +58,7 @@
       'nav.config': 'Configuração do jogo', 'config.title': 'Configuração do jogo', 'config.sub': 'Status somente leitura de cada chave de recurso, da etapa de lançamento e dos portões. As chaves são alteradas no painel de Controle, nunca aqui.',
       'nav.security': 'Centro de segurança', 'security.title': 'Centro de segurança', 'security.sub': 'Integridade da cadeia de auditoria e do registro de chaves, funções e sessões da equipe em números, alertas e o registro de incidentes. Sem listas de carteiras nem segredos.',
       'nav.creators': 'Resumo de criadores', 'creators.title': 'Resumo de criadores', 'creators.sub': 'Totais somente leitura do Portal de Criadores, indicações e Hero Passes. Nenhum nome, carteira ou inscrição é exibido.',
-      'nav.report': 'Relatório de estatísticas', 'report.title': 'Relatório de estatísticas', 'report.sub': 'Totais somente leitura do banco de dados ao vivo: Ryo gasto, depósitos, invocações, heróis grátis, vendas em SOL, receita, Baú e saques. Nenhuma carteira é exibida.',
+      'nav.support': 'Tickets de suporte', 'support.title': 'Tickets de suporte', 'support.sub': 'Tickets que os jogadores enviam pelo jogo. Responda, adicione notas internas, atribua e feche. A equipe só altera o status, o responsável e as mensagens de um ticket; nada aqui mexe em saldos, recompensas, saques ou NFTs.', 'nav.report': 'Relatório de estatísticas', 'report.title': 'Relatório de estatísticas', 'report.sub': 'Totais somente leitura do banco de dados ao vivo: Ryo gasto, depósitos, invocações, heróis grátis, vendas em SOL, receita, Baú e saques. Nenhuma carteira é exibida.',
       'report.range': 'Período', 'report.launch': 'Desde o lançamento (9 nov 2026, 22:40 UTC+8)', 'report.24h': 'Últimas 24 horas', 'report.7d': 'Últimos 7 dias', 'report.30d': 'Últimos 30 dias', 'report.custom': 'Personalizado',
       'report.from': 'De', 'report.to': 'Até (vazio = agora)', 'report.group': 'Agrupar por', 'report.hour': 'Hora', 'report.day': 'Dia', 'report.generate': 'Gerar relatório',
       'report.download': 'Baixar JSON', 'report.copy': 'Copiar JSON', 'report.copied': 'JSON do relatório copiado.', 'report.empty': 'Escolha um período e gere o relatório.',
@@ -142,12 +142,12 @@
     ['overview', 'nav.overview', 'overview.read'], ['players', 'nav.players', 'player.read'], ['chat', 'nav.chat', 'moderation.read'],
     ['announcements', 'nav.announcements', ['announcement.read', 'announcement.propose', 'announcement.review']], ['health', 'nav.health', 'ops.read'],
     ['audit', 'nav.audit', ['audit.read', 'audit.own']], ['roles', 'nav.roles', 'roles.manage'], ['founders', 'nav.founders', 'founders.read'],
-    ['report', 'nav.report', 'stats.read'], ['config', 'nav.config', 'config.read'], ['security', 'nav.security', 'security.read'], ['creators', 'nav.creators', 'creators.read'],
+    ['report', 'nav.report', 'stats.read'], ['config', 'nav.config', 'config.read'], ['security', 'nav.security', 'security.read'], ['creators', 'nav.creators', 'creators.read'], ['support', 'nav.support', 'support.read'],
   ];
   // Modules from the specification that have no backend yet. They are listed, never simulated.
   const PLANNED = [
 ['pass', 'Weekly Mission Pass', 2], ['economy', 'Economy & treasury controls', 3],
-    ['creators', 'Marketing campaigns & payouts', 3], ['events', 'Events', 4], ['support', 'Support center', 4],
+    ['creators', 'Marketing campaigns & payouts', 3], ['events', 'Events', 4], 
     ['guild', 'Guild / Team / DM / Trade chat', null],
   ];
   const allowed = perm => (Array.isArray(perm) ? perm : [perm]).some(can);
@@ -177,7 +177,7 @@
     $('who-expiry').textContent = s.sessionExpires ? 'Session until ' + new Date(s.sessionExpires).toISOString().slice(11, 16) + ' UTC' : '';
   }
   function signOut(message) {
-    S.token = ''; S.session = null; S.cache = {}; S.report = null; drawer(false); showShell(false); $('view').replaceChildren();
+    S.token = ''; S.session = null; S.cache = {}; S.report = null; S.support = null; drawer(false); showShell(false); $('view').replaceChildren();
     notice(message || 'Signed out. Connect an authorized wallet to continue.');
   }
   async function connect() {
@@ -442,6 +442,79 @@
           card(h('h3', { text: 'Staff roles (counts)' }), ok(d.roles) ? scroll('table-wide', ['Role', 'Source', 'Active', 'Revoked'], roleRows.length ? roleRows : empty(4)) : stateBox(t('state.unavailable'))),
           card(h('h3', { text: 'Not recorded by the game' }), h('ul', {}, d.notRecorded.map(x => h('li', {}, statusBadge(x.status), ' ', x.text))))),
         card(h('h3', { text: 'Latest audit records' }), ok(a) ? [h('p', { class: 'muted' }, 'The full, filterable log is under ', h('a', { href: '#audit', text: 'Audit logs' }), '.'), scroll('table-wide', ['#', 'Action', 'Actor', 'When'], recent.length ? recent : empty(4))] : stateBox(t('state.unavailable'))));
+    },
+
+    /* ---------- Support tickets (support/server.cjs holds the rules). Staff change only a ticket's status, assignee and messages. ---------- */
+    async support(view) {
+      const F = S.support || (S.support = { status: 'open', category: '', wallet: '', id: null });
+      const STATUS = { submitted: 'Waiting for the team', triaged: 'Triaged', investigating: 'Investigating', awaiting_player: 'Awaiting the player', resolved: 'Resolved', closed: 'Closed' };
+      const STATUS_KIND = { submitted: 'warn', triaged: 'info', investigating: 'info', awaiting_player: 'violet', resolved: 'ok', closed: 'info' };
+      const CATEGORY = { payment: 'Payment or deposit', withdrawal: 'Withdrawal', hero: 'Heroes or NFTs', reward: 'Rewards or Chest', bug: 'Something is broken', account: 'Account or sign-in', other: 'Something else' };
+      const sBadge = s => badge(STATUS[s] || s, STATUS_KIND[s] || 'info');
+      const who = w => (w ? (w === S.session.wallet ? 'you' : short(w)) : '—');
+      const options = (pairs, current) => pairs.map(([v, l]) => h('option', { value: v, text: l, selected: v === current ? true : null }));
+      const back = () => { F.id = null; return run(list); };
+
+      async function list() {
+        const body = { status: F.status }; if (F.category) body.category = F.category; if (F.wallet) body.wallet = F.wallet;
+        const d = (await api('cc-support-list', body)).data;
+        const st = h('select', { 'aria-label': 'Status filter' }, options([['open', 'Open (not resolved or closed)'], ['all', 'All'], ...Object.entries(STATUS)], F.status));
+        const cat = h('select', { 'aria-label': 'Category filter' }, options([['', 'All categories'], ...Object.entries(CATEGORY)], F.category));
+        const wal = h('input', { placeholder: 'Wallet (optional)', 'aria-label': 'Player wallet filter', value: F.wallet });
+        const rows = d.tickets.map(tk => h('tr', {},
+          h('td', { text: '#' + tk.id }),
+          h('td', {}, h('strong', { text: tk.expired ? '[expired]' : tk.subject }), tk.waitingOnTeam ? [' ', badge('needs a reply', 'warn')] : null),
+          h('td', { text: CATEGORY[tk.category] || tk.category }), h('td', {}, sBadge(tk.status)),
+          h('td', {}, h('span', { class: 'mono', text: short(tk.wallet), title: tk.wallet })), h('td', { class: 'mono', text: who(tk.assignee) }),
+          h('td', { text: n(tk.messages) }), h('td', {}, when(tk.updated)),
+          h('td', {}, h('button', { type: 'button', class: 'small', text: 'Open', 'aria-label': 'Open ticket #' + tk.id, onclick: () => { F.id = tk.id; run(detail); } }))));
+        const counts = Object.entries(STATUS).filter(([s]) => d.counts[s]).map(([s]) => h('span', {}, sBadge(s), ' ', n(d.counts[s]), ' '));
+        fill(view, head('support.title', 'support.sub', refreshBtn(list)),
+          h('form', { class: 'inline card', onsubmit: e => { e.preventDefault(); F.status = st.value; F.category = cat.value; F.wallet = wal.value.trim(); run(list); } },
+            h('label', {}, 'Status', st), h('label', {}, 'Category', cat), h('label', {}, 'Player wallet', wal), h('button', { type: 'submit', text: 'Filter' })),
+          card(h('h3', { text: 'Tickets' }), counts.length ? h('p', { class: 'row-actions' }, counts) : null,
+            scroll('table-wide', ['#', 'Subject', 'Category', 'Status', 'Player', 'Assigned', 'Messages', 'Updated', ''], rows.length ? rows : empty(9, 'No tickets match.')),
+            d.more ? h('p', { class: 'muted', text: 'Showing the newest 50. Use the filters to narrow the list.' }) : null,
+            h('p', { class: 'muted', text: 'Ticket text is replaced with "[expired]" ' + d.retentionDays + ' days after a ticket is resolved or closed. Open tickets are kept.' })));
+      }
+
+      async function detail() {
+        const d = (await api('cc-support-ticket', { id: F.id })).data, tk = d.ticket, rf = d.reference, writable = can('support.write') && tk.status !== 'closed' && !tk.expired;
+        const refText = !rf ? 'None' : rf.missing ? rf.kind + ' ' + rf.id + ' (record not found)' : [rf.kind, rf.id, rf.detail, rf.amount === null ? null : n(rf.amount) + ' Ryo', rf.status].filter(Boolean).join(' · ');
+        // One staff write; the button stays disabled while it runs. A stale version or a closed ticket comes back as a readable error.
+        // A retry of the same reply or note reuses its request ID, so a lost answer can never post it twice (the server replays the stored result).
+        const send = (btn, action, body, done) => run(async () => {
+          const key = action + '|' + tk.id + '|' + JSON.stringify(body); if (!F.retry || F.retry.key !== key) F.retry = { key, id: rid() };
+          btn.disabled = true; try { await write(action, { id: tk.id, requestId: F.retry.id, ...body }); F.retry = null; notice(done); await detail(); } finally { btn.disabled = false; }
+        });
+        const thread = h('div', { class: 'ticket-thread' }, d.messages.map(m => h('article', { class: 'ticket-msg ' + m.kind },
+          h('div', { class: 'muted' }, m.kind === 'player' ? 'Player' : m.kind === 'staff' ? 'Staff · ' + who(m.author) : 'Internal note (the player never sees this) · ' + who(m.author), ' · ', when(m.created)),
+          h('div', { class: 'pre', text: m.text }))));
+        const guard = (title, detailText, fields, build, done) => run(async () => { if (await guarded({ title, detail: detailText, fields, confirm: 'Confirm', submit: v => write('cc-support-update', { id: tk.id, expectedVersion: tk.version, reason: v.reason, ...build(v) }) })) { notice(done); await detail(); } });
+        const reply = h('textarea', { rows: 4, maxlength: 1000, 'aria-label': 'Reply to the player', placeholder: 'A reply the player will see…' });
+        const after = h('select', { 'aria-label': 'Status after sending' }, options([['awaiting_player', 'Then: awaiting the player'], ['investigating', 'Then: investigating'], ['resolved', 'Then: resolved']], 'awaiting_player'));
+        const sendBtn = h('button', { type: 'button', class: 'primary', text: 'Send reply', onclick: () => send(sendBtn, 'cc-support-reply', { message: reply.value, status: after.value, expectedVersion: tk.version }, 'Reply sent.') });
+        const noteBox = h('textarea', { rows: 3, maxlength: 1000, 'aria-label': 'Internal note', placeholder: 'Internal note for staff only…' });
+        const noteBtn = h('button', { type: 'button', text: 'Add internal note', onclick: () => send(noteBtn, 'cc-support-note', { message: noteBox.value }, 'Note added.') });
+        const statusOptions = Object.entries(STATUS).filter(([s]) => s !== tk.status);
+        const controls = writable ? card(h('h3', { text: 'Respond' }),
+          h('div', { class: 'ticket-form' }, reply, h('div', { class: 'row-actions' }, after, sendBtn)),
+          h('div', { class: 'ticket-form' }, noteBox, h('div', { class: 'row-actions' }, noteBtn)),
+          h('h3', { text: 'Ticket' }),
+          h('div', { class: 'row-actions' },
+            tk.assignee === S.session.wallet ? null : h('button', { type: 'button', text: 'Assign to me', onclick: () => guard('Assign ticket #' + tk.id + ' to me', 'You will be shown as the assignee.', [], () => ({ assign: 'me' }), 'Ticket assigned to you.') }),
+            tk.assignee ? h('button', { type: 'button', text: 'Unassign', onclick: () => guard('Unassign ticket #' + tk.id, 'The ticket goes back to the shared queue.', [], () => ({ assign: 'none' }), 'Ticket unassigned.') }) : null,
+            h('button', { type: 'button', text: 'Change status', onclick: () => guard('Change status of ticket #' + tk.id, 'Closed is final: the player can no longer reply and nobody can reopen the ticket. A resolved ticket reopens if the player replies.', [{ name: 'status', label: 'New status', options: statusOptions }], v => ({ status: v.status }), 'Status updated.') })))
+          : card(h('p', { class: 'muted', text: tk.expired ? 'This ticket has expired and can no longer be changed.' : tk.status === 'closed' ? 'This ticket is closed. A closed ticket is final.' : 'You can read tickets but not answer them.' }));
+        fill(view, h('div', { class: 'view-head' }, h('div', {}, h('h1', { text: 'Ticket #' + tk.id }), h('p', { class: 'muted', text: tk.expired ? '[expired]' : tk.subject })),
+          h('div', { class: 'row-actions' }, h('button', { type: 'button', text: '← Back to the queue', onclick: back }), refreshBtn(detail))),
+          card(h('div', { class: 'row-actions' }, sBadge(tk.status), badge(CATEGORY[tk.category] || tk.category, 'info'), tk.assignee ? badge('Assigned to ' + who(tk.assignee), 'gold') : badge('Unassigned', 'info')),
+            h('p', {}, 'Player ', h('span', { class: 'mono', text: tk.wallet })), h('p', {}, 'Order reference: ', refText),
+            h('p', { class: 'muted' }, 'Opened ', when(tk.created), ' · updated ', when(tk.updated), tk.settled ? [' · settled ', when(tk.settled), ' (text expires ' + d.retentionDays + ' days later)'] : null)),
+          card(h('h3', { text: 'Conversation' }), thread), controls);
+      }
+
+      return F.id ? detail() : list();
     },
 
     /* ---------- Batch A: Creators summary (aggregates only) ---------- */

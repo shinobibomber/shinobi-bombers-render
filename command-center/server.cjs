@@ -47,6 +47,9 @@ const PERMISSIONS = Object.freeze({
   'security.read': ['owner', 'approver', 'operator'],           // Security center and the incident register
   'security.manage': ['owner', 'operator'],                     // open / update incidents (notes only, no effect on the game)
   'creators.read': ['owner', 'approver', 'operator'],           // Creators summary (aggregates only)
+  // Support tickets (support/server.cjs). Staff change only a ticket's status, assignee and messages, never balances or rewards.
+  'support.read': ['owner', 'approver', 'operator', 'support'],
+  'support.write': ['owner', 'operator', 'support'],
 });
 const envList = name => String(process.env[name] || '').split(',').map(s => s.trim()).filter(Boolean);
 async function rolesOf(store, db, wallet) {
@@ -497,6 +500,27 @@ async function updateIncident(ctx, wallet, body) {
   });
 }
 
+/* ---------- Support tickets: staff writes (support/server.cjs holds the rules) ----------
+ * reply: a message the player sees (status becomes awaiting_player unless one is chosen); note: internal, never shown to the
+ * player; update: status and/or assignment, with a reason. All three run through write() and land on the audit chain as
+ * cc.support.*; message text never enters the chain, only its length and SHA-256. */
+async function supportWrite(ctx, wallet, action, body, kind) {
+  const S = require('./support.cjs'), id = Number.isSafeInteger(body.id) && body.id > 0 ? body.id : fail('Choose a ticket.');
+  const message = kind === 'update' ? null : S.clean(body.message, 'The message', 1, S.LIMITS.bodyMax, true), expected = kind === 'note' ? null : version(body.expectedVersion);
+  let status, assign, why = null;
+  if (kind === 'update') {
+    why = reason(body.reason); status = body.status === undefined ? undefined : S.status(body.status);
+    assign = body.assign === undefined ? undefined : ['me', 'none'].includes(body.assign) ? body.assign : fail('Choose me or none.');
+    if (status === undefined && assign === undefined) fail('Choose a status or an assignment.');
+  } else if (kind === 'reply' && body.status !== undefined) {
+    status = S.status(body.status); if (!['investigating', 'awaiting_player', 'resolved'].includes(status)) fail('A reply can leave the ticket investigating, awaiting the player, or resolved.');
+  }
+  return write(ctx, wallet, action, body, 'support.write', async (c, { now }) => {
+    const r = await S.staffChange(c, { scope: ctx.store.scope, wallet, now, id, expected, kind, message, status, assign });
+    return { result: r, audit: 'support.' + kind, data: { id, from: r.from, to: r.status, ...(message ? { length: [...message].length, sha256: S.sha(message) } : {}), ...(why ? { reason: why } : {}), ...(assign ? { assign } : {}) } };
+  });
+}
+
 /* ---------- Stats report (read-only) ----------
  * The same code as tools/launch-stats-report.cjs (copied to stats-report.cjs): one REPEATABLE READ READ ONLY transaction,
  * SELECT only, always rolled back, totals and per-hour/day series without wallets. The game shares a small connection
@@ -587,6 +611,11 @@ async function handle(ctx, wallet, action, body = {}) {
     case 'cc-security': need(roles, 'security.read'); return envelope(store, await require('./command-center-views.cjs').securityView(ctx));
     case 'cc-creators': need(roles, 'creators.read'); return envelope(store, await require('./command-center-views.cjs').creatorsView(ctx));
     case 'cc-incidents': need(roles, 'security.read'); return incidents(ctx, body);
+    case 'cc-support-list': need(roles, 'support.read'); return envelope(store, await require('./support.cjs').staffList(store, body));
+    case 'cc-support-ticket': need(roles, 'support.read'); return envelope(store, await require('./support.cjs').staffView(store, body));
+    case 'cc-support-reply': need(roles, 'support.write'); return supportWrite(ctx, wallet, 'cc-support-reply', body, 'reply');
+    case 'cc-support-note': need(roles, 'support.write'); return supportWrite(ctx, wallet, 'cc-support-note', body, 'note');
+    case 'cc-support-update': need(roles, 'support.write'); return supportWrite(ctx, wallet, 'cc-support-update', body, 'update');
     case 'cc-incident-open': need(roles, 'security.manage'); return openIncident(ctx, wallet, body);
     case 'cc-incident-update': need(roles, 'security.manage'); return updateIncident(ctx, wallet, body);
     default: fail('Unknown Command Center action.', 404);

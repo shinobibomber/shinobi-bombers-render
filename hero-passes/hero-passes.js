@@ -68,7 +68,7 @@ dialog.hp-center::backdrop{background:#000b}
     const foot = el('div', 'hp-foot');
     foot.append(button('Help & Support', () => { view = 'support'; render(); }), button('Close', () => dialog.close()));
     foot.querySelectorAll('button').forEach(b => { b.disabled = false; });
-    if (view === 'support') { body.replaceChildren(el('h3', '', 'HELP & SUPPORT'), el('p', '', 'Open ⚙ Tools in the game header for the community and support links. Our team can help with rewards, wallets and referral links.')); }
+    if (view === 'support') { body.replaceChildren(el('h3', '', 'HELP & SUPPORT'), el('p', '', 'Open ⚙ Tools in the game header for the community and support links. Our team can help with rewards, wallets and referral links.'), el('p', '', 'Need help with something specific? Send a ticket and our team will reply here.'), button('Contact Support', () => { if (window.SupportTickets) window.SupportTickets.open(); }, 'gold')); }
     body.append(msg);
     dialog.replaceChildren(head, tabs, body, foot);
   }
