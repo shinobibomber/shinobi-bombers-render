@@ -1,5 +1,11 @@
 # Shinobi Bombers patch notes
 
+## November 11, 2026 — Expedition Mode prepared (not active yet)
+
+- **Coming soon: Expedition Mode.** After 18 hours of real combat, a hero will leave on a free Expedition to rest, then come back on its own. Only actual fighting counts; resting and recovering Chakra never do. Founders' Expeditions will take half the time.
+- An **Expedition Hall** will take the place of the Daily Missions panel on the main menu. You'll see each hero's Combat Duty, who is away and who is back.
+- Nothing changes in the game today: Expedition Mode stays switched off until its launch is announced. Your heroes, Chakra, rewards and Sensei work exactly as before.
+
 ## November 11, 2026 — Adventure stage restored after sign-in
 
 - **Fixed: some players were back at Adventure stage 1.** Until now the game kept your current stage only on the device you played on. A new phone or browser, a wallet's built-in browser or cleared site data started you at stage 1.

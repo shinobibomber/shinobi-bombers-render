@@ -7,7 +7,7 @@ function replaceOne(s,a,b){const n=s.split(a).length-1;if(n!==1)throw Error('Com
 function refreshSources(app=path.join(__dirname,'app')){
  const dest=path.join(app,'public/assets/combat-rules');fs.mkdirSync(dest,{recursive:true});
  for(const f of ['rules.js','client.js'])fs.copyFileSync(path.join(__dirname,'combat-rules',f),path.join(dest,f));
- for(const [src,name]of [['rules.js','combat-rules.cjs'],['identity.cjs','combat-identity.cjs'],['chakra.cjs','combat-chakra.cjs'],['adventure.cjs','combat-adventure.cjs'],['hunt.cjs','combat-hunt.cjs'],['transfer.cjs','combat-transfer.cjs']])fs.copyFileSync(path.join(__dirname,'combat-rules',src),path.join(app,'server',name));
+ for(const [src,name]of [['rules.js','combat-rules.cjs'],['identity.cjs','combat-identity.cjs'],['chakra.cjs','combat-chakra.cjs'],['adventure.cjs','combat-adventure.cjs'],['hunt.cjs','combat-hunt.cjs'],['transfer.cjs','combat-transfer.cjs'],['duty.cjs','combat-duty.cjs']])fs.copyFileSync(path.join(__dirname,'combat-rules',src),path.join(app,'server',name));
 }
 function applyCombatRules(app=path.join(__dirname,'app')){
  refreshSources(app);

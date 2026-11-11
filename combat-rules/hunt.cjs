@@ -1,7 +1,7 @@
 /* A paid Boss Hunt is an authoritative timed auto-attack against one guardian.
  * Entry snapshots fix Power/cooldown/chakra; reports never choose damage or attack totals. */
 'use strict';
-const R=require('./combat-rules.cjs'),C=require('./combat-chakra.cjs'),fail=(...args)=>require('./store.cjs').fail(...args);
+const R=require('./combat-rules.cjs'),C=require('./combat-chakra.cjs'),D=require('./combat-duty.cjs'),fail=(...args)=>require('./store.cjs').fail(...args);
 const SCHEMA="ALTER TABLE ryo_hunt_entries ADD COLUMN IF NOT EXISTS combat JSONB;";
 const save=(c,store,wallet,p)=>c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[store.scope,wallet,JSON.stringify(p)]);
 function attacks(unit,at,end){return Math.min(unit.energy,Math.max(0,Math.floor((Math.min(at,end-1,(unit.ends??end)-1)-unit.started)/unit.cooldown)+1));}
@@ -12,10 +12,12 @@ async function activate(store,wallet,id){return store.transaction(async c=>{
  if(row.combat?.team)return {id,started:row.combat.started,seconds:60,guardian:row.guardian,team:row.combat.team.map(u=>u.id),pending:false,combat:row.combat};
  const now=store.now(),p=await store.profileLocked(c,wallet);await require('./adventure.cjs').settleLocked(store,c,wallet,p,false);
  if(p.heroes.some(h=>h.chakra?.hunt&&h.chakra.hunt.ends>now))fail('Finish your current hunt first.',409);
- const ready=new Set(p.battleReady),team=p.heroes.filter(h=>ready.has(h.tokenId)&&C.recover(h,now,p.dojo).value>=1&&!(h.chakra.lockUntil>now)).sort((a,b)=>R.damage(b)-R.damage(a)).slice(0,5);
+ let duty=null;try{duty=require('./expedition.cjs').dutyOption(p)}catch{duty=null}   // Expedition Mode (off: no Expedition blocks)
+ const ready=new Set(p.battleReady),team=p.heroes.filter(h=>ready.has(h.tokenId)&&C.recover(h,now,p.dojo).value>=1&&!(h.chakra.lockUntil>now)&&!(duty&&D.away(h.chakra,now))).sort((a,b)=>R.damage(b)-R.damage(a)).slice(0,5);
  if(!team.length)fail('Rest a battle-ready hero before starting your paid hunt.',409);
  const combat={version:1,started:now,ends:now+60000,team:team.map(h=>({id:h.tokenId,started:Math.max(now,h.chakra.nextAt),power:R.damage(h),cooldown:R.cooldown(h)*1000,energy:Math.floor(h.chakra.value)}))};
- for(const h of team){const u=combat.team.find(x=>x.id===h.tokenId);h.chakra.hunt={...u,entryId:id,ends:combat.ends,spent:0};h.chakra.lockUntil=combat.ends;h.chakra.resting=false;C.recover(h,now,p.dojo);}
+ // Expedition Mode: hunt attacks count toward Combat Duty with the option (verified Founder benefit) snapshotted at entry.
+ for(const h of team){const u=combat.team.find(x=>x.id===h.tokenId);h.chakra.hunt={...u,entryId:id,ends:combat.ends,spent:0,...(duty?{duty}:{})};h.chakra.lockUntil=combat.ends;h.chakra.resting=false;C.recover(h,now,p.dojo);}
  await save(c,store,wallet,p);await c.query('UPDATE ryo_hunt_entries SET combat=$3,started=$4 WHERE scope=$1 AND id=$2',[store.scope,id,JSON.stringify(combat),now]);
  return {id,started:now,seconds:60,guardian:row.guardian,team:combat.team.map(u=>u.id),pending:false,combat,chakra:C.snapshot(p,now)};
  });}

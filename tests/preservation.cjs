@@ -5,6 +5,9 @@ for(const file of baseline.files){assert.equal(sha(fs.readFileSync(path.join(roo
 let html=fs.readFileSync(path.join(root,'app/public/index.html'),'utf8');
 // The last build step points image URLs at their WebP versions; restore the original names first.
 html=require('../apply-performance.cjs').restoreReferences(html);
+// Expedition Mode (applied after the feature switches, after live economy): RyoPayments.expedition and the deploy/Sensei/Work All skips.
+for(const [before,after]of require('../apply-expedition.cjs').clientHooks.slice().reverse()){assert.equal(html.split(after).length-1,1,'exact expedition hook: '+before.slice(0,40));html=html.replace(after,()=>before)}
+assert.equal(html.split(require('../apply-expedition.cjs').marker).length-1,1,'one expedition script marker');
 // Live economy (applied after the Founders step): fee-free deposit wallet hooks.
 for(const [before,after,count]of require('../apply-live-economy.cjs').clientPatches.slice().reverse()){assert.equal(html.split(after).length-1,count,'exact live economy client hook: '+before.slice(0,50));html=html.split(after).join(before)}
 // Starter Activation (applied after Hero Passes): its own script only.

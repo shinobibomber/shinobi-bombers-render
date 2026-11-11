@@ -305,10 +305,15 @@
     b.tiles = [1270, 1345, 1420, 1494, 1569].map((x, i) => { const t = place(mk('div', 'sbw-tile', b.st), x, 302, 66, 122); const cv = mk('canvas', '', t); cv.width = 132; cv.height = 150; mk('b', '', t); t.addEventListener('click', () => go(1)); return t; });
     // CLAIM (hero-passes.js, owner request 2026-11-11) takes the Support button's place only while the server reports the
     // CLAIM switch on; Support stays reachable from ⚙ Tools and the Reward Center's Help & Support.
+    // EXPEDITION HALL (expedition/expedition.js, owner spec 2026-11-11) covers the printed DAILY MISSIONS panel (artwork only, no
+    // backend) in the same place and size, only while the server reports Expedition Mode on; otherwise Home is exactly as before.
+    // Inside the phone pane [1252,645,1652,860], so the phone layout moves it with that pane.
+    b.exp = place(mk('div', 'sbw-exp-panel', b.st), 1252, 645, 400, 215); b.exp.hidden = true;
     b.sup = b.st.querySelector('[data-sbwid="sup"]');
     if (b.sup) { b.claim = mk('span', 'sbw-claim', b.sup); b.claim.hidden = true; b.claim.innerHTML = '<span aria-hidden="true">🎁</span><span>CLAIM</span><i class="sbw-claim-badge" hidden></i>'; }
   };
   PAINT.home = (b, now) => {
+    if (b.exp) window.Expedition?.paintPanel(b.exp, now);
     if (b.claim) {
       const H = window.HeroPasses, on = !!(H && H.ui()), n = on ? H.pending() : 0, badge = $('.sbw-claim-badge', b.claim);
       b.claim.hidden = !on; b.sup.classList.toggle('sbw-claim-on', on); b.claim.classList.toggle('ready', n > 0);
@@ -957,7 +962,7 @@
     }
     $$('.sbw-hcard canvas', b.grid).forEach(c => { const card = cards[+c.dataset.i]; drawHero(c, card && card.h, 2.7, now, 2); });
     const c = cards[b.sel];
-    const dsig = c ? [c.idx, c.lvl, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint,ledger().profile?.upgradeShards].join(',') : 'none';
+    const dsig = c ? [c.idx, c.lvl, c.pw, c.sp, c.stam, c.vol, c.rng, c.status, c.up && c.up.textContent, c.up && c.up.disabled, c.list && c.list.disabled, c.h?.r === 5 && window.MythicHero?.auraEnabled, c.h?.nft?.mint,ledger().profile?.upgradeShards, window.Expedition?.sig(c.h)].join(',') : 'none';
     if (dsig !== b.dsig) {
       b.dsig = dsig;
       const portrait = $('.sbw-h2-port canvas', b.det);
@@ -974,6 +979,7 @@
             <div class="sbw-h2-port"><canvas width="292" height="344"></canvas></div></div>
           <div class="sbw-h2-ch"><span>CHAKRA</span><span>${cc} / ${cm}</span></div><div class="sbw-bar"><i style="width:${cm ? Math.round(100 * cc / cm) : 0}%"></i></div>
           <div class="sbw-shard-balance" title="Account-bound items for hero training"><span>UPGRADE SHARDS</span><b>${ledger().profile?.upgradeShards || 0}</b></div>
+          ${window.Expedition?.detailHtml(h) || ''}
           <h4>PERKS</h4>
           <ul class="sbw-perks2">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
           <div class="sbw-h2-btns">
@@ -1053,11 +1059,11 @@
     b.slots.forEach((e, i) => {
       const c = cards[i], h = c && heroAt(c.idx);
       if (!c || !h) { if (e.dataset.k !== 'empty') { e.dataset.k = 'empty'; e.className = 'sbw-at-card empty'; e.style.removeProperty('--rc'); e.innerHTML = `<b>+</b><div><strong>Empty slot ${i + 1}</strong><span>Deploy a battle-ready hero</span></div>`; } return; }
-      const a2 = c.a, meta = ((a2.querySelector('.roster-hero-meta') || {}).textContent || '').replace(/\s+/g, ' ').trim(), bar = ((a2.querySelector('.bar i') || {}).style || {}).width || '0%', btn = a2.querySelector('.roster-team-action'), el = a2.querySelector('.roster-element-icon');
+      const a2 = c.a, away = !!window.Expedition?.away(h), meta = (away && window.Expedition.cardMeta(h)) || ((a2.querySelector('.roster-hero-meta') || {}).textContent || '').replace(/\s+/g, ' ').trim(), bar = ((a2.querySelector('.bar i') || {}).style || {}).width || '0%', btn = a2.querySelector('.roster-team-action'), el = a2.querySelector('.roster-element-icon');
       // Structure key: a slot's markup is rebuilt only when the hero, level, button or deployed state changes. The live numbers
       // (chakra text and bar), which change on nearly every paint while heroes fight, are updated in place below; rebuilding
       // all ten slots each time re-parsed their HTML and forced a style recalculation (performance, owner request 2026-11-10).
-      const k = [c.idx, h.id, h.r, h.lv, btn && btn.textContent, btn && btn.disabled, c.deployed].join('|');
+      const k = [c.idx, h.id, h.r, h.lv, btn && btn.textContent, btn && btn.disabled, c.deployed, away].join('|');
       if (e.dataset.k === k) {
         const small = e.querySelector('.sbw-at-info small'), fill = e.querySelector('.sbw-bar i');
         if (small && small.textContent !== meta) small.textContent = meta;
@@ -1065,7 +1071,7 @@
       }
       if (e.dataset.k !== k) {
         const old = e.querySelector('canvas'), keep = old && old.width ? old : null;
-        e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
+        e.dataset.k = k; e.className = `sbw-at-card r${h.r}${c.deployed ? ' deployed' : ''}${away ? ' on-expedition' : ''}${c.deployed && h.r >= 3 ? (h.r === 5 ? ' aura-mythic' : h.r === 4 ? ' aura-legend' : ' aura-elite') : ''}`; e.style.setProperty('--rc', RCOL[h.r]);
         e.innerHTML = `<i class="sbw-at-aura"></i>${frameHtml(h.r, false)}<div class="sbw-at-port"><canvas width="126" height="126"></canvas></div><div class="sbw-at-info"><strong>${esc((h.name || '').split(' ')[0])}</strong><span class="sbw-at-rank">${esc(h.r===5?'MYTHIC':RNAME[h.r])}</span><small>${esc(meta)}</small><div class="sbw-bar"><i style="width:${bar}"></i></div></div>${el ? `<span class="sbw-at-el" title="${esc(el.title || '')}" style="--el:${esc(getComputedStyle(el).getPropertyValue('--element-icon') || 'none')}"></span>` : ''}<button type="button" ${btn && btn.disabled ? 'disabled' : ''}>${esc(btn ? btn.textContent.trim() : 'Deploy')}</button>`;
         if (keep && e.dataset.sbwHero === String(h.id)) e.querySelector('canvas').replaceWith(keep);
         e.dataset.sbwHero = String(h.id);
@@ -2077,7 +2083,8 @@
         else if (w.status === 'refunded') noticeWhenFree('WITHDRAWAL FAILED', `Your withdrawal of ${amount} Ryo did not go through. Your reserved Ryo was returned to your Game Balance.`);
       }
     });
-    window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync, open: goScreen };
+    window.WebsiteDesign = { ready: true, screens: Object.keys(D.screens), current: () => cur, refresh: sync, open: goScreen,
+      drawHero: (c, h, sc, now) => drawHero(c, h, sc, now) };   // the Expedition Hall draws the same original portraits
   }
   init().catch(e => console.error('Website designs could not be applied:', e));
 })();
