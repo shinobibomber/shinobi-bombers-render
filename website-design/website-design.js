@@ -530,13 +530,13 @@
     b.fshards.onclick = e => {
       const a = e.target.closest('[data-fs]')?.dataset.fs, F = window.FusionShards; if (!a || !F) return;
       const r = fusionRank(); b.fsWarn = null;   // any new action clears an old craft-first message
-      if (a === '+') {
-        const c = F.canAdd(r);
+      if (a === '+' || a === 'fill') {
+        const c = F.canAdd(r);   // ok = one more shard is owned and still useful; Fill adds as many as are owned, up to 100%
         if (!c.ok) {   // not enough Fusion Shards: nothing changes, and the player is told to craft first
           const t = 'Not enough Fusion Shards. Craft first. You have ' + c.have.toLocaleString('en-US') + ', need ' + c.need.toLocaleString('en-US') + '.';
           b.fsWarn = { t, until: performance.now() + 4000 }; toast(t);
-        } else F.set(r, F.perAttempt() + 1);
-      } else if (a === '-') F.set(r, F.perAttempt() - 1); else if (a === 'fill') F.fill(r); else if (a === 'craft') F.openCraft();
+        } else if (a === 'fill') F.fill(r); else F.set(r, F.perAttempt() + 1);
+      } else if (a === '-') F.set(r, F.perAttempt() - 1); else if (a === 'craft') F.openCraft();
       refresh();
     };
   };
@@ -567,7 +567,8 @@
         const ca = F.canAdd(rank), warn = b.fsWarn && now < b.fsWarn.until && !ca.ok ? b.fsWarn.t : '';   // gone once crafting covers it
         setText($('.sbw-fs-note', b.fshards), warn ? warn : pl.short ? 'Need ' + pl.short + ' more Fusion Shard' + (pl.short === 1 ? '' : 's') : full ? '100% GUARANTEED SUCCESS' : pl.per ? '+' + (pl.final - pl.base) + '% · ' + pl.per + ' per attempt' : '+5% per Fusion Shard');
         b.fshards.classList.toggle('full', full && !pl.short); b.fshards.classList.toggle('short', pl.short > 0 || !!warn);
-        $('[data-fs="-"]', b.fshards).disabled = pl.per < 1; const plus = $('[data-fs="+"]', b.fshards); plus.disabled = pl.per >= pl.needed; plus.classList.toggle('sbw-fs-nostock', !plus.disabled && !ca.ok); plus.setAttribute('aria-disabled', String(plus.disabled || !ca.ok)); $('[data-fs="fill"]', b.fshards).disabled = pl.per >= pl.needed;
+        $('[data-fs="-"]', b.fshards).disabled = pl.per < 1; const plus = $('[data-fs="+"]', b.fshards); plus.disabled = pl.per >= pl.needed; plus.classList.toggle('sbw-fs-nostock', !plus.disabled && !ca.ok); plus.setAttribute('aria-disabled', String(plus.disabled || !ca.ok)); const fill = $('[data-fs="fill"]', b.fshards); fill.disabled = pl.per >= pl.needed; fill.classList.toggle('sbw-fs-nostock', !fill.disabled && !ca.ok); fill.setAttribute('aria-disabled', String(fill.disabled || !ca.ok));
+        setText(fill, F.balance() < pl.needed && pl.per < pl.needed ? 'FILL MAX' : 'FILL 100%');   // never promise 100% the player can't reach
       }
     }
     setText(b.rarity, RNAME[rank + 1]); b.rarity.style.color = RCOL[rank + 1];

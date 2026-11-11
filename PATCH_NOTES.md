@@ -9,6 +9,13 @@
 - **Your privacy:** the text of a ticket and its replies is deleted 30 days after it is resolved or closed.
 - Support can only read and answer tickets. Nothing in this feature touches your Ryo, Chest, rewards, heroes or withdrawals.
 
+## November 12, 2026 — Fusion Shards: Fill follows the shards you own
+
+- **The Fill button now fills only the Fusion Shards you own,** up to the amount needed for 100% success. It shows **FILL MAX** while you own fewer than 100% needs, and **FILL 100%** when you have enough.
+- If you have none to add, nothing changes and a message tells you to craft first and shows how many you have and how many you need.
+- Craft more with the **CRAFT** button next to it (2 Upgrade Shards = 1 Fusion Shard).
+- Fusion odds, prices and your shard balances are unchanged.
+
 ## November 12, 2026 — Fusion Shards: clear "craft first" message
 
 - **The + button now stops at the Fusion Shards you own.** If you don't have enough, nothing changes and a message tells you to craft first and shows how many Fusion Shards you have and how many you need.
