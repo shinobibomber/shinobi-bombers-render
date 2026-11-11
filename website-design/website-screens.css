@@ -70,6 +70,9 @@
 #sbwLayer .picked>.sl{box-shadow:0 0 0 3px #ffcf4a,0 0 26px 6px rgba(255,190,60,.85);transform:translateY(-5px)}
 #sbwLayer .md{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:12px;font:600 16px Rajdhani,system-ui,sans-serif;color:#f5efff}
 @keyframes sbw-scrIn{from{opacity:0;filter:blur(6px) brightness(1.6)}}
+/* AUTO low-effects (website-design.js autoQuality): decorative ambient animations pause when the page is struggling */
+#sbwLayer[data-auto-low] .fx, #sbwLayer[data-auto-low] .fx *, #sbwLayer[data-auto-low] .fx::before, #sbwLayer[data-auto-low] .fx::after, #sbwLayer[data-auto-low] .fx *::before, #sbwLayer[data-auto-low] .fx *::after, #sbwLayer[data-auto-low] .petals i, #sbwLayer[data-auto-low] .glowp>.sl, #sbwLayer[data-auto-low] .hs.act>.sl,
+#sbwLayer[data-auto-low] .sh>.sl::after, #sbwLayer[data-auto-low] .breathe { animation-play-state: paused !important; }
 @keyframes sbw-sweep{0%,55%{background-position:130% 0}100%{background-position:-130% 0}}
 @keyframes sbw-sweepB{from{background-position:130% 0}to{background-position:-130% 0}}
 @keyframes sbw-pulse{50%{transform:scale(1.03)}}

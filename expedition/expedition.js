@@ -10,6 +10,7 @@
   'use strict';
   const POLL_IDLE = 60000, POLL_OPEN = 20000, POLL_OFF = 10 * 60000, TOAST_WINDOW = 10 * 60000, DAY = 86400000;
   const RANK = ['Genin', 'Chunin', 'Jonin', 'Elite', 'Legend', 'Mythic'], RCOL = ['#a8b3c2', '#5fd38d', '#5aa9ff', '#c58cff', '#ffb547', '#ff5a6a'];
+  let viewIndex = new Map(), gameIndex = null;
   let view = null, fetchedAt = 0, offset = 0, busy = false, owner = null, hall = null, tab = 'duty', focusId = null, confirmBox = null;
   const loadedAt = Date.now();
   const P = () => window.RyoPayments, state = () => P()?.state;
@@ -35,7 +36,7 @@
     busy = true;
     try {
       const data = await api();
-      if (data?.expedition && state()?.account === owner) { view = data.expedition; offset = view.serverTime - Date.now(); notice(); }
+      if (data?.expedition && state()?.account === owner) { view = data.expedition; viewIndex = new Map((view.heroes || []).map(h => [h.tokenId, h])); offset = view.serverTime - Date.now(); notice(); }
     } catch { /* keep the last view; the next poll retries */ } finally { fetchedAt = Date.now(); busy = false; }
   }
   const enabled = () => !!(view && view.enabled && state()?.authenticated);
@@ -47,7 +48,7 @@
   }
   /** One hero's current Expedition status, from the view brought forward with the live snapshot and the server clock. */
   function info(id) {
-    const v = view?.heroes?.find(h => h.tokenId === id); if (!v) return null;
+    const v = viewIndex.get(id); if (!v) return null;
     const t = now(), l = live(id);
     let ends = v.status === 'expedition' ? v.ends : null, duty = v.dutyMs;
     if (l) { ends = Number.isFinite(l.expeditionEnds) ? l.expeditionEnds : ends && ends <= t ? ends : null; if (Number.isFinite(l.duty)) duty = l.duty; else if (!ends) duty = 0; }
@@ -82,7 +83,8 @@
     return { label: 'Combat Duty', value: hours(h.dutyMs) + ' / ' + hours(view.capMs), pct: 100 * h.dutyMs / view.capMs, cls: h.dutyMs >= view.capMs * .8 ? 'near' : '' };
   }
   function portrait(canvas, id) {
-    const h = gameHeroes().find(x => x.tokenId === id && (!x.tokenOwner || x.tokenOwner === owner));
+    if (!gameIndex) gameIndex = new Map(gameHeroes().map(x => [x.tokenId, x]));
+    const g = gameIndex.get(id), h = g && (!g.tokenOwner || g.tokenOwner === owner) ? g : null;
     if (!h || !canvas) return;
     try { window.WebsiteDesign?.drawHero?.(canvas, h, 2.2, performance.now()); } catch { /* portraits are decorative */ }
   }
@@ -96,6 +98,7 @@
     return out.slice(0, 3);
   }
   function paintPanel(el) {
+    gameIndex = null;
     refresh();
     if (!enabled()) { if (!el.hidden) el.hidden = true; return; }
     const rows = panelHeroes(), dot = unseen().length > 0;
@@ -152,8 +155,10 @@
         <small>${esc(meta)}</small><small>Chakra ${fmtRyo(h.chakra)} / ${fmtRyo(Math.floor(h.maxChakra))}</small></div>${act}</article>`;
   }
   let hallSig = '';
+  const PAGE = 60, shownCount = { duty: PAGE, away: PAGE, done: PAGE };   // a long collection is shown 60 cards at a time (each card draws a canvas)
   function render(force = true) {
     if (!hall) return;
+    gameIndex = null;
     const sigNow = [enabled(), tab, !!confirmBox, ...all().map(h => [h.tokenId, h.status, Math.floor(h.remainingMs / 60000), Math.floor(h.dutyMs / 360000), h.quote?.total].join(':'))].join('|');
     if (!force && sigNow === hallSig) return;
     hallSig = sigNow;
@@ -164,12 +169,12 @@
       return;
     }
     const list = all(), groups = { duty: list.filter(h => h.status === 'duty').sort((a, b) => b.dutyMs - a.dutyMs), away: list.filter(h => h.status === 'expedition').sort((a, b) => a.remainingMs - b.remainingMs), done: list.filter(h => h.status === 'returned' || h.recent).sort((a, b) => b.completed - a.completed) };
-    const shown = groups[tab] || [];
+    const all_ = groups[tab] || [], shown = all_.slice(0, shownCount[tab] || PAGE), more = all_.length - shown.length;
     const rules = `Every hero can fight for ${hours(view.capMs)} of active combat (attacks only; rest and Chakra recovery never count). Then it leaves on a free Expedition and returns on its own. Its Chakra keeps recovering as on the bench and is never refilled instantly.${view.founder ? ' Founder benefit: Expeditions take 50% less time.' : ''}`;
     hall.innerHTML = `<div class="sbw-exp-sheet"><header><h2>EXPEDITION HALL</h2><button type="button" class="sbw-exp-x" data-exp-close aria-label="Close">✕</button></header>
       <p class="sbw-exp-rules">${esc(rules)}</p>
       <nav class="sbw-exp-tabs" role="tablist">${TABS.map(([k, label]) => `<button type="button" role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-exp-tab="${k}">${label}<i>${groups[k].length}</i></button>`).join('')}</nav>
-      <div class="sbw-exp-list">${shown.length ? shown.map(heroCard).join('') : `<p class="sbw-exp-empty">${tab === 'away' ? 'No hero is on an Expedition.' : tab === 'done' ? 'No Expedition completed in the last 24 hours.' : 'No heroes yet.'}</p>`}</div>
+      <div class="sbw-exp-list">${shown.length ? shown.map(heroCard).join('') + (more > 0 ? `<button type="button" class="sbw-exp-btn sbw-exp-more" data-exp-more="${tab}">Show ${Math.min(PAGE, more)} more (${more} left)</button>` : '') : `<p class="sbw-exp-empty">${tab === 'away' ? 'No hero is on an Expedition.' : tab === 'done' ? 'No Expedition completed in the last 24 hours.' : 'No heroes yet.'}</p>`}</div>
       <footer><span>${view.durations.map(d => esc(d.name) + ' ' + dur(view.founder ? d.founderMs : d.regularMs)).join(' · ')}</span></footer>
       ${confirmBox ? confirmHtml() : ''}</div>`;
     hall.querySelectorAll('canvas[data-exp-port]').forEach(c => portrait(c, c.dataset.expPort));
@@ -205,10 +210,11 @@
   function onHallClick(e) {
     const t = e.target.closest('button'); if (!t) { if (e.target === hall) close(); return; }
     if (t.hasAttribute('data-exp-close')) return close();
-    if (t.dataset.expTab) { tab = t.dataset.expTab; return render(); }
+    if (t.dataset.expTab) { tab = t.dataset.expTab; shownCount[tab] = PAGE; return render(); }
     if (t.dataset.expExpedite) return expedite(t.dataset.expExpedite);
     if (t.hasAttribute('data-exp-cancel')) { confirmBox = null; return render(); }
     if (t.hasAttribute('data-exp-pay')) return pay();
+    if (t.dataset.expMore) { shownCount[t.dataset.expMore] = (shownCount[t.dataset.expMore] || PAGE) + PAGE; hallSig = ''; return render(); }
   }
   // Home panel and Heroes detail buttons (their markup is rebuilt by the menu layer, so listen once on the document).
   document.addEventListener('click', e => { const t = e.target.closest?.('[data-exp-open]'); if (!t || (hall && hall.contains(t))) return; e.preventDefault(); e.stopPropagation(); open(t.dataset.expOpen || 'duty', t.dataset.expHero || null); }, true);

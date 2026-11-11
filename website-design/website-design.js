@@ -51,7 +51,7 @@
   const fmt = n => (typeof n === 'number' && Number.isFinite(n) ? Math.floor(n).toLocaleString('en-US') : '—');
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const R = (a, b) => a + Math.random() * (b - a);
-  let D = null, layer = null, cur = null, dlg = null, toastEl = null;
+  let D = null, layer = null, cur = null, dlg = null, toastEl = null, autoLow = false;   // autoLow: measured AUTO low-effects state (visual only)
   const built = {};
 
   function mk(tag, cls, parent, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; parent && parent.appendChild(e); return e; }
@@ -148,9 +148,37 @@
   function deployed() { return owned().filter(h => h.on).sort((a, b) => b.r - a.r || b.lv - a.lv || a.id - b.id); }
 
   /* ---------- the game's own controls (pressed, never re-implemented) ---------- */
-  function nativeEl(scope, test) { const root = document.querySelector(scope); if (!root) return null; return [...root.querySelectorAll('button,input,label,[onclick]')].find(e => !e.closest('#sbwLayer') && test(e)) || null; }
+  /* The native Heroes (#p1) and Fusion (#p6) roots grow with the number of heroes, and their text and controls were re-read on
+   * every paint tick (about 8 per second): innerText forces a layout over every row and the control list was rebuilt each call.
+   * They are now read once per native change (a MutationObserver; pending records are checked synchronously so a read right
+   * after a click is never stale) and the cache is dropped on every screen change. Same values, far less work. */
+  const NATIVE_CACHED = new Set(['#p1', '#p6']), nativeCache = new Map();
+  function nativeEntry(scope, root) {
+    if (!NATIVE_CACHED.has(scope)) return null;
+    let c = nativeCache.get(scope);
+    if (!c || c.root !== root) {
+      c = { root, dirty: true, text: null, els: null, rows: null, obs: null }; const entry = c;
+      c.obs = new MutationObserver(() => { entry.dirty = true; });
+      c.obs.observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'disabled', 'aria-pressed', 'onclick', 'hidden', 'style'] });
+      nativeCache.set(scope, c);
+    }
+    if (c.obs.takeRecords().length) c.dirty = true;
+    if (c.dirty) { c.dirty = false; c.text = null; c.els = null; c.rows = null; }
+    return c;
+  }
+  function nativeEl(scope, test) {
+    const root = document.querySelector(scope); if (!root) return null;
+    const c = nativeEntry(scope, root), list = c && c.els ? c.els : [...root.querySelectorAll('button,input,label,[onclick]')].filter(e => !e.closest('#sbwLayer'));
+    if (c && !c.els) c.els = list;
+    return list.find(test) || null;
+  }
   function pressOnclick(scope, code) { const e = nativeEl(scope, x => (x.getAttribute('onclick') || '') === code); if (e && !e.disabled) { e.click(); return true; } return false; }
-  function nativeText(scope, re) { const root = document.querySelector(scope); if (!root) return ''; const m = (root.innerText || '').match(re); return m ? m[0] : ''; }
+  function nativeText(scope, re) {
+    const root = document.querySelector(scope); if (!root) return '';
+    const c = nativeEntry(scope, root); let text;
+    if (c) { if (c.text === null) c.text = root.innerText || ''; text = c.text; } else text = root.innerText || '';
+    const m = text.match(re); return m ? m[0] : '';
+  }
 
   /* ---------- dialogs ---------- */
   function notice(title, text) {
@@ -449,15 +477,37 @@
   /* the game's own Reserve list (#p6 .fusion-table): one row per hero, with its real checkbox */
   function fusionRows() {
     const root = document.querySelector('#p6'); if (!root) return [];
-    return [...root.querySelectorAll('.fusion-table tbody tr')].map(tr => {
+    const c = nativeEntry('#p6', root);
+    if (c && c.rows) { for (const r of c.rows) { r.checked = r.input.checked; r.disabled = r.input.disabled; } return c.rows; }   // unchanged native list: only the live checkbox state
+    const rows = [...root.querySelectorAll('.fusion-table tbody tr')].map(tr => {
       const input = tr.querySelector('input[type=checkbox]'); if (!input) return null;
       const td = [...tr.children].map(c => (c.innerText || c.textContent || '').trim()), m = /V2\.select\((\d+)/.exec(input.getAttribute('onchange') || '');
       return { input, id: m ? +m[1] : null, name: ((tr.querySelector('b') || {}).textContent || '').trim(), info: ((tr.querySelector('small') || {}).textContent || '').trim(), stats: td.slice(1, 4), jutsu: td[4] || '', checked: input.checked, disabled: input.disabled };
     }).filter(Boolean);
+    if (c) c.rows = rows;
+    return rows;
+  }
+  const FUSION_ROW_H = 60, FUSION_OVERSCAN = 4;   // .sbw-frow is a fixed 60px row
+  function fusionRowHtml(b, r, i) {
+    const rank = b.frank, locked = b.flocked(r);
+    return `<button type="button" class="sbw-frow${r.checked ? ' on' : ''}${locked ? ' locked' : ''}" data-i="${i}" ${r.disabled ? 'disabled' : ''} aria-pressed="${r.checked}" aria-label="${locked ? esc(r.name) + ', level 5 needed' : 'Select ' + esc(r.name)}"><i>${r.checked ? '✓' : locked ? '🔒' : ''}</i><canvas width="72" height="78" data-id="${r.id}"></canvas><span class="sbw-fname"><b>${esc(r.name)}</b><small style="color:${RCOL[rank]}">${esc(r.info)}</small></span>${r.stats.map(v => `<em>${esc(v)}</em>`).join('')}<span class="sbw-fj">${esc(r.jutsu)}</span></button>`;
+  }
+  /* renders only the rows in view (plus a little overscan) and positions them with padding; called on rebuild and on scroll */
+  function fusionWindow(b, now) {
+    const rows = b.frows, vp = b.fvp; if (!vp || !rows) return;
+    const top = Math.max(0, b.list.scrollTop - b.fnoteH), h = b.list.clientHeight || 360;
+    const start = Math.max(0, Math.floor(top / FUSION_ROW_H) - FUSION_OVERSCAN), end = Math.min(rows.length, Math.ceil((top + h) / FUSION_ROW_H) + FUSION_OVERSCAN);
+    const key = start + ':' + end + ':' + b.sig; if (b.fkey === key) return; b.fkey = key;
+    vp.style.paddingTop = start * FUSION_ROW_H + 'px';
+    vp.innerHTML = rows.slice(start, end).map((r, k) => fusionRowHtml(b, r, start + k)).join('');
+    const heroes = new Map(owned().map(x => [x.id, x]));
+    $$('.sbw-frow canvas', vp).forEach(cv => drawHero(cv, heroes.get(+cv.dataset.id) || null, 1.5, now == null ? performance.now() : now));
   }
   function fusionStat(label) { return nativeText('#p6', new RegExp(label + '\\s*\\n\\s*[\\d.]+\\s*[–-]\\s*[\\d.]+')).split(/\n/).pop().trim(); }
   INIT.fusion = b => {
     b.list = place(mk('div', 'sbw-flist', b.st), 46, 594, 754, 360); b.list.setAttribute('aria-label', 'Reserve heroes');
+    b.list.addEventListener('click', e => { const btn = e.target.closest('.sbw-frow'); if (!btn) return; const r = fusionRows()[+btn.dataset.i]; if (r && !r.input.disabled) { r.input.click(); b.sig = ''; refresh(); } });
+    b.list.addEventListener('scroll', () => { if (b.fraf) return; b.fraf = requestAnimationFrame(() => { b.fraf = 0; fusionWindow(b); }); }, { passive: true });
     b.slots = [347, 440, 533].map((y, j) => { const e = place(mk('div', 'sbw-fslot', b.st), 901, y, 151, 86); const cv = mk('canvas', '', e); cv.width = 116; cv.height = 116; mk('span', '', e); e.hidden = true; return e; });
     const cover = (x, y, w, h, bg, fs, color, cls = '') => { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; };
     b.title = cover(870, 302, 250, 30, '#0a0a24', 24, '#ffffff', 'sbw-left');
@@ -518,11 +568,14 @@
     for (let i = 0; i < 4; i++) for (const id of ['r' + (i + 1), 'et' + (i + 1)]) { const e = $(`.hs[data-sbwid="${id}"]`, b.st); if (e) e.classList.toggle('on2', i === rank); }
     const sig = rank + '|' + rows.map(r => r.id + (r.checked ? '*' : '') + (r.disabled ? '!' : '')).join('|');
     if (sig !== b.sig) {
-      b.sig = sig;
+      b.sig = sig; b.frank = rank; b.frows = rows;
       const locked = r => /Lv 5 needed/.test(r.info), eligible = rows.filter(r => !locked(r)).length;
-      b.list.innerHTML = rows.length ? (rank === 3 && eligible < 3 ? `<p class="sbw-fnote">Elite → Legend fusion needs three level 5 Elites (${eligible} ready). Train Elites to level 5 in the Dojo.</p>` : '') + rows.map((r, i) => `<button type="button" class="sbw-frow${r.checked ? ' on' : ''}${locked(r) ? ' locked' : ''}" data-i="${i}" ${r.disabled ? 'disabled' : ''} aria-pressed="${r.checked}" aria-label="${locked(r) ? esc(r.name) + ', level 5 needed' : 'Select ' + esc(r.name)}"><i>${r.checked ? '✓' : locked(r) ? '🔒' : ''}</i><canvas width="72" height="78" data-id="${r.id}"></canvas><span class="sbw-fname"><b>${esc(r.name)}</b><small style="color:${RCOL[rank]}">${esc(r.info)}</small></span>${r.stats.map(v => `<em>${esc(v)}</em>`).join('')}<span class="sbw-fj">${esc(r.jutsu)}</span></button>`).join('')
+      b.flocked = locked; b.fkey = '';
+      // The Reserve list is windowed: only the visible rows (fixed height) and their canvases exist, whatever the number of heroes.
+      b.list.innerHTML = rows.length ? (rank === 3 && eligible < 3 ? `<p class="sbw-fnote">Elite → Legend fusion needs three level 5 Elites (${eligible} ready). Train Elites to level 5 in the Dojo.</p>` : '') + '<div class="sbw-fvp"></div>'
         : `<p class="sbw-fempty">No ${RNAME[rank]} heroes in Reserve. Move heroes to Reserve in Heroes, or summon more Shinobi.</p>`;
-      $$('.sbw-frow', b.list).forEach(btn => btn.onclick = () => { const r = fusionRows()[+btn.dataset.i]; if (r && !r.input.disabled) { r.input.click(); b.sig = ''; refresh(); } });
+      b.fvp = rows.length ? b.list.lastElementChild : null; const note = rows.length ? $('.sbw-fnote', b.list) : null; b.fnoteH = note ? note.offsetHeight + 14 : 0;
+      if (b.fvp) { b.fvp.style.height = rows.length * FUSION_ROW_H + 'px'; fusionWindow(b); }
     }
     const heroes = new Map(owned().map(h => [h.id, h])), hero = id => heroes.get(id) || null, draw = (cv, h, sc) => drawHero(cv, h, sc, now);
     $$('.sbw-frow canvas', b.list).forEach(cv => draw(cv, hero(+cv.dataset.id), 1.5));
@@ -1513,7 +1566,7 @@
   function fitText(e) { const base = +e.dataset.fs; if (!base) return; let fs = base; e.style.fontSize = fs + 'px'; while (e.scrollWidth > e.clientWidth + 1 && fs > 8) { fs -= 1; e.style.fontSize = fs + 'px'; } }
   function syncEffects() {
     if (!layer) return;
-    const paused = String(document.hidden || RM || window.Arena3D?.cfg.fx === 0);
+    const paused = String(document.hidden || RM || autoLow || window.Arena3D?.cfg.fx === 0);
     const quality = String(window.Arena3D?.cfg.fx ?? 1);
     if (layer.dataset.effectsPaused !== paused) layer.dataset.effectsPaused = paused;
     if (layer.dataset.effectsQuality !== quality) layer.dataset.effectsQuality = quality;
@@ -2020,7 +2073,7 @@
     if (k !== cur) {
       if (chatPop && !chatPop.hidden) toggleChat(false);
       if (cur && built[cur]) built[cur].sec.classList.remove('on');
-      cur = k; if (k === 'home' || k === 'chat') pollChat();
+      cur = k; nativeCache.forEach(c => c.obs.disconnect()); nativeCache.clear(); if (k === 'home' || k === 'chat') pollChat();
       if (k) { const b = built[k] || build(k); b.sec.classList.add('on'); if (!RM) { b.sec.classList.remove('enter'); void b.sec.offsetWidth; b.sec.classList.add('enter'); } }
       layer.hidden = !k; markNav();
       document.body.classList.toggle('sbw-active', !!k);
@@ -2044,15 +2097,32 @@
     addEventListener('shinobi-beta-wallet', () => refresh());
     addEventListener('shinobi-chest', () => { refresh(); welcomeBack(); });
     // Defeats trigger verified Chest syncs in gameplay-options/options.js (KillReport).
-    addEventListener('resize', fit);
+    let fitFrame = 0; addEventListener('resize', () => { if (!fitFrame) fitFrame = requestAnimationFrame(() => { fitFrame = 0; fit(); }); });   // one fit() per frame while resizing
     motionPreference.addEventListener('change', event => { RM = event.matches || !!window.DisplaySettings?.v.reduceMotion; refresh(); });
     addEventListener('sb-display-change', () => { RM = motionPreference.matches || !!window.DisplaySettings?.v.reduceMotion; refresh(); });
     document.addEventListener('visibilitychange', () => { syncEffects(); if (!document.hidden) sync(); });
     const nt = document.getElementById('toast'); if (nt) new MutationObserver(() => { if (cur && nt.textContent.trim()) toast(nt.textContent.trim()); }).observe(nt, { childList: true, characterData: true, subtree: true });
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('click', e => { const g = e.target.closest('#sbwLayer .gt'); if (!g) return; if (!dlg) dlg = mk('dialog', 'sbw-dialog', document.body); dlg.innerHTML = `<h2>${esc(g.dataset.t)}</h2><img class="sbw-lb" src="${g.dataset.src}" alt="${esc(g.dataset.t)}"><div class="sbw-acts"><button type="button" class="sbw-btn">Close</button></div>`; $('button', dlg).onclick = () => dlg.close(); dlg.showModal(); });
-    setInterval(() => { sync(); placeTrigger(); }, 700);
-    let last = 0; const loop = now => { if (!document.hidden) { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+    setInterval(() => { if (document.hidden) return; sync(); placeTrigger(); }, 700);
+    /* AUTO low-effects: if the page sustains under ~33 fps for 4 s (measured, not assumed), the decorative ambient layers (petals,
+     * embers, glow sweeps, filter pulses) are paused until it sustains over ~45 fps for 10 s. Gameplay, the simulation, rewards and
+     * the player's own display settings are never touched; this only stops purely decorative CSS animations. */
+    const auto = { samples: [], at: performance.now(), low: false, since: 0, prev: 0 };
+    const autoQuality = now => {
+      if (document.hidden) { auto.prev = 0; auto.samples.length = 0; return; }
+      if (auto.prev) { const dt = now - auto.prev; if (dt < 1000) auto.samples.push(dt); }   // ignore long gaps (tab switches, dialogs)
+      auto.prev = now;
+      const span = auto.low ? 10000 : 4000; if (now - auto.at < span) return;
+      auto.at = now; const s = auto.samples.splice(0).sort((a, b) => a - b), median = s.length > 30 ? s[s.length >> 1] : 0;
+      if (!median) return;
+      if (!auto.low && median > 30) { auto.low = true; autoLow = true; layer.setAttribute('data-auto-low', '1'); syncEffects(); }
+      else if (auto.low && median < 22 && now - auto.since > 10000) { auto.low = false; autoLow = false; layer.removeAttribute('data-auto-low'); syncEffects(); }
+      if (auto.low && !layer.hasAttribute('data-auto-low')) layer.setAttribute('data-auto-low', '1');
+      if (auto.low && !auto.since) auto.since = now; if (!auto.low) auto.since = 0;
+    };
+    window.__sbwAutoQuality = () => ({ low: auto.low });
+    let last = 0; const loop = now => { autoQuality(now); if (!document.hidden) { if (cur && MIRROR[cur] && built[cur]) { try { MIRROR[cur](built[cur]); } catch {} } if (cur && now - last > 120) { last = now; const b = built[cur]; if (b && PAINT[cur]) { try { PAINT[cur](b, now); } catch (e) { if (!loop.warned) { loop.warned = true; console.error('[website-design]', e); } } } } } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     sync();
     // Dojo Chest Claim Limit Bonus: one notice when the server-confirmed profile shows a higher Dojo tier (the upgrade settled),
     // only while a base claim allowance is approved. Server values only; once per upgrade.

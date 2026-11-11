@@ -327,7 +327,9 @@ function canonicalRedirect(req, res, url, name) {
 // Same-origin Solana RPC relay (rpc-relay/server.cjs), loaded once at start: a missing or broken module turns the relay
 // off (the page then keeps its direct connection) instead of crashing a request.
 const rpcRelay = (() => { try { return require('../rpc-relay/server.cjs'); } catch (e) { console.warn('[site] RPC relay unavailable: ' + e.message); return null; } })();
+const { compressible } = require('./compress.cjs');
 const server = http.createServer((req, res) => {
+  compressible(req, res);   // gzip/brotli for GET text responses (cached per content); everything else passes through untouched
   let url; try { url = new URL(req.url, 'http://localhost'); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   let name; try { name = decodeURIComponent(url.pathname); } catch { return sendSite(req, res, 400, 'Invalid path.'); }
   if (canonicalRedirect(req, res, url, name)) return;

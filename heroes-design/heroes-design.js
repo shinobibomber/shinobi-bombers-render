@@ -52,12 +52,12 @@
       const currentRank = section.querySelector('.hero-filters .active')?.getAttribute('onclick') || '';
       if (rank !== currentRank) { rank = currentRank; page = 0; }
       cards = [...grid.querySelectorAll('.hero-sheet')];
+      section.style.setProperty('--hero-backdrop', backdrop);   // once on the shared parent (it inherits): a ~100 KB data URL per card made entering Heroes with 376 heroes take ~0.6 s
       for (const card of cards) {
         const canvas = card.querySelector('[data-hero]'), hero = S.h[canvas.dataset.hero];
         card.dataset.rankMatch = card.hidden ? '0' : '1';
         card.classList.add('reference-hero-card'); card.style.setProperty('--tier-color', rankColors[hero.r]);
         card.dataset.collectionHero = String(hero.id);
-        card.style.setProperty('--hero-backdrop', backdrop);
         canvas.setAttribute('data-exact-hero', '');
         canvas.setAttribute('aria-label', PlayerModels.modelFor(hero).label + ' · ' + R[hero.r][0]);
         const open = document.createElement('button'); open.type = 'button'; open.className = 'hero-open-detail';

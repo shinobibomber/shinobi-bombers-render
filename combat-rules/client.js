@@ -1,7 +1,7 @@
 /* Cumulative authenticated action reports. Presentation never fabricates damage/rewards. */
 (()=>{
  'use strict';
- const R=CombatRules;let owner=null,heroes=new Map(),hunts=new Map(),allowed=new Set(),lastTeam='',lastSync=0,sequence=0,leaving=false,offlineSent=false;const pending=new Set();
+ const R=CombatRules,reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');let owner=null,heroes=new Map(),hunts=new Map(),allowed=new Set(),lastTeam='',lastSync=0,sequence=0,leaving=false,offlineSent=false;const pending=new Set();
  const deployed=()=>S.h.filter(h=>h.on&&h.x>=0&&h.tokenId&&BattleRoster.eligible(h)).slice(0,10).map(h=>h.tokenId);
  function own(){if(owner!==RyoPayments.state.account){owner=RyoPayments.state.account;heroes.clear();hunts.clear();allowed.clear();lastTeam='';sequence=0;leaving=false;offlineSent=false;pending.clear();}}
  function record(h,rows){let r=rows.get(h.tokenId);if(!r){r={id:h.tokenId,attacks:0,kills:[0,0,0,0,0]};rows.set(h.tokenId,r)}return r;}
@@ -47,7 +47,7 @@
  ShinobiSprites.ready.then(()=>{
   const draw=CharacterAnimations.drawProjectile;
   const next={};
-  CharacterAnimations.drawProjectile=function(c,b,time,p){const n=Math.min(7,b.visualVolley||1),low=matchMedia('(prefers-reduced-motion: reduce)').matches||window.DisplaySettings?.v.reduceMotion||window.Arena3D?.cfg?.fx<2,count=low?1:n;let result;
+  CharacterAnimations.drawProjectile=function(c,b,time,p){const n=Math.min(7,b.visualVolley||1),low=reducedMotion.matches||window.DisplaySettings?.v.reduceMotion||window.Arena3D?.cfg?.fx<2,count=low?1:n;let result;
    Object.assign(next,p);for(let i=0;i<count;i++){const offset=(i-(count-1)/2)*3.5*p.scale;next.x=p.x-Math.sin(p.angle)*offset;next.y=p.y+Math.cos(p.angle)*offset;result=draw.call(this,c,b,time,next);}return result;
   };
  });
