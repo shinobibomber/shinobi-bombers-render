@@ -143,3 +143,5 @@ dialog::backdrop{background:rgba(3,6,16,.7)}
 .sr-tip.on{opacity:1}.sr-tip b{font-weight:700}.sr-sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
 @media (max-width:480px){.sr-row{grid-template-columns:1fr auto}.sr-bar{grid-column:1 / -1;grid-row:2}}
 .pre{white-space:pre-wrap}
+.ticket-thread{display:grid;gap:10px;margin:12px 0}.ticket-msg{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;min-width:0;word-break:break-word}.ticket-msg.staff{border-color:rgba(81,219,152,.5)}.ticket-msg.note{border-style:dashed;border-color:rgba(246,196,90,.6);background:rgba(246,196,90,.06)}
+.ticket-form{display:grid;gap:8px;margin-top:12px}.ticket-form textarea{width:100%;box-sizing:border-box}

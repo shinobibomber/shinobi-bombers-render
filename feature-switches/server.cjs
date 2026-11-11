@@ -42,6 +42,9 @@ const CATALOG = Object.freeze({
   heroPassDistribution: { env: 'HERO_PASS_DISTRIBUTION_ENABLED', group: 'rewards', label: 'Hero Pass bulk distribution (Send to all)', default: 'off' },
   heroPassClaimUi:      { env: 'HERO_PASS_CLAIM_UI_ENABLED', group: 'rewards', label: 'Main-menu CLAIM button and Reward Center', default: 'off' },
   heroPassClaims:       { env: 'HERO_PASS_CLAIMS_ENABLED', group: 'rewards', label: 'Claiming and using Hero Passes', default: 'off' },
+  supportTickets:      { env: 'SUPPORT_TICKETS_ENABLED', group: 'gameplay', label: 'In-game Support tickets', default: 'on' },
+  // Command Center Events (events/server.cjs, owner request 2026-11-12): the player read of approved events. Information only, no rewards.
+  eventsBoard:         { env: 'EVENTS_BOARD_ENABLED', group: 'gameplay', label: 'Scheduled events shown to players (information only, no rewards)', default: 'on' },
   // Starter Activation (starter-activation/server.cjs, owner request 2026-11-11): ON by default, but nothing happens until an
   // approver schedules the launch; each part can be switched off here. Gameplay group: while switch values are still loading
   // they keep their default (ON) instead of failing closed, so a new account never silently misses its starter pack.

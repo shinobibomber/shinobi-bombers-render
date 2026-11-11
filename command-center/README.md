@@ -15,6 +15,7 @@ change financial configuration. Financial governance stays in the Observatory's 
 | `schema.sql` | Additive, idempotent tables (`ryo_cc_*`) and `ryo_chat.hidden`. Appended once to `app/server/schema.sql`. |
 | `ops-views.cjs` | Batch A read-only views, copied to `app/server/command-center-views.cjs`: Game configuration status, Security center, Creators summary. |
 | `public/` | The console (`index.html`, `cc.js`, `cc-report.js`, `cc.css`). It is served from a fixed file map with `script-src 'self'` and `style-src 'self'`. |
+| `../events/server.cjs` | Events: scheduled notices with EN/PT-BR text, two-person review, no rewards. Copied to `app/server/events.cjs` by `../apply-events.cjs`. |
 | `../apply-command-center.cjs` | Build step, run by `unpack.cjs` in two parts. Code and routes are applied before the network step; the schema is appended after the last schema step. It adds two exact-match routes to `service.cjs`: `cc-*` after `admin-*`, and the player `chat-report`. |
 | `../chat/server.cjs` | Enforces moderation. `chat-send` refuses muted or banned wallets under the sender's account row lock, `chat-list` hides hidden messages and returns `removed` plus the player's own `standing`, and `chat-report` files a report. |
 
@@ -29,11 +30,11 @@ stage it needs the same private pass as `/admin/`.
 | Role | Source | Phase 1 permissions |
 |---|---|---|
 | Owner | `RYO_ADMIN_OWNERS` (new env list) | Everything below, plus granting or revoking Moderator and Support. Cannot review its own announcement. |
-| Financial Approver | `RYO_ADMIN_APPROVERS` (existing) | Overview, health, player economy and transactions (read-only), announcements (read), and the full audit log. |
-| Game Operator | `RYO_ADMIN_OPERATORS` (existing) | Overview, health, players, chat moderation, announcement review, and the full audit log. |
-| Moderator | Backend grant (`ryo_cc_roles`) | Overview, health, player identity and chat standing, chat moderation, proposing announcements, and its own audit records. |
-| Support | Backend grant (`ryo_cc_roles`) | Overview, health, player identity and heroes, reading moderation, dismissing reports, and its own audit records. |
-| Viewer | `RYO_ADMIN_VIEWERS` (existing) | Read-only: overview, health, redacted players, announcements and the audit log. No chat evidence. |
+| Financial Approver | `RYO_ADMIN_APPROVERS` (existing) | Overview, health, player economy and transactions (read-only), announcements (read), support tickets (read-only), and the full audit log. |
+| Game Operator | `RYO_ADMIN_OPERATORS` (existing) | Overview, health, players, chat moderation, announcement review, support tickets, events (propose and review), and the full audit log. |
+| Moderator | Backend grant (`ryo_cc_roles`) | Overview, health, player identity and chat standing, chat moderation, proposing announcements, proposing events, and its own audit records. |
+| Support | Backend grant (`ryo_cc_roles`) | Overview, health, player identity and heroes, reading moderation, dismissing reports, answering support tickets, and its own audit records. |
+| Viewer | `RYO_ADMIN_VIEWERS` (existing) | Read-only: overview, health, redacted players, announcements, events and the audit log. No chat evidence. |
 
 - **Backend roles stay out of finance.** Roles granted in the backend never reach the economic
   dashboard, which still reads only the env lists, and they can never be financial roles.
@@ -132,13 +133,75 @@ Three views, built to the same rules as the Stats report: they read, they return
 | Incident register | `cc-incidents`, `cc-incident-open`, `cc-incident-update` | read: `security.read`; write: `security.manage` (Owner, Operator) | A staff notebook (title, severity, details, status). It changes nothing in the game. Writes use the standard staff-write rules (reason, idempotent request ID, version check, 30 a minute) and land on the audit chain as `cc.incident.*`. A resolved incident is final; at most 50 are open. Table: `ryo_cc_incidents`, additive. |
 | Creators summary | `cc-creators` | `creators.read` (Owner, Approver, Operator) | Aggregates from the Creators Portal: applications by status, Creator Points issued, spent and held, creator and player referrals, shop redemptions, Hero Pass campaigns and passes, rescue heroes, program settings. No names, wallets or applications. Approvals, adjustments and grants stay in the Creators Portal admin. Paid marketing campaigns have no backend and are listed as not implemented. |
 
+## Batch B: Support tickets
+
+Players send tickets from the game (Reward Center, Help & Support, Contact Support) and the team answers in a two-way thread. The
+rules live in `support/server.cjs` (copied to `app/server/support.cjs` by `apply-support.cjs`). Owner decisions 2026-11-12: entry in
+Help & Support, shipped ON, two-way replies, ticket text kept 30 days after the ticket is resolved or closed, English-only player UI.
+
+| Part | Action | Who | What it does |
+|---|---|---|---|
+| Player | `support-state`, `support-submit`, `support-view`, `support-reply` | any signed-in wallet, behind the `supportTickets` switch (default ON) | The wallet always comes from the session. Limits: 3 new tickets and 20 replies per 24 hours, 5 open tickets, 60 messages per ticket, 1000 characters. An optional order link (request ID or signature) is accepted only if it is one of THIS wallet's purchases, deposits or withdrawals; anything else is the same 404. A repeated `requestId` returns the stored result. A reply reopens a resolved ticket; a closed ticket is final. |
+| Staff read | `cc-support-list`, `cc-support-ticket` | `support.read` (Owner, Approver, Operator, Support) | Queue with status, category and wallet filters, "needs a reply" marker, the thread with internal notes, and what the linked order is. |
+| Staff write | `cc-support-reply`, `cc-support-note`, `cc-support-update` | `support.write` (Owner, Operator, Support; never Approver) | Reply (the player sees it, the ticket becomes awaiting the player, investigating or resolved), internal note (never shown to the player), status and assignment (a reason is required). Reply and update check the ticket version (stale page gets 409); closed is final for staff too. |
+
+- **No money access.** Staff can change only a ticket's status, assignee and messages. Nothing in this module touches balances,
+  rewards, withdrawals, wallets or NFTs, and `tests/support-server.cjs` proves the ledger is unchanged.
+- **Players never see staff wallets or internal notes.** A staff message reaches the player as "team".
+- **Audit.** Staff writes land on the shared hash chain as `cc.support.reply`, `cc.support.note` and `cc.support.update`. Message
+  text never enters the chain, and neither does a hash of it (a short reply could be confirmed by guessing). Only its length is recorded, so
+  the permanent chain cannot outlive the 30-day text retention.
+- **Retention.** Ticket text (subject, order link and every message, internal notes included) is replaced with "[expired]" 30 days
+  after the ticket is resolved or closed. There is no scheduler: it runs inside the ticket actions, and every player read and every
+  staff read or write applies it first, so expired text is never shown. Open tickets are kept. A reply that reopens a resolved ticket
+  stops the clock.
+- **The switch gates players only.** If `supportTickets` is switched OFF in the Control panel, players get a "not open right now"
+  message, but staff can still read, answer and close the existing tickets.
+- Tables: `ryo_support_tickets`, `ryo_support_messages` (additive, appended to the end of `schema.sql`).
+
+## Batch B: Events
+
+Scheduled in-game notices with English and Portuguese (PT-BR) text. Owner request 2026-11-12: one wallet proposes, a **different** wallet
+approves, and events carry **no rewards**. The rules live in `events/server.cjs` (copied to `app/server/events.cjs` by `apply-events.cjs`).
+An event is information only: a kind (event, maintenance, boss challenge, tournament, community), a title and text in EN (required) and PT-BR
+(optional, title and text together), and a start and end in UTC. It has no reward, prize, audience, eligibility or banner field, nothing in the
+game reads it except the player list below, and `tests/events-server.cjs` proves the ledger is unchanged and the table has no reward column.
+
+| Who | Actions | Permission | Notes |
+|---|---|---|---|
+| Staff read | `cc-events` | `event.read` (Owner, Game Operator, Moderator, Viewer; never Approver) | Newest 100 with phase: awaiting review, stale, upcoming, live, ended, rejected, unpublished. Wallets are shortened. |
+| Propose | `cc-event-propose` | `event.propose` (Owner, Game Operator, Moderator) | Needs a reason (8-500 characters) and the explicit confirmation `noRewards: true`. The text cannot change after it is submitted. |
+| Review | `cc-event-review`, `cc-event-unpublish` | `event.review` (Owner, Game Operator) | Approve or reject with the exact `expectedVersion` and `contentSha256` the reviewer saw. Unpublish withdraws an approved event that has not ended. |
+| Player read | `cc-events-upcoming` | any signed-in wallet, behind the `eventsBoard` switch (default ON) | Approved events that are live or start within 60 days, at most 20, in the requested language (`lang: 'pt'`, falling back to English when the event has no PT text). It never returns a wallet, a reason or a hash. |
+
+- **Second wallet, always.** The reviewer must be a different wallet from the proposer. `ADMIN_SELF_APPROVAL` belongs to the economic dashboard and
+  has no effect here (the test turns it on and the Owner still cannot approve their own event). Approval is bound to the version and the SHA-256
+  of the content the reviewer read, so a changed proposal can never be approved by mistake. A proposal expires after 7 days, and an event whose start
+  time has passed cannot be approved (a stale proposal can still be rejected to clear the queue).
+- **Schedule.** Times are entered and stored in UTC (the console shows the staff member's local time on hover; players see their own time zone).
+  An event starts 10 minutes to 180 days after it is proposed and lasts 5 minutes to 30 days. Approved events show to players from approval; the
+  schedule decides upcoming, live and ended. There are no timers: nothing starts or ends anything in the game.
+- **Text.** Plain text only, shown with `textContent`; `<` and `>` are refused. Links (addresses, common and short domains, spelled-out "dot com", IP addresses, `javascript:`) are refused.
+  Text that names a reward, prize, airdrop, giveaway, raffle, payout, bonus, free or gift, Ryo, tokens, NFTs, Chest or Shards (or the PT-BR words for them) is refused in
+  either language, after folding accents, look-alike letters and invisible marks and again with every non-letter removed. This is a **first guard, not the control**: a
+  denylist can always be talked around (for example with a synonym), so the reviewer must read both languages and confirm that nothing is promised. That confirmation
+  is required by the server and recorded in the audit record (`noRewardsConfirmed`). Control and bidi-override characters become spaces.
+- **Limits.** 20 proposals waiting at once and 50 approved events that have not ended; staff writes are 30 per minute per wallet (the shared limit).
+- **Audit.** Every write is a staff write (row lock, role re-checked inside the transaction, idempotent request ID) on the shared hash chain as
+  `cc.event.proposed`, `cc.event.approved`, `cc.event.rejected` and `cc.event.unpublished`, with the title, the schedule and the content hash. The body text is not in the chain.
+- **No build hooks.** `apply-events.cjs` copies the module and appends one schema block. It adds nothing to `service.cjs` or the game page: staff actions
+  and the player read travel through the existing `cc-*` route (the player read runs before the staff check on purpose and returns public text only).
+- **Not built yet:** a player-facing events screen in the game (the read action is ready for it), banner images, audience or eligibility rules, and any
+  event that gives players something. Each of those needs its own reviewed design.
+- Table: `ryo_cc_events` (additive, appended to the end of `schema.sql`).
+
 ## Not implemented (shown as such, never simulated)
 
 The following have no backend yet:
 
 - Guild, Team, DM, Trade and Event chat.
 - The Weekly Mission Pass, Founder's Council votes, Early Access scheduling, economy and treasury controls, paid marketing campaigns and
-  payouts, events and support tickets.
+  payouts. (Events are built: see Batch B, but they are not shown on a player screen yet.)
 - Player appeal forms.
 - Search by referral code or NFT serial.
 - New sign-up and daily/weekly active counts. The game records no creation time, and presence is
@@ -173,6 +236,17 @@ The following have no backend yet:
   and every wallet are absent from each answer), tamper detection on the audit chain and the switch log, the incident rules
   (two writers, stale version, closed is final, idempotent replay, cap) and degradation when a table is missing.
   `tests/command-center-ui.cjs` also opens an incident and resolves it in Chrome.
+- `tests/support-server.cjs` covers Support tickets through the real dispatcher on PGlite: build integrity (reversing the support hooks and
+  schema block gives the previously pinned `service.cjs` and `schema.sql`), the switch, validation, every limit, order-reference
+  ownership, idempotency, reopen and closed rules, notes and staff wallets hidden from players, the staff role matrix, audit without
+  text, 30-day retention (including a read at the moment of expiry) and no economic mutation. `tests/support-ui.cjs` drives the player
+  dialog in Chrome (text shown as text, readable errors, switch OFF, phone fit), and `tests/command-center-ui.cjs` covers the staff tab
+  (queue, filters, thread, reply, internal note, assign, status, read-only Approver, Support role, phone layout).
+- `tests/events-server.cjs` covers Events through the real dispatcher on PGlite: build integrity (reversing the Events schema block gives the previously
+  pinned `schema.sql`, and `service.cjs` is untouched), the role matrix, the two-person rule with `ADMIN_SELF_APPROVAL` on, version and content-hash binding,
+  idempotent replay, every text and schedule rule, the player read (language, fallback, 60-day horizon, scope, switch, no wallet or reason), stale and expired
+  proposals, unpublish, both caps, audit without body text, and no economic mutation. `tests/command-center-ui.cjs` covers the staff tab in Chrome (propose,
+  reward text refused, a second wallet approves, the proposer's buttons disabled, unpublish, EN/PT-BR, phone fit, Approver/Viewer/Moderator scopes).
 - `tests/chat-screen.cjs` checks the player's side: reporting, the hidden-message drop, and the muted composer.
 - The `prelaunch-server`, `private-testing` and `site-check` suites assert that the console stays closed
   in the portal stage, follows the private pass, and serves only its four files.
@@ -184,6 +258,13 @@ The following have no backend yet:
    and rebuild. This restores `service.cjs` and the schema.
 2. Remove the `/admin/command-center/` map from `server/site-server.cjs`, so the console is no longer served.
 3. Revert the edits to `chat/server.cjs` and `website-design/website-design.js`.
+4. Support tickets: switch `supportTickets` OFF in the Control panel (or set `SUPPORT_TICKETS_ENABLED=off`) for an immediate stop with no
+   rebuild. To remove it fully, drop the `applySupport` call from `unpack.cjs` and revert the three pins it moved (the `app/server/service.cjs` and
+   `app/server/schema.sql` entries in `tests/baseline-hashes.json`, and `PREVIOUS.schema` in `tests/reward-pool.cjs`). The `ryo_support_*` tables are
+   additive and can stay.
+5. Events: switch `eventsBoard` OFF in the Control panel (or set `EVENTS_BOARD_ENABLED=off`) to stop the player read at once; staff can still manage events.
+   To remove it fully, drop the `applyEvents` call from `unpack.cjs` and revert the two pins it moved (the `app/server/schema.sql` entry in
+   `tests/baseline-hashes.json`, and `PREVIOUS.schema` in `tests/reward-pool.cjs`). The `ryo_cc_events` table is additive and can stay.
 
 The `ryo_cc_*` tables and the `ryo_chat.hidden` column are additive and can stay (they are ignored),
 or be dropped by the hosting owner after an export. No other table is touched.

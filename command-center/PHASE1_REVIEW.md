@@ -128,8 +128,8 @@ See the test table in the handoff message. These suites ran:
    unauthorized wallets from flooding it. They are not logged elsewhere yet; this is Phase 4 (Security Center).
 3. **No step-up signing.** Bans are reversible, and no fresh wallet signature (step-up) is required for
    them yet.
-4. **Appeals.** There is no in-game appeal form. Appeals go through support, and staff unmute or unban
-   with a reason.
+4. **Appeals.** There is no dedicated in-game appeal form. Players can now send a ticket from Help & Support (see "Support tickets"
+   in the README), and staff unmute or unban with a reason.
 5. **Warnings.** A warning is shown to the player for 24 hours above the chat composer. There is no
    acknowledgement step.
 6. **Report entry point.** Players report from the full Chat screen (⚑ on each message). The Home chat
