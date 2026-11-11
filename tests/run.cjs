@@ -48,7 +48,7 @@ suites.unshift('archive-download.cjs');
 suites.push('adventure-hero-size.cjs','mythic-vfx-v6.cjs');
 suites.push('mythic-automatic-skills.cjs','mythic-skill-rotation.cjs','mythic-completion.cjs','mythic-mode-rotation.cjs');
 suites.push('mythic-poster-release.cjs');
-suites.push('command-center-server.cjs','command-center-ui.cjs','command-center-founders.cjs');
+suites.push('command-center-server.cjs','command-center-ui.cjs','command-center-founders.cjs','command-center-stats.cjs');
 suites.push('expedition-duty.cjs','expedition-server.cjs','expedition-ui.cjs');
 suites.push('perf-ui.cjs','auto-update.cjs','reward-pool.cjs','compression.cjs');
 suites.push('launch-stats-report.cjs');

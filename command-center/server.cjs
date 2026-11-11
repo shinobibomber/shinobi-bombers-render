@@ -41,6 +41,7 @@ const PERMISSIONS = Object.freeze({
   'roles.manage': ['owner'],
   'founders.read': ['owner', 'approver', 'operator'],   // Founder NFT management (founders.cjs); full wallets, so not viewers
   'founders.manage': ['owner'],
+  'stats.read': ['owner', 'approver', 'operator', 'viewer'],   // Stats report: totals only (stats-report.cjs), never wallets
 });
 const envList = name => String(process.env[name] || '').split(',').map(s => s.trim()).filter(Boolean);
 async function rolesOf(store, db, wallet) {
@@ -451,6 +452,57 @@ async function changeRole(ctx, wallet, body, grant) {
   });
 }
 
+/* ---------- Stats report (read-only) ----------
+ * The same code as tools/launch-stats-report.cjs (copied to stats-report.cjs): one REPEATABLE READ READ ONLY transaction,
+ * SELECT only, always rolled back, totals and per-hour/day series without wallets. The game shares a small connection
+ * pool, so one report runs at a time per server (a second identical request shares it) and a result is reused for 60 s. */
+const STATS_TTL_MS = 60000, STATS_MIN_SINCE = Date.UTC(2026, 0, 1), STATS_HOUR_MAX_MS = 31 * 86400000;
+const statsCache = new Map();   // key -> { at, data }
+/* Its own short-lived connection where the database URL is configured (the hosted server), so a report never occupies one
+ * of the game pool's three connections; elsewhere (tests) a pool client, released with the error so a broken one is dropped. */
+async function statsConnection(store) {
+  if (process.env.DATABASE_URL) {
+    const { Client } = require('pg'), client = new Client({ connectionString: process.env.DATABASE_URL, statement_timeout: 30000, connectionTimeoutMillis: 8000 });
+    await client.connect();
+    return { client, done: () => client.end().catch(() => {}) };
+  }
+  const client = await store.pool.connect();
+  return { client, done: err => client.release(err) };
+}
+let statsRunning = null;        // { key, promise }
+function statsArgs(store, body) {
+  const now = store.now(), since = body.since, until = body.until ?? null, bucket = body.bucket ?? 'hour';
+  if (!Number.isSafeInteger(since) || since < STATS_MIN_SINCE) fail('Choose a start time on or after 1 Jan 2026.');
+  if (until !== null && (!Number.isSafeInteger(until) || until <= since || until > now + 60000)) fail('The end time must be after the start time and not in the future.');
+  if (since >= (until ?? now)) fail('The start time must be in the past.');
+  if (bucket !== 'hour' && bucket !== 'day') fail('Group by must be hour or day.');
+  if (bucket === 'hour' && (until ?? now) - since > STATS_HOUR_MAX_MS) fail('Hourly grouping covers at most 31 days. Choose Day for a longer range.');
+  return { now, since, until, bucket, key: [store.scope, since, until ?? 'now', bucket].join('|') };
+}
+async function statsReport(ctx, body) {
+  const { store } = ctx, a = statsArgs(store, body);
+  const hit = statsCache.get(a.key);
+  if (hit && a.now - hit.at < STATS_TTL_MS) return { ...hit.data, cached: true };
+  if (statsRunning) {
+    if (statsRunning.key === a.key) return statsRunning.promise;
+    fail('A report is already being generated. Try again in a few seconds.', 429);
+  }
+  const promise = (async () => {
+    const { client, done } = await statsConnection(store);
+    let err;
+    try { return await require('./stats-report.cjs').run(client, store.scope, { since: a.since, until: a.until ?? a.now + 1, bucket: a.bucket, now: a.now }); }
+    catch (e) { err = e; throw e; }
+    finally { done(err); }
+  })();
+  statsRunning = { key: a.key, promise };
+  try {
+    const data = await promise;
+    for (const [k, v] of statsCache) if (a.now - v.at >= STATS_TTL_MS) statsCache.delete(k);
+    statsCache.set(a.key, { at: a.now, data });
+    return data;
+  } finally { statsRunning = null; }
+}
+
 /* ---------- Dispatcher ---------- */
 async function handle(ctx, wallet, action, body = {}) {
   const { store } = ctx;
@@ -484,6 +536,7 @@ async function handle(ctx, wallet, action, body = {}) {
     case 'cc-founder-weeks': need(roles, 'founders.read'); return envelope(store, await require('./command-center-founders.cjs').weeks(ctx));
     case 'cc-founders-pause': need(roles, 'founders.manage'); return envelope(store, await require('./founders.cjs').adminPause(store, wallet, body.paused === true, body.reason));
     case 'cc-founders-revoke': need(roles, 'founders.manage'); return envelope(store, await require('./founders.cjs').adminRevoke(store, wallet, body.wallet, body.revoke === true, body.reason));
+    case 'cc-stats-report': need(roles, 'stats.read'); return envelope(store, await statsReport(ctx, body));
     default: fail('Unknown Command Center action.', 404);
   }
 }

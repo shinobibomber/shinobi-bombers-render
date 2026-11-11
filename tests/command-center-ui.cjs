@@ -32,6 +32,11 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
   await pool.query("INSERT INTO ryo_founder_purchases(scope,request_id,wallet,tier,serial,mint,price_lamports,status,message,wire,last_height,signature,created,settled) VALUES($1,'founder-ui-request-0001',$2,'mythic',1,$3,700000000,'confirmed','m','w',1,'sig-good',$5,$5),($1,'founder-ui-request-0002',$4,'legacy',1,$6,250000000,'confirmed','m','w',1,'sig-bad',$5,$5)", [store.scope, FB.good, FM.good, FB.bad, now - 86400000, FM.bad]);
   await pool.query("INSERT INTO ryo_founder_entitlements(scope,wallet,tier,request_id,mint,granted,activated,limited_passes) VALUES($1,$2,'mythic','founder-ui-request-0001',$3,$4,$4,10)", [store.scope, FB.good, FM.good, now - 86400000]);
 
+  // Stats report fixture: one deposit and two confirmed summons (6 heroes) in the last hours.
+  await pool.query("INSERT INTO ryo_deposits(scope,signature,wallet,amount,request_id,created,gross,studio_fee) VALUES($1,'SigUiDep',$2,400000,'ui-dep',$3,400000,0)", [store.scope, W.player, now - 3 * 3600000]);
+  for (const [id, ago, ranks] of [['ui-buy-1', 2, [0, 0, 1, 2, 4]], ['ui-buy-2', 1, [3]]]) await pool.query(`INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,status,created)
+    VALUES($1,$2,$3,'summon',$4,'{"treasury":1,"burn":0}',$5,'{}',$6,$7,'w',1,'confirmed',$8)`, [store.scope, W.player, id, JSON.stringify({ quantity: ranks.length }), JSON.stringify({ outputs: ranks.map(rank => ({ rank })) }), 25000 * ranks.length, 'Sig' + id, now - ago * 3600000]);
+
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
     if (url.pathname === '/api/ryo') {
@@ -44,9 +49,9 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
       } catch (e) { res.writeHead(e.status || 500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: e.status ? e.message : 'Service unavailable' })); }
       return;
     }
-    const file = { '/admin/command-center/': 'index.html', '/admin/command-center/cc.js': 'cc.js', '/admin/command-center/cc.css': 'cc.css' }[url.pathname];
+    const file = { '/admin/command-center/': 'index.html', '/admin/command-center/cc.js': 'cc.js', '/admin/command-center/cc-report.js': 'cc-report.js', '/admin/command-center/cc.css': 'cc.css' }[url.pathname];
     if (!file) { res.writeHead(404).end(); return; }
-    res.writeHead(200, { 'Content-Type': file.endsWith('.html') ? 'text/html' : file.endsWith('.js') ? 'application/javascript' : 'text/css', 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'" });
+    res.writeHead(200, { 'Content-Type': file.endsWith('.html') ? 'text/html' : file.endsWith('.js') ? 'application/javascript' : 'text/css', 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'" });
     res.end(fs.readFileSync(path.join(root, 'command-center/public', file)));
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
@@ -155,11 +160,32 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
     assert.equal(await v.p.locator('#sidebar a[href="#roles"]').count(), 0, 'staff roles are only listed for the Owner');
     await v.p.goto(base + '#founders'); await waitText(v.p, '#view', /Permission required/); assert.equal(await v.p.locator('#view .tabs').count(), 0, 'viewers get no Founder data (full wallets)');
     await v.p.goto(base + '#audit'); await v.p.waitForSelector('#view tbody tr');
+    // Stats report: viewers may generate it (totals only, no wallets).
+    await v.p.goto(base + '#report'); await waitText(v.p, '#view', /Choose a range and generate the report/);
+    assert.equal(await v.p.locator('#sr-download').isDisabled(), true, 'nothing to download before a report exists');
+    await v.p.locator('#sr-range').selectOption('7d'); await v.p.locator('#sr-bucket').selectOption('hour'); await v.p.locator('#sr-generate').click();
+    await v.p.waitForSelector('#sr-out .sr-tiles .kpi');
+    const reportText = await v.p.locator('#sr-out').innerText();
+    assert.match(reportText, /Heroes summoned\s*6\b/i, 'tile shows the summoned heroes'); assert.match(reportText, /Ryo spent\s*150,000/i, 'tile shows the Ryo spent');
+    assert.match(reportText, /SR deposited\s*400,000/i); assert.match(reportText, /Genin\s*33\.3%\s*2/, 'rarity rows (2 of 6 heroes)');
+    for (const w of [W.player, W.owner, W.viewer]) assert.ok(!reportText.includes(w) && !reportText.includes(w.slice(0, 8)), 'no wallet in the report');
+    assert.equal(await v.p.locator('#sr-out svg.sr-svg').count(), 3, 'three time charts');
+    assert.ok(await v.p.locator('#sr-bars svg rect[fill]:not([fill="transparent"])').count() >= 2, 'stacked bars are drawn');
+    const box = await v.p.locator('#sr-money svg').boundingBox(); await v.p.mouse.move(box.x + box.width * 0.6, box.y + box.height / 2);
+    await waitText(v.p, '.sr-tip.on', /SR deposited/);
+    assert.equal(await v.p.locator('#sr-download').isDisabled(), false); assert.equal(await v.p.locator('#sr-copy').isDisabled(), false);
+    await v.p.locator('#sr-generate').click(); await waitText(v.p, '#view [role="status"]', /reused from the last minute/);
+    await shot(v.p, 'stats-report-desktop');
+    await v.p.locator('#sr-range').selectOption('custom'); await v.p.locator('#sr-from').fill('2025-01-01T00:00'); await v.p.locator('#sr-generate').click();
+    await waitText(v.p, '#view', /1 Jan 2026/); assert.match(await v.p.locator('#notice').innerText(), /grouped by day|1 Jan 2026/, 'server checks are shown plainly');
+    await v.p.locator('#sr-range').selectOption('7d'); await v.p.locator('#sr-generate').click(); await v.p.waitForSelector('#sr-out .sr-tiles .kpi');
+    await v.p.setViewportSize({ width: 390, height: 844 }); await v.p.waitForTimeout(300); await noSideScroll(v.p, 'phone Stats report'); await shot(v.p, 'stats-report-mobile');
     assert.deepEqual(v.errors, []);
     // ---- Moderator: moderation yes, economy no ----
     const m = await open('moderator');
     await m.p.goto(base + '#players'); await m.p.locator('input[type="search"]').fill(W.player); await m.p.getByRole('button', { name: 'Look up' }).click();
     await waitText(m.p, '#view', /Chat standing/); assert.doesNotMatch(await m.p.locator('#view').innerText(), /Economy|Recent transactions/, 'moderators never see balances or transactions');
+    await m.p.goto(base + '#report'); await waitText(m.p, '#view', /Permission required/);
     assert.deepEqual(m.errors, []);
     await v.p.locator('#signout').click(); assert.equal(await v.p.locator('#view').isHidden(), true, 'sign-out clears the console');
   } finally { await browser?.close(); await new Promise(r => server.close(r)); await db.close(); }

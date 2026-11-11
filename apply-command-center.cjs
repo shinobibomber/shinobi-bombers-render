@@ -29,6 +29,7 @@ function applyCommandCenter(appDir = path.join(__dirname, 'app'), { schema = tru
   fs.writeFileSync(service, text);
   fs.copyFileSync(path.join(__dirname, 'command-center/server.cjs'), path.join(appDir, 'server/command-center.cjs'));
   fs.copyFileSync(path.join(__dirname, 'command-center/founder-ops.cjs'), path.join(appDir, 'server/command-center-founders.cjs'));   // Phase 2, read-only
+  fs.copyFileSync(path.join(__dirname, 'tools/launch-stats-report.cjs'), path.join(appDir, 'server/stats-report.cjs'));   // Stats report tab, read-only (same code as the Render Shell tool)
   if (schema) applyCommandCenterSchema(appDir);
   console.log('Command Center staff API, chat moderation and reports applied.');
 }

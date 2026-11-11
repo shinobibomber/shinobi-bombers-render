@@ -27,6 +27,12 @@
       'health.title': 'Server health', 'health.sub': 'Sanitized checks with their source. A failing check is never shown as healthy.',
       'audit.title': 'Audit logs', 'audit.sub': 'Append-only, hash-chained records shared with the economic dashboard.',
       'roles.title': 'Staff roles', 'roles.sub': 'The Owner grants Moderator and Support. Financial roles are set in the hosting environment.',
+      'nav.report': 'Stats report', 'report.title': 'Stats report', 'report.sub': 'Read-only totals from the live database: Ryo spent, deposits, summons, free heroes, SOL sales, revenue, Chest and withdrawals. No wallets are shown.',
+      'report.range': 'Range', 'report.launch': 'Since launch (9 Nov 2026, 22:40 UTC+8)', 'report.24h': 'Last 24 hours', 'report.7d': 'Last 7 days', 'report.30d': 'Last 30 days', 'report.custom': 'Custom',
+      'report.from': 'From', 'report.to': 'To (empty = now)', 'report.group': 'Group by', 'report.hour': 'Hour', 'report.day': 'Day', 'report.generate': 'Generate report',
+      'report.download': 'Download JSON', 'report.copy': 'Copy JSON', 'report.copied': 'Report JSON copied.', 'report.empty': 'Choose a range and generate the report.',
+      'report.generating': 'Generating the report…', 'report.badRange': 'Choose a valid start time (and an end time after it).', 'report.cached': 'Generated {t} · reused from the last minute',
+      'report.generated': 'Generated {t}', 'report.autoDay': 'Ranges over 31 days are grouped by day.',
     },
     pt: {
       'brand.sub': 'CENTRO DE COMANDO', 'lang.label': 'Idioma', 'auth.connect': 'Conectar carteira da equipe', 'auth.signout': 'Sair',
@@ -46,6 +52,12 @@
       'health.title': 'Saúde do servidor', 'health.sub': 'Verificações sanitizadas com sua origem. Uma falha nunca aparece como saudável.',
       'audit.title': 'Registros de auditoria', 'audit.sub': 'Registros somente de acréscimo, encadeados por hash e compartilhados com o painel econômico.',
       'roles.title': 'Funções da equipe', 'roles.sub': 'O Proprietário concede Moderador e Suporte. Funções financeiras são definidas no ambiente de hospedagem.',
+      'nav.report': 'Relatório de estatísticas', 'report.title': 'Relatório de estatísticas', 'report.sub': 'Totais somente leitura do banco de dados ao vivo: Ryo gasto, depósitos, invocações, heróis grátis, vendas em SOL, receita, Baú e saques. Nenhuma carteira é exibida.',
+      'report.range': 'Período', 'report.launch': 'Desde o lançamento (9 nov 2026, 22:40 UTC+8)', 'report.24h': 'Últimas 24 horas', 'report.7d': 'Últimos 7 dias', 'report.30d': 'Últimos 30 dias', 'report.custom': 'Personalizado',
+      'report.from': 'De', 'report.to': 'Até (vazio = agora)', 'report.group': 'Agrupar por', 'report.hour': 'Hora', 'report.day': 'Dia', 'report.generate': 'Gerar relatório',
+      'report.download': 'Baixar JSON', 'report.copy': 'Copiar JSON', 'report.copied': 'JSON do relatório copiado.', 'report.empty': 'Escolha um período e gere o relatório.',
+      'report.generating': 'Gerando o relatório…', 'report.badRange': 'Escolha um início válido (e um fim depois dele).', 'report.cached': 'Gerado {t} · reaproveitado do último minuto',
+      'report.generated': 'Gerado {t}', 'report.autoDay': 'Períodos acima de 31 dias são agrupados por dia.',
     },
   };
   const t = key => I18N[S.lang][key] || I18N.en[key] || key;
@@ -124,10 +136,11 @@
     ['overview', 'nav.overview', 'overview.read'], ['players', 'nav.players', 'player.read'], ['chat', 'nav.chat', 'moderation.read'],
     ['announcements', 'nav.announcements', ['announcement.read', 'announcement.propose', 'announcement.review']], ['health', 'nav.health', 'ops.read'],
     ['audit', 'nav.audit', ['audit.read', 'audit.own']], ['roles', 'nav.roles', 'roles.manage'], ['founders', 'nav.founders', 'founders.read'],
+    ['report', 'nav.report', 'stats.read'],
   ];
   // Modules from the specification that have no backend yet. They are listed, never simulated.
   const PLANNED = [
-['pass', 'Weekly Mission Pass', 2], ['economy', 'Economy & treasury', 3],
+['pass', 'Weekly Mission Pass', 2], ['economy', 'Economy & treasury controls', 3],
     ['creators', 'Creators & marketing', 3], ['events', 'Events', 4], ['config', 'Game configuration', 4], ['support', 'Support center', 4], ['security', 'Security center', 4],
     ['guild', 'Guild / Team / DM / Trade chat', null],
   ];
@@ -158,7 +171,7 @@
     $('who-expiry').textContent = s.sessionExpires ? 'Session until ' + new Date(s.sessionExpires).toISOString().slice(11, 16) + ' UTC' : '';
   }
   function signOut(message) {
-    S.token = ''; S.session = null; S.cache = {}; drawer(false); showShell(false); $('view').replaceChildren();
+    S.token = ''; S.session = null; S.cache = {}; S.report = null; drawer(false); showShell(false); $('view').replaceChildren();
     notice(message || 'Signed out. Connect an authorized wallet to continue.');
   }
   async function connect() {
@@ -310,6 +323,55 @@
       const panel = h('div', {}), bar = h('div', { class: 'tabs', role: 'tablist' });
       const draw = () => { bar.replaceChildren(...FTABS.map(([id, label]) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(S.founderTab === id), onclick: () => { S.founderTab = id; draw(); }, text: label }))); fill(panel, stateBox(t('state.loading'))); run(() => FOUNDER[S.founderTab](panel, draw)); };
       fill(view, h('div', { class: 'view-head' }, h('div', {}, h('h1', { text: 'Founder NFTs' }), h('p', { class: 'muted', text: 'Founder box supply, purchases, entitlements, summons and SOL Sensei. Benefits are bound to the original buyer. Everything except Pause and Suspend is read-only.' })), refreshBtn(async () => draw())), bar, panel);
+      draw();
+    },
+
+    /* ---------- Stats report (read-only totals; cc-report.js draws them) ---------- */
+    async report(view) {
+      const R = S.report || (S.report = { range: 'launch', bucket: 'hour', from: '', to: '', data: null, draw: null });
+      R.draw = null;   // charts of an earlier render are detached
+      const DAY = 86400000, opt = (v, k, cur) => h('option', { value: v, text: t(k), selected: cur === v ? true : null });
+      const range = h('select', { id: 'sr-range' }, ['launch', '24h', '7d', '30d', 'custom'].map(v => opt(v, 'report.' + v, R.range)));
+      const from = h('input', { id: 'sr-from', type: 'datetime-local', value: R.from }), to = h('input', { id: 'sr-to', type: 'datetime-local', value: R.to });
+      const bucket = h('select', { id: 'sr-bucket' }, opt('hour', 'report.hour', R.bucket), opt('day', 'report.day', R.bucket));
+      const custom = h('div', { class: 'inline', hidden: R.range !== 'custom' }, h('label', { for: 'sr-from' }, t('report.from'), from), h('label', { for: 'sr-to' }, t('report.to'), to));
+      const status = h('p', { class: 'muted', role: 'status' }), out = h('div', { id: 'sr-out' });
+      const json = () => JSON.stringify(R.data, null, 2);
+      const dl = h('button', { type: 'button', id: 'sr-download', disabled: !R.data, text: t('report.download'), onclick: () => {
+        const a = h('a', { href: URL.createObjectURL(new Blob([json()], { type: 'application/json' })), download: 'shinobi-stats-' + R.data.since.slice(0, 16).replace(/:/g, '') + '-' + R.data.bucket + '.json' });
+        document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      } });
+      const cp = h('button', { type: 'button', id: 'sr-copy', disabled: !R.data, text: t('report.copy'), onclick: () => run(async () => { await navigator.clipboard.writeText(json()); notice(t('report.copied')); }) });
+      range.onchange = () => { R.range = range.value; custom.hidden = R.range !== 'custom'; };
+      bucket.onchange = () => { R.bucket = bucket.value; };
+      function bounds() {
+        const now = Date.now();
+        if (R.range === 'launch') return { since: CCReport.LAUNCH, until: null };
+        if (R.range !== 'custom') return { since: Math.floor((now - { '24h': 1, '7d': 7, '30d': 30 }[R.range] * DAY) / 60000) * 60000, until: null };   // whole minutes, so a repeat click reuses the server's cached report
+        R.from = from.value; R.to = to.value;
+        const since = Date.parse(from.value), until = to.value ? Date.parse(to.value) : null;   // datetime-local parses as local time
+        return Number.isFinite(since) && (until === null || (Number.isFinite(until) && until > since)) ? { since, until } : null;
+      }
+      function draw() {
+        if (!R.data) return fill(out, stateBox(t('report.empty')));
+        status.textContent = (R.data.cached ? t('report.cached') : t('report.generated')).replace('{t}', new Date(R.data.generated).toLocaleString());
+        R.draw = CCReport.render(out, R.data, S.lang);
+      }
+      const generate = h('button', { class: 'primary', type: 'submit', id: 'sr-generate', text: t('report.generate') });
+      const form = h('form', { class: 'inline sr-form', onsubmit: e => { e.preventDefault(); run(async () => {
+        const b = bounds(); if (!b) throw Error(t('report.badRange'));
+        if ((b.until ?? Date.now()) - b.since > 31 * DAY && R.bucket === 'hour') { R.bucket = 'day'; bucket.value = 'day'; notice(t('report.autoDay')); }
+        generate.disabled = true; fill(out, stateBox(t('report.generating')));
+        let data;
+        try { data = (await api('cc-stats-report', { since: Math.floor(b.since), ...(b.until !== null ? { until: Math.floor(b.until) } : {}), bucket: R.bucket })).data; }
+        catch (err) { if (out.isConnected) { dl.disabled = cp.disabled = true; R.data = null; fill(out, stateBox(t('state.unavailable'), err.message)); } throw err; }
+        finally { generate.disabled = false; }
+        if (S.report !== R) return;   // signed out meanwhile
+        R.data = data;
+        // The view may have been re-rendered (language switch, navigation) while the report ran: draw into the visible one.
+        if (out.isConnected) { dl.disabled = cp.disabled = false; draw(); } else if (S.view === 'report') go('report');
+      }); } }, h('label', { for: 'sr-range' }, t('report.range'), range), h('label', { for: 'sr-bucket' }, t('report.group'), bucket), generate, dl, cp);
+      fill(view, head('report.title', 'report.sub'), card(form, custom, status), out);
       draw();
     },
 
@@ -551,6 +613,7 @@
   $('signout').onclick = () => signOut();
   $('menu').onclick = () => drawer(!$('sidebar').classList.contains('open'));
   window.addEventListener('hashchange', () => go(location.hash.slice(1)));
+  { let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (S.view === 'report' && S.report?.draw && $('sr-out')) S.report.draw(); }, 150); }); }
   window.addEventListener('pageshow', e => { if (e.persisted) signOut(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('sidebar').classList.contains('open')) drawer(false, true); });
 })();

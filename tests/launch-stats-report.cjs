@@ -96,15 +96,24 @@ const report = require('../tools/launch-stats-report.cjs');
   for (const secret of [...W, 'Wallet', 'Sig', 'MintF', 'RefSS', 'secret reason', 'req-']) assert.ok(!out.includes(secret), 'output leaks ' + secret);
 
   // A database without some tables (older schema) is reported, not an error.
-  const slim = { query: (s, a) => /to_regclass/.test(s) && /ryo_(hunt_awards|mythic_boxes)/.test(String(a && a[0])) ? { rows: [{ t: false }] } : db.query(s, a) };
+  const slim = { query: async (s, a) => { const r = await db.query(s, a); return /to_regclass/.test(s) ? { rows: r.rows.filter(x => !/^ryo_(hunt_awards|mythic_boxes)$/.test(x.t)) } : r; } };
   const partial = await report.collect(slim, S, { since });
   assert.deepEqual(partial.skipped, ['huntAwards', 'mythicBoxes']); assert.equal(partial.totals.mythicBoxes.n, 0);
   // Day buckets and the argument checks.
   assert.equal((await report.collect(db, S, { since, bucket: 'day' })).series.players.length, 1);
   await assert.rejects(report.collect(db, S, { since, bucket: 'week' }), /hour or day/);
   await assert.rejects(report.collect(db, S, { since: NaN }), /ISO/);
-  assert.deepEqual(report.parseArgs([]), { since: Date.parse(report.LAUNCH), bucket: 'hour', json: false });
-  assert.deepEqual(report.parseArgs(['--since=1970-01-01T00:00:00Z', '--bucket', 'day', '--json']), { since: 0, bucket: 'day', json: true }, '--name=value is honoured');
+  assert.deepEqual(report.parseArgs([]), { since: Date.parse(report.LAUNCH), until: undefined, bucket: 'hour', json: false });
+  assert.deepEqual(report.parseArgs(['--since=1970-01-01T00:00:00Z', '--bucket', 'day', '--json']), { since: 0, until: undefined, bucket: 'day', json: true }, '--name=value is honoured');
+  assert.equal(report.parseArgs(['--until', '2026-11-10T00:00:00Z']).until, Date.UTC(2026, 10, 10));
+  // --until is an exclusive cut-off: only the first two hours after launch.
+  const early = await report.collect(db, S, { since, until: since + 2 * H, now: since + 5 * H });
+  assert.equal(early.until, new Date(since + 2 * H).toISOString());
+  assert.equal(early.totals.summons.orders, 2, 'summons in [since, since+2h) only'); assert.equal(early.totals.newPlayers, 1);
+  assert.equal(early.totals.chestClaims.n, 0, 'the claim at +3h is after --until'); assert.equal(early.totals.starterPacks.n, 0, 'Starter Pack (granted column) cut too');
+  assert.deepEqual(early.revenueAllocations.lockedTreasury, 62500);
+  assert.equal(rep.until, new Date(since + 5 * H + 1).toISOString(), 'default --until is the report time');
+  await assert.rejects(report.collect(db, S, { since, until: since }), /--until/);
   assert.throws(() => report.parseArgs(['--bucket']), /needs a value/); assert.throws(() => report.parseArgs(['--since', '--json']), /needs a value/);
   assert.throws(() => report.parseArgs(['--sinse', 'x']), /Unknown argument/);
 

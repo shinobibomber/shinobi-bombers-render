@@ -9,7 +9,8 @@
  * It changes nothing: one READ ONLY transaction, SELECT only. The output holds aggregates only: no wallets, signatures,
  * usernames, actors or settings, so it can be pasted into a chat or a report page.
  * Run it where the game's database settings already exist (for example the Render Shell of the live service):
- *     node tools/launch-stats-report.cjs [--since 2026-11-09T14:40:00Z] [--bucket hour|day] [--json]
+ *     node tools/launch-stats-report.cjs [--since 2026-11-09T14:40:00Z] [--until <ISO>] [--bucket hour|day] [--json]
+ * --until is exclusive and defaults to now. The Command Center "Stats report" tab runs the same code (app/server/stats-report.cjs).
  * The default --since is the public opening (2026-11-09 22:40 UTC+8). Use --since 1970-01-01T00:00:00Z for all time. */
 const path = require('node:path');
 const LAUNCH = '2026-11-09T14:40:00Z';
@@ -19,11 +20,11 @@ const RAW = 1000000;   // SR base units per SR (= per Ryo), sr-revenue.cjs UNIT
 const LAMPORTS = 1e9;
 
 const B = '(created/$3::bigint)*$3::bigint';                       // bucket start, epoch ms, UTC
-const SINCE = 'scope=$1 AND created>=$2::bigint';
+const SINCE = 'scope=$1 AND created>=$2::bigint AND created<$4::bigint';   // [since, until)
 const arr = c => `CASE WHEN jsonb_typeof(${c})='array' THEN ${c} ELSE '[]'::jsonb END`;
 const len = c => `jsonb_array_length(${arr(c)})`;
 
-/* Every query: [key, table it needs, SQL]. Parameters: $1 scope, $2 since (ms), $3 bucket (ms). Aggregates only. */
+/* Every query: [key, table it needs, SQL]. Parameters: $1 scope, $2 since (ms), $3 bucket (ms), $4 until (ms, exclusive). Aggregates only. */
 const QUERIES = [
   ['players', 'ryo_players', `SELECT ${B} AS t,COUNT(*) AS n FROM ryo_players WHERE ${SINCE} GROUP BY 1 ORDER BY 1`],
   ['deposits', 'ryo_deposits', `SELECT ${B} AS t,COUNT(*) AS n,SUM(amount) AS ryo,SUM(COALESCE(gross,amount)) AS gross,SUM(studio_fee) AS fee FROM ryo_deposits WHERE ${SINCE} GROUP BY 1 ORDER BY 1`],
@@ -32,7 +33,7 @@ const QUERIES = [
      FROM ryo_purchases WHERE ${SINCE} AND status='confirmed' GROUP BY 1,2,3 ORDER BY 1,2,3`],
   ['purchaseStatus', 'ryo_purchases', `SELECT status,COUNT(*) AS n,SUM(amount) AS ryo FROM ryo_purchases WHERE ${SINCE} AND $3::bigint>0 GROUP BY 1 ORDER BY 1`],
   ['summonRarity', 'ryo_purchases', `SELECT o->>'rank' AS rank,COUNT(*) AS n FROM ryo_purchases p,jsonb_array_elements(${arr("p.result->'outputs'")}) o
-     WHERE p.scope=$1 AND p.created>=$2::bigint AND $3::bigint>0 AND p.status='confirmed' AND p.product='summon' AND COALESCE(p.quote->>'funding','')<>'bonus' GROUP BY 1 ORDER BY 1`],
+     WHERE p.scope=$1 AND p.created>=$2::bigint AND p.created<$4::bigint AND $3::bigint>0 AND p.status='confirmed' AND p.product='summon' AND COALESCE(p.quote->>'funding','')<>'bonus' GROUP BY 1 ORDER BY 1`],
   ['legacySpends', 'ryo_spends', `SELECT ${B} AS t,COUNT(*) AS n,SUM(amount) AS ryo FROM ryo_spends WHERE ${SINCE} GROUP BY 1 ORDER BY 1`],
   ['founderSummons', 'ryo_founder_summons', `SELECT ${B} AS t,kind AS source,rank,COUNT(*) AS n FROM ryo_founder_summons WHERE ${SINCE} GROUP BY 1,2,3 ORDER BY 1`],
   ['prisonRescues', 'ryo_prison_rescues', `SELECT ${B} AS t,rank,COUNT(*) AS n FROM ryo_prison_rescues WHERE ${SINCE} GROUP BY 1,2 ORDER BY 1`],
@@ -41,13 +42,13 @@ const QUERIES = [
   ['referralClaims', 'ryo_player_referral_claims', `SELECT ${B} AS t,SUM(quantity) AS n FROM ryo_player_referral_claims WHERE ${SINCE} GROUP BY 1 ORDER BY 1`],
   ['starterGrants', 'ryo_starter_activation_grants', `SELECT ${B} AS t,SUM(${len('heroes')}) AS n FROM ryo_starter_activation_grants WHERE ${SINCE} AND status='granted' GROUP BY 1 ORDER BY 1`],
   // Starter Pack (starter-pack.cjs, test server): its time column is `granted`, and it also gives spend-only bonus Ryo.
-  ['starterPacks', 'ryo_starter_grants', `SELECT (granted/$3::bigint)*$3::bigint AS t,COUNT(*) AS packs,SUM(heroes) AS n,SUM(bonus) AS bonus FROM ryo_starter_grants WHERE scope=$1 AND granted>=$2::bigint GROUP BY 1 ORDER BY 1`],
+  ['starterPacks', 'ryo_starter_grants', `SELECT (granted/$3::bigint)*$3::bigint AS t,COUNT(*) AS packs,SUM(heroes) AS n,SUM(bonus) AS bonus FROM ryo_starter_grants WHERE scope=$1 AND granted>=$2::bigint AND granted<$4::bigint GROUP BY 1 ORDER BY 1`],
   ['senseiSol', 'ryo_sensei_sol_purchases', `SELECT ${B} AS t,COUNT(*) AS n,SUM(price_lamports) AS lamports FROM ryo_sensei_sol_purchases WHERE ${SINCE} AND status='confirmed' GROUP BY 1 ORDER BY 1`],
   ['founders', 'ryo_founder_purchases', `SELECT ${B} AS t,tier,COUNT(*) AS n,SUM(price_lamports) AS lamports FROM ryo_founder_purchases WHERE ${SINCE} AND status='confirmed' GROUP BY 1,2 ORDER BY 1`],
   ['mythicBoxes', 'ryo_mythic_boxes', `SELECT ${B} AS t,COUNT(*) AS n,SUM(price_lamports) AS lamports FROM ryo_mythic_boxes WHERE ${SINCE} AND status='confirmed' GROUP BY 1 ORDER BY 1`],
   ['revenue', 'ryo_service_revenue', `SELECT ${B} AS t,product,COUNT(*) AS n,SUM(total_raw) AS raw FROM ryo_service_revenue WHERE ${SINCE} GROUP BY 1,2 ORDER BY 1`],
   ['revenueAllocations', 'ryo_service_revenue', `SELECT e.key AS pot,SUM(e.value::numeric) AS raw FROM ryo_service_revenue r,jsonb_each_text(CASE WHEN jsonb_typeof(r.allocations)='object' THEN r.allocations ELSE '{}'::jsonb END) e
-     WHERE r.scope=$1 AND r.created>=$2::bigint AND $3::bigint>0 AND e.value ~ '^[0-9]+$' GROUP BY 1 ORDER BY 1`],
+     WHERE r.scope=$1 AND r.created>=$2::bigint AND r.created<$4::bigint AND $3::bigint>0 AND e.value ~ '^[0-9]+$' GROUP BY 1 ORDER BY 1`],
   ['expedition', 'ryo_expedition_revenue', `SELECT ${B} AS t,COUNT(*) AS n,SUM(total_raw) AS raw FROM ryo_expedition_revenue WHERE ${SINCE} GROUP BY 1 ORDER BY 1`],
   ['claims', 'ryo_reward_claims', `SELECT ${B} AS t,COUNT(*) AS n,SUM(amount) AS ryo FROM ryo_reward_claims WHERE ${SINCE} GROUP BY 1 ORDER BY 1`],
   ['chestSpends', 'ryo_chest_spends', `SELECT ${B} AS t,product,COUNT(*) AS n,SUM(amount) AS ryo FROM ryo_chest_spends WHERE ${SINCE} AND status='confirmed' GROUP BY 1,2 ORDER BY 1`],
@@ -73,7 +74,7 @@ const groupSum = (rows, by, k) => rows.reduce((o, r) => (o[r[by]] = (o[r[by]] ||
 const round = (n, d = 6) => Math.round(n * 10 ** d) / 10 ** d;
 
 /** Pure: turns the raw query rows into the report object (aggregates only). */
-function shape(raw, { scope, since, bucket, generated }) {
+function shape(raw, { scope, since, until, bucket, generated }) {
   const r = k => raw[k] || [];
   const t = row => iso(row.t);
   const freeHeroes = [
@@ -105,7 +106,7 @@ function shape(raw, { scope, since, bucket, generated }) {
   const confirmedWithdrawals = withdrawals.filter(x => x.status === 'confirmed');
   const adv = (raw.adventure || [])[0] || {};
   return {
-    report: 'launch-stats', version: 1, scope, generated: iso(generated), since: iso(since), bucket,
+    report: 'launch-stats', version: 1, scope, generated: iso(generated), since: iso(since), until: iso(until ?? generated), bucket,
     totals: {
       newPlayers: sum(players, 'n'),
       deposits: { n: sum(deposits, 'n'), ryo: sum(deposits, 'ryo'), gross: sum(deposits, 'gross'), studioFee: sum(deposits, 'fee') },
@@ -143,38 +144,47 @@ function shape(raw, { scope, since, bucket, generated }) {
 }
 
 /** Runs every query (SELECT only) on a connection that is already inside a read-only transaction. */
-async function collect(db, scope, { since = Date.parse(LAUNCH), bucket = 'hour', now = Date.now() } = {}) {
+async function collect(db, scope, { since = Date.parse(LAUNCH), until, bucket = 'hour', now = Date.now() } = {}) {
   if (!BUCKETS[bucket]) throw Error('--bucket must be hour or day.');
   if (!Number.isFinite(since)) throw Error('--since must be an ISO time.');
-  const exists = new Map(), has = async t => { if (!exists.has(t)) exists.set(t, !!(await db.query('SELECT to_regclass($1) IS NOT NULL AS t', [t])).rows[0].t); return exists.get(t); };
+  if (until == null) until = now + 1;   // default: everything up to the moment of the report
+  if (!Number.isFinite(until) || until <= since) throw Error('--until must be an ISO time after --since.');
+  const tables = [...new Set([...QUERIES, ...SNAPSHOTS].map(q => q[1]))];   // one round trip for every table check
+  const present = new Set((await db.query('SELECT t FROM unnest($1::text[]) AS t WHERE to_regclass(t) IS NOT NULL', [tables])).rows.map(r => r.t));
+  const has = async t => present.has(t);
   const raw = { skipped: [] };
-  for (const [key, table, sql] of QUERIES) { if (await has(table)) raw[key] = (await db.query(sql, [scope, since, BUCKETS[bucket]])).rows; else raw.skipped.push(key); }
+  for (const [key, table, sql] of QUERIES) { if (await has(table)) raw[key] = (await db.query(sql, [scope, since, BUCKETS[bucket], until])).rows; else raw.skipped.push(key); }
   for (const [key, table, sql] of SNAPSHOTS) { if (await has(table)) raw[key] = (await db.query(sql, [scope])).rows; else raw.skipped.push(key); }
-  return shape(raw, { scope, since, bucket, generated: now });
+  return shape(raw, { scope, since, until, bucket, generated: now });
 }
-/** One READ ONLY transaction around collect(), one snapshot for every query (REPEATABLE READ); always rolled back. */
+/** One READ ONLY transaction around collect(), one snapshot for every query (REPEATABLE READ); always rolled back.
+ *  If a query fails, the ROLLBACK is still attempted but never hides that first error. */
 async function run(db, scope, opts) {
   await db.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-  try { return await collect(db, scope, opts); } finally { await db.query('ROLLBACK'); }
+  let out;
+  try { out = await collect(db, scope, opts); }
+  catch (e) { await Promise.resolve().then(() => db.query('ROLLBACK')).catch(() => {}); throw e; }
+  await db.query('ROLLBACK');
+  return out;
 }
 
 /** Accepts --name value and --name=value; anything unknown or a missing value is an error (never a silent default). */
 function parseArgs(argv) {
-  const out = { since: LAUNCH, bucket: 'hour', json: false };
+  const out = { since: LAUNCH, until: undefined, bucket: 'hour', json: false };
   for (let i = 0; i < argv.length; i++) {
     const [flag, inline] = argv[i].split(/=(.*)/s);
     if (flag === '--json' && inline === undefined) { out.json = true; continue; }
-    if (flag !== '--since' && flag !== '--bucket') throw Error('Unknown argument: ' + argv[i]);
+    if (!['--since', '--until', '--bucket'].includes(flag)) throw Error('Unknown argument: ' + argv[i]);
     const value = inline !== undefined ? inline : argv[++i];
     if (!value || value.startsWith('--')) throw Error(flag + ' needs a value.');
     out[flag.slice(2)] = value;
   }
-  return { ...out, since: Date.parse(out.since) };
+  return { ...out, since: Date.parse(out.since), until: out.until === undefined ? undefined : Date.parse(out.until) };
 }
 const fmt = n => Number(n).toLocaleString('en-US', { maximumFractionDigits: 3 });
 function print(rep) {
   const T = rep.totals, kv = o => Object.entries(o).map(([k, v]) => k + ' ' + fmt(v)).join(', ') || '-';
-  console.log('Shinobi Bombers stats since ' + rep.since + ' (scope ' + rep.scope + ', generated ' + rep.generated + ')');
+  console.log('Shinobi Bombers stats from ' + rep.since + ' to ' + rep.until + ' (scope ' + rep.scope + ', generated ' + rep.generated + ')');
   console.log('New players: ' + fmt(T.newPlayers) + '   (registered all time: ' + fmt(rep.allTime.playersRegistered) + ', game profiles: ' + fmt(rep.allTime.profiles) + ')');
   console.log('SR deposited: ' + fmt(T.deposits.n) + ' deposits, ' + fmt(T.deposits.ryo) + ' Ryo credited (gross ' + fmt(T.deposits.gross) + ', studio fee ' + fmt(T.deposits.studioFee) + ')');
   console.log('Ryo spent: ' + fmt(T.ryoSpent.ryo) + ' over ' + fmt(T.ryoSpent.orders) + ' orders (treasury ' + fmt(T.ryoSpent.treasury) + ', burned ' + fmt(T.ryoSpent.burn) + ')');

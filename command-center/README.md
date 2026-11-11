@@ -13,7 +13,7 @@ change financial configuration. Financial governance stays in the Observatory's 
 |---|---|
 | `server.cjs` | Staff API, copied to `app/server/command-center.cjs`. Every `cc-*` action re-derives wallet, roles and scope on the server. |
 | `schema.sql` | Additive, idempotent tables (`ryo_cc_*`) and `ryo_chat.hidden`. Appended once to `app/server/schema.sql`. |
-| `public/` | The console (`index.html`, `cc.js`, `cc.css`). It is served from a fixed file map with `script-src 'self'`. |
+| `public/` | The console (`index.html`, `cc.js`, `cc-report.js`, `cc.css`). It is served from a fixed file map with `script-src 'self'` and `style-src 'self'`. |
 | `../apply-command-center.cjs` | Build step, run by `unpack.cjs` in two parts. Code and routes are applied before the network step; the schema is appended after the last schema step. It adds two exact-match routes to `service.cjs`: `cc-*` after `admin-*`, and the player `chat-report`. |
 | `../chat/server.cjs` | Enforces moderation. `chat-send` refuses muted or banned wallets under the sender's account row lock, `chat-list` hides hidden messages and returns `removed` plus the player's own `standing`, and `chat-report` files a report. |
 
@@ -96,12 +96,34 @@ mint authority still set / wrong program.
 Benefits stay with the original buyer (owner decision 2026-11-09): the current on-chain holder is shown for information only
 and changes nothing. The configured supply is Mythic 33 and Legacy 30 (the specification proposed 30 + 30).
 
+## Stats report (read-only)
+
+The **Stats report** tab (`cc-stats-report`, permission `stats.read`: Owner, Financial Approver, Game Operator and Viewer;
+never Moderator or Support) shows what happened in a time range:
+- tiles for Ryo spent, SR deposited, heroes summoned, free heroes, SOL sales, withdrawals, Chest claims and players;
+- cumulative charts of deposits against spending, and of heroes summoned against heroes given free;
+- Ryo spent per hour or day, by service, with markers for launch and feature switches;
+- rarity against the published odds, revenue pots, free-hero sources, the Chest, Founder sales;
+- notes, and a table view. **Download JSON** and **Copy JSON** export the same answer.
+
+The server runs the code of `tools/launch-stats-report.cjs`, copied to `app/server/stats-report.cjs`. The Render Shell
+command and the tab therefore always agree.
+- **Read-only.** It uses one `REPEATABLE READ READ ONLY` transaction with SELECT statements only, always rolled back, on its
+  own pool client.
+- **Totals only.** The answer has no wallets, signatures or request IDs.
+- **Range limits.** The range starts on or after 1 Jan 2026 and must not end in the future. Hourly grouping covers at most
+  31 days; the page switches longer ranges to Day.
+- **Light on the database.** The game shares a small connection pool, so one report runs at a time per server. An
+  identical request shares the running one, and a different one gets 429. A result is reused for 60 seconds.
+- **Not audited.** Like other reads in this console, viewing a report writes no audit record.
+- **Not recorded by the game.** Sign-ups over time and daily active players are not recorded, so the tab doesn't show them.
+
 ## Not implemented (shown as such, never simulated)
 
 The following have no backend yet:
 
 - Guild, Team, DM, Trade and Event chat.
-- The Weekly Mission Pass, Founder's Council votes, Early Access scheduling, economy and treasury, creators and
+- The Weekly Mission Pass, Founder's Council votes, Early Access scheduling, economy and treasury controls, creators and
   marketing, events, game configuration, support tickets and the security center.
 - Player appeal forms.
 - Search by referral code or NFT serial.
@@ -123,9 +145,19 @@ The following have no backend yet:
 - `tests/command-center-ui.cjs` runs the console in Chrome. It covers sign-in, desktop, tablet and
   phone layouts, the guarded mute dialog, the not-implemented modules, the viewer and moderator
   scopes, EN/PT-BR, and the absence of script injection. Screenshots go to `tests/out/command-center-*.png`.
+- `tests/command-center-stats.cjs` covers the Stats report action:
+  - the role matrix, with custody wallets refused;
+  - input checks;
+  - the figures and the `until` cut-off;
+  - the 60-second cache;
+  - one run at a time (a shared run, or 429);
+  - the client released after a failure;
+  - no wallets in the answer;
+  - read-only SQL.
+  `tests/command-center-ui.cjs` also generates the report as a Viewer under `style-src 'self'`.
 - `tests/chat-screen.cjs` checks the player's side: reporting, the hidden-message drop, and the muted composer.
 - The `prelaunch-server`, `private-testing` and `site-check` suites assert that the console stays closed
-  in the portal stage, follows the private pass, and serves only its three files.
+  in the portal stage, follows the private pass, and serves only its four files.
 
 ## Rollback
 

@@ -100,7 +100,7 @@ function keyPair() {
 
     // Every game path is closed without a valid pass, with the portal's exact answers.
     const closed = [['/play/', 302, '/'], ['/play', 302, '/'], ['/play/index.html?referral=RPX', 302, '/?referral=RPX'], ['/%70lay/', 302, '/'], ['/play//', 302, '/'],
-      ['/admin/', 404], ['/admin', 404], ['/admin/dashboard.js', 404], ['/admin/command-center/', 404], ['/admin/command-center/cc.js', 404], ['/beta-config.json', 404], ['/play/assets/beta-wallet.js', 404], ['/play/assets/creators-portal/portal.js', 404]];
+      ['/admin/', 404], ['/admin', 404], ['/admin/dashboard.js', 404], ['/admin/command-center/', 404], ['/admin/command-center/cc.js', 404], ['/admin/command-center/cc-report.js', 404], ['/beta-config.json', 404], ['/play/assets/beta-wallet.js', 404], ['/play/assets/creators-portal/portal.js', 404]];
     const visitors = { anonymous: undefined, 'non-allowlisted wallet': 'sb_pt=' + encodeURIComponent(S.token), 'portal cookie only': O.portalCookie,
       forged: 'sb_pt=' + 'A'.repeat(43), 'revoked session': 'sb_pt=' + encodeURIComponent(O2.token), 'garbage encoding': 'sb_pt=%E0%A4%A' };
     for (const [who, cookie] of Object.entries(visitors)) for (const host of [undefined, 'shinobibombers.onrender.com']) {

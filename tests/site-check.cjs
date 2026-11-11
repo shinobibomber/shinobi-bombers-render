@@ -51,7 +51,7 @@ async function startServer() {
         assert.equal((await fetch(url + '/admin/server.cjs')).status, 404); assert.equal((await fetch(url + '/admin/schema.sql')).status, 404);
         assert.equal((await fetch(url + '/admin/dashboard.js')).status, 200);
         { const cc = await fetch(url + '/admin/command-center/'); assert.equal(cc.status, 200); assert.match(await cc.text(), /Shinobi Command Center/); assert.match(cc.headers.get('content-security-policy'), /script-src 'self'/); assert.equal(cc.headers.get('x-robots-tag'), 'noindex, nofollow');
-          assert.equal((await fetch(url + '/admin/command-center/cc.js')).status, 200); assert.equal((await fetch(url + '/admin/command-center/server.cjs')).status, 404); assert.equal((await fetch(url + '/admin/command-center/schema.sql')).status, 404);
+          assert.equal((await fetch(url + '/admin/command-center/cc.js')).status, 200); assert.equal((await fetch(url + '/admin/command-center/cc-report.js')).status, 200); assert.equal((await fetch(url + '/admin/command-center/server.cjs')).status, 404); assert.equal((await fetch(url + '/admin/command-center/schema.sql')).status, 404);
           assert.equal((await fetch(url + '/admin/command-center', { redirect: 'manual' })).status, 308); }
         const blocked = await fetch(url + '/api/ryo', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://wrong.example' }, body: '{"action":"admin-snapshot"}' }); assert.equal(blocked.status, 403);
       });

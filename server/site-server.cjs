@@ -417,7 +417,7 @@ function route(req, res, url, name, gameOpen) {
   if (name.startsWith('/admin/')) {
     if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
     // Fixed file maps only: the Ryo Observatory, and the Command Center (staff console, shown network comes from the API).
-    const cc = { '/admin/command-center/': 'index.html', '/admin/command-center/cc.js': 'cc.js', '/admin/command-center/cc.css': 'cc.css' }[name];
+    const cc = { '/admin/command-center/': 'index.html', '/admin/command-center/cc.js': 'cc.js', '/admin/command-center/cc-report.js': 'cc-report.js', '/admin/command-center/cc.css': 'cc.css' }[name];
     const file = cc || { '/admin/': 'index.html', '/admin/dashboard.js': 'dashboard.js', '/admin/dashboard.css': 'dashboard.css' }[name];
     if (!file) return sendSite(req, res, 404, 'Not found.');
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)], 'Cache-Control': 'no-store', ...SITE_HEADERS, ...(cc ? { 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' } : {}),
