@@ -205,6 +205,60 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
     assert.match(await p.locator('#sidebar').innerText(), /Tickets de suporte/, 'the Support tab is translated');
     await p.locator('#lang').selectOption('en');
 
+    // ---- Events (staff tab): propose, a DIFFERENT wallet approves, EN/PT-BR, schedule, no rewards. Event text is never markup. ----
+    assert.equal(await p.locator('#sidebar a[href="#events"]').count(), 1, 'the Events tab is in the menu'); assert.equal(await p.locator('#sidebar a[href="#planned-events"]').count(), 0, 'Events left the planned list');
+    const HOUR_MS = 3600000, DAY_MS = 24 * HOUR_MS, stamp = ms => new Date(ms).toISOString().slice(0, 16), t0 = Date.now();
+    // Markup-looking text can no longer be PROPOSED (< and > are refused), so this proposal is inserted directly: the console must still show any stored text as text.
+    const evC = { kind: 'maintenance', titleEn: 'Server maintenance', bodyEn: '<img src=x onerror="window.__xss=1"> The game will be offline briefly.', titlePt: 'Manutenção do servidor', bodyPt: 'O jogo ficará offline por pouco tempo.', startsAt: t0 + 2 * DAY_MS, endsAt: t0 + 2 * DAY_MS + HOUR_MS };
+    await pool.query("INSERT INTO ryo_cc_events(scope,kind,title_en,body_en,title_pt,body_pt,starts_at,ends_at,content_sha256,proposer,reason,created) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'Planned maintenance window',$11)", [store.scope, evC.kind, evC.titleEn, evC.bodyEn, evC.titlePt, evC.bodyPt, evC.startsAt, evC.endsAt, require('../app/server/events.cjs').contentHash(evC), W.moderator, t0]);
+    await assert.rejects(w('moderator', 'cc-event-propose', { ...evC, noRewards: true, reason: 'Markup is refused on the way in' }), /plain text only/, 'the server refuses markup on the way in');
+    await p.goto(base + '#events'); await waitText(p, '#view', /Server maintenance/);
+    assert.equal(await p.evaluate(() => window.__xss), undefined, 'event text is never executed'); assert.equal(await p.locator('#view img').count(), 0, 'or rendered as markup');
+    assert.match(await p.locator('#view').innerText(), /<img src=x onerror="window.__xss=1"> The game will be offline briefly\./); assert.match(await p.locator('#view').innerText(), /Awaiting review/);
+    assert.match(await p.locator('#view').innerText(), /Times are entered and stored in UTC[\s\S]*no mention of rewards, prizes or Ryo/, 'the UTC and no-rewards rules are stated');
+    await shot(p, 'events-queue');
+    // The Owner approves the Moderator's proposal through the guarded dialog: the no-reward confirmation and a reason are both required.
+    const maint = p.locator('tr', { hasText: 'Server maintenance' });
+    await maint.getByRole('button', { name: 'Approve' }).click(); await p.waitForSelector('#dialog[open]'); assert.match(await p.locator('#dialog-body').innerText(), /promise no reward/i);
+    await p.locator('#dialog-body [name="reason"]').fill('Checked the text, no rewards promised'); await p.locator('#dialog-ok').click();
+    assert.equal(await p.locator('#dialog').getAttribute('open'), '', 'the no-reward confirmation is required');
+    await p.locator('#dialog-body [name="noRewards"]').selectOption('yes'); await p.locator('#dialog-ok').click(); await waitText(p, '#notice', /Event approved/);
+    await waitText(p, '#view', /Approved · upcoming/);
+    const evSeen = (await call('player', 'cc-events-upcoming', { lang: 'pt' })).events; assert.equal(evSeen.length, 1); assert.equal(evSeen[0].title, 'Manutenção do servidor', 'players read it in Portuguese when they ask for it');
+    assert.equal(JSON.stringify(evSeen).includes(W.moderator), false, 'a player never sees a staff wallet');
+    // The Owner proposes one: text that mentions a reward is refused in the dialog; the clean text goes through; the proposer cannot approve it.
+    const fillForm = async body => { await p.locator('input[name="titleEn"]').fill('Dojo Night'); await p.locator('textarea[name="bodyEn"]').fill(body); await p.locator('input[name="titlePt"]').fill('Noite no Dojo'); await p.locator('textarea[name="bodyPt"]').fill('Encontro da comunidade no Dojo.');
+      await p.locator('input[name="starts"]').fill(stamp(t0 + 3 * DAY_MS)); await p.locator('input[name="ends"]').fill(stamp(t0 + 3 * DAY_MS + 2 * HOUR_MS)); await p.getByRole('button', { name: 'Review and submit' }).click(); await p.waitForSelector('#dialog[open]'); };
+    await fillForm('Join us and win a big prize at the Dojo.');
+    await p.locator('#dialog-body [name="noRewards"]').selectOption('yes'); await p.locator('#dialog-body [name="reason"]').fill('Community evening in the Dojo'); await p.locator('#dialog-ok').click();
+    await waitText(p, '#dialog-error', /cannot mention rewards/); assert.equal(await p.locator('#dialog').getAttribute('open'), '', 'a reward promise is refused and the dialog stays open'); await p.keyboard.press('Escape');
+    await p.waitForFunction(() => !document.querySelector('#dialog').open);
+    await p.locator('textarea[name="bodyEn"]').fill('Join us at the Dojo for a relaxed community evening.'); await p.getByRole('button', { name: 'Review and submit' }).click(); await p.waitForSelector('#dialog[open]');
+    await p.locator('#dialog-body [name="noRewards"]').selectOption('yes'); await p.locator('#dialog-body [name="reason"]').fill('Community evening in the Dojo'); await p.locator('#dialog-ok').click();
+    await waitText(p, '#notice', /Event submitted for review/); await waitText(p, '#view', /Dojo Night/);
+    const mine = p.locator('tr', { hasText: 'Dojo Night' }); assert.equal(await mine.getByRole('button', { name: 'Approve' }).isDisabled(), true, 'the proposer cannot approve their own event');
+    assert.equal(await mine.getByRole('button', { name: 'Reject' }).isDisabled(), true);
+    const own = (await call('owner', 'cc-events')).data.events.find(e => e.titleEn === 'Dojo Night');
+    await assert.rejects(w('owner', 'cc-event-review', { id: own.id, approve: true, expectedVersion: own.version, contentSha256: own.contentSha256, noRewards: true, reason: 'Trying my own proposal' }), e => e.status === 403, 'and the server refuses it too');
+    await shot(p, "events-proposed");
+    // A second wallet rejects it, and unpublish withdraws the approved event.
+    await w('operator', 'cc-event-review', { id: own.id, approve: false, expectedVersion: own.version, contentSha256: own.contentSha256, reason: 'Rejected in the UI test' });
+    await p.getByRole('button', { name: 'Refresh' }).click(); await waitText(p, '#view', /Rejected/);
+    await p.locator('tr', { hasText: 'Server maintenance' }).getByRole('button', { name: 'Unpublish' }).click(); await p.waitForSelector('#dialog[open]'); await p.locator('#dialog-body [name="reason"]').fill('Maintenance was moved'); await p.locator('#dialog-ok').click();
+    await waitText(p, '#notice', /Event unpublished/); assert.deepEqual((await call('player', 'cc-events-upcoming')).events, [], 'players stop seeing an unpublished event');
+    const evAudit = (await call('owner', 'cc-audit', { prefix: 'cc.event', limit: 20 })).data.entries.map(e => e.action).sort();
+    assert.deepEqual(evAudit, ['cc.event.approved', 'cc.event.proposed', 'cc.event.rejected', 'cc.event.unpublished'], 'every event write is on the audit chain');
+    // EN / PT-BR console.
+    await p.locator('#lang').selectOption('pt'); await waitText(p, '#sidebar', /Eventos/); await waitText(p, '#view', /Propor um evento/);
+    assert.match(await p.locator('#view').innerText(), /Despublicado[\s\S]*Rejeitado|Rejeitado[\s\S]*Despublicado/, 'statuses are translated'); assert.match(await p.locator('#view').innerText(), /agenda .utc./i);
+    await shot(p, 'events-pt'); await p.locator('#lang').selectOption('en'); await waitText(p, '#view', /Propose an event/);
+    // Phone.
+    await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(250); await noSideScroll(p, 'phone Events'); await shot(p, 'events-mobile'); await p.setViewportSize({ width: 1440, height: 900 });
+    // Other roles: the Approver has no event access, the Viewer reads only, the Moderator proposes but never reviews.
+    const ap = await open('approver'); await ap.p.goto(base + '#events'); await waitText(ap.p, '#view', /Permission required/); assert.equal(await ap.p.locator('#sidebar a[href="#events"]').count(), 1); assert.equal(await ap.p.locator('#view button').count(), 0, 'approvers get no events'); await ap.p.close();
+    const vw = await open('viewer'); await vw.p.goto(base + '#events'); await waitText(vw.p, '#view', /Server maintenance/); assert.equal(await vw.p.locator('#view form').count(), 0, 'viewers get no proposal form'); assert.equal(await vw.p.locator('#view button:not(:text-is("Refresh"))').count(), 0, 'and no buttons'); await vw.p.close();
+    const md = await open('moderator'); await md.p.goto(base + '#events'); await waitText(md.p, '#view', /Propose an event/); assert.equal(await md.p.getByRole('button', { name: 'Approve' }).count(), 0, 'moderators cannot review'); assert.equal(await md.p.getByRole('button', { name: 'Unpublish' }).count(), 0); assert.deepEqual(md.errors, []); await md.p.close();
+
     // ---- Tablet and phone ----
     await p.goto(base + '#overview'); await p.waitForSelector('.kpi');
     await p.setViewportSize({ width: 900, height: 1100 }); await p.waitForTimeout(200); await noSideScroll(p, 'tablet'); await shot(p, 'overview-tablet');

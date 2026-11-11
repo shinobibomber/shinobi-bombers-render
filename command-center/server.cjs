@@ -50,6 +50,10 @@ const PERMISSIONS = Object.freeze({
   // Support tickets (support/server.cjs). Staff change only a ticket's status, assignee and messages, never balances or rewards.
   'support.read': ['owner', 'approver', 'operator', 'support'],
   'support.write': ['owner', 'operator', 'support'],
+  // Events (events/server.cjs): dated notices with no rewards. Propose, then a DIFFERENT wallet reviews. Approvers are not part of event operations.
+  'event.read': ['owner', 'operator', 'moderator', 'viewer'],
+  'event.propose': ['owner', 'operator', 'moderator'],
+  'event.review': ['owner', 'operator'],
 });
 const envList = name => String(process.env[name] || '').split(',').map(s => s.trim()).filter(Boolean);
 async function rolesOf(store, db, wallet) {
@@ -521,6 +525,39 @@ async function supportWrite(ctx, wallet, action, body, kind) {
   });
 }
 
+/* ---------- Events: staff writes (events/server.cjs holds the rules) ----------
+ * propose -> a DIFFERENT wallet approves or rejects (never the proposer, whatever ADMIN_SELF_APPROVAL says) -> unpublish. An event is
+ * a dated notice with EN (and optional PT-BR) text: it has no reward, audience or eligibility, and nothing here touches balances, Chest,
+ * Hero Passes, purchases, withdrawals, wallets or NFTs. Each write runs through write() and lands on the audit chain as cc.event.*,
+ * with the title and a SHA-256 of the exact content (the body text itself stays out of the chain). */
+const eventId = v => (Number.isSafeInteger(v) && v > 0 ? v : fail('Choose an event.'));
+const noRewardsAttested = v => { if (v !== true) fail('Confirm that this event promises no reward.'); };
+async function proposeEvent(ctx, wallet, body) {
+  const E = require('./events.cjs'), p = E.parse(body), why = reason(body.reason); noRewardsAttested(body.noRewards);
+  return write(ctx, wallet, 'cc-event-propose', body, 'event.propose', async (c, { now }) => {
+    const r = await E.propose(c, { scope: ctx.store.scope, wallet, now, p, why });
+    return { result: { id: r.id, status: 'pending', version: 0, contentSha256: p.sha }, audit: 'event.proposed', data: { id: r.id, kind: p.kind, titleEn: p.titleEn, titlePt: p.titlePt, startsAt: p.startsAt, endsAt: p.endsAt, contentSha256: p.sha, reason: why, noRewardsConfirmed: true } };
+  });
+}
+async function reviewEvent(ctx, wallet, body) {
+  const E = require('./events.cjs'), id = eventId(body.id);
+  if (typeof body.approve !== 'boolean') fail('Choose approve or reject.');
+  const expected = version(body.expectedVersion), why = reason(body.reason);
+  if (typeof body.contentSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(body.contentSha256)) fail('contentSha256 is required. Refresh and try again.');
+  if (body.approve) noRewardsAttested(body.noRewards);
+  return write(ctx, wallet, 'cc-event-review', body, 'event.review', async (c, { now }) => {
+    const r = await E.review(c, { scope: ctx.store.scope, wallet, now, id, approve: body.approve, expected, sha: body.contentSha256, why });
+    return { result: { id, status: r.status, version: r.version }, audit: 'event.' + r.status, data: { id, proposer: r.proposer, kind: r.kind, titleEn: r.title, startsAt: r.startsAt, endsAt: r.endsAt, contentSha256: r.sha, reason: why, ...(body.approve ? { noRewardsConfirmed: true } : {}), versionBefore: expected, versionAfter: r.version } };
+  });
+}
+async function unpublishEvent(ctx, wallet, body) {
+  const E = require('./events.cjs'), id = eventId(body.id), expected = version(body.expectedVersion), why = reason(body.reason);
+  return write(ctx, wallet, 'cc-event-unpublish', body, 'event.review', async (c, { now }) => {
+    const r = await E.unpublish(c, { scope: ctx.store.scope, wallet, now, id, expected, why });
+    return { result: { id, status: 'unpublished', version: r.version }, audit: 'event.unpublished', data: { id, titleEn: r.title, contentSha256: r.sha, reason: why, versionBefore: expected, versionAfter: r.version } };
+  });
+}
+
 /* ---------- Stats report (read-only) ----------
  * The same code as tools/launch-stats-report.cjs (copied to stats-report.cjs): one REPEATABLE READ READ ONLY transaction,
  * SELECT only, always rolled back, totals and per-hour/day series without wallets. The game shares a small connection
@@ -576,6 +613,9 @@ async function statsReport(ctx, body) {
 async function handle(ctx, wallet, action, body = {}) {
   const { store } = ctx;
   if ([ctx.treasuryAddress, ctx.studioAddress, ctx.revenueAddress].filter(Boolean).includes(wallet)) fail('Custody, studio and revenue wallets cannot use the Command Center.', 403);
+  // The one player-facing action in this namespace: any signed-in wallet may read the approved, live or upcoming events (events/server.cjs).
+  // It runs before the staff check on purpose and returns only public event text, never a wallet, reason or hash.
+  if (action === 'cc-events-upcoming') return require('./events.cjs').playerList(store, body);
   const roles = await rolesOf(store, store.pool, wallet);
   if (!roles.length) fail('This wallet has no Command Center access. Ask the service owner to assign a staff role.', 403);
   switch (action) {
@@ -616,6 +656,10 @@ async function handle(ctx, wallet, action, body = {}) {
     case 'cc-support-reply': need(roles, 'support.write'); return supportWrite(ctx, wallet, 'cc-support-reply', body, 'reply');
     case 'cc-support-note': need(roles, 'support.write'); return supportWrite(ctx, wallet, 'cc-support-note', body, 'note');
     case 'cc-support-update': need(roles, 'support.write'); return supportWrite(ctx, wallet, 'cc-support-update', body, 'update');
+    case 'cc-events': need(roles, 'event.read', 'event.propose', 'event.review'); return envelope(store, await require('./events.cjs').staffList(store, wallet));
+    case 'cc-event-propose': need(roles, 'event.propose'); return proposeEvent(ctx, wallet, body);
+    case 'cc-event-review': need(roles, 'event.review'); return reviewEvent(ctx, wallet, body);
+    case 'cc-event-unpublish': need(roles, 'event.review'); return unpublishEvent(ctx, wallet, body);
     case 'cc-incident-open': need(roles, 'security.manage'); return openIncident(ctx, wallet, body);
     case 'cc-incident-update': need(roles, 'security.manage'); return updateIncident(ctx, wallet, body);
     default: fail('Unknown Command Center action.', 404);

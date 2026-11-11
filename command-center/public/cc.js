@@ -36,6 +36,7 @@
       'report.download': 'Download JSON', 'report.copy': 'Copy JSON', 'report.copied': 'Report JSON copied.', 'report.empty': 'Choose a range and generate the report.',
       'report.generating': 'Generating the report…', 'report.badRange': 'Choose a valid start time (and an end time after it).', 'report.cached': 'Generated {t} · reused from the last minute',
       'report.generated': 'Generated {t}', 'report.autoDay': 'Ranges over 31 days are grouped by day.',
+      'nav.events': 'Events', 'events.title': 'Events', 'events.sub': 'Scheduled in-game notices with English and Portuguese text. One wallet proposes, a different authorized wallet approves. Events carry no rewards and nothing here touches balances, Chest, purchases, withdrawals or NFTs.', 'ev.propose': 'Propose an event', 'ev.kind': 'Kind', 'ev.titleEn': 'Title (EN)', 'ev.bodyEn': 'Text (EN)', 'ev.titlePt': 'Título (PT-BR, optional)', 'ev.bodyPt': 'Texto (PT-BR, optional)', 'ev.starts': 'Starts (UTC)', 'ev.ends': 'Ends (UTC)', 'ev.utcNote': 'Times are entered and stored in UTC. Players see them in their own time zone. Plain text only: no links, and no mention of rewards, prizes or Ryo.', 'ev.submit': 'Review and submit', 'ev.submitTitle': 'Submit event for review', 'ev.submitDetail': 'A different authorized wallet must approve it before players can see it. Its text cannot be changed after you submit.', 'ev.noRewards': 'The text promises no reward, prize or Ryo', 'ev.choose': 'Choose…', 'ev.yes': 'Yes, it promises nothing', 'ev.mustAttest': 'Confirm that the event promises no reward.', 'ev.badTime': 'Choose a valid start and end time (UTC).', 'ev.submitted': 'Event submitted for review.', 'ev.approved': 'Event approved. Players see it from now until it ends.', 'ev.rejected': 'Event rejected.', 'ev.unpublished': 'Event unpublished.', 'ev.list': 'Events', 'ev.colEvent': 'ID / status', 'ev.colContent': 'Content', 'ev.colSchedule': 'Schedule (UTC)', 'ev.colProposed': 'Proposed', 'ev.colReviewed': 'Reviewed', 'ev.colActions': 'Actions', 'ev.approve': 'Approve', 'ev.reject': 'Reject', 'ev.unpublish': 'Unpublish', 'ev.mineHint': 'You proposed this; another wallet must review it.', 'ev.noPt': 'No Portuguese text: players on PT-BR see the English text.', 'ev.reason': 'Reason: ', 'ev.approveTitle': 'Approve event #', 'ev.approveDetail': 'Players will see it from now until it ends. Read the text once more: it must promise no reward.', 'ev.approveConfirm': 'Approve and publish', 'ev.rejectTitle': 'Reject event #', 'ev.rejectDetail': 'It will not be published.', 'ev.unpublishTitle': 'Unpublish event #', 'ev.unpublishDetail': 'Players stop seeing it. The record stays in the audit log.', 'ev.expires': 'Expires ', 'ev.localTime': 'Local: ', 'ev.none': 'No events yet.', 'ev.k.event': 'Event', 'ev.k.maintenance': 'Maintenance', 'ev.k.boss': 'Boss challenge', 'ev.k.tournament': 'Community tournament', 'ev.k.community': 'Community', 'ev.p.waiting': 'Awaiting review', 'ev.p.stale': 'Cannot be approved (expired or already started)', 'ev.p.upcoming': 'Approved · upcoming', 'ev.p.live': 'Approved · live now', 'ev.p.ended': 'Ended', 'ev.p.rejected': 'Rejected', 'ev.p.unpublished': 'Unpublished',
     },
     pt: {
       'brand.sub': 'CENTRO DE COMANDO', 'lang.label': 'Idioma', 'auth.connect': 'Conectar carteira da equipe', 'auth.signout': 'Sair',
@@ -64,6 +65,7 @@
       'report.download': 'Baixar JSON', 'report.copy': 'Copiar JSON', 'report.copied': 'JSON do relatório copiado.', 'report.empty': 'Escolha um período e gere o relatório.',
       'report.generating': 'Gerando o relatório…', 'report.badRange': 'Escolha um início válido (e um fim depois dele).', 'report.cached': 'Gerado {t} · reaproveitado do último minuto',
       'report.generated': 'Gerado {t}', 'report.autoDay': 'Períodos acima de 31 dias são agrupados por dia.',
+      'nav.events': 'Eventos', 'events.title': 'Eventos', 'events.sub': 'Avisos agendados do jogo com texto em inglês e português. Uma carteira propõe e outra carteira autorizada aprova. Eventos não têm recompensas e nada aqui mexe em saldos, Baú, compras, saques ou NFTs.', 'ev.propose': 'Propor um evento', 'ev.kind': 'Tipo', 'ev.titleEn': 'Título (EN)', 'ev.bodyEn': 'Texto (EN)', 'ev.titlePt': 'Título (PT-BR, opcional)', 'ev.bodyPt': 'Texto (PT-BR, opcional)', 'ev.starts': 'Início (UTC)', 'ev.ends': 'Fim (UTC)', 'ev.utcNote': 'Os horários são digitados e guardados em UTC. Os jogadores os veem no próprio fuso horário. Somente texto simples: sem links e sem mencionar recompensas, prêmios ou Ryo.', 'ev.submit': 'Revisar e enviar', 'ev.submitTitle': 'Enviar evento para revisão', 'ev.submitDetail': 'Outra carteira autorizada precisa aprovar antes de os jogadores o verem. O texto não pode ser alterado depois do envio.', 'ev.noRewards': 'O texto não promete recompensa, prêmio nem Ryo', 'ev.choose': 'Escolha…', 'ev.yes': 'Sim, não promete nada', 'ev.mustAttest': 'Confirme que o evento não promete recompensa.', 'ev.badTime': 'Escolha um horário de início e de fim válidos (UTC).', 'ev.submitted': 'Evento enviado para revisão.', 'ev.approved': 'Evento aprovado. Os jogadores o veem agora até o fim.', 'ev.rejected': 'Evento rejeitado.', 'ev.unpublished': 'Evento despublicado.', 'ev.list': 'Eventos', 'ev.colEvent': 'ID / status', 'ev.colContent': 'Conteúdo', 'ev.colSchedule': 'Agenda (UTC)', 'ev.colProposed': 'Proposto', 'ev.colReviewed': 'Revisado', 'ev.colActions': 'Ações', 'ev.approve': 'Aprovar', 'ev.reject': 'Rejeitar', 'ev.unpublish': 'Despublicar', 'ev.mineHint': 'Você propôs este evento; outra carteira precisa revisá-lo.', 'ev.noPt': 'Sem texto em português: jogadores em PT-BR veem o texto em inglês.', 'ev.reason': 'Motivo: ', 'ev.approveTitle': 'Aprovar o evento #', 'ev.approveDetail': 'Os jogadores o verão agora até o fim. Leia o texto mais uma vez: ele não pode prometer recompensa.', 'ev.approveConfirm': 'Aprovar e publicar', 'ev.rejectTitle': 'Rejeitar o evento #', 'ev.rejectDetail': 'Ele não será publicado.', 'ev.unpublishTitle': 'Despublicar o evento #', 'ev.unpublishDetail': 'Os jogadores deixam de vê-lo. O registro continua na auditoria.', 'ev.expires': 'Expira ', 'ev.localTime': 'Local: ', 'ev.none': 'Nenhum evento ainda.', 'ev.k.event': 'Evento', 'ev.k.maintenance': 'Manutenção', 'ev.k.boss': 'Desafio de chefe', 'ev.k.tournament': 'Torneio da comunidade', 'ev.k.community': 'Comunidade', 'ev.p.waiting': 'Aguardando revisão', 'ev.p.stale': 'Não pode ser aprovado (expirou ou já começou)', 'ev.p.upcoming': 'Aprovado · em breve', 'ev.p.live': 'Aprovado · acontecendo agora', 'ev.p.ended': 'Encerrado', 'ev.p.rejected': 'Rejeitado', 'ev.p.unpublished': 'Despublicado',
     },
   };
   const t = key => I18N[S.lang][key] || I18N.en[key] || key;
@@ -142,12 +144,12 @@
     ['overview', 'nav.overview', 'overview.read'], ['players', 'nav.players', 'player.read'], ['chat', 'nav.chat', 'moderation.read'],
     ['announcements', 'nav.announcements', ['announcement.read', 'announcement.propose', 'announcement.review']], ['health', 'nav.health', 'ops.read'],
     ['audit', 'nav.audit', ['audit.read', 'audit.own']], ['roles', 'nav.roles', 'roles.manage'], ['founders', 'nav.founders', 'founders.read'],
-    ['report', 'nav.report', 'stats.read'], ['config', 'nav.config', 'config.read'], ['security', 'nav.security', 'security.read'], ['creators', 'nav.creators', 'creators.read'], ['support', 'nav.support', 'support.read'],
+    ['report', 'nav.report', 'stats.read'], ['config', 'nav.config', 'config.read'], ['security', 'nav.security', 'security.read'], ['creators', 'nav.creators', 'creators.read'], ['support', 'nav.support', 'support.read'], ['events', 'nav.events', ['event.read', 'event.propose', 'event.review']],
   ];
   // Modules from the specification that have no backend yet. They are listed, never simulated.
   const PLANNED = [
 ['pass', 'Weekly Mission Pass', 2], ['economy', 'Economy & treasury controls', 3],
-    ['creators', 'Marketing campaigns & payouts', 3], ['events', 'Events', 4], 
+    ['creators', 'Marketing campaigns & payouts', 3], 
     ['guild', 'Guild / Team / DM / Trade chat', null],
   ];
   const allowed = perm => (Array.isArray(perm) ? perm : [perm]).some(can);
@@ -515,6 +517,56 @@
       }
 
       return F.id ? detail() : list();
+    },
+
+    /* ---------- Events (events/server.cjs holds the rules): dated notices with NO rewards. One wallet proposes, a DIFFERENT one reviews. ---------- */
+    async events(view) {
+      const d = (await api('cc-events')).data, list = d.events, KINDS = d.kinds;
+      const PHASE_KIND = { waiting: 'warn', stale: 'crit', upcoming: 'ok', live: 'ok', ended: 'info', rejected: 'crit', unpublished: 'warn' };
+      const utc = ms => new Date(ms).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+      const stamp = v => { const ms = Date.parse(v.length === 16 ? v + ':00Z' : v + 'Z'); return Number.isSafeInteger(ms) ? ms : null; };
+      const timeEl = ms => h('time', { datetime: new Date(ms).toISOString(), title: t('ev.localTime') + new Date(ms).toLocaleString() }, utc(ms));
+      const attest = () => ({ name: 'noRewards', label: t('ev.noRewards'), options: [['', t('ev.choose')], ['yes', t('ev.yes')]] });
+      const refresh = () => RENDER.events(view), parts = [head('events.title', 'events.sub', refreshBtn(refresh))];
+      if (can('event.propose')) {
+        const kind = h('select', { name: 'kind', 'aria-label': t('ev.kind') }, KINDS.map(k => h('option', { value: k, text: t('ev.k.' + k) })));
+        const titleEn = h('input', { name: 'titleEn', required: true, maxlength: d.limits.titleMax, 'aria-label': t('ev.titleEn') }), bodyEn = h('textarea', { name: 'bodyEn', required: true, rows: 4, maxlength: d.limits.bodyMax, 'aria-label': t('ev.bodyEn') });
+        const titlePt = h('input', { name: 'titlePt', maxlength: d.limits.titleMax, 'aria-label': t('ev.titlePt') }), bodyPt = h('textarea', { name: 'bodyPt', rows: 4, maxlength: d.limits.bodyMax, 'aria-label': t('ev.bodyPt') });
+        const starts = h('input', { type: 'datetime-local', name: 'starts', required: true, 'aria-label': t('ev.starts') }), ends = h('input', { type: 'datetime-local', name: 'ends', required: true, 'aria-label': t('ev.ends') });
+        parts.push(card(h('h3', { text: t('ev.propose') }), h('form', { class: 'form', onsubmit: e => { e.preventDefault(); run(async () => {
+          const startsAt = stamp(starts.value), endsAt = stamp(ends.value); if (startsAt === null || endsAt === null) throw Error(t('ev.badTime'));
+          const body = { kind: kind.value, titleEn: titleEn.value, bodyEn: bodyEn.value, titlePt: titlePt.value || null, bodyPt: bodyPt.value || null, startsAt, endsAt };
+          const r = await guarded({ title: t('ev.submitTitle'), detail: t('ev.submitDetail'), confirm: t('ev.submit'), fields: [attest()],
+            submit: v => { if (v.noRewards !== 'yes') throw Error(t('ev.mustAttest')); return write('cc-event-propose', { ...body, noRewards: true, reason: v.reason }); } });
+          if (r) { notice(t('ev.submitted'), 'ok'); await refresh(); }
+        }); } },
+          h('label', {}, t('ev.kind'), kind), h('label', {}, t('ev.titleEn'), titleEn), h('label', {}, t('ev.bodyEn'), bodyEn), h('label', {}, t('ev.titlePt'), titlePt), h('label', {}, t('ev.bodyPt'), bodyPt),
+          h('label', {}, t('ev.starts'), starts), h('label', {}, t('ev.ends'), ends), h('p', { class: 'muted', text: t('ev.utcNote') }), h('button', { class: 'primary', type: 'submit', text: t('ev.submit') }))));
+      }
+      const decide = (ev, approve) => run(async () => {
+        const r = await guarded({ title: t(approve ? 'ev.approveTitle' : 'ev.rejectTitle') + ev.id, detail: t(approve ? 'ev.approveDetail' : 'ev.rejectDetail'), confirm: t(approve ? 'ev.approveConfirm' : 'ev.reject'), danger: !approve, fields: approve ? [attest()] : [],
+          submit: v => { if (approve && v.noRewards !== 'yes') throw Error(t('ev.mustAttest')); return write('cc-event-review', { id: ev.id, approve, expectedVersion: ev.version, contentSha256: ev.contentSha256, ...(approve ? { noRewards: true } : {}), reason: v.reason }); } });
+        if (r) { notice(t(approve ? 'ev.approved' : 'ev.rejected'), 'ok'); await refresh(); }
+      });
+      const unpublish = ev => run(async () => {
+        if (await guarded({ title: t('ev.unpublishTitle') + ev.id, detail: t('ev.unpublishDetail'), confirm: t('ev.unpublish'), danger: true, submit: v => write('cc-event-unpublish', { id: ev.id, expectedVersion: ev.version, reason: v.reason }) })) { notice(t('ev.unpublished'), 'ok'); await refresh(); }
+      });
+      const rows = list.map(ev => h('tr', {},
+        h('td', {}, '#' + ev.id, h('br'), badge(t('ev.p.' + ev.phase), PHASE_KIND[ev.phase] || 'info'), h('br'), h('small', { class: 'muted', text: t('ev.k.' + ev.kind) })),
+        h('td', {}, h('strong', { text: ev.titleEn }), h('div', { class: 'pre', text: ev.bodyEn }),
+          ev.titlePt ? [h('strong', { class: 'muted', text: ev.titlePt }), h('div', { class: 'pre muted', text: ev.bodyPt })] : h('small', { class: 'muted', text: t('ev.noPt') }),
+          h('div', {}, h('small', { class: 'muted', text: t('ev.reason') + ev.reason }))),
+        h('td', {}, timeEl(ev.startsAt), h('br'), '→ ', timeEl(ev.endsAt)),
+        h('td', {}, h('span', { class: 'mono', text: ev.mine ? 'you' : ev.proposer }), h('br'), when(ev.created), ev.expires ? h('div', { class: 'muted' }, t('ev.expires'), when(ev.expires)) : null),
+        h('td', {}, ev.reviewer ? [h('span', { class: 'mono', text: ev.reviewer }), h('br'), when(ev.reviewed), ev.reviewReason ? h('div', { class: 'muted', text: ev.reviewReason }) : null] : '—',
+          ev.unpublishedBy ? h('div', { class: 'muted' }, h('span', { class: 'mono', text: ev.unpublishedBy }), ' · ', when(ev.unpublished)) : null),
+        h('td', {}, can('event.review') ? h('div', { class: 'row-actions' },
+          ev.phase === 'waiting' || ev.phase === 'stale' ? [
+            h('button', { class: 'small primary', type: 'button', disabled: ev.mine || ev.phase === 'stale', title: ev.mine ? t('ev.mineHint') : null, text: t('ev.approve'), onclick: () => decide(ev, true) }),
+            h('button', { class: 'small danger', type: 'button', disabled: ev.mine, title: ev.mine ? t('ev.mineHint') : null, text: t('ev.reject'), onclick: () => decide(ev, false) })] : null,
+          ev.phase === 'upcoming' || ev.phase === 'live' ? h('button', { class: 'small danger', type: 'button', text: t('ev.unpublish'), onclick: () => unpublish(ev) }) : null) : null)));
+      parts.push(card(h('h3', { text: t('ev.list') }), scroll('table-wide', ['ev.colEvent', 'ev.colContent', 'ev.colSchedule', 'ev.colProposed', 'ev.colReviewed', 'ev.colActions'].map(k => t(k)), rows.length ? rows : empty(6, t('ev.none')))));
+      fill(view, ...parts);
     },
 
     /* ---------- Batch A: Creators summary (aggregates only) ---------- */
