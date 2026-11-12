@@ -37,6 +37,8 @@ function validate(kind,payload,now){
  if(kind==='financial'){
   const p=payload;return {financial:{currency:/^[A-Z]{3}$/.test(p.currency)?p.currency:fail('Use an ISO currency code such as USD.'),cashMinor:int(p.cashMinor,0,Number.MAX_SAFE_INTEGER),monthlyCostMinor:int(p.monthlyCostMinor,1,Number.MAX_SAFE_INTEGER),asOf:int(p.asOf,now-366*86400000,now),evidence:text(p.evidence,500),notes:text(p.notes,500)}};
  }
+ // Market minimum hero prices (Jonin/Elite/Legend); null = the coded default. New listings and offers only.
+ if(kind==='marketPrices')return {marketPrices:require('./market.cjs').validatePrices(payload.marketPrices||payload)};
  if(kind==='monitor')return {monitor:{concentrationPercent:int(payload.concentrationPercent,1,100),claimRyo:int(payload.claimRyo,1,1000000000),pendingMinutes:int(payload.pendingMinutes,1,10080)}};
  if(kind==='resume'){if(!PAUSES.includes(payload.control))fail('Unknown emergency control.');return {control:payload.control}}
  fail('Unknown configuration kind.');
@@ -115,6 +117,8 @@ async function snapshot(ctx,wallet){
  });
  // Limited Mythic NFT Box sales (SOL, outside the Ryo ledger).
  try{result.nft=await require('./mythic-box.cjs').stats(ctx.store)}catch{}
+ // Market minimum hero prices in force now (the server reads the same values for every listing and offer).
+ try{const m=require('./market.cjs'),eff=await m.minPrices(ctx.store);result.marketPrices={ranks:m.TRADABLE.map(r=>({rank:r,name:m.RANKS[r],key:['jonin','elite','legend'][r-2],effective:eff[r],default:m.MIN_PRICE[r],saved:result.control.config.marketPrices?.[['jonin','elite','legend'][r-2]]??null})),maxPrice:m.MAX_PRICE}}catch{}
  // Test-server starter Ryo: spend-only, never backed by custody, so outside the liabilities above.
  try{result.starter=await require('./starter-pack.cjs').stats(ctx.store)}catch{}
  const revenueConfig=result.revenueDistribution.config, revenueVaults=revenueConfig?Object.entries(revenueConfig.destinations).map(([label,wallet])=>({label:'SR revenue · '+label,wallet})):[];

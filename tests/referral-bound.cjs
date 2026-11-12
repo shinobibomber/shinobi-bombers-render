@@ -16,16 +16,16 @@ const hero = (id, rank, extra = {}) => ({ tokenId: id, rank, level: 1, name: 'He
   const pool = { query: (s, a) => db.query(s, a), async connect() { return { query: (s, a) => db.query(s, a), release() {} }; } };
   const store = new Store(pool, 'bound-test', () => 1_900_000_000_000), W = 'bound-wallet';
   await store.transaction(async c => { await store.locked(c, W); await store.profileLocked(c, W);
-    const heroes = [hero('normal', 1), hero('bound', 1, { referralReward: true, creatorReward: true, referralClaim: 'claim-1' }), hero('keep-1', 0), hero('keep-2', 0)];
+    const heroes = [hero('normal', 2), hero('bound', 2, { referralReward: true, creatorReward: true, referralClaim: 'claim-1' }), hero('keep-1', 0), hero('keep-2', 0)];
     await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2', [store.scope, W, JSON.stringify(economy.normalizeProfile({ dojo: 0, heroes, battleReady: [] }))]); });
 
   // Market: bound heroes are refused at the API and the refusal is audited; nothing is escrowed.
-  await assert.rejects(market.handle(store, W, 'market-post', { heroId: 'bound', price: 25000 }), e => e.code === 'REFERRAL_BOUND' && e.status === 409 && /cannot be listed/.test(e.message));
+  await assert.rejects(market.handle(store, W, 'market-post', { heroId: 'bound', price: 150000 }), e => e.code === 'REFERRAL_BOUND' && e.status === 409 && /cannot be listed/.test(e.message));
   const audit = (await pool.query("SELECT target FROM ryo_creator_audit WHERE scope=$1 AND action='market.referral-bound-rejected'", [store.scope])).rows;
   assert.deepEqual(audit.map(r => r.target), ['bound']);
   assert.ok((await store.profile(W)).heroes.some(h => h.tokenId === 'bound' && h.referralReward === true), 'the bound hero stays with its owner');
   assert.equal((await pool.query('SELECT COUNT(*) AS n FROM ryo_market_listings WHERE scope=$1', [store.scope])).rows[0].n, 0);
-  const listed = await market.handle(store, W, 'market-post', { heroId: 'normal', price: 25000 });
+  const listed = await market.handle(store, W, 'market-post', { heroId: 'normal', price: 150000 });
   assert.ok(listed, 'normal heroes keep their Market rules');
   assert.equal((await pool.query("SELECT COUNT(*) AS n FROM ryo_market_listings WHERE scope=$1 AND status='active'", [store.scope])).rows[0].n, 1);
 
@@ -41,6 +41,18 @@ const hero = (id, rank, extra = {}) => ({ tokenId: id, rank, level: 1, name: 'He
   const fusedBound = result.outputs[1];
   await store.transaction(async c => { const p = await store.profileLocked(c, W); p.heroes.push(fusedBound); await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2', [store.scope, W, JSON.stringify(p)]); });
   await assert.rejects(market.handle(store, W, 'market-post', { heroId: fusedBound.tokenId, price: 25000 }), e => e.code === 'REFERRAL_BOUND');
+  // Any other account-bound input (Founder, Creator, Starter Pack, ...) makes the fused hero marketBound: the Market refuses it.
+  const fids = ['f1a', 'f1b', 'f1c', 'f2a', 'f2b', 'f2c'];
+  const fprofile = economy.normalizeProfile({ dojo: 0, battleReady: [], heroes: [...fids.map((id, i) => hero(id, 2, i === 1 ? { founderGrant: 'gold' } : i === 5 ? { creatorReward: true } : {})), hero('y1', 0), hero('y2', 0)] });
+  const fq = economy.quote(fprofile, 'fusion', { heroIds: fids }); fq.fusion = { ...fq.fusion, successPercent: 100 };
+  const fusedOut = economy.fulfill(fprofile, fq).result.outputs;
+  assert.deepEqual(fusedOut.map(h => h.marketBound === true), [true, true], 'Founder and Creator inputs bind the fused hero');
+  assert.ok(fusedOut.every(h => h.referralReward !== true), 'without turning it into a referral hero');
+  const plainFuse = economy.normalizeProfile({ dojo: 0, battleReady: [], heroes: [...['p1', 'p2', 'p3'].map(id => hero(id, 2)), hero('z1', 0), hero('z2', 0)] });
+  const pq = economy.quote(plainFuse, 'fusion', { heroIds: ['p1', 'p2', 'p3'] }); pq.fusion = { ...pq.fusion, successPercent: 100 };
+  assert.ok(economy.fulfill(plainFuse, pq).result.outputs.every(h => !h.marketBound), 'plain heroes fuse into a tradable hero');
+  await store.transaction(async c => { const p = await store.profileLocked(c, W); p.heroes.push(fusedOut[0]); await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2', [store.scope, W, JSON.stringify(p)]); });
+  await assert.rejects(market.handle(store, W, 'market-post', { heroId: fusedOut[0].tokenId, price: 500000 }), e => e.code === 'ACCOUNT_BOUND', 'a fused bound Elite cannot be listed');
   // Summons and fusions without bound inputs never set the flag.
   const plain = economy.fulfill(profile, economy.quote(profile, 'summon', { quantity: 5 })).result.outputs;
   assert.ok(plain.every(h => h.referralReward !== true));

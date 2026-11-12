@@ -63,7 +63,11 @@ const ON = { STARTER_PACK: 'on' }, never = async () => { throw Error('A starter-
   assert.equal((await acct('newbie')).bonus, String(10000000 - hunt.FEE));
 
   // Market: offers held in starter Ryo return to it; a starter-funded buy has no chain transaction.
-  const sellerHero = (await store.profile('veteran')).heroes.find(h => h.rank === 2);
+  // Starter Pack heroes are account-bound (owner decision 2026-11-12): the Market refuses them; a summoned Jonin trades.
+  const starterJonin = (await store.profile('veteran')).heroes.find(h => h.rank === 2 && h.starter);
+  await assert.rejects(market.handle(store, 'veteran', 'market-post', { heroId: starterJonin.tokenId, price: 200000 }), e => e.code === 'ACCOUNT_BOUND', 'a Starter Pack hero cannot be listed');
+  const sellerHero = { ...economy.hero(2), tokenId: 'veteran-summoned-jonin' };
+  await store.transaction(async c => { await store.locked(c, 'veteran'); const prof = await store.profileLocked(c, 'veteran'); prof.heroes.push(sellerHero); await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2', [store.scope, 'veteran', JSON.stringify(prof)]); });
   const listed = await market.handle(store, 'veteran', 'market-post', { heroId: sellerHero.tokenId, price: 200000 });
   const listingId = listed.listing?.id || listed.id || (await db.query("SELECT id FROM ryo_market_listings WHERE scope=$1 AND status='active'", [store.scope])).rows[0].id;
   const before = Number((await acct('newbie')).bonus);

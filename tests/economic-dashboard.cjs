@@ -57,6 +57,20 @@ const {Store,hash}=require('../app/server/store.cjs'),{createService,GENESIS}=re
  await assert.rejects(propose('financial',{currency:'USD',cashMinor:-1,monthlyCostMinor:100,asOf:now,evidence:'x',notes:'x'}),/whole number/);
  await assert.rejects(propose('seasons',{seasons:[{name:'A',start:1,end:100},{name:'B',start:99,end:200}]}),/non-overlapping/);
  const periods=await propose('seasons',{seasons:[{name:'Beta season',start:now,end:now+86400000}]});await approve(periods);
+ // Market minimum hero prices: proposed, independently approved, read by the Market, reset to the defaults.
+ const market=require('../app/server/market.cjs');
+ assert.deepEqual((await call(ow,'admin-snapshot')).marketPrices.ranks.map(r=>[r.name,r.effective,r.default,r.saved]),[['Jonin',150000,150000,null],['Elite',400000,400000,null],['Legend',1000000,1000000,null]],'defaults in force');
+ await assert.rejects(propose('marketPrices',{jonin:0,elite:null,legend:null}),/whole number from 1/);
+ await assert.rejects(propose('marketPrices',{chunin:5000}),/only jonin, elite and legend/);
+ const prices=await propose('marketPrices',{jonin:175000,elite:null,legend:1500000});
+ assert.deepEqual(await market.minPrices(store),[null,null,150000,400000,1000000],'a proposal changes nothing until approved');
+ await assert.rejects(call(ow,'admin-review',{id:prices.id,approve:true,reason:'self'}),/approver role/,'the proposer cannot approve');
+ await approve(prices);
+ assert.deepEqual(await market.minPrices(store),[null,null,175000,400000,1500000],'approved prices are enforced by the Market');
+ s=await call(ow,'admin-snapshot');assert.deepEqual(s.marketPrices.ranks.map(r=>r.effective),[175000,400000,1500000]);
+ assert.ok(s.audits.some(a=>a.action==='configuration.approved'&&a.data?.kind==='marketPrices'),'the approval is in the audit chain');
+ await approve(await propose('marketPrices',{jonin:null,elite:null,legend:null}));
+ assert.deepEqual(await market.minPrices(store),[null,null,150000,400000,1000000],'reset to default');
  const q={base:25000,studioFee:500,total:25500,treasury:2500,burn:2500,operations:20000};
  for(const [id,product,status,amount,result]of [['confirmed-summon','summon','confirmed',25500,{outputs:[{},{}]}],['confirmed-fusion','fusion','confirmed',25500,{outputs:[{}],consumed:['a','b','c']}],['pending-buy','summon','pending',25500,{outputs:[]}],['refunded-buy','summon','refunded',25500,{outputs:[]}]])await pool.query('INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,status,created) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',[store.scope,pw,id,product,'{}',JSON.stringify(q),JSON.stringify(result),'{}',amount,id+'-signature','PRIVATE_WIRE_MUST_NOT_LEAK',99,status,now-3600000]);
  await pool.query('INSERT INTO ryo_withdrawals(scope,wallet,request_id,amount,signature,wire,last_height,status,created) VALUES($1,$2,$3,100000,$4,$5,99,$6,$7)',[store.scope,pw,'pending-withdraw','withdraw-signature','PRIVATE_WIRE_MUST_NOT_LEAK','pending',now-3600000]);

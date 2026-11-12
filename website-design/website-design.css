@@ -751,6 +751,25 @@ body.sbw-phone-ui .sbw-dialog{max-width:calc(100vw - 24px)!important}
 .sbw-perk-list span{display:flex;flex-direction:column}
 .sbw-perk-list small{color:#9fb3d9}
 #sbwLayer .sbw-mcard .mc-perks i.more{flex:none}
+/* 2026-11-12 Market: BUY NOW / MAKE OFFER on every For Sale card, minimum offer, offer facts. */
+#sbwLayer .sbw-mcard{cursor:pointer;text-align:left;color:inherit;font:inherit}
+#sbwLayer .sbw-mcard:focus-visible{outline:3px solid #ffd257;outline-offset:1px}
+#sbwLayer .sbw-mcard.quick .mc-port{height:66px}
+#sbwLayer .sbw-mcard .mc-min{flex:none;font:700 10.5px Rajdhani,sans-serif;color:#9fb3d9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbwLayer .sbw-mcard.quick .mc-price{margin-top:0}
+#sbwLayer .sbw-mcard .mc-acts{flex:none;display:flex;gap:4px;margin-top:auto}
+#sbwLayer .sbw-mcard .mc-btn{flex:1 1 0;min-width:0;height:22px;padding:0 4px;border:1px solid #ffd257;border-radius:6px;background:#1a1226;color:#ffe9a8;font:800 11px Rajdhani,sans-serif;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+#sbwLayer .sbw-mcard .mc-btn.buy{background:linear-gradient(#fcc126,#f7a51a 55%,#fb8f0b);color:#2a1000}
+@media (hover:hover){#sbwLayer .sbw-mcard .mc-btn:hover{filter:brightness(1.12)}}
+#sbwLayer .sbw-mgrid.sbw-mflow{grid-auto-rows:306px}
+#sbwLayer .sbw-mgrid.sbw-mflow .sbw-mcard.quick .mc-port{height:104px}
+#sbwLayer .sbw-mgrid.sbw-mflow .sbw-mcard .mc-btn{height:38px;padding:0 2px;font-size:13px;letter-spacing:0}
+/* Phone: four Market tabs on one line. */
+#sbwLayer .sbw-mbar.sbw-mflow .sbw-mtabs{flex-wrap:nowrap;gap:4px}
+#sbwLayer .sbw-mbar.sbw-mflow .sbw-mtabs button{padding:0 2px;font-size:13px;letter-spacing:0}
+#sbwLayer .sbw-mbar.sbw-mflow .sbw-mheld{flex:1 1 100%}
+.sbw-dialog .sbw-offer-facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0 12px;font:600 14px Rajdhani,sans-serif}
+.sbw-dialog .sbw-offer-facts dt{color:#9fb3d9}.sbw-dialog .sbw-offer-facts dd{margin:0;text-align:right;color:#fff;font-weight:800}
 /* Boss Hunt: live panels inside the artwork's frames */
 #sbwLayer [class*="sbw-bh-"]{box-sizing:border-box;border-radius:10px;background:linear-gradient(180deg,#0b0826,#05041a);font:600 14px Rajdhani,'Arial Narrow',system-ui,sans-serif;color:#dfe6ff}
 #sbwLayer .sbw-bh-head{display:flex;flex-direction:column;justify-content:center;gap:5px;padding:6px 14px}

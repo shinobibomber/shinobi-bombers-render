@@ -108,19 +108,19 @@ function transfers(hash){return wireByHash.get(hash).instructions.filter(i=>i.pr
  // Market buy through the service: the custody transfer carries only the studio 2% and treasury 8%
  // (no burn), the buyer receives the hero, and the seller is credited 80% when it finalizes.
  {autoFinalize=true;const market=require('../app/server/market.cjs'),seller='SeLLer'+'7'.repeat(38),ata=owner=>spl.getAssociatedTokenAddressSync(mint,owner).toBase58();
-  await store.transaction(async c=>{await store.locked(c,seller);await store.profileLocked(c,seller);await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[store.scope,seller,JSON.stringify(economy.normalizeProfile({dojo:0,heroes:['mk-1','mk-2','mk-3','mk-4'].map(id=>({tokenId:id,rank:1,level:1,name:'Market '+id,baseStats:{pw:4,sp:4,st:4}})),battleReady:[]}))])});
-  const listing=(await market.handle(store,seller,'market-post',{heroId:'mk-1',price:50000})).listing,before=await store.balance(wallet);
-  const bought=await call('market-buy',{listingId:listing.id,expectedPrice:50000,requestId:crypto.randomUUID()});
-  assert.equal(bought.purchase.status,'confirmed');assert.equal(await store.balance(wallet),before-50000,'the buyer pays the listed price');assert(bought.profile.heroes.some(h=>h.tokenId==='mk-1'),'the buyer receives the hero');
-  const tx=wireByHash.get(bought.purchase.signature);assert(!tx.instructions.some(i=>i.programId.equals(spl.TOKEN_PROGRAM_ID)&&i.data[0]===spl.TokenInstruction.BurnChecked),'a Market sale burns nothing');
-  assert.deepEqual(transfers(bought.purchase.signature).map(p=>[p.data.amount,p.keys.destination.pubkey.toBase58()]),[[1000n*UNIT,ata(studio)],[4000n*UNIT,ata(revenue)]],'2% studio and 8% treasury leave custody');
-  assert.equal(await store.balance(seller),40000,'the seller is credited 80%');
+  await store.transaction(async c=>{await store.locked(c,seller);await store.profileLocked(c,seller);await c.query('UPDATE ryo_profiles SET data=$3 WHERE scope=$1 AND wallet=$2',[store.scope,seller,JSON.stringify(economy.normalizeProfile({dojo:0,heroes:['mk-1','mk-2','mk-3','mk-4'].map(id=>({tokenId:id,rank:2,level:1,name:'Market '+id,baseStats:{pw:8,sp:8,st:8}})),battleReady:[]}))])});
+  const listing=(await market.handle(store,seller,'market-post',{heroId:'mk-1',price:150000})).listing,before=await store.balance(wallet);
+  const bought=await call('market-buy',{listingId:listing.id,expectedPrice:150000,requestId:crypto.randomUUID()});
+  assert.equal(bought.purchase.status,'confirmed');assert.equal(await store.balance(wallet),before-150000,'the buyer pays the listed price');assert(bought.profile.heroes.some(h=>h.tokenId==='mk-1'),'the buyer receives the hero');
+  assert(String(bought.purchase.signature).startsWith('market:')&&!wireByHash.get(bought.purchase.signature),'a Market sale sends nothing on-chain (80% seller, 20% stays in custody for the reward pool)');
+  const mq=(await store.pool.query('SELECT quote,status FROM ryo_purchases WHERE scope=$1 AND signature=$2',[scope,bought.purchase.signature])).rows[0];assert.deepEqual([mq.status,mq.quote.seller,mq.quote.operations,mq.quote.studioFee,mq.quote.treasury],['confirmed',120000,30000,0,0],'80% to the seller, 20% to the reward pool, nothing else');
+  assert.equal(await store.balance(seller),120000,'the seller is credited 80%');
   // An offer: the buyer's Ryo is held, the seller accepts through the service, and the same 2%/8% leave custody.
-  const second=(await market.handle(store,seller,'market-post',{heroId:'mk-2',price:60000})).listing,held=await store.balance(wallet);
-  await call('market-offer',{listingId:second.id,amount:40000});assert.equal(await store.balance(wallet),held-40000,'an offer holds the amount');
+  const second=(await market.handle(store,seller,'market-post',{heroId:'mk-2',price:200000})).listing,held=await store.balance(wallet);
+  await call('market-offer',{listingId:second.id,amount:160000});assert.equal(await store.balance(wallet),held-160000,'an offer holds the amount');
   const offerId=(await market.handle(store,seller,'market-mine',{})).listings[0].offers[0].id;
-  const accepted=await market.accept(store,seller,crypto.randomUUID(),{offerId},async q=>{assert.deepEqual([q.total,q.studioFee,q.treasury,q.seller],[40000,800,3200,32000]);return {signature:bs58.encode(crypto.randomBytes(64)),wire:'d2lyZQ==',lastHeight:1}});
-  await store.settlePurchase(wallet,accepted.request_id,'confirmed');assert.equal(await store.balance(wallet),held-40000,'accepting does not charge the buyer twice');assert.equal(await store.balance(seller),72000,'the seller receives 80% of the offer');}
+  const accepted=await market.accept(store,seller,crypto.randomUUID(),{offerId},async()=>{throw Error('a Market sale must not build a chain transaction')});assert.deepEqual([accepted.quote.total,accepted.quote.studioFee,accepted.quote.treasury,accepted.quote.seller,accepted.quote.operations],[160000,0,0,128000,32000]);
+  await store.settlePurchase(wallet,accepted.request_id,'confirmed');assert.equal(await store.balance(wallet),held-160000,'accepting does not charge the buyer twice');assert.equal(await store.balance(seller),248000,'the seller receives 80% of the offer');}
  // Boss Hunt entry through the service: 10,000 Ryo charged, 1,000 to the treasury, 1,000 burned, 8,000 in today's pool.
  {autoFinalize=true;const before=await store.balance(wallet),entered=await call('hunt-enter',{requestId:crypto.randomUUID(),name:'Tester'});
   assert.equal(await store.balance(wallet),before-10000,'the entrance fee is charged');assert.equal(entered.hunt.pool,8000,'80% goes to the prize pool');assert.equal(entered.entry.seconds,60);

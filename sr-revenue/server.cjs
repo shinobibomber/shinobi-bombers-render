@@ -126,7 +126,9 @@ async function settled(store, c, row) {
    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(scope,wallet,request_id) DO NOTHING`, [store.scope, row.wallet, row.request_id, row.signature, row.product, d.totalRaw, JSON.stringify(d.allocations), JSON.stringify(d.destinations), d.configVersion, store.now()]);
 }
 // Only explicit service allocations and legacy eligible retained income fund Adventure.
-// New Market fee revenue is segregated; historical quotes retain their original interpretation.
+// Market sales (owner decision 2026-11-12): 80% to the seller, 20% retained in custody as Adventure reward pool income
+// (quote.operations, no adventureEligible flag). Market quotes from before that carry adventureEligible:false and stay
+// segregated; every historical quote keeps its original interpretation.
 const INCOME_SQL = "SELECT COALESCE(SUM((quote->>'operations')::numeric),0) AS n FROM ryo_purchases WHERE scope=$1 AND status='confirmed' AND COALESCE(quote->>'funding','')<>'bonus' AND COALESCE(quote->>'adventureEligible','true')<>'false'";
 // Live v2: the 30% left custody for the Active Reward Pool wallet, so it funds claims only once topped up.
 const LIVE_INCOME_SQL = INCOME_SQL + " AND COALESCE(quote->'revenueDistribution'->>'version','1')<>'2'";

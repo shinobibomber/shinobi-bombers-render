@@ -6,9 +6,13 @@
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
 
+// Owner decision 2026-11-12: every account-bound hero stays off the Market, also after Fusion. A hero fused from a group
+// holding any account-bound hero (Founder, Creator, Starter Pack, rescue, promo, staff, or already fused-bound) is
+// marketBound. Gameplay is unchanged; only market/server.cjs reads it (its BOUND_FLAGS include marketBound).
+const MARKET_BOUND_FUSION = "if(q.params.heroIds.slice(i*3,i*3+3).some(id=>{const b=next.heroes.find(h=>h.tokenId===id);return !!b&&['marketBound','starterGrant','starter','creatorReward','prisonRescue','staffGrant','promoPass','promoReward','founderGrant','founderSummon','founderBound','founder'].some(f=>b[f]!==undefined&&b[f]!==null&&b[f]!==false)}))fused.marketBound=true;";
 const economyHooks = [
   ['for(let i=0;i<consumed.size/3;i++)if(!q.fusion||crypto.randomInt(100)<q.fusion.successPercent)outputs.push(hero(rank+1));',
-   'for(let i=0;i<consumed.size/3;i++)if(!q.fusion||crypto.randomInt(100)<q.fusion.successPercent){const fused=hero(rank+1);if(q.params.heroIds.slice(i*3,i*3+3).some(id=>next.heroes.find(h=>h.tokenId===id)?.referralReward===true))fused.referralReward=true;outputs.push(fused)}', 1],
+   'for(let i=0;i<consumed.size/3;i++)if(!q.fusion||crypto.randomInt(100)<q.fusion.successPercent){const fused=hero(rank+1);if(q.params.heroIds.slice(i*3,i*3+3).some(id=>next.heroes.find(h=>h.tokenId===id)?.referralReward===true))fused.referralReward=true;' + MARKET_BOUND_FUSION + 'outputs.push(fused)}', 1],
 ];
 const boundClientPatches = [
   ['h.nft=descriptor.nft||null;h.starter=descriptor.starter===true;', 'h.nft=descriptor.nft||null;h.starter=descriptor.starter===true;h.referralBound=descriptor.referralReward===true;', 1],

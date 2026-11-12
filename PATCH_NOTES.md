@@ -1,5 +1,16 @@
 # Shinobi Bombers patch notes
 
+## November 12, 2026 — Marketplace upgrade: Make Offer, new prices, fairer fees
+
+- **Only Jonin, Elite and Legend heroes trade now.** Minimum prices: **Jonin 150,000 · Elite 400,000 · Legend 1,000,000 Ryo**. You can always ask more, and offers can't go below the minimum.
+- **Account-bound heroes can never be sold**: referral, Prison Rescue, Hero Pass promo, Starter, Creator shop, Founder bonus and Founder summon heroes, and any hero fused from them (also earlier fusions). Their SELL button shows **BOUND**.
+- **Fusion warning:** if you fuse with an account-bound hero, the Fusion screen and checkout tell you the new hero will be account-bound too.
+- **BUY NOW and 💰 OFFER on every card**, with the minimum offer shown. The offer window shows the asking price, the minimum and your available balance. Your offer is held until the seller answers (48 hours at most) and returns automatically if it's declined, cancelled or expires.
+- **New History tab:** heroes you sold, heroes you bought, and listings that came back to you.
+- **Notifications:** new offer received, offer accepted, purchase completed, offer declined or expired, listing returned.
+- **New fees:** the seller gets **80%** and **20% goes back to the Adventure Chest reward pool**. Market sales now complete instantly.
+- **Listings that don't fit the new rules** (Genin/Chunin, below the new minimum, or account-bound) were returned to their sellers, and every offer on them was refunded in full.
+
 ## November 12, 2026 — Shinobi Appreciation Gifts for loyal summoners
 
 - **Free Standard Hero Passes for our summoners.** From time to time the team will send a **Shinobi Appreciation Gift** to every account with **at least 15 paid Shrine summons** since the game opened.

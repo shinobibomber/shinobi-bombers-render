@@ -17,6 +17,7 @@ const open = async p => {
   await withGame(async ({ p, f, errors }) => {
     f.holdAdventure = false;
     f.profile.upgradeShards = 9; f.profile.fusionShards = 1; f.profile.battleReady = f.profile.heroes.map(h => h.tokenId); f.profile.heroes.push(...genin(3));
+    f.profile.heroes.at(-1).founderSummon = 'limited';   // an account-bound hero in the group: the checkout warns that the fused hero is bound
     await open(p);
     const text = async () => (await panel(p).innerText()).replace(/\s+/g, ' ');
     assert.match(await text(), /SUCCESS 90%.*0 \/ 2.*FILL MAX.*◆ 1 Fusion · 9 Upgrade Shards.*\+5% per Fusion Shard.*CRAFT/);
@@ -69,6 +70,7 @@ const open = async p => {
     const note = (await p.locator('dialog[open]').innerText()).replace(/\s+/g, ' ');
     assert.match(note, /1 attempt\(s\) · 100% success per attempt/);
     assert.match(note, /Fusion Shards: uses 2 \(2 per attempt\) · success 90% \+ 10% = 100% · GUARANTEED SUCCESS/);
+    assert.match(note, /1 account-bound hero is in this fusion\. The hero fused from it will be account-bound.*can never be sold on the Market/, 'the checkout warns that the fused hero will be bound');
     await p.screenshot({ path: path.join(root, 'tests/out/fusion-shards-checkout.png') });
     await checkout.click();
     await p.waitForFunction(() => /Token purchase finalized|Fusion/.test(document.body.textContent) && RyoPayments.state.profile?.fusionShards === 3, null, { timeout: 20000 });

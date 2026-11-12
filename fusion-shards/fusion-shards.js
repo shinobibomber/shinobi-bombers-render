@@ -50,7 +50,9 @@
 
   /* Checkout: what the quoted fusion uses (only when Fusion Shards are part of the server quote). */
   function decorate(dlg, q) {
-    if (!dlg || !q?.fusion) return;
+    if (!dlg || !q) return;
+    if (q.product === 'fusion' || q.fusion) boundWarning(dlg, q);   // every fusion checkout, with or without Fusion Shards
+    if (!q.fusion) return;
     const f = q.fusion, note = document.createElement('p'), used = f.shardsPerAttempt || 0;
     note.className = 'fusion-shard-cost';
     const reduced = lastWanted > used ? (used ? ' Your ' + fmt(balance()) + ' Fusion Shard(s) cover ' + used + ' per attempt for ' + f.attempts + ' attempt(s), not ' + lastWanted + '.' : '') : '';
@@ -63,6 +65,18 @@
       + f.successPercent + '%' + (f.successPercent >= 100 ? ' · GUARANTEED SUCCESS' : '') + '. They are used when the purchase settles, on success and on failure. If the purchase fails, nothing is used.';
     const actions = dlg.querySelector('.checkout-actions');
     if (actions) actions.before(note); else dlg.append(note);
+  }
+
+  /* Checkout: a group holding an account-bound hero (referral, Founder, Creator, Starter, rescue, promo, or fused from one)
+   * makes an account-bound hero that can never be sold on the Market (the server binds it; this only warns first). */
+  const BOUND = ['referralReward', 'marketBound', 'starterGrant', 'starter', 'creatorReward', 'prisonRescue', 'staffGrant', 'promoPass', 'promoReward', 'founderGrant', 'founderSummon', 'founderBound', 'founder'];
+  function boundWarning(dlg, q) {
+    const ids = Array.isArray(q.params?.heroIds) ? q.params.heroIds : [], heroes = profile()?.heroes || [];
+    const bound = ids.filter(id => { const h = heroes.find(x => x && x.tokenId === id); return h && BOUND.some(f => h[f] !== undefined && h[f] !== null && h[f] !== false); });
+    if (!bound.length || dlg.querySelector('.fusion-bound-warn')) return;
+    const note = document.createElement('p'); note.className = 'fusion-bound-warn'; note.style.cssText = 'color:#ff9d7a;font-weight:700';
+    note.textContent = '⚠ ' + bound.length + ' account-bound hero' + (bound.length === 1 ? ' is' : 'es are') + ' in this fusion. The hero fused from ' + (bound.length === 1 ? 'it' : 'them') + ' will be account-bound: usable in battles, teams and training, but it can never be sold on the Market.';
+    const actions = dlg.querySelector('.checkout-actions'); if (actions) actions.before(note); else dlg.append(note);
   }
 
   /* ---------- Crafting dialog ---------- */
@@ -87,7 +101,8 @@ dialog.fusion-craft::backdrop{background:#000a}
 .fusion-craft button.ghost{background:#1a1226;color:#fff3cf}
 .fusion-craft button:disabled{opacity:.45;cursor:not-allowed}
 .fusion-craft .fc-confirm{display:none}.fusion-craft.confirming .fc-confirm{display:flex}.fusion-craft.confirming .fc-main{display:none}
-p.fusion-shard-cost{color:#ffcf63}`;
+p.fusion-shard-cost{color:#ffcf63}
+p.fusion-bound-warn{color:#ff9d7a;font-weight:700}`;
     document.head.append(s);
   }
   function openCraft() {

@@ -475,6 +475,7 @@
   const BANDS = [[1, 3], [3, 6], [6, 9], [9, 12], [12, 15]];
   function fusionRank() { const t = nativeEl('#p6', e => /FusionUI\.tab\(\d\)/.test(e.getAttribute('onclick') || '') && e.getAttribute('aria-pressed') === 'true'); const m = t && /\((\d)\)/.exec(t.getAttribute('onclick')); return m ? +m[1] : 0; }
   /* the game's own Reserve list (#p6 .fusion-table): one row per hero, with its real checkbox */
+  const FUSE_BOUND_TEXT = '⚠ Account-bound hero selected: the fused hero will also be account-bound and can never be sold on the Market.';
   function fusionRows() {
     const root = document.querySelector('#p6'); if (!root) return [];
     const c = nativeEntry('#p6', root);
@@ -506,7 +507,9 @@
   function fusionStat(label) { return nativeText('#p6', new RegExp(label + '\\s*\\n\\s*[\\d.]+\\s*[–-]\\s*[\\d.]+')).split(/\n/).pop().trim(); }
   INIT.fusion = b => {
     b.list = place(mk('div', 'sbw-flist', b.st), 46, 594, 754, 360); b.list.setAttribute('aria-label', 'Reserve heroes');
-    b.list.addEventListener('click', e => { const btn = e.target.closest('.sbw-frow'); if (!btn) return; const r = fusionRows()[+btn.dataset.i]; if (r && !r.input.disabled) { r.input.click(); b.sig = ''; refresh(); } });
+    b.list.addEventListener('click', e => { const btn = e.target.closest('.sbw-frow'); if (!btn) return; const r = fusionRows()[+btn.dataset.i]; if (r && !r.input.disabled) { r.input.click(); b.sig = ''; refresh();
+      // An account-bound hero binds the hero it fuses into (it can never be sold on the Market).
+      const h = r.input.checked && ((gs() && gs().h) || []).find(x => x.id === r.id); if (h && marketBlock(h) === 'bound') toast(FUSE_BOUND_TEXT); } });
     b.list.addEventListener('scroll', () => { if (b.fraf) return; b.fraf = requestAnimationFrame(() => { b.fraf = 0; fusionWindow(b); }); }, { passive: true });
     b.slots = [347, 440, 533].map((y, j) => { const e = place(mk('div', 'sbw-fslot', b.st), 901, y, 151, 86); const cv = mk('canvas', '', e); cv.width = 116; cv.height = 116; mk('span', '', e); e.hidden = true; return e; });
     const cover = (x, y, w, h, bg, fs, color, cls = '') => { const e = place(mk('span', 'sbw-cover ' + cls, b.st), x, y, w, h); e.style.background = bg; e.style.fontSize = fs + 'px'; e.dataset.fs = fs; e.style.color = color; return e; };
@@ -1045,7 +1048,7 @@
           <ul class="sbw-perks2">${pl.length ? pl.map(p => `<li><b>✦ ${esc(p.name)}</b><span>${esc(p.desc)}</span></li>`).join('') : '<li><span>No perks yet.</span></li>'}</ul>
           <div class="sbw-h2-btns">
             <button type="button" class="sbw-xbtn train${maxed ? ' max' : ''}" data-k="train" ${h.tokenId && account() ? '' : 'disabled'}><i>⇧</i><span><b>${maxed ? 'MANAGE' : 'TRAIN'}</b><small>${maxed ? 'Max level' : esc(price || 'Upgrade hero')} · ${HeroUpgradeRules.shards(r)} shards</small></span></button>
-            ${r === 5 ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>◈</i><span><b>NFT ONLY</b><small>Trade the box NFT</small></span></button>' : h.referralBound ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>🔒</i><span><b>BOUND</b><small>Cannot be sold</small></span></button>' : `<button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>`}
+            ${(mb => r === 5 || mb === 'nft' ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>◈</i><span><b>NFT ONLY</b><small>Trade the box NFT</small></span></button>' : mb === 'bound' ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>🔒</i><span><b>BOUND</b><small>Cannot be sold</small></span></button>' : mb === 'rank' ? '<button type="button" class="sbw-xbtn sell" data-k="sell" disabled><i>⇄</i><span><b>NOT TRADABLE</b><small>Jonin+ only</small></span></button>' : `<button type="button" class="sbw-xbtn sell" data-k="sell" ${c.list && !c.list.disabled ? '' : 'disabled'}><i>⇄</i><span><b>SELL</b><small>List on Market</small></span></button>`)(marketBlock(h))}
           </div></div>`;
         const n = $('h3', b.det); if (n) fitText(n);
         const fresh = $('.sbw-h2-port canvas', b.det);
@@ -1075,7 +1078,7 @@
     fav: () => toast('Favourites are not available yet.'),
     dtab: a => { built.heroes.dt = +a; built.heroes.dsig = ''; for (let i = 0; i < 4; i++) { const e = $(`.hs[data-sbwid="dt${i}"]`, built.heroes.st); if (e) e.classList.toggle('on2', i === +a); } },
     train: () => { const c = heroCards()[built.heroes.sel]; if (c?.h?.tokenId && window.HeroUpgrades) HeroUpgrades.open(c.h.tokenId); else toast('Choose an owned hero.'); },
-    sell: () => { const c = heroCards()[built.heroes.sel]; if (c?.h?.referralBound) return toast('Referral-bound heroes cannot be listed, sold or transferred.'); if (c && c.list && !c.list.disabled) c.list.click(); else toast('This hero cannot be listed right now.'); },
+    sell: () => { const c = heroCards()[built.heroes.sel], why = marketBlock(c?.h); if (why === 'bound') return toast('Account-bound heroes cannot be listed, sold or transferred.'); if (why === 'rank') return toast('Only Jonin, Elite and Legend heroes can be traded on the Market.'); if (c && c.list && !c.list.disabled) c.list.click(); else toast('This hero cannot be listed right now.'); },
     maura: () => { const MH = window.MythicHero; if (!MH) return; MH.setAura(!MH.auraEnabled); toast('Mythic aura ' + (MH.auraEnabled ? 'on' : 'off')); built.heroes.dsig = ''; },
     mcheck: async () => { if (!window.RyoPayments?.mythic) return toast('Sign in to check your NFT.'); try { const r = await RyoPayments.mythic(); const n = r?.mythic?.mints?.length || 0; toast(r?.mythic?.enabled === false ? 'The Mythic NFT check opens at launch.' : n ? 'NFT verified · ' + n + ' Mythic hero' + (n === 1 ? '' : 'es') : 'No Mythic box NFT found in this wallet.'); } catch (e) { toast(e.message || 'NFT check failed. Try again shortly.'); } built.heroes.sig = built.heroes.dsig = ''; },
     deploy: () => { const c = heroCards()[built.heroes.sel]; if (c && c.tog && !c.tog.disabled) c.tog.click(); else toast('This hero cannot be deployed right now.'); built.heroes.sig = ''; }
@@ -1153,25 +1156,39 @@
 
   /* ---------- Market (game page 4, mode 1): the shared player Market ---------- */
   // Heroes are listed for Ryo on the server (market.cjs). Buying runs through the token checkout;
-  // the seller receives 80%, the separate Market reserve 10%, the treasury 8% and the studio 2%. Listings last
+  // the seller receives 80% and 20% goes back to the Adventure Chest reward pool (2026-11-12). Listings last
   // 7 days. Offers hold the offered Ryo until the seller accepts or declines (48 hours at most).
   // The artwork keeps its title and frames; tabs, filters, cards, details and actions are live HTML
   // drawn over the two panels, so no printed placeholder text or buttons show through.
-  const MARKET_MIN = [10000, 25000, 80000, 200000, 500000];
+  // Only Jonin, Elite and Legend trade (market.cjs); the server's rules() replace these defaults once loaded.
+  const MARKET_MIN = [null, null, 150000, 400000, 1000000], MARKET_RANKS = [2, 3, 4];
+  const MARKET_BOUND = ['referralReward', 'marketBound', 'starterGrant', 'starter', 'creatorReward', 'prisonRescue', 'staffGrant', 'promoPass', 'promoReward', 'founderGrant', 'founderSummon', 'founderBound', 'founder'];
+  const marketMins = () => MK.data?.rules?.minPrice || MK.mine?.rules?.minPrice || MARKET_MIN;
+  /** Why a hero cannot be listed (mirror of the server rule, which decides): 'nft' | 'bound' | 'rank' | null. */
+  function marketBlock(h) {
+    if (!h) return null;
+    const r = h.r ?? h.rank; if (r === 5 || h.nft || h.mythic) return 'nft';
+    const p = (ledger().profile?.heroes || []).find(x => x && x.tokenId === h.tokenId) || {}, flags = MK.data?.rules?.boundFlags || MARKET_BOUND;
+    if (h.referralBound || p.referralReward || flags.some(f => p[f] !== undefined && p[f] !== null && p[f] !== false)) return 'bound';
+    return MARKET_RANKS.includes(r) ? null : 'rank';
+  }
   const PERK_NAMES = () => (typeof PK !== 'undefined' ? PK : [['Bounty Hunter', ''], ['Armor Breaker', ''], ['Wind Step', ''], ['Fast Charge', ''], ['Chakra Saver', ''], ['Piercing Shuriken', ''], ['Swift Hands', '']]);
   const MK = { tab: 'heroes', rank: -1, perks: [], sort: 'price-asc', search: '', page: 0, data: null, mine: null, sel: -1, busy: false, seq: 0, error: '', at: 0 };
   const OFFER_LABEL = { active: 'WAITING', accepted: 'ACCEPTED', completed: 'BOUGHT', declined: 'DECLINED', cancelled: 'CANCELLED', expired: 'EXPIRED', closed: 'CLOSED', failed: 'FAILED' };
   const perkName = k => (PERK_NAMES()[k] || ['?'])[0];
+  const ago = t => { const m = Math.max(0, Math.floor((Date.now() - Number(t || 0)) / 60000)); return !t ? '' : m < 1 ? 'just now' : m < 60 ? m + 'm ago' : m < 2880 ? Math.floor(m / 60) + 'h ago' : Math.floor(m / 1440) + 'd ago'; };
   function listingHero(l) { const h = l.hero; return { id: 9000 + (h.look || 0), look: h.look, r: h.rank, z: false, lv: h.level, pw: h.stats.pw, sp: h.stats.sp, st: h.stats.st, pk: h.perks, name: h.name }; }
   function marketRows() {
     if (MK.tab === 'heroes') return (MK.data?.listings || []).map(l => ({ kind: 'browse', l, offer: l.myOffer }));
     if (!MK.mine) return [];
-    if (MK.tab === 'mine') return [...MK.mine.listings.map(l => ({ kind: 'mine', l, offers: l.offers || [] })), ...MK.mine.sales.map(l => ({ kind: 'sold', l }))];
+    if (MK.tab === 'mine') return MK.mine.listings.map(l => ({ kind: 'mine', l, offers: l.offers || [] }));
+    if (MK.tab === 'history') return [...(MK.mine.sales || []).map(l => ({ kind: 'sold', l, at: l.soldAt })), ...(MK.mine.bought || []).map(l => ({ kind: 'bought', l, at: l.soldAt })),
+      ...(MK.mine.returned || []).map(l => ({ kind: 'returned', l, at: l.returnedAt }))].sort((a, b) => (b.at || 0) - (a.at || 0));
     return (MK.mine.offers || []).map(o => ({ kind: 'offer', l: o.listing, offer: o }));
   }
   async function marketLoad() {
     if (!account() || !window.RyoPayments?.market) return;
-    const seq = ++MK.seq; MK.busy = true; if (built.market) built.market.sig = '';
+    const seq = ++MK.seq; MK.busy = true; if (built.market) built.market.sig = ''; pollMarketNotices();
     try {
       if (MK.tab === 'heroes') MK.data = await RyoPayments.market('market-browse', { rank: MK.rank, perks: MK.perks, sort: MK.sort, search: MK.search, page: MK.page });
       else MK.mine = await RyoPayments.market('market-mine');
@@ -1185,8 +1202,8 @@
     $$('.hs', b.st).forEach(e => { if (/^(tb|f\d|dd|srch|rst|cd|pv|p\d|nx|dprev|dnext|dfav|dt\d|vl|buy|off)/.test(e.dataset.sbwid || '')) e.hidden = true; });
     b.left = cv(b, 68, 248, 1076, 664, 'sbw-mpanel');
     b.bar = cv(b, 78, 256, 1046, 96, 'sbw-mbar');
-    b.bar.innerHTML = `<div class="sbw-mtabs" role="tablist" aria-label="Market">${[['heroes', 'For Sale'], ['mine', 'My Listings'], ['offers', 'My Offers']].map(([k, t]) => `<button type="button" role="tab" data-tab="${k}">${t}</button>`).join('')}<span class="sbw-mheld" hidden></span></div>
-      <div class="sbw-mfilters"><div class="sbw-mranks" role="group" aria-label="Rank">${['All', ...RNAME.slice(0, 5)].map((n, i) => `<button type="button" data-rank="${i - 1}" style="--rc:${i ? RCOL[i - 1] : '#ffd257'}">${n}</button>`).join('')}</div>
+    b.bar.innerHTML = `<div class="sbw-mtabs" role="tablist" aria-label="Market">${[['heroes', 'For Sale'], ['mine', 'My Listings'], ['offers', 'My Offers'], ['history', 'History']].map(([k, t]) => `<button type="button" role="tab" data-tab="${k}">${t}</button>`).join('')}<span class="sbw-mheld" hidden></span></div>
+      <div class="sbw-mfilters"><div class="sbw-mranks" role="group" aria-label="Rank">${[-1, ...MARKET_RANKS].map(r => `<button type="button" data-rank="${r}" style="--rc:${r < 0 ? '#ffd257' : RCOL[r]}">${r < 0 ? 'All' : RNAME[r]}</button>`).join('')}</div>
       <button type="button" class="sbw-mskills" data-skills>Skills <b hidden></b></button>
       <label class="sbw-msort"><span class="sbw-sr">Sort</span><select aria-label="Sort"><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="newest">Newest</option></select></label>
       <label class="sbw-msearch"><span class="sbw-sr">Search hero name</span><input type="search" maxlength="40" placeholder="Search hero name" aria-label="Search hero name"></label>
@@ -1206,8 +1223,11 @@
     b.pages.addEventListener('click', e => { const p = e.target.closest('[data-p]'); if (!p || p.disabled) return; MK.page = +p.dataset.p; MK.sel = -1; marketLoad(); });
     b.grid.addEventListener('click', e => {
       const card = e.target.closest('[data-i]'); if (!card) return; MK.sel = +card.dataset.i; b.sig = '';
+      // BUY NOW / MAKE OFFER straight from the card.
+      const quick = e.target.closest('[data-cact]'); if (quick) { const row = marketRows()[MK.sel]; return quick.dataset.cact === 'buy' ? marketBuy(row) : offerDialog(row); }
       if (layer.classList.contains('sbw-phone')) setTimeout(() => b.det.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' }), 60);
     });
+    b.grid.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.sbw-mcard')) { e.preventDefault(); e.target.click(); } });
     b.det.addEventListener('click', e => {
       const a = e.target.closest('[data-act]'); if (!a || a.disabled) return; const row = marketRows()[MK.sel];
       ({ buy: () => marketBuy(row), offer: () => offerDialog(row), 'cancel-offer': () => marketAction('market-offer-cancel', { offerId: a.dataset.id }, 'Offer cancelled. Your Ryo is back in your balance.'),
@@ -1218,34 +1238,42 @@
   };
   function cardHtml(row, i) {
     const l = row.l, h = l.hero, offers = row.offers?.length || 0;
-    const tag = row.kind === 'sold' ? ['SOLD', 'sold'] : row.kind === 'offer' ? [OFFER_LABEL[row.offer.status] || row.offer.status.toUpperCase(), row.offer.status] : l.status === 'pending' ? ['BUYER PAYING', 'pending']
+    const done = ['sold', 'bought', 'returned'].includes(row.kind);
+    const tag = row.kind === 'sold' ? ['SOLD', 'sold'] : row.kind === 'bought' ? ['BOUGHT', 'sold'] : row.kind === 'returned' ? [l.closeReason === 'rules' ? 'RETURNED' : 'EXPIRED', 'time']
+      : row.kind === 'offer' ? [OFFER_LABEL[row.offer.status] || row.offer.status.toUpperCase(), row.offer.status] : l.status === 'pending' ? ['BUYER PAYING', 'pending']
       : row.kind === 'mine' && offers ? [offers + (offers === 1 ? ' OFFER' : ' OFFERS'), 'offers'] : l.mine ? ['YOURS', 'mine'] : row.offer ? ['OFFER SENT', 'offers'] : [timeLeft(l.left).toUpperCase(), 'time'];
-    const price = row.kind === 'offer' ? `<span class="mc-price"><i class="coin"></i>${fmt(row.offer.amount)}<small>your offer</small></span>` : `<span class="mc-price"><i class="coin"></i>${fmt(l.price)}${row.kind === 'sold' ? '<small>sold</small>' : ''}</span>`;
-    return `<button type="button" class="sbw-mcard${i === MK.sel ? ' on' : ''}${row.kind === 'sold' ? ' done' : ''}" data-i="${i}" style="--rc:${RCOL[h.rank]}" aria-label="${esc(h.name)}, ${RNAME[h.rank]}, ${fmt(l.price)} Ryo">
+    const price = row.kind === 'offer' ? `<span class="mc-price"><i class="coin"></i>${fmt(row.offer.amount)}<small>your offer</small></span>` : `<span class="mc-price"><i class="coin"></i>${fmt(l.price)}${done ? '<small>' + tag[0].toLowerCase() + '</small>' : ''}</span>`;
+    // For Sale cards carry their own BUY NOW / MAKE OFFER buttons and the lowest offer the server accepts.
+    const quick = row.kind === 'browse' && !l.mine ? `<span class="mc-min">${l.minOffer ? 'Min offer ' + fmt(l.minOffer) : 'Buy now only'}</span><span class="mc-acts"><button type="button" class="mc-btn buy" data-cact="buy" tabindex="-1">BUY NOW</button>${l.minOffer ? `<button type="button" class="mc-btn" data-cact="offer" tabindex="-1">💰 ${row.offer ? 'CHANGE' : 'OFFER'}</button>` : ''}</span>` : '';
+    return `<div role="button" tabindex="0" class="sbw-mcard${quick ? ' quick' : ''}${i === MK.sel ? ' on' : ''}${done ? ' done' : ''}" data-i="${i}" style="--rc:${RCOL[h.rank]}" aria-label="${esc(h.name)}, ${RNAME[h.rank]}, ${fmt(l.price)} Ryo">
       <span class="mc-top"><b>${RNAME[h.rank].toUpperCase()}</b><em class="t-${tag[1]}">${esc(tag[0])}</em></span>
       <span class="mc-port"><canvas width="168" height="132"></canvas><i>Lv. ${h.level}</i></span>
       <span class="mc-name">${esc(h.name)}</span>
       <span class="mc-stats"><span>PW<b>${h.stats.pw.toFixed(1)}</b></span><span>SP<b>${h.stats.sp.toFixed(1)}</b></span><span>ST<b>${h.stats.st.toFixed(1)}</b></span></span>
-      <span class="mc-perks" title="${esc((h.perks || []).map(perkName).join(', '))}">${(h.perks || []).slice(0, 2).map(k => `<i>${esc(perkName(k))}</i>`).join('')}${(h.perks || []).length > 2 ? `<i class="more">+${h.perks.length - 2}</i>` : ''}</span>${price}</button>`;
+      <span class="mc-perks" title="${esc((h.perks || []).map(perkName).join(', '))}">${(h.perks || []).slice(0, 2).map(k => `<i>${esc(perkName(k))}</i>`).join('')}${(h.perks || []).length > 2 ? `<i class="more">+${h.perks.length - 2}</i>` : ''}</span>${price}${quick}</div>`;
   }
   function detailHtml(row) {
     const l = row.l, h = l.hero, perks = PERK_NAMES(), bonus = k => h.bonus && h.bonus[k] ? `<small>+${h.bonus[k]} trained</small>` : '';
-    const head = `<div class="md-head" style="--rc:${RCOL[h.rank]}"><span class="md-rank">${RNAME[h.rank].toUpperCase()}</span><span class="md-time">${row.kind === 'sold' ? 'Sold' : l.status === 'pending' ? 'Buyer paying' : timeLeft(l.left)}</span></div>
+    const when = row.kind === 'sold' ? 'Sold' : row.kind === 'bought' ? 'Bought' : row.kind === 'returned' ? 'Returned' : l.status === 'pending' ? 'Buyer paying' : timeLeft(l.left);
+    const head = `<div class="md-head" style="--rc:${RCOL[h.rank]}"><span class="md-rank">${RNAME[h.rank].toUpperCase()}</span><span class="md-time">${when}</span></div>
       <div class="md-port" style="--rc:${RCOL[h.rank]}"><canvas width="300" height="190"></canvas></div><h3>${esc(h.name)}</h3><p class="md-sub">Level ${h.level} / 5 · ${row.kind === 'browse' && !l.mine ? 'Seller ' + esc(l.seller) : 'Your hero'}</p>
       <div class="md-stats"><span>POWER<b>${h.stats.pw.toFixed(1)}</b>${bonus('pw')}</span><span>SPEED<b>${h.stats.sp.toFixed(1)}</b>${bonus('sp')}</span><span>STAMINA<b>${h.stats.st.toFixed(1)}</b>${bonus('st')}</span></div>
       <div class="md-perks">${(h.perks || []).map(k => `<p><b>✦ ${esc((perks[k] || ['?'])[0])}</b><span>${esc((perks[k] || ['', ''])[1])}</span></p>`).join('')}</div>`;
     let actions = '';
     if (row.kind === 'browse' && l.mine) actions = '<p class="md-note">This is your listing. Manage it in My Listings.</p>';
-    else if (row.kind === 'browse') actions = `<div class="md-price"><span>Price</span><b><i class="coin"></i>${fmt(l.price)} Ryo</b></div>
+    else if (row.kind === 'browse') actions = `<div class="md-price"><span>Asking price</span><b><i class="coin"></i>${fmt(l.price)} Ryo</b></div>
+      <p class="md-note">${l.minOffer ? `Minimum allowed offer: <b>${fmt(l.minOffer)} Ryo</b>` : 'Listed at the lowest allowed price: buy now only.'} · ${timeLeft(l.left)}</p>
       ${row.offer ? `<p class="md-note">Your offer: <b>${fmt(row.offer.amount)} Ryo</b> · ${timeLeft(row.offer.left)} · held from your balance</p>` : ''}
-      <div class="md-acts"><button type="button" class="sbw-mbtn buy" data-act="buy">Buy now</button><button type="button" class="sbw-mbtn" data-act="offer">${row.offer ? 'Change offer' : 'Make offer'}</button></div>
+      <div class="md-acts"><button type="button" class="sbw-mbtn buy" data-act="buy">Buy now · ${fmt(l.price)}</button>${l.minOffer ? `<button type="button" class="sbw-mbtn" data-act="offer">💰 ${row.offer ? 'Change offer' : 'Make offer'}</button>` : ''}</div>
       ${row.offer ? `<button type="button" class="sbw-mbtn ghost" data-act="cancel-offer" data-id="${esc(row.offer.id)}">Cancel my offer</button>` : ''}`;
     else if (row.kind === 'mine' && l.status === 'pending') actions = '<p class="md-note">A buyer is paying for this hero. It finishes automatically.</p>';
     else if (row.kind === 'mine') actions = `<div class="md-price"><span>Your price</span><b><i class="coin"></i>${fmt(l.price)} Ryo</b></div><p class="md-note">You receive <b>${fmt(l.payout)} Ryo</b> (80%) if it sells at this price.</p>
-      <h4>Offers ${row.offers.length ? '(' + row.offers.length + ')' : ''}</h4>${row.offers.length ? row.offers.map(o => `<div class="md-offer"><span><b>${fmt(o.amount)} Ryo</b><small>${esc(o.buyer)} · ${timeLeft(o.left)} · you receive ${fmt(o.payout)}</small></span>
+      <h4>Received offers ${row.offers.length ? '(' + row.offers.length + ')' : ''}</h4>${row.offers.length ? row.offers.map(o => `<div class="md-offer"><span><b>${fmt(o.amount)} Ryo</b><small>${esc(o.buyer)} · ${esc(OFFER_LABEL[o.status] || o.status)} · made ${ago(o.created)} · ${timeLeft(o.left)} · you receive ${fmt(o.payout)}</small></span>
         <button type="button" class="sbw-mbtn buy sm" data-act="accept" data-id="${esc(o.id)}">Accept</button><button type="button" class="sbw-mbtn ghost sm" data-act="decline" data-id="${esc(o.id)}">Decline</button></div>`).join('') : '<p class="md-note">No offers yet.</p>'}
       <button type="button" class="sbw-mbtn ghost" data-act="cancel" data-id="${esc(l.id)}">Cancel listing</button>`;
-    else if (row.kind === 'sold') actions = `<div class="md-price"><span>Sold for</span><b><i class="coin"></i>${fmt(l.price)} Ryo</b></div><p class="md-note">You received <b>${fmt(l.payout)} Ryo</b> (80%).</p>`;
+    else if (row.kind === 'sold') actions = `<div class="md-price"><span>Sold for</span><b><i class="coin"></i>${fmt(l.price)} Ryo</b></div><p class="md-note">You received <b>${fmt(l.payout)} Ryo</b> (80%) · ${ago(row.at)}.</p>`;
+    else if (row.kind === 'bought') actions = `<div class="md-price"><span>Bought for</span><b><i class="coin"></i>${fmt(l.price)} Ryo</b></div><p class="md-note">From ${esc(l.seller)} · ${ago(row.at)}. The hero is in your collection.</p>`;
+    else if (row.kind === 'returned') actions = `<div class="md-price"><span>Listed at</span><b><i class="coin"></i>${fmt(l.price)} Ryo</b></div><p class="md-note">${l.closeReason === 'rules' ? 'Returned to your collection because the Market rules changed (Jonin, Elite and Legend only, new minimum prices). Any offers were refunded to their buyers.' : 'The listing expired; the hero came back to your collection.'} · ${ago(row.at)}</p>`;
     else actions = `<div class="md-price"><span>Your offer</span><b><i class="coin"></i>${fmt(row.offer.amount)} Ryo</b></div><p class="md-note">Listed at ${fmt(l.price)} Ryo · ${esc(OFFER_LABEL[row.offer.status] || row.offer.status)}${row.offer.status === 'active' ? ' · ' + timeLeft(row.offer.left) + ' · held from your balance' : ''}</p>
       ${row.offer.status === 'active' ? `<button type="button" class="sbw-mbtn ghost" data-act="cancel-offer" data-id="${esc(row.offer.id)}">Cancel my offer</button>` : ''}`;
     return `<div class="sbw-md">${head}<div class="md-acts-wrap">${actions}</div></div>`;
@@ -1253,9 +1281,12 @@
   function emptyDetail() {
     if (MK.tab === 'mine' && MK.mine) return `<div class="sbw-md idle"><h3>My Listings</h3><p>${MK.mine.listings.length} on sale · ${MK.mine.sales.length} sold recently. Listings last 7 days; unsold heroes come back to you.</p>
       <p>Select a listing to see offers, accept or decline them, or cancel it.</p><button type="button" class="sbw-mbtn" data-act="sell">Sell a hero</button></div>`;
-    if (MK.tab === 'offers' && MK.mine) return `<div class="sbw-md idle"><h3>My Offers</h3><p>${fmt(MK.mine.held)} Ryo held in open offers. Offers last up to 48 hours; declined, expired or outbid offers return your Ryo.</p></div>`;
+    if (MK.tab === 'offers' && MK.mine) return `<div class="sbw-md idle"><h3>My Offers</h3><p>${fmt(MK.mine.held)} Ryo held in open offers. Offers last up to 48 hours, never longer than the listing; declined, cancelled, expired or outbid offers return your Ryo.</p></div>`;
+    if (MK.tab === 'history' && MK.mine) return `<div class="sbw-md idle"><h3>History</h3><p>${(MK.mine.sales || []).length} sold · ${(MK.mine.bought || []).length} bought · ${(MK.mine.returned || []).length} returned (last 7 days for returns).</p></div>`;
+    const m = marketMins();
     return `<div class="sbw-md idle"><h3>Select a hero</h3><p>Choose a hero to see its stats, skills and price. Buy it now or make an offer.</p>
-      <div class="md-split"><b>On every sale</b><span>Seller <em>80%</em></span><span>${liveRevenue()?'Market reserve':'Reward pool'} <em>10%</em></span><span>Treasury <em>8%</em></span><span>Studio <em>2%</em></span></div></div>`;
+      <p class="md-note">Only Jonin, Elite and Legend heroes trade. Minimum prices: Jonin ${fmt(m[2])} · Elite ${fmt(m[3])} · Legend ${fmt(m[4])} Ryo.</p>
+      <div class="md-split"><b>On every sale</b><span>Seller <em>80%</em></span><span>Reward pool <em>20%</em></span></div></div>`;
   }
   PAINT.market = (b, now) => {
     if (!account()) { if (b.sig !== 'signed-out') { b.sig = 'signed-out'; b.grid.innerHTML = '<div class="sbw-empty"><b>Sign in to use the Market</b><p>Connect your wallet to browse and sell heroes.</p></div>'; b.det.innerHTML = ''; b.pages.innerHTML = ''; } return; }
@@ -1273,6 +1304,7 @@
       b.grid.innerHTML = MK.error ? `<div class="sbw-empty"><b>Market unavailable</b><p>${esc(MK.error)}</p></div>`
         : !rows.length ? (MK.busy ? '<div class="sbw-empty"><b>Loading the Market…</b></div>'
           : MK.tab === 'mine' ? '<div class="sbw-empty"><b>You have no listings</b><p>Open Heroes, choose a hero and tap <em>SELL · List on Market</em>. You receive 80% when it sells.</p></div>'
+            : MK.tab === 'history' ? '<div class="sbw-empty"><b>No history yet</b><p>Sales, purchases and returned listings show here.</p></div>'
             : MK.tab === 'offers' ? '<div class="sbw-empty"><b>No offers yet</b><p>Choose a hero for sale and tap <em>Make offer</em> to offer less than its price.</p></div>'
               : '<div class="sbw-empty"><b>No heroes match</b><p>Try another rank or fewer skills, or check back soon.</p></div>')
           : rows.map(cardHtml).join('');
@@ -1318,25 +1350,33 @@
   }
   function offerDialog(row) {
     if (!row || row.kind !== 'browse') return;
-    const l = row.l, min = (MK.data?.rules?.minPrice || MARKET_MIN)[l.hero.rank], max = l.price - 1, start = row.offer ? row.offer.amount : Math.max(min, Math.floor(l.price * 0.9 / 1000) * 1000);
-    if (max < min) return notice('Make offer', 'This hero is already listed at the lowest allowed price. Buy it now instead.');
-    const d = confirmDialog(row.offer ? 'Change your offer' : 'Make an offer', `${heroLine(l.hero)}<p>Listed at <b>${fmt(l.price)} Ryo</b>.</p>
-      <label class="sbw-sell-price">Your offer (Ryo)<input type="number" inputmode="numeric" min="${min}" max="${max}" step="1000" value="${Math.min(max, start)}"></label>
-      <p class="sbw-small">From ${fmt(min)} to ${fmt(max)} Ryo. The amount is held from your balance until the seller accepts or declines (up to 48 hours). Cancel any time to get it back.</p>`, 'Send offer', async dl => {
-      const amount = Math.floor(Number($('input', dl).value) || 0);
-      if (amount < min || amount > max) { const m = $('.sbw-msg', dl); m.hidden = false; m.textContent = `Offer from ${fmt(min)} to ${fmt(max)} Ryo.`; return false; }
-      await RyoPayments.market('market-offer', { listingId: l.id, amount });
-      toast(`Offer of ${fmt(amount)} Ryo sent. The seller has up to 48 hours to answer.`);
+    const l = row.l, min = l.minOffer, max = l.price - 1, start = row.offer ? row.offer.amount : Math.max(min, Math.floor(l.price * 0.9 / 1000) * 1000);
+    if (!min || max < min) return notice('Make offer', 'This hero is already listed at the lowest allowed price. Buy it now instead.');
+    // The open offer on this listing is returned first, so it counts towards what can be offered.
+    const led = ledger(), held = row.offer ? row.offer.amount : 0, inBonus = row.offer?.funding === 'bonus';
+    const available = Math.max((Number(led.balance) || 0) + (inBonus ? 0 : held), (Number(led.bonus) || 0) + (inBonus ? held : 0));   // one pot pays an offer; an open offer returns to its own pot
+    const d = confirmDialog(row.offer ? 'Change your offer' : 'Make an offer', `${heroLine(l.hero)}<dl class="sbw-offer-facts"><dt>Hero</dt><dd>${esc(l.hero.name)}</dd><dt>Rarity</dt><dd style="color:${RCOL[l.hero.rank]}">${RNAME[l.hero.rank]}</dd>
+      <dt>Seller asking price</dt><dd>${fmt(l.price)} Ryo</dd><dt>Minimum allowed offer</dt><dd>${fmt(min)} Ryo</dd><dt>Your available game balance</dt><dd>${fmt(available)} Ryo</dd></dl>
+      <label class="sbw-sell-price">Enter your offer amount (Ryo)<input type="number" inputmode="numeric" min="${min}" max="${max}" step="1" value="${Math.min(max, start)}"></label>
+      <p class="sbw-small">From ${fmt(min)} to ${fmt(max)} Ryo. The amount is held from your balance until the seller accepts or declines (up to 48 hours, never past the listing). Cancel any time to get it back.</p>`, 'Submit offer', async dl => {
+      const raw = $('input', dl).value.trim(), amount = Number(raw), m = $('.sbw-msg', dl), say = t => { m.hidden = false; m.textContent = t; return false; };
+      if (!/^[0-9]+$/.test(raw) || !Number.isSafeInteger(amount) || amount < min || amount > max) return say(`Offer from ${fmt(min)} to ${fmt(max)} Ryo, in whole Ryo.`);
+      if (amount > available) return say(`Not enough Ryo: you have ${fmt(available)} Ryo available. Deposit Ryo from your Chest first.`);
+      await RyoPayments.market('market-offer', { listingId: l.id, amount });   // the server checks everything again
+      marketNotify('OFFER SUBMITTED!', `Your offer of ${fmt(amount)} Ryo has been submitted successfully. The seller has up to 48 hours to answer.`, true);
       MK.data = null; MK.mine = null; marketLoad();
     }, 'sbw-offer');
+    $('[data-k="x"]', d).textContent = 'Cancel';
     const input = $('input', d); input.focus(); input.select();
   }
   function acceptDialog(row, o) {
     if (!o) return;
     confirmDialog('Sell for ' + fmt(o.amount) + ' Ryo?', `${heroLine(row.l.hero)}<p>Accept ${esc(o.buyer)}'s offer for <b>${esc(row.l.hero.name)}</b>.</p>
-      <p class="sbw-sell-out">You receive <b>${fmt(o.payout)} Ryo</b> (80%) · reward pool ${fmt(Math.floor(o.amount / 10))} · treasury ${fmt(Math.floor(o.amount * 8 / 100))} · studio ${fmt(Math.floor(o.amount / 50))}</p>`, 'Accept offer', async () => {
+      <p class="sbw-sell-out">You receive <b>${fmt(o.payout)} Ryo</b> (80%) · reward pool ${fmt(o.amount - o.payout)} (20%)</p>`, 'Accept offer', async () => {
       const data = await RyoPayments.market('market-accept', { offerId: o.id, requestId: crypto.randomUUID() });
-      toast(data?.sale?.status === 'confirmed' ? `Sold! You received ${fmt(o.payout)} Ryo.` : 'Sale submitted. It finalizes automatically.');
+      // Only a server-confirmed settlement is shown as a completed sale.
+      if (data?.sale?.status === 'confirmed') marketNotify('PURCHASE COMPLETED!', `${row.l.hero.name} was sold for ${fmt(o.amount)} Ryo. You received ${fmt(o.payout)} Ryo.`, true);
+      else toast('Offer accepted. The sale is being processed and finalizes automatically.');
       MK.sel = -1; MK.mine = null; MK.data = null; marketLoad();
     });
   }
@@ -1346,8 +1386,11 @@
   function sellDialog(h) {
     const a = account(); if (!h) return;
     if (!a || !h.tokenId || h.tokenOwner !== a) return notice('Market', 'Only heroes from your signed-in token collection can be listed. Practice heroes cannot be sold.');
-    if (h.referralBound) return notice('🔒 Referral-bound hero', BOUND_TEXT);
-    const min = (MK.data?.rules?.minPrice || MARKET_MIN)[h.r] || MARKET_MIN[0];
+    const why = marketBlock(h);
+    if (why === 'bound') return notice('🔒 Account-bound hero', h.referralBound ? BOUND_TEXT : 'This hero is bound to your account (a reward, starter, Founder or Creator hero). It can be used for gameplay and progression but cannot be listed, sold or transferred.');
+    if (why === 'nft') return notice('Market', 'Mythic NFT heroes are traded by moving their NFT, not on the Market.');
+    if (why === 'rank') return notice('Market', 'Only Jonin, Elite and Legend heroes can be traded on the Market. Fuse Genin and Chunin heroes to reach a tradable rank.');
+    const min = marketMins()[h.r];
     const d = confirmDialog('List ' + h.name, `<p class="sbw-mdl-hero" style="--rc:${RCOL[h.r]}"><b>${RNAME[h.r]}</b> · Lv. ${h.lv} · ${(h.pk || []).map(k => esc(perkName(k))).join(', ')}</p>
       <label class="sbw-sell-price">Price (Ryo)<input type="number" inputmode="numeric" min="${min}" max="100000000" step="1000" value="${min}"></label>
       <p class="sbw-small">Minimum for ${RNAME[h.r]}: ${fmt(min)} Ryo · maximum 100,000,000 Ryo · listed for 7 days. Buyers can also make offers.</p><p class="sbw-sell-out"></p>`, 'List on Market', async dl => {
@@ -1357,7 +1400,7 @@
       toast(`${h.name} is on the Market for ${fmt(price)} Ryo (7 days).`); MK.mine = null; MK.data = null;
     }, 'sbw-sell');
     const input = $('input', d), out = $('.sbw-sell-out', d);
-    const update = () => { const p = Math.floor(Number(input.value) || 0), part = n => Math.floor(p * n / 100); out.innerHTML = `You receive <b>${fmt(p - part(2) - part(8) - part(10))} Ryo</b> (80%) · reward pool ${fmt(part(10))} · treasury ${fmt(part(8))} · studio ${fmt(part(2))}`; };
+    const update = () => { const p = Math.floor(Number(input.value) || 0), pool = Math.floor(p * 20 / 100); out.innerHTML = `You receive <b>${fmt(p - pool)} Ryo</b> (80%) · reward pool ${fmt(pool)} (20%)`; };
     input.addEventListener('input', update); update(); input.focus(); input.select();
   }
   function perkPicker() {
@@ -1370,11 +1413,54 @@
     if (!dlg.open) dlg.showModal();
   }
   MODS.market = {
-    tab: t => { if (!['heroes', 'mine', 'offers'].includes(t)) return; MK.tab = t; MK.sel = -1; marketReload(); },
+    tab: t => { if (!['heroes', 'mine', 'offers', 'history'].includes(t)) return; MK.tab = t; MK.sel = -1; marketReload(); },
     mtab: a => MODS.market.tab({ 0: 'heroes', 3: 'mine' }[+a] || 'heroes'), listings: () => MODS.market.tab('mine'),
     buy: () => marketBuy(marketRows()[MK.sel]), offer: () => offerDialog(marketRows()[MK.sel])
   };
-  window.ShinobiMarket = { sell: sellDialog, reload: () => marketReload(false) };
+  /* Market notifications. Only server statuses are shown (market-notices): a purchase is "completed" only after
+   * settlement. Own actions show at once; events from other players queue until no dialog is open. */
+  const noticeQueue = [];
+  function marketNotify(title, text, own = false) {
+    if (own) return toast(title + ' ' + text);
+    noticeQueue.push([title, text]); drainNotices();
+  }
+  function drainNotices() {
+    if (!noticeQueue.length) return;
+    if ((dlg && dlg.open) || document.hidden) { clearTimeout(drainNotices.t); drainNotices.t = setTimeout(drainNotices, 1500); return; }
+    const [title, text] = noticeQueue.shift(); notice(title, text);
+    if (noticeQueue.length) { clearTimeout(drainNotices.t); drainNotices.t = setTimeout(drainNotices, 1500); }
+  }
+  const SEEN_KEY = a => 'sb-market-seen:' + a;
+  function seenState(a) { try { const v = JSON.parse(localStorage.getItem(SEEN_KEY(a)) || 'null'); return v && typeof v.since === 'number' && Array.isArray(v.keys) ? v : null; } catch { return null; } }
+  function saveSeen(a, v) { try { localStorage.setItem(SEEN_KEY(a), JSON.stringify({ since: v.since, keys: v.keys.slice(-60) })); } catch {} }
+  const MADE_TEXT = {
+    accepted: o => ['OFFER ACCEPTED!', `Your offer of ${fmt(o.amount)} Ryo for ${o.hero} has been accepted and is being processed.`],
+    completed: o => ['PURCHASE COMPLETED!', `${o.hero} has been successfully transferred to your collection.`],
+    declined: o => ['OFFER DECLINED!', `Your offer for ${o.hero} was declined. Your reserved ${fmt(o.amount)} Ryo has been returned.`],
+    expired: o => ['OFFER EXPIRED!', `Your offer for ${o.hero} has expired and your reserved ${fmt(o.amount)} Ryo has been released.`],
+    closed: o => ['OFFER CLOSED', `The listing for ${o.hero} closed. Your reserved ${fmt(o.amount)} Ryo has been returned.`],
+    failed: o => ['PURCHASE NOT COMPLETED', `The purchase of ${o.hero} did not complete. Your ${fmt(o.amount)} Ryo has been returned.`] };
+  let noticeBusy = false, noticeAt = 0;
+  async function pollMarketNotices(force = false) {
+    const a = account(); if (!a || noticeBusy || !window.RyoPayments?.market || document.hidden || (!force && Date.now() - noticeAt < 55000)) return;
+    noticeBusy = true; noticeAt = Date.now();
+    try {
+      const seen = seenState(a), res = await RyoPayments.market('market-notices', { since: seen ? seen.since : Date.now() });
+      if (account() !== a || !res) return;
+      const state = seen || { since: res.now, keys: [] }, fresh = [];
+      const add = (key, at, msg) => { if (!state.keys.includes(key)) { state.keys.push(key); if (seen) fresh.push([at, msg]); } };
+      for (const o of res.received || []) add('r:' + o.id, o.at, ['NEW OFFER RECEIVED!', `A player has offered ${fmt(o.amount)} Ryo for your ${o.hero}.`]);
+      for (const o of res.made || []) if (MADE_TEXT[o.status]) add('m:' + o.id + ':' + o.status, o.at, MADE_TEXT[o.status](o));
+      for (const l of res.returned || []) add('l:' + l.id, l.at, l.reason === 'rules' ? ['LISTING RETURNED', `${l.hero} came back to your collection because the Market rules changed. Any offers were refunded.`] : ['LISTING EXPIRED', `${l.hero} came back to your collection.`]);
+      state.since = res.more ? Math.max(res.next, state.since + 1) : Math.max(state.since, res.now - 5000); saveSeen(a, state);   // a short overlap; keys stop repeats
+      if (res.more) setTimeout(() => pollMarketNotices(true), 2000);   // more events are waiting: read the next page
+      fresh.sort((x, y) => x[0] - y[0]).forEach(([, [title, text]]) => marketNotify(title, text));
+      if (fresh.length) { MK.mine = null; MK.data = null; if (built.market) built.market.sig = ''; }
+    } catch {} finally { noticeBusy = false; }
+  }
+  setInterval(() => pollMarketNotices(), 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pollMarketNotices(); });
+  window.ShinobiMarket = { sell: sellDialog, reload: () => marketReload(false), notices: () => pollMarketNotices(true) };
   // The game's own 'Sell · List on Market' buttons (Heroes) open the shared Market listing dialog.
   if (window.Market) window.Market.openListing = id => sellDialog(((gs() && gs().h) || []).find(h => h.id === id));
 

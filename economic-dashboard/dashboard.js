@@ -49,7 +49,7 @@
   const rev=s.revenueDistribution,live=rev?.applicable===true;$('service-revenue').hidden=!live;
   for(const option of $('kind').options)if(LIVE_KINDS.includes(option.value)){option.hidden=!live;option.disabled=!live;}
   if(!live&&LIVE_KINDS.includes($('kind').value)){$('kind').value='vaults';$('kind').onchange();}
-  renderTreasury(s);
+  renderTreasury(s);renderMarketPrices(s);
   if(live){$('revenue-status').textContent=(rev.ready?'Approved vault configuration; each checkout re-verifies custody and the Locked Treasury multisig.':'Awaiting two-wallet approval of vault configuration. New real-token service payments remain blocked.')+' Cumulative finalized allocations, not current wallet balances. Routed service payments: '+rev.transactions;
    $('revenue-custody').textContent=rev.custody+' '+rev.lockedTreasury;
    for(const [name,label]of [['lockedTreasury','Locked Treasury'],['activeRewards','Active Adventure Rewards'],['communityRewards','Community Rewards'],['economicReserve','Economic Reserve']])metric($('revenue-cards'),label+' - '+rev.ratesBps[name]/100+'%',rawRyo(rev.totalsRaw[name],6)+' Ryo',rev.config?.destinations?.[name]||'Vault not configured');}
@@ -85,8 +85,22 @@
  $('export').onclick=()=>{if(!snapshot)return;const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='ryo-economy-'+new Date(snapshot.serverTime).toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
  // rewardBudget starts from the budget that is live now (a proposal replaces the whole budget). minClaimRyo /
  // basePersonalAllowanceRyo null = unset: minimum claim 100,000 Ryo, Dojo claim bonus off.
+ templates.marketPrices={jonin:null,elite:null,legend:null};
  const budgetTemplate=()=>{const b=snapshot?.treasury?.rewardBudget;return b&&b.configured?{dailyCapRyo:b.dailyCapRyo,perClaimMaxRyo:b.perClaimMaxRyo,minClaimRyo:b.minClaimRyo??null,basePersonalAllowanceRyo:b.basePersonalAllowanceRyo??null,evidence:''}:{dailyCapRyo:1000000,perClaimMaxRyo:200000,minClaimRyo:null,basePersonalAllowanceRyo:null,evidence:'Approved Chest reward budget reference'}};
  $('kind').onchange=()=>{const k=$('kind').value;$('payload').value=JSON.stringify(k==='rewardBudget'?budgetTemplate():templates[k],null,2)};$('kind').onchange();
  $('proposal-form').onsubmit=e=>{e.preventDefault();run(async()=>{const payload=JSON.parse($('payload').value),kind=$('kind').value;if(!await confirmAction('Submit proposal for independent approval',kind+(snapshot?.selfApproval?' — one-wallet approval is on: you can approve it yourself. ':' — a different approver must review it. ')+$('reason').value))return;await api('admin-propose',{kind,payload,reason:$('reason').value,version:snapshot.control.version,confirmation:'CONFIRM'});$('reason').value='';await refresh()})};
+ function renderMarketPrices(s){
+  const m=s.marketPrices,body=$('market-price-rows');if(!body)return;body.replaceChildren();$('market-prices').hidden=!m;if(!m)return;
+  for(const r of m.ranks){const input=node('input');input.type='number';input.min='1';input.max=String(m.maxPrice);input.step='1';input.dataset.key=r.key;input.value=r.saved??'';input.placeholder='Default '+fmt(r.default,0);input.disabled=true;input.setAttribute('aria-label',r.name+' minimum price in Ryo');
+   const td=node('td');td.append(input);row('market-price-rows',[cell(r.name),cell(fmt(r.effective,0)+' Ryo',r.saved==null?'default':'approved setting'),cell(fmt(r.default,0)+' Ryo'),td])}
+  $('market-save').disabled=true;
+ }
+ async function proposeMarketPrices(payload,label){
+  const reason=await confirmAction(label,'Minimum hero prices: '+['jonin','elite','legend'].map(k=>k+' '+(payload[k]==null?'default':fmt(payload[k],0))).join(', ')+'. New listings and offers only.'+(snapshot?.selfApproval?' One-wallet approval is on.':' A different approver must review it.'));if(!reason)return;
+  await api('admin-propose',{kind:'marketPrices',payload,reason,version:snapshot.control.version,confirmation:'CONFIRM'});await refresh();notice('Minimum price proposal submitted. It applies after an approver approves it in the approval queue.');
+ }
+ $('market-edit').onclick=()=>{document.querySelectorAll('#market-price-rows input').forEach(i=>i.disabled=snapshot?.role==='viewer');$('market-save').disabled=snapshot?.role==='viewer'};
+ $('market-save').onclick=()=>run(async()=>{if(document.querySelector('#market-price-rows input')?.disabled)throw Error('Click Edit prices first, change the values, then Save prices.');const payload={};for(const i of document.querySelectorAll('#market-price-rows input')){const v=i.value.trim();if(v!==''&&!/^[0-9]+$/.test(v))throw Error('Enter whole Ryo amounts, or leave a field empty for its default.');payload[i.dataset.key]=v===''?null:Number(v)}await proposeMarketPrices(payload,'Save minimum hero prices')});
+ $('market-reset').onclick=()=>run(()=>proposeMarketPrices({jonin:null,elite:null,legend:null},'Reset minimum hero prices to default'));
  window.addEventListener('pageshow',e=>{if(e.persisted)signOut()});
 })();

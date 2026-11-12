@@ -123,7 +123,8 @@ const registryModule = require('../app/server/treasury-registry.cjs');
   const legacyId = crypto.randomUUID(); await store.purchase(wallet, legacyId, 'summon', { quantity: 1 }, 25000, async q => { fixture.stamp(q, null); q.revenueDistribution.version = 1; return { signature: 'legacy-v1-signature', wire: 'd2lyZQ==', lastHeight: 10 }; });
   await store.settlePurchase(wallet, legacyId, 'confirmed'); assert.equal((await router.summary(ctx, pool)).transactions, 2, 'v1 pending order recovers under its original quote');
   assert.equal(Number((await router.income(store, pool)).n), 7500, 'a v1 quote retains its original (custody-retained) interpretation');
-  assert.equal(require('../app/server/market.cjs').split(100000).adventureEligible, false, 'new Market fee pool is explicitly separate');
+  { const m = require('../app/server/market.cjs').split(100000); // owner decision 2026-11-12: 80% seller, 20% back to the Adventure reward pool, no Ryo leaves custody
+    assert.deepEqual([m.seller, m.operations, m.studioFee, m.treasury, m.adventureEligible, m.settlement], [80000, 20000, 0, 0, undefined, 'internal'], 'new Market sales return 20% to the Adventure reward pool'); }
   { // Sensei is not an approved SR route. Live now refuses Ryo Sensei before quoting (founders.cjs); bypass only that
     // guard for this one quote so the router's own refusal is still proven.
     const founders = require('../app/server/founders.cjs'), guard = founders.assertRyoProduct; founders.assertRyoProduct = () => {};
@@ -133,7 +134,7 @@ const registryModule = require('../app/server/treasury-registry.cjs');
   assert.equal(economy.quote(economy.initialProfile(), 'hunt').revenueDistribution, undefined, 'Boss Hunt remains a separate prize budget');
   await pool.query(`INSERT INTO ryo_purchases(scope,wallet,request_id,product,params,quote,result,profile_after,amount,signature,wire,last_height,status,created)
     VALUES($1,$2,'market-separate','market','{}',$3,'{}','{}',100000,'market-separate-signature','wire',1,'confirmed',$4)`, [store.scope, wallet, JSON.stringify({ operations: 10000, adventureEligible: false }), store.now()]);
-  assert.equal(Number((await router.income(store, pool)).n), 7500, 'unapproved Market fees never fund Adventure');
+  assert.equal(Number((await router.income(store, pool)).n), 7500, 'historical Market fees recorded as separate keep that interpretation');
 
   // 8. Top-ups: Active Reward Pool → custody, finalized, independently approved, never re-split, never replayed.
   const sig = bs58.encode(crypto.randomBytes(64)), topup = { source: 'activeRewards', signature: sig, amountRaw: '100000000', evidence: 'Batch top-up from the Active Reward Pool wallet' };
