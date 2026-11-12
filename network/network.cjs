@@ -150,7 +150,7 @@ function startupProblems(env = process.env, dir = __dirname) {
     const heldRelease = held(env) && mintReleased(env, dir);
     if (money.length && !founderRevenueOnly && !heldRelease && !(releaseStage(env, dir) === 'private' && testers)) problems.push('PRELAUNCH_MODE=on must not hold money settings (' + money.join(', ') + '). Add them only when the game launches, or for private live testing (RELEASE_STAGE=private with RYO_PRIVATE_TEST_WALLETS).');
     // Live build (owner decision 2026-11-09): the studio and game revenue wallets are optional (fee-free deposits, Boss Hunt
-    // share to the Locked Treasury); custody and the token are still required together.
+    // share to the Treasury); custody and the token are still required together.
     else if (money.length && !founderRevenueOnly && (build.key === 'mainnet' ? LIVE_REQUIRED_MONEY : MONEY_SETTINGS).some(k => !money.includes(k))) problems.push('Private live testing needs all ' + (build.key === 'mainnet' ? 'required ' : '') + 'money settings or none (missing ' + (build.key === 'mainnet' ? LIVE_REQUIRED_MONEY : MONEY_SETTINGS).filter(k => !money.includes(k)).join(', ') + ').');
     // The same reviewed treasury-registry locks as a launched Mainnet server (e.g. RYO_TOKEN_MINT must match the registry).
     if (money.length && build.key === 'mainnet') problems.push(...treasuryProblems(env, dir));

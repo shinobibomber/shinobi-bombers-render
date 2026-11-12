@@ -405,7 +405,7 @@
   "trs.balanceSol": "SOL",
   "trs.balanceSr": "SR",
   "trs.pending": "pending",
-  "trs.squads": "Squads Treasury (approvals / signers)",
+  "trs.squads": "Squads multisig · RYO Burn Reserve (approvals / signers)",
   "trs.timeLock": "Time lock",
   "trs.proposals": "Proposals",
   "trs.flags": "Financial features",

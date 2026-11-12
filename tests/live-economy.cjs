@@ -1,6 +1,6 @@
 'use strict';
 /* Live economy (live-economy/server.cjs, owner decision 2026-11-09). On the Devnet build nothing changes; on the live build:
- * fee-free SR deposits, Boss Hunt treasury share to the registered Locked Treasury, studio/revenue wallets optional, and the
+ * fee-free SR deposits, Boss Hunt treasury share to the registered Treasury, studio/revenue wallets optional, and the
  * Market refused until both wallets exist. Also the service and the startup guard with those wallets absent. */
 const assert = require('node:assert/strict'), path = require('node:path');
 const web3 = require('../app/node_modules/@solana/web3.js'), spl = require('../app/node_modules/@solana/spl-token');
@@ -42,7 +42,7 @@ const passed = [];
       assert.throws(() => E.depositAmount(original, 1.5), /1,000 and 10,000,000/);
       devnet(); assert.throws(() => E.depositAmount(original, 2000000), /original/, 'the test server keeps 1,000,000'); mainnet(); }
     const locked = require('../app/server/treasury-registry.cjs').registry().addresses.lockedTreasury;
-    assert.equal(E.huntTreasury(revenue), locked, 'Boss Hunt 10% goes to the registered Locked Treasury');
+    assert.equal(E.huntTreasury(revenue), locked, 'Boss Hunt 10% goes to the registered Treasury'); assert.equal(locked, 'GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE', 'Boss Hunt Treasury share follows the migrated Treasury, never the Burn Reserve');
     assert.notEqual(E.verifier(original, {}), original, 'live uses the fee-free deposit verifier');
     assert.equal(E.marketConfigured({}), false); assert.equal(E.marketConfigured({ RYO_STUDIO_WALLET: studio }), false);
     assert.equal(E.marketConfigured({ RYO_STUDIO_WALLET: studio, RYO_REVENUE_WALLET: revenue }), true);
@@ -57,7 +57,7 @@ const passed = [];
     assert.throws(() => gates.check('purchase', { product: 'summon' }, {}), e => e.code === 'LAUNCH_GATE_CLOSED', 'summons still follow their own gate');
     assert.equal(E.tokenConfigReady({ RYO_TOKEN_MINT: addr() }), true, 'live token config needs only the mint');
     assert.equal(E.tokenConfigReady({}), false); assert.equal(E.publicStudio({ RYO_STUDIO_WALLET: studio }), null, 'live publishes no studio destination');
-    passed.push('live build: studio/revenue optional (still validated when set), deposit config fee-free, Boss Hunt → Locked Treasury, Market refused until both wallets exist');
+    passed.push('live build: studio/revenue optional (still validated when set), deposit config fee-free, Boss Hunt → Treasury, Market refused until both wallets exist');
 
     // ---- The game service starts on live without the two wallets; config reports a fee-free deposit.
     const { createService, GENESIS } = require('../app/server/service.cjs'), treasury = web3.Keypair.generate(), mint = web3.Keypair.generate().publicKey;

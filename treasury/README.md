@@ -5,7 +5,8 @@ activates nothing. See [docs/treasury/ACTIVATION_CHECKLIST.md](../docs/treasury/
 
 | File | Purpose |
 |---|---|
-| `treasury-registry.json` | Committed, public-only registry: four destinations (50/30/10/10), the Squads v4 multisig, vault index, threshold and members, `srMintAddress: null` (pending), withdrawal deduction 500 bps, `activation.approved: false`. |
+| `treasury-registry.json` | Committed, public-only registry (v2): four destinations (50/30/10/10) with the Treasury `GPbg…htjE` as an owner-approved single-key wallet (`treasuryCustodyException`), the non-revenue `reserves` (RYO Burn Reserve = Squads vault #0 `5wVB…`), the Squads v4 multisig with `squads.vaults` (role → vault index), threshold and members, the registered Token-2022 SR mint, the 5% withdrawal fee and the owner activation approval. |
+| `treasury-movements.cjs` | Verified movement ledger (`treasuryRelocation`, `burnReserveFunding`, `burn`), recorded only by two-person admin approval after re-reading the finalized transaction. Never revenue; burned = verified burns only. |
 | `treasury-registry.cjs` | Dependency-free validator. Rejects non-canonical base58 / non-32-byte keys, duplicates, wrong bps, key-like fields and secret-key or seed-phrase shaped values. |
 | `treasury-verify.cjs` | Read-only, finalized verifier: Squads program/discriminator/vault PDA/threshold/members/config authority/time lock, plain-wallet checks, mint program and decimals, balances. Returns explicit `verified` / `mismatch` / `unverified` states, uses a 60 s cache, never reports a silent zero. |
 | `treasury-rewards.cjs` | Live-build policy (build stamp, like the SR router). 5% withdrawal deduction to the Treasury vault in exact base units with its own ledger; no 24 h withdrawal cooldown; Chest claims once per 24 h within an approved reward budget; custody-separation start-up check. |

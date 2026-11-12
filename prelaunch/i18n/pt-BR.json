@@ -405,7 +405,7 @@
   "trs.balanceSol": "SOL",
   "trs.balanceSr": "SR",
   "trs.pending": "pendente",
-  "trs.squads": "Tesouraria Squads (aprovações / signatários)",
+  "trs.squads": "Multisig Squads · Reserva de Queima RYO (aprovações / signatários)",
   "trs.timeLock": "Bloqueio de tempo",
   "trs.proposals": "Propostas",
   "trs.flags": "Recursos financeiros",

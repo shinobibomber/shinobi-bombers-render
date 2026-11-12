@@ -3,7 +3,8 @@ const crypto=require('node:crypto');
 const {fail}=require('./store.cjs');
 const MARKER='ryo-economic-dashboard-v1';
 const PAUSES=['purchases','withdrawals','claims'];
-const LIVE_KINDS=['revenueRouting','revenueReplenishment','rewardBudget'];
+// treasuryMovement (2026-11-12): record a verified Treasury relocation, Burn Reserve funding or burn. Never config, never revenue.
+const LIVE_KINDS=['revenueRouting','revenueReplenishment','rewardBudget','treasuryMovement'];
 // Market buys and new listings follow the purchases pause.
 const GATES={purchase:'purchases','market-buy':'purchases','market-post':'purchases','market-offer':'purchases','market-accept':'purchases','hunt-enter':'purchases','box-mint':'purchases','creator-redeem':'purchases','creator-player-claim':'purchases','prison-rescue':'purchases',withdraw:'withdrawals','claim-adventure':'claims'};
 const DEFAULTS={vaults:[],seasons:[],financial:null,monitor:{concentrationPercent:40,claimRyo:100000,pendingMinutes:30}};
@@ -25,6 +26,7 @@ function validate(kind,payload,now){
  if(kind==='revenueRouting')return {revenueRouting:require('./sr-revenue.cjs').validateConfig(payload.revenueRouting||payload)};
  if(kind==='revenueReplenishment')return {revenueReplenishment:require('./sr-revenue.cjs').validateReplenishment(payload.revenueReplenishment||payload)};
  if(kind==='rewardBudget')return {rewardBudget:require('./treasury-rewards.cjs').validateBudget(payload.rewardBudget||payload)};
+ if(kind==='treasuryMovement')return {treasuryMovement:require('./treasury-movements.cjs').validateMovement(payload.treasuryMovement||payload)};
  if(kind==='vaults'){
   if(!Array.isArray(payload.vaults)||payload.vaults.length>16)fail('Configure at most 16 allocation vaults.');
   const seen=new Set();return {vaults:payload.vaults.map(v=>{const wallet=address(v.wallet);if(seen.has(wallet))fail('Allocation vault addresses must be unique.');seen.add(wallet);return {label:text(v.label,60),wallet,evidence:text(v.evidence,240)}})};
@@ -77,8 +79,9 @@ async function readChain(ctx,vaults){
   })));
   const monitored=[...balances.values()].reduce((n,v)=>n+BigInt(v.amountRaw),0n);
   const custody=balances.get(ctx.treasuryAddress).amountRaw;
-  let srLock=null;if(ctx.revenueConfig)try{srLock=await require('./sr-revenue.cjs').verifyVaults(ctx,ctx.revenueConfig)}catch{}
-  return {status:'verified',commitment:'finalized',supplyRaw:supply.value.amount,decimals:supply.value.decimals,slot:supply.context.slot,custodyRaw:custody,vaults:rows.map(v=>({...v,...balances.get(v.wallet),lockStatus:srLock&&v.wallet===ctx.revenueConfig.destinations.lockedTreasury?'Verified external SPL multisig '+srLock.required+' of '+srLock.members+'; no timelock claimed':'Not verifiable: no lock/vesting program evidence configured'})),outsideMonitoredRaw:String(BigInt(supply.value.amount)-monitored),circulating:null,locked:null,coverage:'Outside monitored wallets is a residual, not a verified circulating supply. Wallet balances do not prove a contractual lock. Slots can differ.'};
+  let srLock=null;if(ctx.revenueConfig?.destinations)try{srLock=await require('./sr-revenue.cjs').verifyVaults(ctx,ctx.revenueConfig)}catch{}
+  const lockText=l=>l.kind==='single-key-wallet'?'Verified owner-approved single-key Treasury wallet; no on-chain spending restriction':'Verified external SPL multisig '+l.required+' of '+l.members+'; no timelock claimed';
+  return {status:'verified',commitment:'finalized',supplyRaw:supply.value.amount,decimals:supply.value.decimals,slot:supply.context.slot,custodyRaw:custody,vaults:rows.map(v=>({...v,...balances.get(v.wallet),lockStatus:srLock&&v.wallet===ctx.revenueConfig.destinations.lockedTreasury?lockText(srLock):'Not verifiable: no lock/vesting program evidence configured'})),outsideMonitoredRaw:String(BigInt(supply.value.amount)-monitored),circulating:null,locked:null,coverage:'Outside monitored wallets is a residual, not a verified circulating supply. Wallet balances do not prove a contractual lock. Slots can differ.'};
  }catch{return unavailableChain()}
 }
 async function chain(ctx,vaults){
@@ -121,15 +124,34 @@ async function snapshot(ctx,wallet){
  try{const m=require('./market.cjs'),eff=await m.minPrices(ctx.store);result.marketPrices={ranks:m.TRADABLE.map(r=>({rank:r,name:m.RANKS[r],key:['jonin','elite','legend'][r-2],effective:eff[r],default:m.MIN_PRICE[r],saved:result.control.config.marketPrices?.[['jonin','elite','legend'][r-2]]??null})),maxPrice:m.MAX_PRICE}}catch{}
  // Test-server starter Ryo: spend-only, never backed by custody, so outside the liabilities above.
  try{result.starter=await require('./starter-pack.cjs').stats(ctx.store)}catch{}
- const revenueConfig=result.revenueDistribution.config, revenueVaults=revenueConfig?Object.entries(revenueConfig.destinations).map(([label,wallet])=>({label:'SR revenue · '+label,wallet})):[];
+ const revenueConfig=result.revenueDistribution.config, revenueVaults=revenueConfig?.destinations?Object.entries(revenueConfig.destinations).map(([label,wallet])=>({label:'SR revenue · '+label,wallet})):[];
  result.chain=await chain({...ctx,revenueConfig},[...result.control.config.vaults,...revenueVaults]);
  result.treasuryVerification=await treasuryVerification(ctx);
+ result.treasuryManagement=require('./sr-revenue.cjs').enabled()?await treasuryManagement(ctx).catch(e=>({applicable:true,status:'unavailable',problem:e.message})):null;
  result.claimFunding=require('./sr-revenue.cjs').enabled()?await require('./treasury-rewards.cjs').claimFunding(ctx).catch(()=>({applicable:true,status:'unavailable',availableRyo:null,claimsOpen:false,note:'Claim funding could not be read.'})):null;
  if(result.treasuryVerification?.alerts)result.alerts.push(...result.treasuryVerification.alerts.map(a=>({wallet:'Treasury',signal:a.signal,detail:a.detail,severity:a.severity})));
  result.solvency=result.chain.status==='verified'?{custodyRyo:Number(BigInt(result.chain.custodyRaw))/10**result.chain.decimals,knownLiabilities:result.liabilities.total}:null;
  if(result.solvency)result.solvency.surplus=result.solvency.custodyRyo-result.solvency.knownLiabilities;
  const f=result.control.config.financial;result.runway=f?{...f,months:f.cashMinor/f.monthlyCostMinor,stale:now-f.asOf>31*86400000,verification:'Entered evidence reviewed by a distinct authorized approver; not a bank feed.'}:null;
  return result;
+}
+/* Live only: Treasury Management (read-only). Treasury and RYO Burn Reserve roles from the reviewed registry, recent receipts
+ * into the Treasury from existing ledgers (service revenue, withdrawal deductions, Boss Hunt shares, Expedition shares),
+ * approved top-ups, and the verified movement ledger. Reserved RYO and burned RYO are separate figures. Nothing here writes. */
+async function treasuryManagement(ctx){
+ const {store}=ctx,reg=require('./treasury-registry.cjs').registry(),c=store.pool,t=reg.destinations.lockedTreasury;
+ const reserves=Object.values(reg.reserves).map(r=>({...r,vaultIndex:reg.squads.vaults[r.role]??null,multisig:reg.squads.multisig,threshold:reg.squads.threshold,members:reg.squads.members.length}));
+ const q=async(sql,args=[])=>(await c.query(sql,[store.scope,...args])).rows;
+ const hunt=await q("SELECT wallet,request_id,signature,(quote->>'treasury')::numeric AS treasury,created FROM ryo_purchases WHERE scope=$1 AND product='hunt' AND status='confirmed' ORDER BY created DESC LIMIT 25");
+ const expedition=(await c.query("SELECT to_regclass('ryo_expedition_revenue') IS NOT NULL AS t")).rows[0].t?await q("SELECT wallet,request_id,signature,allocations->>'lockedTreasury' AS treasury_raw,created FROM ryo_expedition_revenue WHERE scope=$1 ORDER BY created DESC LIMIT 25"):[];
+ return {applicable:true,
+  treasury:{role:'lockedTreasury',label:t.label,address:t.address,custody:t.custody,custodyModel:reg.treasuryCustody,exception:reg.treasuryCustodyException,purpose:t.purpose,
+   flows:[{source:'SR game services',percent:50},{source:'Expedition early returns',percent:30},{source:'Boss Hunt entry',percent:10},{source:'Withdrawal deduction',percent:reg.withdrawalTreasuryFeeBps/100}]},
+  reserves,
+  receipts:{hunt:hunt.map(r=>({wallet:r.wallet,request_id:r.request_id,signature:r.signature,treasuryRyo:safeNum(r.treasury),created:safeNum(r.created)})),
+   expedition:expedition.map(r=>({wallet:r.wallet,request_id:r.request_id,signature:r.signature,treasuryRaw:String(r.treasury_raw||'0'),created:safeNum(r.created)}))},
+  movements:(await c.query("SELECT to_regclass('ryo_treasury_movements') IS NOT NULL AS t")).rows[0].t?await require('./treasury-movements.cjs').report(store,c):{applicable:true,burnedRaw:'0',history:[],note:'Movement ledger not installed yet.'},
+  rules:['No button here changes a destination or burns tokens: destinations change only by a reviewed registry commit and redeploy.','Burns are executed in Squads by the multisig members, then recorded here only after two-person verification of the finalized transaction.','Reserved RYO is not burned RYO.']};
 }
 /* Live only: read-only Chapter 04 registry verification (finalized), plus balance-drift monitoring against the
  * previous observation and recorded top-ups. Observations are an append-only monitoring log, never balances. */
@@ -140,11 +162,15 @@ async function treasuryVerification(ctx){
  catch(e){return {status:'unverified',problems:['Verification failed: '+e.message],alerts:[{severity:'review',signal:'Verification unavailable',detail:'Treasury verification failed. Nothing is shown as verified.'}]}}
  snap.activation={problems:require('./sr-revenue.cjs').activationProblems(ctx)};
  if(snap.status==='unverified'||!snap.destinations)return snap;
- for(const [role,d] of Object.entries(snap.destinations)){
-  const prev=(await store.pool.query('SELECT sol_lamports,sr_raw,observed FROM ryo_treasury_observations WHERE scope=$1 AND role=$2 ORDER BY observed DESC LIMIT 1',[store.scope,role])).rows[0];
+ const movementsReady=(await store.pool.query("SELECT to_regclass('ryo_treasury_movements') IS NOT NULL AS t")).rows[0].t;
+ for(const [role,d] of [...Object.entries(snap.destinations),...Object.entries(snap.reserves||{})]){
+  const prev=(await store.pool.query('SELECT sol_lamports,sr_raw,observed FROM ryo_treasury_observations WHERE scope=$1 AND role=$2 AND address=$3 ORDER BY observed DESC LIMIT 1',[store.scope,role,d.address])).rows[0];
   if(prev){
    const topups=['activeRewards','lockedTreasury','economicReserve'].includes(role)?BigInt((await store.pool.query('SELECT COALESCE(SUM(amount_raw),0) AS n FROM ryo_revenue_replenishments WHERE scope=$1 AND source=$2 AND created>$3',[store.scope,role,prev.observed])).rows[0].n):0n;
-   if(d.srRaw!=null&&prev.sr_raw!=null&&BigInt(prev.sr_raw)-BigInt(d.srRaw)>topups)snap.alerts.push({severity:'review',signal:'Unrecorded SR outflow',detail:d.label+' SR decreased by '+(BigInt(prev.sr_raw)-BigInt(d.srRaw)-topups)+' base units more than recorded top-ups since '+new Date(Number(prev.observed)).toISOString()+'. Confirm it was an approved transfer.'});
+   // By on-chain time (block_time, seconds), not record time: a movement recorded late must not explain a later, different outflow.
+   const moved=movementsReady?BigInt((await store.pool.query('SELECT COALESCE(SUM(amount_raw),0) AS n FROM ryo_treasury_movements WHERE scope=$1 AND source_address=$2 AND COALESCE(block_time*1000,created)>$3 AND COALESCE(block_time*1000,created)<=$4',[store.scope,d.address,prev.observed,store.now()])).rows[0].n):0n;
+   const explained=topups+moved;
+   if(d.srRaw!=null&&prev.sr_raw!=null&&BigInt(prev.sr_raw)-BigInt(d.srRaw)>explained)snap.alerts.push({severity:'review',signal:'Unrecorded SR outflow',detail:d.label+' SR decreased by '+(BigInt(prev.sr_raw)-BigInt(d.srRaw)-explained)+' base units more than recorded top-ups and Treasury movements since '+new Date(Number(prev.observed)).toISOString()+'. Confirm it was an approved transfer and record it.'});
    if(d.solLamports!=null&&prev.sol_lamports!=null&&Number(prev.sol_lamports)-Number(d.solLamports)>10000000)snap.alerts.push({severity:'review',signal:'SOL outflow',detail:d.label+' SOL decreased by '+(Number(prev.sol_lamports)-Number(d.solLamports))/1e9+' SOL since the previous observation.'});
   }
   await store.pool.query('INSERT INTO ryo_treasury_observations(scope,role,address,sol_lamports,sr_raw,status,observed) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT DO NOTHING',[store.scope,role,d.address,d.solLamports,d.srRaw,d.verification.status,store.now()]);
@@ -185,7 +211,11 @@ async function handle(ctx,wallet,action,body){
    if(body.approve){
     if(Number(p.version)!==Number(ctl.version))fail('Proposal is stale. Re-propose against the current configuration.',409);
     const payload=validate(p.kind,['financial','monitor'].includes(p.kind)?p.payload[p.kind]:p.payload,now);
-    if(['revenueRouting','revenueReplenishment'].includes(p.kind)){
+    if(p.kind==='treasuryMovement'){
+     // Re-verified against the finalized transaction inside this transaction; appended to the movement ledger only. No config change.
+     if(!require('./sr-revenue.cjs').enabled())fail('Treasury movements are recorded only on the live server.',403);
+     await require('./treasury-movements.cjs').record(ctx,c,payload.treasuryMovement,p);
+    }else if(['revenueRouting','revenueReplenishment'].includes(p.kind)){
      const applied=await require('./sr-revenue.cjs').applyApproval(ctx,c,p.kind,payload[p.kind],p);
      await c.query('UPDATE ryo_admin_control SET config=$2,version=version+1 WHERE scope=$1',[store.scope,JSON.stringify({...ctl.config,...applied})]);
     }else if(p.kind==='resume'){

@@ -1,7 +1,7 @@
 /* Live (Mainnet) economy decisions, owner decision 2026-11-09. Copied to app/server/live-economy.cjs by apply-live-economy.cjs.
  *
  *   1. SR deposits are fee-free on the live build: the whole deposit is credited (no 2% studio fee, one transfer).
- *   2. Boss Hunt's 10% treasury share goes to the registered Locked Treasury (Squads vault) on the live build.
+ *   2. Boss Hunt's 10% treasury share goes to the registered Treasury on the live build.
  *   3. RYO_STUDIO_WALLET / RYO_REVENUE_WALLET are optional on the live build. Nothing at launch pays them; features that
  *      would (the Market) are refused until both are configured (launch-gates.cjs).
  * The test-server build keeps the original behaviour exactly: 2% deposit fee, studio and revenue wallets required. */
@@ -90,11 +90,11 @@ function depositAmount(original, value) {
 function depositConfig(studioAddress) {
   return feeFree() ? { studioAddress: null, studioFeeBps: 0, depositFeeBps: 0, maxAmount: LIVE_MAX_DEPOSIT } : { studioAddress, studioFeeBps: 200 };
 }
-/** Boss Hunt treasury share: the registered Locked Treasury on live, the legacy revenue wallet on the test server. */
+/** Boss Hunt treasury share: the registered Treasury on live, the legacy revenue wallet on the test server. */
 function huntTreasury(revenueAddress) {
   if (!live()) return revenueAddress;
   const reg = require('./treasury-registry.cjs').registry(), vault = reg.addresses?.lockedTreasury;
-  if (!present(vault)) fail('The Locked Treasury is not registered. Boss Hunt entry is unavailable.', 503);
+  if (!present(vault)) fail('The Treasury is not registered. Boss Hunt entry is unavailable.', 503);
   return vault;
 }
 
@@ -141,7 +141,7 @@ function tokenConfigReady(env = process.env) { return present(env.RYO_TOKEN_MINT
 /** Studio address published to the wallet: null on live (fee-free deposits), the configured wallet on the test server. */
 function publicStudio(env = process.env) { return live() ? null : env.RYO_STUDIO_WALLET; }
 /* On live every regular product carries the 50/30/10/10 revenue distribution; only a Boss Hunt quote does not. Boss Hunt is
- * entered through hunt-enter (its share goes to the Locked Treasury), never through the generic purchase action. */
+ * entered through hunt-enter (its share goes to the Treasury), never through the generic purchase action. */
 function assertPurchase(action, body) {
   if (live() && action === 'purchase' && body && body.product === 'hunt') throw Object.assign(Error('Enter Boss Hunt from the Boss Hunt screen.'), { status: 403, code: 'LAUNCH_GATE_CLOSED', gate: 'bossHunt' });
 }

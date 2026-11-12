@@ -50,7 +50,7 @@ process.env.EXPEDITIONS_ENABLED = 'on'; process.env.EXPEDITION_ACCELERATION_ENAB
     await p.locator('[data-exp-tab="away"]').click(); await p.locator('[data-exp-expedite]').click();
     await p.waitForFunction(() => /Pay [\d,]+ Ryo/.test(document.querySelector('.sbw-exp-confirm')?.innerText || ''));
     const confirm = (await p.locator('.sbw-exp-confirm').innerText()).replace(/\s+/g, ' ');
-    assert.match(confirm, /optional: the Expedition is free/); assert.match(confirm, /50% Active Reward Pool · 30% Locked Treasury · 10% Community Rewards · 10% Economic Reserve\./); assert.doesNotMatch(confirm, /burn/i);
+    assert.match(confirm, /optional: the Expedition is free/); assert.match(confirm, /50% Active Reward Pool · 30% Treasury · 10% Community Rewards · 10% Economic Reserve\./); assert.doesNotMatch(confirm, /burn/i);
     assert.equal(f.requests.filter(r => r.action === 'purchase').length, 0, 'nothing is charged before the confirmation');
     await p.screenshot({ path: path.join(root, 'tests/out/expedition-confirm' + (phone ? '-phone' : '') + '.png') });
     await p.locator('[data-exp-pay]').click();

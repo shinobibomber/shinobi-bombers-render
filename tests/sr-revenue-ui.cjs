@@ -18,7 +18,7 @@ require('./sr-revenue-fixture.cjs').liveEconomy();
   const open=async()=>{await p.evaluate(()=>{go(2);Combat.quantity(1);Combat.summonBatch()});await p.waitForSelector('#tokenCheckoutDialog[open]')};
   await open();
   const text=await p.locator('#tokenCheckoutDialog').innerText();
-  for(const value of ['Locked Treasury','50%','12,500 Ryo','Active Adventure Rewards','30%','7,500 Ryo','Community Rewards','Economic Reserve','2,500 Ryo','Automatic service burn','None'])assert(text.includes(value),value);
+  for(const value of ['Treasury','50%','12,500 Ryo','Active Adventure Rewards','30%','7,500 Ryo','Community Rewards','Economic Reserve','2,500 Ryo','Automatic service burn','None'])assert(text.includes(value),value);
   assert(!/2% studio|8%|80%/.test(text));assert.equal(await p.locator('#checkoutConfirm').isDisabled(),true);
   await p.locator('#checkoutConfirm').evaluate(e=>e.click());
   // The native disabled control ignores activation without submitting a purchase.

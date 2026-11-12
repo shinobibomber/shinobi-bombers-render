@@ -9,7 +9,7 @@ suites.push('sr-revenue.cjs','sr-revenue-ui.cjs');
 suites.push('beta-economy.cjs');
 suites.push('referral-bound.cjs','prelaunch-server.cjs','prelaunch-creators.cjs','prelaunch-page.cjs','private-testing.cjs');
 suites.push('prelaunch-wallet-security.cjs');
-suites.push('treasury-registry.cjs','treasury-live-rewards.cjs','treasury-prelaunch.cjs','treasury-page.cjs');
+suites.push('treasury-registry.cjs','treasury-live-rewards.cjs','treasury-prelaunch.cjs','treasury-page.cjs','treasury-movements.cjs');
 suites.push('creator-referral-sync.cjs');
 suites.push('mythic-animation-controller.cjs','mythic-animation.cjs');
 suites.push('mythic-motion-v3.cjs');

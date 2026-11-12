@@ -1,7 +1,7 @@
 /* Live economy build step (owner decision 2026-11-09; runs after apply-founders, see unpack.cjs).
  * Copies live-economy/server.cjs to app/server/live-economy.cjs and applies exact-string hooks (each must match once):
  *   service.cjs         studio/revenue wallets optional on live; fee-free deposit verifier on live; deposit `config`
- *                       fields; Boss Hunt treasury share to the registered Locked Treasury on live.
+ *                       fields; Boss Hunt treasury share to the registered Treasury on live.
  *   netlify-handler.cjs studio/revenue wallets not required on live.
  *   index.html          the wallet builds a one-transfer, fee-free deposit when the server's config has studioAddress null
  *                       (only the live server sends that); the Devnet build keeps the 2% studio-fee deposit unchanged.
@@ -240,7 +240,7 @@ function applyLiveEconomy(appDir = path.join(__dirname, 'app')) {
   patchFile(path.join(server, 'netlify-handler.cjs'), handlerHooks, 'netlify-handler');
   patchFile(path.join(server, 'render-server.cjs'), renderHooks, 'render-server');
   patchFile(path.join(appDir, 'public/index.html'), clientPatches, 'client');
-  console.log('Live economy: fee-free SR deposits, Boss Hunt 10% to the Locked Treasury, studio/revenue wallets optional (live build only).');
+  console.log('Live economy: fee-free SR deposits, Boss Hunt 10% to the Treasury, studio/revenue wallets optional (live build only).');
 }
 module.exports = { applyLiveEconomy, reviewHooks, economyHooks, serviceHooks, handlerHooks, renderHooks, clientPatches, liveClientPatches, liveClientText };
 if (require.main === module) applyLiveEconomy();

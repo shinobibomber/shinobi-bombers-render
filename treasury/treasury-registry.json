@@ -1,5 +1,5 @@
 {
-  "schema": "shinobi-treasury-registry-v1",
+  "schema": "shinobi-treasury-registry-v2",
   "policy": "Chapter 04 — SR Revenue Distribution",
   "network": "mainnet",
   "publicKeysOnly": true,
@@ -7,11 +7,11 @@
   "destinations": [
     {
       "role": "lockedTreasury",
-      "label": "Locked Treasury (Squads Account 1)",
+      "label": "Shinobi Bombers Treasury",
       "bps": 5000,
-      "address": "5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn",
-      "custody": "squads-v4-vault",
-      "purpose": "Approved replenishment of gameplay reward pools; also receives the 5% SR withdrawal deduction (separate ledger)."
+      "address": "GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE",
+      "custody": "phantom-single-key",
+      "purpose": "Receives approved Treasury allocations and supports authorized operating expenses and reward replenishments; also receives the 5% SR withdrawal deduction (separate ledger)."
     },
     {
       "role": "activeRewards",
@@ -38,10 +38,40 @@
       "purpose": "Funds rewards for content creators under approved budgets; approved top-ups from this wallet can also replenish the Active Reward Pool."
     }
   ],
+  "treasuryCustodyException": {
+    "approved": true,
+    "address": "GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE",
+    "reference": "Owner explicitly approved a single-key Treasury wallet GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE on 2026-11-12, replacing Squads vault #0 as the Treasury; no on-chain spending restriction."
+  },
+  "reserves": [
+    {
+      "role": "ryoBurnReserve",
+      "label": "RYO Burn Reserve",
+      "address": "5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn",
+      "custody": "squads-v4-vault",
+      "purpose": "Holds RYO designated for separately approved future burns. Held tokens are not burned and do not reduce supply; only a finalized Token-2022 burn counts as burned."
+    }
+  ],
+  "treasuryMigration": {
+    "id": "treasury-migration-2026-11",
+    "status": "open",
+    "purpose": "Relocation of the Treasury holdings from the former Squads Treasury vault (now the RYO Burn Reserve) to the Treasury GPbg… (owner decision 2026-11-12: GPbg… is the Treasury until the owner asks for a change). Only this leg can be recorded as a Treasury relocation; recording ends when the migration is completed and reconciled (status completed). Relocations are never revenue and never burns. A later move needs its own reviewed migration entry.",
+    "legs": [
+      {
+        "leg": 1,
+        "from": "5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn",
+        "to": "GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE",
+        "path": "squads-vault-execute",
+        "note": "Former Squads Treasury vault #0 → Treasury (35T3… on 2026-11-12, plus any owner-approved residual transfer)."
+      }
+    ]
+  },
   "squads": {
     "programId": "SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf",
     "multisig": "38chAaSbcA4Stdg7EhCzzyVAbhz2BuKtHDfD6thsZSjX",
-    "vaultIndex": 0,
+    "vaults": {
+      "ryoBurnReserve": 0
+    },
     "threshold": 2,
     "timeLockSeconds": 0,
     "members": [
@@ -49,7 +79,7 @@
       "9LepjwaFjiMEBoApmh4KBZpz39QwQJwaxN9nRFsySPiY",
       "CM92voUXXxB1RnnCcweHLgJndWMJg5xgHMSC7H7LMNHy"
     ],
-    "observed": "2026-11-08: finalized Mainnet read — MultisigCreateV2, threshold 2 of 3, time lock 0, no config authority, vault index 0 derives the Treasury address."
+    "observed": "2026-11-08: finalized Mainnet read — MultisigCreateV2, threshold 2 of 3, time lock 0, no config authority, vault index 0 derives 5wVB… (Treasury until 2026-11-12, RYO Burn Reserve after). Re-read 2026-11-12."
   },
   "gameCustody": {
     "address": "CqJCKKq9Q9haCtdVuHLZfCkfoDnRievuTaJ9doHatwBT",

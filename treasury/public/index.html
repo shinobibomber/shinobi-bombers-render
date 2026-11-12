@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Treasury Transparency · Shinobi Bombers</title>
-<meta name="description" content="Read-only, finalized on-chain view of the Shinobi Bombers Chapter 04 SR wallets: Squads Treasury, Active Reward Pool, Community Reward Vault and Content Creators Reward Pool.">
+<meta name="description" content="Read-only, finalized on-chain view of the Shinobi Bombers SR wallets: the Shinobi Bombers Treasury, the reward pools and the RYO Burn Reserve.">
 <link rel="stylesheet" href="/treasury/treasury.css">
 <script src="/treasury/treasury.js" defer></script>
 </head>
@@ -12,13 +12,13 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <a class="brand" href="/"><span class="seal" aria-hidden="true">金</span><span>SHINOBI BOMBERS<small>Treasury transparency</small></span></a>
-  <nav><a href="/whitepaper">Whitepaper</a><a href="/">Home</a></nav>
+  <nav aria-label="Sections"><a href="#treasury">Treasury</a><a href="#reward-pool">Reward Pool</a><a href="#burn-reserve">RYO Burn Reserve</a><a href="/whitepaper">Whitepaper</a></nav>
 </header>
 <main id="main">
   <section class="hero">
     <p class="eyebrow">CHAPTER 04 · SR REVENUE DISTRIBUTION</p>
     <h1>Every SR wallet, <span>in plain view.</span></h1>
-    <p class="lead">Public addresses and finalized Solana Mainnet observations for the four Chapter 04 destinations. This page is read-only: it never asks for a wallet, a signature or a transaction.</p>
+    <p class="lead">Public addresses and finalized Solana Mainnet observations for the Shinobi Bombers Treasury, the reward pools and the RYO Burn Reserve. This page is read-only: it never asks for a wallet, a signature or a transaction.</p>
     <div id="status" class="status" role="status" aria-live="polite">Loading verified chain data…</div>
   </section>
 
@@ -26,38 +26,53 @@
     <h2 id="split-title">Approved service revenue split</h2>
     <p class="note">Eligible net SR revenue from approved game services only. Treasury → reward pool replenishment is an internal transfer and is never split again. No automatic burn.</p>
     <div id="split" class="split" aria-label="50 / 30 / 10 / 10 allocation"></div>
-    <p class="note">Optional Expedition early-return payments use their own split: 50% Active Reward Pool, 30% Locked Treasury, 10% Community Reward Vault, 10% Content Creators Reward Pool. Nothing is burned. The 10% wallet was previously called the Economic Stability Reserve; its address and share are unchanged.</p>
+    <p class="note">Optional Expedition early-return payments use their own split: 50% Active Reward Pool, 30% Treasury, 10% Community Reward Vault, 10% Content Creators Reward Pool. Nothing is burned. The 10% wallet was previously called the Economic Stability Reserve; its address and share are unchanged.</p>
   </section>
 
-  <section aria-labelledby="funding-title">
-    <h2 id="funding-title">Reward claim funding</h2>
-    <p class="note">The four Chapter 04 wallets are owner-controlled and external to the game. Players are paid Chest rewards only from approved top-ups into the game's claim wallet — so these two figures are deliberately kept apart.</p>
+  <section id="treasury" aria-labelledby="treasury-title">
+    <h2 id="treasury-title">Shinobi Bombers Treasury</h2>
+    <div id="treasuryCard" class="cards"></div>
+    <article id="migrationPanel" class="panel custody" hidden><h3>Treasury migration</h3><p id="migrationNote" class="note"></p><ul id="migrationLegs" class="rules"></ul>
+      <p class="note">Relocations move existing Treasury RYO between wallets. They are not revenue and not burns.</p></article>
+  </section>
+
+  <section id="reward-pool" aria-labelledby="funding-title">
+    <h2 id="funding-title">Reward pools and claim funding</h2>
+    <p class="note">The Chapter 04 wallets are owner-controlled and external to the game. Players are paid Chest rewards only from approved top-ups into the game's claim wallet — so these two figures are deliberately kept apart.</p>
     <div class="two funding">
       <article class="panel"><h3>Held in Chapter 04 wallets</h3><div id="held" class="big">—</div><p id="heldNote" class="note"></p></article>
       <article class="panel"><h3>Available for player reward claims</h3><div id="claimable" class="big">—</div><p id="claimNote" class="note"></p><div id="claimState" class="row"></div></article>
     </div>
     <article id="custodyPanel" class="panel custody" hidden><h3>Game claim wallet</h3><p id="custodyAddr" class="mono"></p><div id="custodyCopy"></div><dl id="custodyFacts" class="facts"></dl>
-      <p class="note">The game's own hot wallet. It also holds players' deposited SR, so its balance is <b>not</b> all available for rewards. It receives reward SR only through approved top-ups from the Active Reward Pool.</p></article>
-  </section>
-
-  <section aria-labelledby="wallets-title">
-    <h2 id="wallets-title">Destination wallets</h2>
+      <p class="note">The game's own hot wallet. It also holds players' deposited SR, so its balance is <b>not</b> all available for rewards. It receives reward SR only through approved top-ups.</p></article>
+    <h3 class="subhead">Reward pool wallets</h3>
     <div id="wallets" class="cards"></div>
   </section>
 
-  <section class="two" aria-label="Treasury governance and SR mint">
-    <article class="panel" aria-labelledby="squads-title"><h2 id="squads-title">Treasury governance</h2><dl id="squads" class="facts"></dl>
-      <p class="note">Squads multisig approval protects the Treasury. It is <b>not</b> a timelock, and it does not by itself restrict what an approved proposal may do.</p></article>
-    <article class="panel" aria-labelledby="mint-title"><h2 id="mint-title">SR token mint</h2><dl id="mint" class="facts"></dl>
-      <p class="note">The mint address is published here only after it is created and reviewed. Pump.fun does not assign these allocations automatically.</p></article>
+  <section id="burn-reserve" aria-labelledby="burn-title">
+    <h2 id="burn-title">RYO Burn Reserve</h2>
+    <p class="note">The Burn Reserve holds RYO set aside for future burns that are approved separately. <b>Reserved RYO is not burned RYO</b>: tokens sitting in the reserve still exist and have not reduced supply. Only a finalized Token-2022 burn transaction, verified and recorded, counts as burned.</p>
+    <div class="two">
+      <article class="panel"><h3>Reserved RYO (held)</h3><div id="reserved" class="big">—</div><p class="note">Current verified balance of the Burn Reserve. Not burned.</p></article>
+      <article class="panel"><h3>Burned RYO (verified)</h3><div id="burned" class="big">—</div><p id="burnedNote" class="note"></p></article>
+    </div>
+    <div id="reserveCard" class="cards reserve"></div>
+    <article class="panel"><h3>Burn history</h3><ul id="burns" class="rules"></ul></article>
+    <div class="two">
+      <article class="panel" aria-labelledby="squads-title"><h3 id="squads-title">Burn Reserve governance</h3><dl id="squads" class="facts"></dl>
+        <p class="note">Squads multisig approval protects the Burn Reserve: a burn or transfer needs the approval threshold. It is <b>not</b> a timelock, and it does not by itself restrict what an approved proposal may do.</p></article>
+      <article class="panel" aria-labelledby="mint-title"><h3 id="mint-title">SR token mint</h3><dl id="mint" class="facts"></dl>
+        <p class="note">Total supply is read from the mint. Pump.fun does not assign these allocations automatically, and it does not label the Burn Reserve as burned.</p></article>
+    </div>
   </section>
 
   <section class="panel" aria-labelledby="rules-title">
     <h2 id="rules-title">Rules and honest limits</h2>
     <ul id="rules" class="rules"></ul>
     <ul class="rules">
-      <li>Withdrawals of claimed SR return <b>5%</b> to the Locked Treasury. That deduction has its own ledger and is never counted as service revenue.</li>
-      <li>The Active Reward Pool, Community Reward Vault and Content Creators Reward Pool are currently single-key wallets: they carry no on-chain spending restriction.</li>
+      <li>Withdrawals of claimed SR return <b>5%</b> to the Treasury. That deduction has its own ledger and is never counted as service revenue.</li>
+      <li>The Treasury, Active Reward Pool, Community Reward Vault and Content Creators Reward Pool are currently single-key wallets: they carry no on-chain spending restriction. The RYO Burn Reserve is a Squads multisig vault.</li>
+      <li>Moving RYO between these wallets (for example the Treasury move on 12 November 2026) is an internal transfer: it is not revenue and it is not a burn.</li>
       <li>Balances are finalized observations, refreshed at most once a minute. If the chain cannot be read, values show as unavailable — never as zero.</li>
       <li>SR revenue routing, Chest claims and withdrawals run under the approved vault configuration, funded reward pools and the daily limits described in the whitepaper.</li>
     </ul>

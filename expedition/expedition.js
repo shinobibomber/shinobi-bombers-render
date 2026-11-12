@@ -188,7 +188,7 @@
     return `<div class="sbw-exp-confirm"><div><h3>Expedite ${esc(c.name)}?</h3>
       <p>Bring this hero back now instead of in ${esc(dur(c.q.remainingMs))}. This is optional: the Expedition is free and completes on its own.</p>
       <p class="sbw-exp-price">${fmtRyo(c.q.total)} Ryo <small>from your deposited game balance</small></p>
-      <p class="sbw-exp-split">Payment split: ${pct('activeRewards')} Active Reward Pool · ${pct('lockedTreasury')} Locked Treasury · ${pct('communityRewards')} Community Rewards · ${pct('economicReserve')} Economic Reserve.</p>
+      <p class="sbw-exp-split">Payment split: ${pct('activeRewards')} Active Reward Pool · ${pct('lockedTreasury')} Treasury · ${pct('communityRewards')} Community Rewards · ${pct('economicReserve')} Economic Reserve.</p>
       <p class="sbw-exp-note">The hero returns once the payment is finalized on-chain (keep the game open until then). Its Chakra is not refilled.</p>
       <div class="sbw-exp-actions"><button type="button" class="sbw-exp-btn" data-exp-cancel ${c.paying ? 'disabled' : ''}>Cancel</button><button type="button" class="sbw-exp-btn gold" data-exp-pay ${c.paying ? 'disabled' : ''}>${c.paying ? 'Paying…' : 'Pay ' + fmtRyo(c.q.total) + ' Ryo'}</button></div></div></div>`;
   }

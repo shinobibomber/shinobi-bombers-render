@@ -6,7 +6,10 @@
  *   Squads v4  pinned program ID + account discriminator, vault PDA re-derived from the multisig, threshold,
  *              exact member set, no config authority (autonomous), time lock reported, member permissions,
  *              and no member/vault overlap with the game custody signer or other destinations.
- *   Wallets    Phantom destinations must be System-owned (or not yet created — "unfunded").
+ *   Wallets    Phantom destinations must be System-owned (or not yet created — "unfunded"). A single-key Treasury
+ *              (owner-approved registry exception) is verified the same way, plus its token account.
+ *   Reserves   the RYO Burn Reserve is a Squads vault (full governance check) whose balance is reported as RESERVED,
+ *              separately from owner-held funds and never as burned.
  *   SR mint    the registry's token program (classic SPL Token, or Token-2022 with only the MetadataPointer/
  *              TokenMetadata extensions; anything else = blocking) and 6 decimals, with mint/freeze authority reported.
  *   Balances   SOL lamports and, once the mint is registered, SR base units.
@@ -57,19 +60,23 @@ function withTimeout(promise, ms = TIMEOUT_MS) {
 }
 const unverified = (kind, error) => ({ kind, status: 'unverified', problems: ['Chain data unavailable: ' + (error?.rpcTimeout ? 'RPC timed out' : 'RPC error') + '. Shown as unverified, never as zero.'] });
 
-/** Verify the Squads Treasury against the registry. `forbidden` = addresses no member/vault may equal (custody, studio…). */
-async function verifySquads(connection, reg = registryModule.registry(), { forbidden = [] } = {}) {
-  const { PublicKey } = web3(), s = reg.squads, problems = [], vault = reg.addresses.lockedTreasury;
+/** The Squads-governed role verified by default: the Treasury when it is a Squads vault, otherwise the first governed role. */
+const defaultSquadsRole = reg => (reg.squads.vaults.lockedTreasury !== undefined ? 'lockedTreasury' : Object.keys(reg.squads.vaults)[0]);
+/** Verify one Squads-governed vault (role from squads.vaults) against the registry. `forbidden` = addresses no member/vault
+ * may equal (custody, studio, other destinations…). */
+async function verifySquads(connection, reg = registryModule.registry(), { forbidden = [], role = defaultSquadsRole(reg) } = {}) {
+  const { PublicKey } = web3(), s = reg.squads, problems = [], vault = s.vaultAddresses[role], vaultIndex = s.vaults[role];
+  if (vault === undefined || vaultIndex === undefined) return { kind: 'squads-v4', status: 'mismatch', role, multisig: s.multisig, vault: null, problems: ['Role ' + role + ' is not governed by the registered Squads multisig.'] };
   let info, vaultInfo;
   try { [info, vaultInfo] = await withTimeout(Promise.all([connection.getAccountInfo(new PublicKey(s.multisig), 'finalized'), connection.getAccountInfo(new PublicKey(vault), 'finalized')])); }
-  catch (e) { return { ...unverified('squads-v4', e), multisig: s.multisig, vault }; }
-  if (!info) return { kind: 'squads-v4', status: 'mismatch', multisig: s.multisig, vault, problems: ['The Squads multisig account does not exist on chain.'] };
+  catch (e) { return { ...unverified('squads-v4', e), role, multisig: s.multisig, vault }; }
+  if (!info) return { kind: 'squads-v4', status: 'mismatch', role, multisig: s.multisig, vault, problems: ['The Squads multisig account does not exist on chain.'] };
   if (info.owner.toBase58() !== s.programId) problems.push('Multisig account is not owned by the pinned Squads v4 program.');
-  let ms; try { ms = decodeMultisig(info.data); } catch (e) { return { kind: 'squads-v4', status: 'mismatch', multisig: s.multisig, vault, problems: [...problems, e.message] }; }
-  const derived = vaultAddress(s.multisig, s.vaultIndex, s.programId);
-  if (derived !== vault) problems.push('Squads vault #' + s.vaultIndex + ' derives ' + derived + ', not the registered Treasury address.');
-  if (vaultInfo && vaultInfo.owner.toBase58() !== SYSTEM_PROGRAM) problems.push('The Treasury vault address is not a System-owned vault account.');
-  if (vaultInfo && vaultInfo.data?.length) problems.push('The Treasury vault account unexpectedly holds data.');
+  let ms; try { ms = decodeMultisig(info.data); } catch (e) { return { kind: 'squads-v4', status: 'mismatch', role, multisig: s.multisig, vault, problems: [...problems, e.message] }; }
+  const derived = vaultAddress(s.multisig, vaultIndex, s.programId);
+  if (derived !== vault) problems.push('Squads vault #' + vaultIndex + ' derives ' + derived + ', not the registered ' + role + ' address.');
+  if (vaultInfo && vaultInfo.owner.toBase58() !== SYSTEM_PROGRAM) problems.push('The ' + role + ' vault address is not a System-owned vault account.');
+  if (vaultInfo && vaultInfo.data?.length) problems.push('The ' + role + ' vault account unexpectedly holds data.');
   const keys = ms.members.map(m => m.key);
   if (ms.threshold !== s.threshold || ms.threshold < 2) problems.push('Threshold is ' + ms.threshold + '; the registry requires ' + s.threshold + ' (minimum 2).');
   if (keys.length !== s.members.length || keys.some(k => !s.members.includes(k)) || new Set(keys).size !== keys.length) problems.push('The Squads member set differs from the registered members.');
@@ -80,9 +87,9 @@ async function verifySquads(connection, reg = registryModule.registry(), { forbi
   if (!ms.members.some(m => m.initiate) || !ms.members.some(m => m.execute)) problems.push('No member can initiate or execute proposals.');
   for (const f of forbidden.filter(Boolean)) {
     if (keys.includes(f)) problems.push('Game-controlled or destination address ' + f + ' must not be a Squads member.');
-    if (f === vault || f === s.multisig) problems.push('Address ' + f + ' collides with the Treasury multisig/vault.');
+    if (f === vault || f === s.multisig) problems.push('Address ' + f + ' collides with the Squads multisig/vault.');
   }
-  return { kind: 'squads-v4', status: problems.length ? 'mismatch' : 'verified', commitment: 'finalized', programId: s.programId, multisig: s.multisig, vault, vaultIndex: s.vaultIndex,
+  return { kind: 'squads-v4', status: problems.length ? 'mismatch' : 'verified', commitment: 'finalized', role, programId: s.programId, multisig: s.multisig, vault, vaultIndex,
     threshold: ms.threshold, members: ms.members.map(m => ({ key: m.key, initiate: m.initiate, vote: m.vote, execute: m.execute })), configAuthority: ms.configAuthority,
     timeLockSeconds: ms.timeLockSeconds, transactionIndex: ms.transactionIndex, staleTransactionIndex: ms.staleTransactionIndex, vaultLamports: vaultInfo ? vaultInfo.lamports : 0, problems,
     note: 'Verifies Squads 2-of-' + keys.length + ' approval. It is not a timelock and does not restrict what approved proposals may do.' };
@@ -165,24 +172,33 @@ async function snapshot(connection, { reg = registryModule.registry(), custody =
     out.alerts.push({ severity: 'review', signal: 'Verification unavailable', detail: out.problems[0] }); return out;
   }
   const forbidden = [custody, studio].filter(Boolean);
-  const [squads, mintStatus, ...wallets] = await Promise.all([
-    verifySquads(connection, reg, { forbidden: [...forbidden, reg.addresses.activeRewards, reg.addresses.communityRewards, reg.addresses.economicReserve] }),
+  // Every Squads-governed vault (Burn Reserve; the Treasury too when it is a vault) gets the full governance check. A single-key
+  // Treasury (owner-approved registry exception) is verified as a plain wallet. No other vault/wallet may be a Squads member.
+  const allWallets = [...Object.values(reg.addresses), ...Object.values(reg.reserveAddresses)];
+  const squadsRoles = Object.keys(reg.squads.vaults), plainRoles = ROLES_NON_SQUADS(reg);
+  const [mintStatus, ...checks] = await Promise.all([
     verifyMint(connection, mint, reg.srMintProgram),
-    ...['activeRewards', 'communityRewards', 'economicReserve'].map(r => verifyWallet(connection, reg.addresses[r])),
+    ...squadsRoles.map(role => verifySquads(connection, reg, { role, forbidden: [...forbidden, ...allWallets.filter(a => a !== reg.squads.vaultAddresses[role])] })),
+    ...plainRoles.map(r => verifyWallet(connection, reg.addresses[r])),
   ]);
-  const destinations = {};
-  destinations.lockedTreasury = { ...reg.destinations.lockedTreasury, verification: squads };
-  ['activeRewards', 'communityRewards', 'economicReserve'].forEach((r, i) => { destinations[r] = { ...reg.destinations[r], verification: wallets[i] }; });
-  for (const r of Object.keys(destinations)) {
-    const d = destinations[r];
+  const squadsByRole = Object.fromEntries(squadsRoles.map((r, i) => [r, checks[i]])), wallets = checks.slice(squadsRoles.length);
+  const squads = squadsByRole[defaultSquadsRole(reg)];
+  const entries = {};
+  for (const r of Object.keys(reg.destinations)) entries[r] = { ...reg.destinations[r], verification: squadsByRole[r] || wallets[plainRoles.indexOf(r)] };
+  const reserves = {};
+  for (const r of Object.keys(reg.reserves)) reserves[r] = { ...reg.reserves[r], bps: 0, verification: squadsByRole[r] };
+  const tokenAccountRoles = new Set(['lockedTreasury', ...Object.keys(reserves)]);
+  for (const [r, d] of [...Object.entries(entries), ...Object.entries(reserves)]) {
     if (forbidden.includes(d.address)) { d.verification = { ...d.verification, status: 'mismatch', problems: [...(d.verification.problems || []), 'Destination equals a game-controlled wallet.'] }; }
-    d.solLamports = r === 'lockedTreasury' ? (squads.status === 'unverified' ? null : squads.vaultLamports ?? null) : (d.verification.status === 'unverified' ? null : d.verification.lamports ?? null);
+    const ver = d.verification;
+    d.solLamports = ver.status === 'unverified' ? null : (ver.kind === 'squads-v4' ? ver.vaultLamports : ver.lamports) ?? null;
     if (mintStatus.address && mintStatus.program === reg.srMintProgram) {
       try { d.srRaw = await srBalance(connection, d.address, mintStatus.address, mintStatus.program); } catch { d.srRaw = null; }
-      if (r === 'lockedTreasury') d.tokenAccount = await verifyTokenAccount(connection, mintStatus.address, d.address, mintStatus.program);
+      if (tokenAccountRoles.has(r)) d.tokenAccount = await verifyTokenAccount(connection, mintStatus.address, d.address, mintStatus.program);
     } else d.srRaw = null;
   }
-  out.destinations = destinations; out.squads = squads; out.mint = mintStatus;
+  const destinations = entries;
+  out.destinations = destinations; out.reserves = reserves; out.squads = squads; out.squadsByRole = squadsByRole; out.mint = mintStatus;
   // The game claim/custody wallet (public address from the registry). Its balance includes player deposits, so it is
   // never presented as claimable; "available for claims" is computed separately from the game ledger.
   if (reg.gameCustody) {
@@ -192,27 +208,44 @@ async function snapshot(connection, { reg = registryModule.registry(), custody =
     out.gameCustody = gc;
   }
   // Funds in the four owner-controlled Chapter 04 wallets: external to the game, never directly claimable by players.
+  // The Burn Reserve is NOT included: its RYO is reported separately as reserved for future burns (never as burned).
   const held = Object.values(destinations).map(d => d.srRaw);
   out.externalHeld = !mintStatus.address ? { status: 'pending', srRaw: null, note: 'The SR mint is not registered yet, so no SR balances exist.' }
     : held.some(v => v == null) ? { status: 'unverified', srRaw: null, note: 'One or more wallet balances could not be read; no partial total is shown.' }
     : { status: 'verified', srRaw: String(held.reduce((n, v) => n + BigInt(v), 0n)), note: 'Owner-controlled wallets. Not directly available for player reward claims.' };
-  const failing = [squads, ...wallets, ...(destinations.lockedTreasury.tokenAccount ? [destinations.lockedTreasury.tokenAccount] : [])];
+  const reserved = Object.values(reserves).map(d => d.srRaw);
+  out.reservedForBurn = !Object.keys(reserves).length ? null : !mintStatus.address ? { status: 'pending', srRaw: null }
+    : reserved.some(v => v == null) ? { status: 'unverified', srRaw: null, note: 'The Burn Reserve balance could not be read; no number is shown.' }
+    : { status: 'verified', srRaw: String(reserved.reduce((n, v) => n + BigInt(v), 0n)), note: 'Held in the RYO Burn Reserve for separately approved future burns. Reserved RYO is not burned and has not reduced supply.' };
+  const failing = [...Object.values(squadsByRole), ...wallets, ...[...Object.values(destinations), ...Object.values(reserves)].map(d => d.tokenAccount).filter(Boolean)];
   out.status = failing.some(v => v.status === 'mismatch') ? 'mismatch' : failing.some(v => v.status === 'unverified') ? 'unverified' : 'verified';
-  if (squads.status === 'mismatch') out.alerts.push({ severity: 'critical', signal: 'Treasury governance drift', detail: squads.problems.join(' ') + ' SR routing refuses new payments until resolved.' });
-  if (squads.status === 'verified' && Number(squads.transactionIndex) > 0) out.alerts.push({ severity: 'review', signal: 'Squads proposals exist', detail: squads.transactionIndex + ' Treasury proposal(s) have been created. Confirm each was intended and approved by you.' });
+  for (const [role, sq] of Object.entries(squadsByRole)) {
+    if (sq.status !== 'mismatch') continue;
+    if (role === 'lockedTreasury') out.alerts.push({ severity: 'critical', signal: 'Treasury governance drift', detail: sq.problems.join(' ') + ' SR routing refuses new payments until resolved.' });
+    else out.alerts.push({ severity: 'critical', signal: 'Burn Reserve governance drift', detail: sq.problems.join(' ') + ' No burn or reserve movement can be recorded until resolved.' });
+  }
+  for (const d of [...Object.values(destinations), ...Object.values(reserves)]) if (d.tokenAccount?.status === 'mismatch') out.alerts.push({ severity: 'critical', signal: 'Token account mismatch', detail: d.label + ': ' + d.tokenAccount.problems.join(' ') });
+  if (reg.treasuryCustody === 'single-key') out.alerts.push({ severity: 'review', signal: 'Single-key Treasury', detail: 'The Treasury (' + reg.addresses.lockedTreasury + ') is an owner-approved single-key wallet with no on-chain spending restriction. Moving it into a Squads vault restores multisig protection.' });
+  if (squads?.status === 'verified' && Number(squads.transactionIndex) > 0) out.alerts.push({ severity: 'review', signal: 'Squads proposals exist', detail: squads.transactionIndex + ' Squads proposal(s) have been created on the multisig. Confirm each was intended and approved by you.' });
   for (const w of wallets) if (w.status === 'mismatch') out.alerts.push({ severity: 'critical', signal: 'Destination wallet mismatch', detail: w.address + ': ' + w.problems.join(' ') });
   if (mintStatus.blocking?.length && mintStatus.status !== 'pending') out.alerts.push({ severity: 'critical', signal: 'SR mint incompatible', detail: mintStatus.blocking.join(' ') });
   if (mintStatus.problems?.length) out.alerts.push({ severity: 'review', signal: 'SR mint authorities', detail: mintStatus.problems.join(' ') });
   return out;
 }
 
+/** Roles verified as plain wallets: every destination except Squads-governed ones. */
+function ROLES_NON_SQUADS(reg) { return registryModule.ROLES.filter(r => reg.squads.vaults[r] === undefined); }
+
 /** Strip member keys and other operator detail for the public transparency page. */
 function publicSummary(snap) {
   const strip = v => v && { kind: v.kind, status: v.status, state: v.state, problems: v.problems, note: v.note };
+  const tokenAccount = t => t && { status: t.status, address: t.address, state: t.state, problems: t.problems };
   return { marker: snap.marker, observedAt: snap.observedAt, status: snap.status, commitment: snap.commitment, registry: snap.registry, problems: snap.problems,
-    destinations: snap.destinations && Object.fromEntries(Object.entries(snap.destinations).map(([r, d]) => [r, { role: r, label: d.label, percent: d.bps / 100, address: d.address, custody: d.custody, purpose: d.purpose, solLamports: d.solLamports ?? null, srRaw: d.srRaw ?? null, verification: strip(d.verification) }])),
+    destinations: snap.destinations && Object.fromEntries(Object.entries(snap.destinations).map(([r, d]) => [r, { role: r, label: d.label, percent: d.bps / 100, address: d.address, custody: d.custody, purpose: d.purpose, solLamports: d.solLamports ?? null, srRaw: d.srRaw ?? null, verification: strip(d.verification), tokenAccount: tokenAccount(d.tokenAccount) }])),
+    reserves: snap.reserves && Object.fromEntries(Object.entries(snap.reserves).map(([r, d]) => [r, { role: r, label: d.label, percent: 0, address: d.address, custody: d.custody, purpose: d.purpose, solLamports: d.solLamports ?? null, srRaw: d.srRaw ?? null, verification: strip(d.verification), tokenAccount: tokenAccount(d.tokenAccount), vaultIndex: d.verification?.vaultIndex ?? null }])),
+    reservedForBurn: snap.reservedForBurn ?? null,
     squads: snap.squads && { status: snap.squads.status, threshold: snap.squads.threshold, members: snap.squads.members?.length, configAuthority: snap.squads.configAuthority ? 'set' : 'none', timeLockSeconds: snap.squads.timeLockSeconds, proposals: snap.squads.transactionIndex, multisig: snap.squads.multisig, note: snap.squads.note },
-    mint: snap.mint && { status: snap.mint.status, address: snap.mint.address, program: snap.mint.program, decimals: snap.mint.decimals, blocking: snap.mint.blocking },
+    mint: snap.mint && { status: snap.mint.status, address: snap.mint.address, program: snap.mint.program, decimals: snap.mint.decimals, supplyRaw: snap.mint.supplyRaw ?? null, blocking: snap.mint.blocking },
     externalHeld: snap.externalHeld,
     gameCustody: snap.gameCustody && { address: snap.gameCustody.address, purpose: snap.gameCustody.purpose, solLamports: snap.gameCustody.solLamports, srRaw: snap.gameCustody.srRaw, verification: strip(snap.gameCustody.verification) } };
 }
@@ -231,4 +264,4 @@ function mainnetConnection(env = process.env) {
   return new (web3().Connection)(url, { commitment: 'finalized', disableRetryOnRateLimit: true });
 }
 
-module.exports = { MAINNET_GENESIS, MULTISIG_DISCRIMINATOR, decodeMultisig, vaultAddress, verifySquads, verifyWallet, verifyMint, verifyTokenAccount, snapshot, publicSummary, cachedSnapshot, mainnetConnection, PERMISSIONS };
+module.exports = { MAINNET_GENESIS, MULTISIG_DISCRIMINATOR, decodeMultisig, vaultAddress, defaultSquadsRole, verifySquads, verifyWallet, verifyMint, verifyTokenAccount, snapshot, publicSummary, cachedSnapshot, mainnetConnection, PERMISSIONS };

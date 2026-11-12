@@ -13,7 +13,9 @@ const registryModule = require('../app/server/treasury-registry.cjs');
  let tail = Promise.resolve(); const lock = async () => { let release; const before = tail; tail = new Promise(r => release = r); await before; return release; };
  const pool = { async query(s, a) { const release = await lock(); try { return await db.query(s, a); } finally { release(); } }, async connect() { const release = await lock(); return { query: (s, a) => db.query(s, a), release }; } };
  const store = new Store(pool, 'sr-fixture', () => 1900000000000), other = new Store(pool, 'other-scope', () => 1900000000000), treasury = web3.Keypair.generate(), mint = web3.Keypair.generate().publicKey;
- const reg = fixture.activate(mint), D = reg.addresses;
+ // Sections 1-10 exercise the protected Squads-vault Treasury shape (Treasury = vault #1, RYO Burn Reserve = vault #0), which the
+ // registry supports for a later move out of the owner-approved single-key Treasury. Section 11 runs the committed live shape.
+ const reg = fixture.activate(mint, { squadsTreasury: true }), D = reg.addresses;
  const address = () => web3.Keypair.generate().publicKey.toBase58(), operator = address(), reviewer = address(), wallet = address();
  const cfg = { enabled: true, destinations: { ...D }, products: [...router.APPROVED], evidence: 'Approved isolated full-service revenue policy' };
  const receipt = new Map(), overrides = {}; let network = true;
@@ -83,11 +85,11 @@ const registryModule = require('../app/server/treasury-registry.cjs');
   assert.equal((await router.preview(store, wallet, q)).revenueDistribution.ready, false);
   await assert.rejects(router.instructions(ctx, q, crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted && /SR_REVENUE_ROUTING_ENABLED is off/.test(e.message));
   process.env.SR_REVENUE_ROUTING_ENABLED = 'on';
-  { const raw = JSON.parse(fs.readFileSync(registryModule.FILE, 'utf8')); raw.srMintAddress = mint.toBase58(); raw.srMintProgram = 'spl-token'; raw.activation = { approved: false, reference: null }; registryModule.useForIsolatedTest(raw); }
+  { const raw = fixture.squadsTreasuryShape(JSON.parse(fs.readFileSync(registryModule.FILE, 'utf8'))); raw.srMintAddress = mint.toBase58(); raw.srMintProgram = 'spl-token'; raw.activation = { approved: false, reference: null }; registryModule.useForIsolatedTest(raw); }
   await assert.rejects(router.instructions(ctx, q, crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted && /activation approval/.test(e.message));
-  fixture.activate(web3.Keypair.generate().publicKey);
+  fixture.activate(web3.Keypair.generate().publicKey, { squadsTreasury: true });
   await assert.rejects(router.instructions(ctx, q, crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted && /does not match the registered SR mint/.test(e.message));
-  fixture.activate(mint);
+  fixture.activate(mint, { squadsTreasury: true });
 
   // 6. Four atomic legs to the registry ATAs: 50/30/10/10, zero burn, memo bound to scope+wallet+request.
   const instructions = await router.instructions(ctx, q, 'approved-quote-fixture', transfer, memo), token = instructions.filter(i => i.programId.equals(spl.TOKEN_PROGRAM_ID));
@@ -238,15 +240,62 @@ const registryModule = require('../app/server/treasury-registry.cjs');
     await assert.rejects(approve(await propose('revenueReplenishment', lt)), /already accounted/, 'the same Squads transfer can never be credited twice'); }
 
   // 9. Registry change after approval: configuration is stale and routing fails closed.
-  { const raw = JSON.parse(fs.readFileSync(registryModule.FILE, 'utf8')); raw.destinations.find(d => d.role === 'communityRewards').address = address(); raw.srMintAddress = mint.toBase58(); raw.srMintProgram = 'spl-token'; raw.activation = { approved: true, reference: 'Isolated changed registry' }; registryModule.useForIsolatedTest(raw); }
+  { const raw = fixture.squadsTreasuryShape(JSON.parse(fs.readFileSync(registryModule.FILE, 'utf8'))); raw.destinations.find(d => d.role === 'communityRewards').address = address(); raw.srMintAddress = mint.toBase58(); raw.srMintProgram = 'spl-token'; raw.activation = { approved: true, reference: 'Isolated changed registry' }; registryModule.useForIsolatedTest(raw); }
   const stale = await router.config(store); assert.equal(stale.enabled, false); assert.equal(stale.stale, true);
   assert.match((await router.preview(store, wallet, q)).revenueDistribution.note, /no longer matches/);
   await assert.rejects(router.instructions(ctx, q, crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted);
-  fixture.activate(mint);
+  fixture.activate(mint, { squadsTreasury: true });
 
   // 10. Wrong network and live-only kinds.
   network = false; await assert.rejects(router.instructions(ctx, economy.quote(economy.initialProfile(), 'summon', { quantity: 1 }), crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted); network = true;
   const count = Number((await pool.query('SELECT COUNT(*) AS n FROM ryo_admin_audit WHERE scope=$1', [store.scope])).rows[0].n); assert(count > 0);
-  console.log('PASS: SR revenue v2 — exact 50/30/10/10 conservation to u64 scale, registry-pinned destinations, Squads v4 drift refusal (threshold, members, config authority, time lock, owner, discriminator), four atomic SDK legs, activation locks, typed two-person approval, finalized top-ups with cross-ledger replay rejection, stale-registry fail-closed, v1 recovery, pending/refund/bonus/Market exclusions.');
+  // 11. Committed live registry (Treasury migration 2026-11-12): owner-approved single-key Treasury GPbg…, the former Squads
+  // Treasury vault 5wVB… as the RYO Burn Reserve. Same 50/30/10/10, same atomic four legs; only the Treasury custody changes.
+  { const live = fixture.activate(mint), L = live.addresses, TREASURY = 'GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE', RESERVE = '5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn';
+    assert.equal(L.lockedTreasury, TREASURY); assert.equal(live.reserveAddresses.ryoBurnReserve, RESERVE); assert.equal(router.treasuryIsSquads(live), false); assert.equal(router.treasuryMultisig(live), null);
+    // Cutover: the routing approved for the previous Treasury is stale and routing fails closed until re-approved.
+    const before = await router.config(store); assert.equal(before.stale, true, 'routing pinned to the old Treasury goes stale'); assert.equal(before.enabled, false);
+    await assert.rejects(router.instructions(ctx, economy.quote(economy.initialProfile(), 'summon', { quantity: 1 }), crypto.randomUUID(), transfer, memo), e => e.paymentNotSubmitted);
+    // The admin snapshot survives a stale routing configuration (the re-approval at cutover needs this page).
+    { const snap = await call(reviewer, 'admin-snapshot'); assert.equal(snap.revenueDistribution.config.stale, true); assert(Array.isArray(snap.chain.vaults)); }
+    const cfg2 = { enabled: true, destinations: { ...L }, products: [...router.APPROVED], evidence: 'Re-approval after the Treasury migration' };
+    assert.throws(() => router.validateConfig({ ...cfg2, lockedTreasuryMultisig: live.squads.multisig }), /single-key wallet: lockedTreasuryMultisig must be null/, 'a single-key Treasury never claims the Burn Reserve multisig');
+    assert.throws(() => router.validateConfig({ ...cfg2, destinations: { ...L, lockedTreasury: RESERVE } }), /reviewed public registry/, 'revenue can never be pointed at the Burn Reserve');
+    assert.equal(router.validateConfig({ ...cfg2, lockedTreasuryMultisig: null }).lockedTreasuryMultisig, null);
+    assert.deepEqual(router.RATES, { lockedTreasury: 5000, activeRewards: 3000, communityRewards: 1000, economicReserve: 1000 }, 'percentages unchanged');
+    assert.equal(router.publicPolicy().serviceBurnBps, 0, 'no automatic burn'); assert.equal(router.publicPolicy().withdrawalTreasuryBps, 500);
+    await approve(await propose('revenueRouting', cfg2));
+    const now = await router.config(store); assert.equal(now.enabled, true); assert.equal(now.destinations.lockedTreasury, TREASURY); assert.equal(now.lockedTreasuryMultisig, null);
+    // Checkout: the four atomic legs pay the new Treasury; the proof records the single-key custody honestly.
+    const q2 = economy.quote(economy.initialProfile(), 'summon', { quantity: 1 }), legs = await router.instructions(ctx, q2, crypto.randomUUID(), transfer, memo);
+    assert.equal(q2.revenueDistribution.lockProof.kind, 'single-key-wallet'); assert.equal(q2.revenueDistribution.lockProof.verified, true); assert.equal(q2.revenueDistribution.destinations.lockedTreasury, TREASURY);
+    const checked = legs.filter(i => i.programId.equals(spl.TOKEN_PROGRAM_ID) && i.data[0] === 12).map(i => spl.decodeTransferCheckedInstruction(i, spl.TOKEN_PROGRAM_ID));
+    assert.deepEqual(checked.map(i => i.keys.destination.pubkey.toBase58()), ['lockedTreasury', 'activeRewards', 'communityRewards', 'economicReserve'].map(r => spl.getAssociatedTokenAddressSync(mint, new web3.PublicKey(L[r]), true).toBase58()), 'Treasury leg → GPbg…');
+    assert.deepEqual(checked.map(i => String(i.data.amount)), ['lockedTreasury', 'activeRewards', 'communityRewards', 'economicReserve'].map(k => q2.revenueDistribution.allocations[k]), 'exact 50/30/10/10 allocation');
+    assert(!checked.some(i => i.keys.destination.pubkey.toBase58() === spl.getAssociatedTokenAddressSync(mint, new web3.PublicKey(RESERVE), true).toBase58()), 'nothing is routed to the Burn Reserve');
+    // The single-key Treasury is still verified: a delegate on its token account or a program-owned address refuses checkout.
+    const tAta = spl.getAssociatedTokenAddressSync(mint, new web3.PublicKey(TREASURY), true).toBase58();
+    { const data = Buffer.alloc(spl.ACCOUNT_SIZE); spl.AccountLayout.encode({ mint, owner: new web3.PublicKey(TREASURY), amount: 0n, delegateOption: 1, delegate: treasury.publicKey, state: 1, isNativeOption: 0, isNative: 0n, delegatedAmount: 1n, closeAuthorityOption: 0, closeAuthority: web3.PublicKey.default }, data);
+      overrides[tAta] = { owner: spl.TOKEN_PROGRAM_ID, data, lamports: 1 }; await assert.rejects(router.verifyVaults(ctx, now), /Treasury token account/); delete overrides[tAta]; }
+    overrides[TREASURY] = { owner: spl.TOKEN_PROGRAM_ID, data: Buffer.alloc(0), lamports: 1 }; await assert.rejects(router.verifyVaults(ctx, now), /could not be verified/); delete overrides[TREASURY];
+    await assert.rejects(router.verifyVaults({ ...ctx, treasuryAddress: TREASURY }, now), /separate from the game custody/, 'the Treasury can never be the game custody signer');
+    // Top-ups from the single-key Treasury: direct, signed by the Treasury itself. The Squads path and the Burn Reserve are refused.
+    const ts = bs58.encode(crypto.randomBytes(64)), tProof = (sig, { src = tAta, signer = TREASURY, inner = false } = {}) => {
+      const bal = (a, b) => [{ accountIndex: 0, mint: ctx.mint, owner: TREASURY, uiTokenAmount: { amount: String(a), decimals: 6 } }, { accountIndex: 1, mint: ctx.mint, owner: ctx.treasuryAddress, uiTokenAmount: { amount: String(b), decimals: 6 } }];
+      const t = { programId: spl.TOKEN_PROGRAM_ID, parsed: { type: 'transferChecked', info: { source: src, destination: treasuryAta.toBase58(), mint: ctx.mint, authority: signer, tokenAmount: { amount: '100000000', decimals: 6 } } } };
+      const squadsIx = { programId: new web3.PublicKey(live.squads.programId), accounts: [new web3.PublicKey(live.squads.multisig)], data: bs58.encode(crypto.createHash('sha256').update('global:vault_transaction_execute').digest().subarray(0, 8)) };
+      return { slot: 9, meta: { err: null, preTokenBalances: bal(500000000n, 0n), postTokenBalances: bal(400000000n, 100000000n), innerInstructions: inner ? [{ index: 0, instructions: [t] }] : [] },
+        transaction: { signatures: [sig], message: { accountKeys: [{ pubkey: new web3.PublicKey(src) }, { pubkey: treasuryAta }, { pubkey: new web3.PublicKey(signer), signer: true }], instructions: inner ? [squadsIx] : [t] } } };
+    };
+    const ltop = { source: 'lockedTreasury', signature: ts, amountRaw: '100000000', evidence: 'Single-key Treasury top-up' };
+    receipt.set(ts, tProof(ts)); assert.equal((await router.verifyReplenishment(ctx, now, ltop)).path, 'direct', 'the single-key Treasury tops up directly');
+    { const s2 = bs58.encode(crypto.randomBytes(64)); receipt.set(s2, tProof(s2, { inner: true })); await assert.rejects(router.verifyReplenishment(ctx, now, { ...ltop, signature: s2 }), /must send SR itself/, 'no Squads path for a single-key Treasury'); }
+    { const s3 = bs58.encode(crypto.randomBytes(64)), rAta = spl.getAssociatedTokenAddressSync(mint, new web3.PublicKey(RESERVE), true).toBase58(); receipt.set(s3, tProof(s3, { src: rAta, signer: RESERVE, inner: true }));
+      await assert.rejects(router.verifyReplenishment(ctx, now, { ...ltop, signature: s3 }), /explicit approved SR transfer|does not match/, 'Burn Reserve funds are never a reward top-up'); }
+    assert(!router.REPLENISH_SOURCES.includes('ryoBurnReserve'));
+    await assert.rejects(router.verifyReplenishment(ctx, { ...now, destinations: { ...now.destinations, lockedTreasury: RESERVE } }, ltop), /Burn Reserve funds can never be recorded as a reward top-up/);
+    fixture.activate(mint, { squadsTreasury: true }); }
+
+  console.log('PASS: SR revenue v2 — single-key Treasury (owner exception) routing, cutover staleness and re-approval, Burn Reserve excluded from revenue and top-ups; exact 50/30/10/10 conservation to u64 scale, registry-pinned destinations, Squads v4 drift refusal (threshold, members, config authority, time lock, owner, discriminator), four atomic SDK legs, activation locks, typed two-person approval, finalized top-ups with cross-ledger replay rejection, stale-registry fail-closed, v1 recovery, pending/refund/bonus/Market exclusions.');
  } finally { await db.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

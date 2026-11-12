@@ -15,3 +15,16 @@ CREATE TABLE IF NOT EXISTS ryo_treasury_observations (
  scope TEXT NOT NULL, role TEXT NOT NULL, address TEXT NOT NULL, sol_lamports NUMERIC(30,0), sr_raw NUMERIC(30,0),
  status TEXT NOT NULL, observed BIGINT NOT NULL, PRIMARY KEY(scope,role,observed)
 );
+-- Treasury movements v1 (2026-11-12): verified internal wallet movements that are never revenue or reward funding:
+-- treasuryRelocation (former Squads Treasury vault → registered Treasury), burnReserveFunding (Treasury → RYO Burn Reserve)
+-- and burn (finalized Token-2022 burn from the Burn Reserve). Recorded only through the two-person admin proposal flow.
+CREATE TABLE IF NOT EXISTS ryo_treasury_movements (
+ scope TEXT NOT NULL, signature TEXT NOT NULL,
+ kind TEXT NOT NULL CHECK(kind IN ('treasuryRelocation','burnReserveFunding','burn')),
+ source_address TEXT NOT NULL, destination_address TEXT, mint TEXT NOT NULL,
+ amount_raw NUMERIC(30,0) NOT NULL CHECK(amount_raw>0), slot BIGINT NOT NULL, block_time BIGINT,
+ proposal_id TEXT NOT NULL, evidence JSONB NOT NULL, created BIGINT NOT NULL,
+ commitment TEXT NOT NULL DEFAULT 'finalized' CHECK(commitment='finalized'), migration_id TEXT, leg INTEGER,
+ CHECK((kind='burn')=(destination_address IS NULL)), CHECK((kind='treasuryRelocation')=(migration_id IS NOT NULL AND leg IS NOT NULL)),
+ PRIMARY KEY(scope,signature), UNIQUE(scope,proposal_id)
+);

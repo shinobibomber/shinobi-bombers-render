@@ -323,7 +323,7 @@
         </article>
         <article class="card">
           <h3>👹 Boss Hunt</h3>
-          <p>Face challenging bosses with an automatic 60-second team attack and participate in Daily Rewards and Weekly Rewards under published eligibility and reward-pool rules. Each 10,000 SR entry splits 80% to the prize pool, 10% to the Locked Treasury and 10% burned. Boss Hunt opens in a later roadmap phase.</p>
+          <p>Face challenging bosses with an automatic 60-second team attack and participate in Daily Rewards and Weekly Rewards under published eligibility and reward-pool rules. Each 10,000 SR entry splits 80% to the prize pool, 10% to the Treasury and 10% burned. Boss Hunt opens in a later roadmap phase.</p>
         </article>
         <article class="card">
           <h3>🏕️ Expedition Mode</h3>
@@ -361,7 +361,7 @@
         <div class="a" style="flex:50">50%</div><div class="b" style="flex:30">30%</div><div class="c" style="flex:10">10%</div><div class="d" style="flex:10">10%</div>
       </div>
       <ul class="legend" aria-hidden="true">
-        <li><i class="a"></i>Active Reward Pool</li><li><i class="b"></i>Locked Treasury Vault</li><li><i class="c"></i>Community Reward Vault</li><li><i class="d"></i>Content Creators Reward Pool</li>
+        <li><i class="a"></i>Active Reward Pool</li><li><i class="b"></i>Treasury</li><li><i class="c"></i>Community Reward Vault</li><li><i class="d"></i>Content Creators Reward Pool</li>
       </ul>
       <div class="callout">
         <strong>Expedition Payments Have Their Own Split</strong>
@@ -402,26 +402,27 @@
         <div class="a" style="flex:50">50%</div><div class="b" style="flex:30">30%</div><div class="c" style="flex:10">10%</div><div class="d" style="flex:10">10%</div>
       </div>
       <ul class="legend" aria-hidden="true">
-        <li><i class="a"></i>Locked Treasury Vault</li><li><i class="b"></i>Active Reward Pool</li><li><i class="c"></i>Community Reward Vault</li><li><i class="d"></i>Content Creators Reward Pool</li>
+        <li><i class="a"></i>Treasury</li><li><i class="b"></i>Active Reward Pool</li><li><i class="c"></i>Community Reward Vault</li><li><i class="d"></i>Content Creators Reward Pool</li>
       </ul>
       <div class="grid">
-        <div class="card"><div class="stat">50%</div><h3>Locked Treasury Vault</h3><p>Long-term SR reserve for approved replenishment of gameplay reward pools.</p></div>
+        <div class="card"><div class="stat">50%</div><h3>Shinobi Bombers Treasury</h3><p>Receives approved Treasury allocations and supports authorized operating expenses and approved replenishment of gameplay reward pools.</p></div>
         <div class="card"><div class="stat">30%</div><h3>Active Reward Pool</h3><p>Funds eligible Adventure chest rewards under controlled reward distribution budgets.</p></div>
         <div class="card"><div class="stat">10%</div><h3>Community Reward Vault</h3><p>Supports community events, competitions, giveaways, and approved incentives.</p></div>
         <div class="card"><div class="stat">10%</div><h3>Content Creators Reward Pool</h3><p>Funds rewards for content creators under approved budgets. Approved top-ups from this wallet can also replenish the Active Reward Pool.</p></div>
       </div>
       <p class="small muted">Renamed November 11, 2026: the 10% wallet formerly called the Economic Stability Reserve is now the Content Creators Reward Pool. Its address and its 10% share are unchanged.</p>
-      <h3>Locked Treasury Rules</h3>
-      <p>The Locked Treasury is a Squads v4 multisig vault requiring 2 of 3 signer approvals, with no single-key configuration authority. Service checkout re-verifies it at finalized commitment against the published registry and refuses payment if its signers, threshold or authority change, or if a game-controlled key is a signer. The Treasury is not time-locked so approved reward replenishment stays available. Public addresses and live verification are shown on the <a href="/treasury">Treasury transparency page</a>.</p>
-      <p>A wallet label is not proof of a lock. The current adapter verifies multisig restrictions, not a timelock or a prohibition on all possible signer actions. The 30% Active Reward allocation is sent to the Active Reward Pool wallet. Adventure chest claims are paid only from verified, independently approved top-ups into the game claim custody, which are internal transfers and are never split again. Approved top-ups can come from the Active Reward Pool, the Locked Treasury (through its Squads vote) or the Content Creators Reward Pool; each needs a finalized on-chain transfer and approval by a second authorized reviewer. Community Rewards and the Content Creators Reward Pool use separate destinations. Boss Hunt, PvP, Sensei SOL and marketplace proceeds are not automatically funded by this pool. Activation requires approved vault configuration.</p>
+      <h3>Treasury and RYO Burn Reserve Rules</h3>
+      <p>Since 12 November 2026 the Shinobi Bombers Treasury is a new, owner-approved single-key wallet. It carries no on-chain spending restriction, and this paper does not claim one. Service checkout re-verifies it at finalized commitment against the published registry, and refuses payment if the address changes or if it is a game-controlled wallet. The previous Squads v4 multisig vault (2 of 3 signer approvals, no single-key configuration authority) keeps its address and governance as the <b>RYO Burn Reserve</b>. Public addresses and live verification are shown on the <a href="/treasury">Treasury transparency page</a>.</p>
+      <p>The RYO Burn Reserve holds RYO set aside for future burns. Sending RYO to it is not a burn: reserved tokens still exist and do not reduce supply. A burn happens only through a separate, multisig-approved Token-2022 burn transaction, and only verified, finalized burns are reported as burned. No game revenue is routed to the Burn Reserve automatically, and Burn Reserve funds are never used to pay player rewards.</p>
+      <p>A wallet label is not proof of a lock. The current adapter verifies multisig restrictions, not a timelock or a prohibition on all possible signer actions. The 30% Active Reward allocation is sent to the Active Reward Pool wallet. Adventure chest claims are paid only from verified, independently approved top-ups into the game claim custody, which are internal transfers and are never split again. Approved top-ups can come from the Active Reward Pool, the Treasury or the Content Creators Reward Pool; each needs a finalized on-chain transfer and approval by a second authorized reviewer. Community Rewards and the Content Creators Reward Pool use separate destinations. Boss Hunt, PvP, Sensei SOL and marketplace proceeds are not automatically funded by this pool. Activation requires approved vault configuration.</p>
       <div class="callout">
         <strong>Important Accounting Distinction</strong>
-        The 5% SR deduction collected from player withdrawals goes directly to the Locked Treasury. It is not split again under the 50/30/10/10 service-revenue allocation.
+        The 5% SR deduction collected from player withdrawals goes directly to the Treasury. It is not split again under the 50/30/10/10 service-revenue allocation.
       </div>
       <h3>Where Each Payment Goes</h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th scope="col">Payment</th><th scope="col">Locked Treasury</th><th scope="col">Active Reward Pool</th><th scope="col">Community</th><th scope="col">Content Creators Reward Pool</th><th scope="col">Other</th></tr></thead>
+          <thead><tr><th scope="col">Payment</th><th scope="col">Treasury</th><th scope="col">Active Reward Pool</th><th scope="col">Community</th><th scope="col">Content Creators Reward Pool</th><th scope="col">Other</th></tr></thead>
           <tbody>
             <tr><td>Summon, Fusion, Dojo, Training (SR)</td><td>50%</td><td>30%</td><td>10%</td><td>10%</td><td>—</td></tr>
             <tr><td>Expedition early return (SR)</td><td>30%</td><td>50%</td><td>10%</td><td>10%</td><td>No burn</td></tr>
@@ -471,7 +472,7 @@
       <p>Players may withdraw eligible, already-claimed SR balances at any time, subject to balance verification, available custody backing, network conditions, and security controls.</p>
       <div class="grid three">
         <div class="card"><div class="stat">95%</div><div class="stat-label">SR received by the player</div></div>
-        <div class="card"><div class="stat">5%</div><div class="stat-label">SR returned to the Locked Treasury</div></div>
+        <div class="card"><div class="stat">5%</div><div class="stat-label">SR returned to the Treasury</div></div>
         <div class="card"><div class="stat">0</div><div class="stat-label">Additional SOL platform withdrawal fee</div></div>
       </div>
       <h3>Interactive Withdrawal Calculator</h3>
@@ -483,7 +484,7 @@
         </div>
         <div class="grid calc-results" aria-live="polite">
           <div><span class="muted">Player Receives — 95%</span><strong id="netAmount">9,500 SR</strong></div>
-          <div class="fee"><span class="muted">Locked Treasury Fee — 5%</span><strong id="feeAmount">500 SR</strong></div>
+          <div class="fee"><span class="muted">Treasury Fee — 5%</span><strong id="feeAmount">500 SR</strong></div>
         </div>
         <p class="small muted" id="calcNote">Example only. Production calculations must use precise token base-unit arithmetic and published rounding rules. Normal blockchain network costs may still apply. (This illustration works in 6-decimal base units and rounds the fee down.)</p>
       </div>
@@ -583,7 +584,7 @@
       <p>Reserve assets may be allocated toward approved liquidity requirements, subject to platform rules, asset availability, treasury governance, and disclosure. These funds are separate from assets already committed to an exchange liquidity pool.</p>
       <h3>Optional SR Buybacks</h3>
       <p>Up to 5% of net distributable SOL revenue may be budgeted for optional SR purchases when sufficient operating surplus exists.</p>
-      <p>Repurchased SR may be transferred to the approved Locked Treasury, where it becomes subject to treasury restrictions and reward-allocation rules.</p>
+      <p>Repurchased SR may be transferred to the approved Treasury, where it becomes subject to treasury restrictions and reward-allocation rules.</p>
       <div class="callout">
         <strong>Transition Requirement</strong>
         The proposed target is at least 3–6 months of essential operating expenses in reserve, alongside necessary security funding, before discretionary buybacks begin.
@@ -600,7 +601,7 @@
         <li>Verified chest rewards are funded from the Active Reward Pool.</li>
         <li>Players claim eligible rewards on the 24-hour cycle.</li>
         <li>Claimed SR becomes available for withdrawal.</li>
-        <li>Successful withdrawal returns 5% SR to the Locked Treasury.</li>
+        <li>Successful withdrawal returns 5% SR to the Treasury.</li>
         <li>Approved Treasury releases may replenish reward reserves.</li>
       </ol>
       <h3>Three Potential Treasury Funding Sources</h3>
@@ -609,7 +610,7 @@
         <div class="card"><div class="stat">5%</div><div class="stat-label">Of successful gross SR withdrawals</div></div>
         <div class="card"><div class="stat">Optional</div><div class="stat-label">SR bought with approved surplus SOL</div></div>
       </div>
-      <p>These streams are accounted for separately. Withdrawal deductions must not be counted again as newly collected service revenue. Optional Expedition early returns add a further stream: 30% of each payment goes to the Locked Treasury and 50% to the Active Reward Pool, which reaches Chest rewards only through approved top-ups.</p>
+      <p>These streams are accounted for separately. Withdrawal deductions must not be counted again as newly collected service revenue. Optional Expedition early returns add a further stream: 30% of each payment goes to the Treasury and 50% to the Active Reward Pool, which reaches Chest rewards only through approved top-ups.</p>
       <p>Reward flow is also limited by the approved daily reward budget, the 100,000 SR minimum claim, per-claim maximums, and Chest Overflow.</p>
       <p>Reward budgets must be constrained by actual available funds, verified player obligations, and realistic expected game revenue.</p>
       <div class="callout">
@@ -795,7 +796,7 @@
       <div class="card">
         <ol>
           <li>SR token supply, distribution and liquidity arrangements.</li>
-          <li>Locked Treasury program and transfer permissions beyond the 2-of-3 multisig.</li>
+          <li>Treasury spending permissions: the Treasury is a single-key wallet with no on-chain spending restriction; only the RYO Burn Reserve is protected by the 2-of-3 multisig.</li>
           <li>Daily and seasonal reward budgets.</li>
           <li>Who pays Solana network transaction costs.</li>
           <li>Final in-game SR service prices beyond those published here.</li>

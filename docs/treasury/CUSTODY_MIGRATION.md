@@ -1,5 +1,7 @@
 # Custody migration options: for owner review, NOT implemented
 
+> **Update 2026-11-12 (Treasury migration, prepared, see [TREASURY_MIGRATION_2026-11.md](TREASURY_MIGRATION_2026-11.md)):** the Treasury (50%) moves to the owner-approved single-key wallet `GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE`; Squads vault #0 `5wVBdFkQ…11aGn` becomes the **RYO Burn Reserve** (0% of revenue, never a top-up source). Statements below about `5wVB…` being the Treasury describe the state before that cutover.
+
 None of these changes is made. Each one changes a public address and requires a reviewed registry
 commit ([treasury/treasury-registry.json](../../treasury/treasury-registry.json)), the owner's written
 approval, and a small test transfer before real funds move.

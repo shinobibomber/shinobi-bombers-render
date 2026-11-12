@@ -12,7 +12,7 @@ transaction. The live pre-launch service publishes its policy while `/api/ryo` s
 Mainnet payments or substitute for the vault approvals below.
 
 SR means Ryo. Approved real-token service payments use the full-price **50 / 30 / 10 / 10**
-allocation. A 25,000 SR summon assigns 12,500 to Locked Treasury, 7,500 to Active Adventure
+allocation. A 25,000 SR summon assigns 12,500 to the Treasury, 7,500 to Active Adventure
 Rewards, 2,500 to Community Rewards and 2,500 to Economic Reserve. No service studio share
 or automatic service burn remains. Token genesis allocations are a different policy.
 
@@ -23,7 +23,7 @@ router program (see [docs/treasury/SR_ROUTER_ANCHOR_DESIGN.md](../docs/treasury/
 v2 sends **four** transfers, to the destinations in the committed public registry
 ([treasury/treasury-registry.json](../treasury/treasury-registry.json)):
 
-- Locked Treasury 50%: Squads v4 vault #0. Re-verified at finalized commitment for every approval and
+- Treasury 50%: since the 2026-11-12 migration the owner-approved single-key wallet GPbg…htjE (registry treasuryCustodyException; re-verified as a wallet with a clean token account). Before: Squads v4 vault #0, now the RYO Burn Reserve (0%, never a destination or top-up source). Re-verified at finalized commitment for every approval and
   checkout: the pinned program and discriminator, the vault PDA derived from the registered multisig,
   threshold ≥ 2 and equal to the registry, the exact member set, no config authority, and the time lock as
   recorded. No game-controlled key may be a member. The Treasury token account may have no delegate and no

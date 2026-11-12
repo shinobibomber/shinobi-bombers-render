@@ -10,7 +10,7 @@
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
 
-const FILES = ['treasury-registry.json', 'treasury-registry.cjs', 'treasury-verify.cjs', 'treasury-rewards.cjs'];
+const FILES = ['treasury-registry.json', 'treasury-registry.cjs', 'treasury-verify.cjs', 'treasury-rewards.cjs', 'treasury-movements.cjs'];
 const TR = "require('./treasury-rewards.cjs')";
 
 // [file (relative to app/server), before, after]
@@ -25,7 +25,7 @@ const serverHooks = [
   ['store.cjs', "await c.query('UPDATE ryo_withdrawals SET status=$4,settled_at=$5 WHERE scope=$1 AND wallet=$2 AND request_id=$3',[this.scope,wallet,requestId,status,this.now()]);return {...row,status}",
    "await c.query('UPDATE ryo_withdrawals SET status=$4,settled_at=$5 WHERE scope=$1 AND wallet=$2 AND request_id=$3',[this.scope,wallet,requestId,status,this.now()]);if(status==='confirmed')await " + TR + ".withdrawalSettled(this,c,row);return {...row,status}"],
   ['store.cjs', "'SELECT request_id,amount,studio_fee,net,signature,status,settled_at,created FROM ryo_withdrawals", "'SELECT request_id,amount,studio_fee,net,'+" + TR + ".withdrawalColumns()+'signature,status,settled_at,created FROM ryo_withdrawals"],
-  // Live withdrawal wire: 95% to the player, 5% to the registered Squads Treasury vault, v3 memo.
+  // Live withdrawal wire: 95% to the player, 5% to the registered Treasury (registry role lockedTreasury), v3 memo.
   ['service.cjs', "const studioFee=economy.fee(n),net=n-studioFee,tx=await signedTransaction([...transferTo(wallet,BigInt(net)*UNIT),...transferTo(studioAddress,BigInt(studioFee)*UNIT),memo('shinobi-withdraw-v2:'+id)]);return {...tx,studioFee,net}",
    "const plan=" + TR + ".withdrawalPlan(n);if(plan){const tx=await signedTransaction([...transferTo(wallet,plan.netRaw),...transferTo(plan.treasury,plan.feeRaw),memo('shinobi-withdraw-v3:'+id)]);return {...tx,studioFee:0,net:plan.netWhole,treasuryFeeRaw:String(plan.feeRaw),netRaw:String(plan.netRaw),treasuryDestination:plan.treasury}}const studioFee=economy.fee(n),net=n-studioFee,tx=await signedTransaction([...transferTo(wallet,BigInt(net)*UNIT),...transferTo(studioAddress,BigInt(studioFee)*UNIT),memo('shinobi-withdraw-v2:'+id)]);return {...tx,studioFee,net}"],
   ['service.cjs', '{studio_fee:Number(row.studio_fee||0),net:Number(row.net||row.amount)}', "{studio_fee:Number(row.studio_fee||0),net:Number(row.net||row.amount),...(row.treasury_fee_raw&&String(row.treasury_fee_raw)!=='0'?{treasury_fee_raw:String(row.treasury_fee_raw),net_raw:String(row.net_raw)}:{})}"],
@@ -38,24 +38,25 @@ const serverHooks = [
   // Live: minimum Chest claim (owner request 2026-11-11), checked on the final credited amount inside the same transaction.
   ['adventure.cjs', "if(credited<1)fail('No funded whole Ryo is available to claim yet. Earnings stay in your Chest.',409);",
    "if(credited<1)fail('No funded whole Ryo is available to claim yet. Earnings stay in your Chest.',409);await " + TR + ".assertMinimumClaim(store,c,credited,Math.floor(d.pending/1000));"],
-  // Public, read-only: SR available for player Chest claims (figures only; cached; no addresses, keys or writes).
+  // Public, read-only: SR available for player Chest claims, and verified RYO Burn Reserve movements/burns (figures and public
+  // signatures only; cached; no keys or writes).
   ['service.cjs', "if(action==='creator-public')return require('./creators-portal.cjs').handle({store,origin},null,action,body);",
-   "if(action==='treasury-claim-funding')return " + TR + ".claimFunding({store,connection,mint,treasuryAddress,checkNetwork});if(action==='creator-public')return require('./creators-portal.cjs').handle({store,origin},null,action,body);"],
+   "if(action==='treasury-claim-funding')return " + TR + ".claimFunding({store,connection,mint,treasuryAddress,checkNetwork});if(action==='treasury-burn-reserve')return require('./treasury-movements.cjs').publicReport(store);if(action==='creator-public')return require('./creators-portal.cjs').handle({store,origin},null,action,body);"],
   // Live: report when the next claim opens (beta: field omitted, payload unchanged).
   ['service.cjs', 'return {chest,...(claim?await state(wallet):{})}', 'const claimInfo=await ' + TR + '.claimInfo(store,store.pool,wallet);if(claimInfo)Object.assign(chest,claimInfo);return {chest,...(claim?await state(wallet):{})}'],
 ];
 
 // Live (Mainnet build) game-page wording, applied by apply-network.cjs before its Mainnet text rules.
 const liveClientPatches = [
-  ["'Withdrawal finalized: net tokens returned after the 2% studio fee.'", "'Withdrawal finalized: 95% paid to your wallet; 5% returned to the Locked Treasury.'", 1],
-  ['Deposits and withdrawals deduct a 2% studio fee. Withdraw at least 100,000 Ryo, once per rolling 24 hours.', 'Deposits are fee-free. Withdrawals return 5% to the Locked Treasury; withdraw at least 100,000 Ryo at any time.', 1],   // fee-free deposits: live-economy (2026-11-09)
-  ["'Withdrawal available: minimum 100,000 Ryo; one success every 24 hours.'", "'Withdrawal available any time: minimum 100,000 Ryo; 5% returns to the Locked Treasury.'", 1],
-  ["' One successful withdrawal every 24 hours.'", "' Withdraw any time; 5% returns to the Locked Treasury.'", 1],
+  ["'Withdrawal finalized: net tokens returned after the 2% studio fee.'", "'Withdrawal finalized: 95% paid to your wallet; 5% returned to the Treasury.'", 1],
+  ['Deposits and withdrawals deduct a 2% studio fee. Withdraw at least 100,000 Ryo, once per rolling 24 hours.', 'Deposits are fee-free. Withdrawals return 5% to the Treasury; withdraw at least 100,000 Ryo at any time.', 1],   // fee-free deposits: live-economy (2026-11-09)
+  ["'Withdrawal available: minimum 100,000 Ryo; one success every 24 hours.'", "'Withdrawal available any time: minimum 100,000 Ryo; 5% returns to the Treasury.'", 1],
+  ["' One successful withdrawal every 24 hours.'", "' Withdraw any time; 5% returns to the Treasury.'", 1],
   ["'Studio fee: '+Math.ceil(n/50).toLocaleString()+' Ryo · You receive: '+(n-Math.ceil(n/50)).toLocaleString()+(withdraw?' tokens.':' Ryo.')",
-   "(withdraw?'Locked Treasury 5%: '+(n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' Ryo · You receive: '+(n-n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' tokens.':'No deposit fee · You receive: '+n.toLocaleString()+' Ryo.')", 1],
-  ["result.withdrawal.status==='confirmed'?(n-Math.ceil(n/50)).toLocaleString()+' tokens withdrawn after the 2% studio fee.'", "result.withdrawal.status==='confirmed'?(n-n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' tokens withdrawn; 5% returned to the Locked Treasury.'", 1],
-  ['Withdrawals: minimum 100,000 Ryo, once every 24 hours, with a 2% studio fee.', 'Withdrawals: minimum 100,000 Ryo, any time; 5% returns to the Locked Treasury. Chest rewards can be claimed once every 24 hours.', 1],
-  ["'Studio fee '+fmt(row.studio_fee)+' Ryo'", "(row.treasury_fee_raw?'Locked Treasury 5% '+(Number(row.treasury_fee_raw)/1e6).toLocaleString(undefined,{maximumFractionDigits:6})+' Ryo':'Studio fee '+fmt(row.studio_fee)+' Ryo')", 1],
+   "(withdraw?'Treasury 5%: '+(n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' Ryo · You receive: '+(n-n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' tokens.':'No deposit fee · You receive: '+n.toLocaleString()+' Ryo.')", 1],
+  ["result.withdrawal.status==='confirmed'?(n-Math.ceil(n/50)).toLocaleString()+' tokens withdrawn after the 2% studio fee.'", "result.withdrawal.status==='confirmed'?(n-n/20).toLocaleString(undefined,{maximumFractionDigits:6})+' tokens withdrawn; 5% returned to the Treasury.'", 1],
+  ['Withdrawals: minimum 100,000 Ryo, once every 24 hours, with a 2% studio fee.', 'Withdrawals: minimum 100,000 Ryo, any time; 5% returns to the Treasury. Chest rewards can be claimed once every 24 hours.', 1],
+  ["'Studio fee '+fmt(row.studio_fee)+' Ryo'", "(row.treasury_fee_raw?'Treasury 5% '+(Number(row.treasury_fee_raw)/1e6).toLocaleString(undefined,{maximumFractionDigits:6})+' Ryo':'Studio fee '+fmt(row.studio_fee)+' Ryo')", 1],
 ];
 
 function replaceCount(text, [before, after, count = 1], label) {

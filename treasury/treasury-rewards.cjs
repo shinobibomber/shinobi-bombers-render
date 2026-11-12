@@ -5,7 +5,7 @@
  * 2% studio withdrawal fee, 24 h withdrawal cooldown and unlimited claim cadence.
  *
  * Withdrawals (live):  5% of the gross SR amount, computed in 6-decimal base units and rounded down, goes to
- *   the registered Squads Treasury vault; 95% goes to the player. No 24 h withdrawal cooldown (the 100,000
+ *   the registered Treasury (registry role lockedTreasury); 95% goes to the player. No 24 h withdrawal cooldown (the 100,000
  *   minimum and one-pending-withdrawal rule stay). No SOL platform fee. The deduction is booked in its own
  *   ledger (ryo_withdrawal_treasury_fees) on finalized settlement — never in Chapter 04 service revenue.
  * Chest claims (live): once per rolling 24 h per wallet (failed claims roll back and do not consume it),
@@ -172,7 +172,7 @@ async function claimAllowance(store, c, wallet, known) {
 function publicConfig() {
   if (!live()) return {};
   const reg = registry();
-  return { withdrawalCooldownMs: 0, withdrawalFeeBps: reg.withdrawalTreasuryFeeBps, withdrawalFeeDestination: 'Locked Treasury', withdrawalFeeAddress: reg.addresses.lockedTreasury,
+  return { withdrawalCooldownMs: 0, withdrawalFeeBps: reg.withdrawalTreasuryFeeBps, withdrawalFeeDestination: 'Treasury', withdrawalFeeAddress: reg.addresses.lockedTreasury,
     claimCooldownMs: CLAIM_COOLDOWN_MS, treasuryRegistry: '/treasury' };
 }
 
@@ -180,11 +180,11 @@ function publicConfig() {
 function assertCustody(custody, studio) {
   if (!live()) return;
   const reserved = require('./treasury-registry.cjs').reservedAddresses();
-  if (reserved.includes(custody)) fail('The game custody wallet must not be a Chapter 04 wallet, the Squads multisig, a Squads member or the SR mint.', 503);
+  if (reserved.includes(custody)) fail('The game custody wallet must not be a Chapter 04 wallet, the RYO Burn Reserve, the Squads multisig, a Squads member or the SR mint.', 503);
   // The launch key must belong to the public game wallet recorded in the reviewed registry (no silent key swap).
   const expected = registry().gameCustody?.address;
   if (expected && custody !== expected) fail('RYO_TREASURY_SECRET does not belong to the game custody wallet recorded in the reviewed treasury registry (' + expected + '). Refusing to start.', 503);
-  if (Object.values(registry().addresses).includes(studio)) fail('The studio fee wallet must not be a Chapter 04 destination.', 503);
+  if ([...Object.values(registry().addresses), ...Object.values(registry().reserveAddresses)].includes(studio)) fail('The studio fee wallet must not be a Chapter 04 destination or the RYO Burn Reserve.', 503);
 }
 
 /**

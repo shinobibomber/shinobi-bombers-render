@@ -8,7 +8,7 @@
  *
  * Paid acceleration (spec sections 7 to 10) has its own Expedition-only payment policy. It never changes the existing
  * 50/30/10/10 SR service router (sr-revenue.cjs), the Boss Hunt split or any other service:
- *   50% Active Reward Pool, 30% Locked Treasury, 10% Community Rewards, 10% Economic Reserve. No burn (owner decision
+ *   50% Active Reward Pool, 30% Treasury, 10% Community Rewards, 10% Economic Reserve. No burn (owner decision
  *   2026-11-11, replacing the first 40/30/10/10/10 policy with a 10% SPL burn).
  * The four transferChecked instructions from the game custody token account are one atomic custody-signed transaction, so
  * either every allocation happens or none does. Amounts are exact integer base units; the Economic Reserve takes the

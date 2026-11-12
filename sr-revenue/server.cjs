@@ -13,6 +13,10 @@ const REPLENISH_SOURCES = Object.freeze(['activeRewards', 'lockedTreasury', 'eco
 // Bound to the validated build stamp; a request or environment override cannot enable this on beta.
 const enabled = () => require('./network.cjs').built(__dirname).key === 'mainnet';
 const registry = () => require('./treasury-registry.cjs').registry();
+// Treasury custody (registry v2, 2026-11-12): a Squads vault (or reviewed program vault), or an owner-approved single-key
+// wallet. Only a Squads-vault Treasury pins a multisig in the routing configuration.
+const treasuryIsSquads = reg => reg.squads.vaults.lockedTreasury !== undefined;
+const treasuryMultisig = reg => (treasuryIsSquads(reg) ? reg.squads.multisig : null);
 function publicPolicy() {
  return enabled() ? { marker:'sr-economy-live-only-v1', mode:'live-sr', network:'mainnet', ratesBps:RATES, serviceBurnBps:0, serviceStudioBps:0, withdrawalTreasuryBps:500, treasuryRegistry:'/treasury-registry.json' }
   : { marker:'sr-economy-live-only-v1', mode:'beta-legacy', network:'devnet', ratesBps:{operations:8000,treasury:1000,burn:800,studio:200}, serviceBurnBps:800, serviceStudioBps:200 };
@@ -41,11 +45,11 @@ function validateConfig(payload) {
   if (typeof value !== 'string' || value !== reg.addresses[name]) fail('The ' + name + ' destination must equal the reviewed public registry address (' + reg.addresses[name] + '). Registry changes need a reviewed commit.');
   destinations[name] = value;
  }
- if (payload.lockedTreasuryMultisig !== undefined && payload.lockedTreasuryMultisig !== reg.squads.multisig) fail('lockedTreasuryMultisig must equal the registered Squads multisig.');
+ if (payload.lockedTreasuryMultisig !== undefined && payload.lockedTreasuryMultisig !== treasuryMultisig(reg)) fail(treasuryIsSquads(reg) ? 'lockedTreasuryMultisig must equal the registered Squads multisig.' : 'The registered Treasury is a single-key wallet: lockedTreasuryMultisig must be null.');
  const products = payload.products || APPROVED;
  if (!Array.isArray(products) || !products.length || new Set(products).size !== products.length || products.some(p => ![...APPROVED, ...OPTIONAL].includes(p))) fail('Approve only supported SR game-service fees. Market proceeds, Boss Hunt and SOL payments are excluded.');
  if (typeof payload.evidence !== 'string' || !payload.evidence.trim() || payload.evidence.length > 500) fail('Enter the revenue policy / custody evidence reference.');
- return { enabled: payload.enabled, destinations, lockedTreasuryMultisig: reg.squads.multisig, products, evidence: payload.evidence.trim(), version: VERSION };
+ return { enabled: payload.enabled, destinations, lockedTreasuryMultisig: treasuryMultisig(reg), products, evidence: payload.evidence.trim(), version: VERSION };
 }
 async function config(store, c = store.pool, lock = false) {
  if (!enabled()) return null;
@@ -71,15 +75,16 @@ async function preview(store, wallet, q) {
  const bonus = Number(account?.bonus || 0) >= q.total, locks = activationProblems();
  return { ...q, ...(bonus ? { funding: 'bonus' } : {}), revenueDistribution: { ...q.revenueDistribution,
   ready: bonus || (!!cfg?.enabled && cfg.products.includes(q.product) && !locks.length), configured: !!cfg?.enabled,
-  note: bonus ? 'Starter Ryo payment: no tokens will be distributed.' : cfg?.stale ? 'SR routing configuration no longer matches the reviewed registry. No payment can be submitted.' : !cfg?.enabled ? 'Awaiting approved SR revenue vault configuration. No payment can be submitted.' : !cfg.products.includes(q.product) ? 'This SR service fee is not approved for revenue routing.' : locks.length ? 'SR revenue routing is not activated yet. No payment can be submitted.' : 'Squads Treasury and destinations are re-verified before submission.' } };
+  note: bonus ? 'Starter Ryo payment: no tokens will be distributed.' : cfg?.stale ? 'SR routing configuration no longer matches the reviewed registry. No payment can be submitted.' : !cfg?.enabled ? 'Awaiting approved SR revenue vault configuration. No payment can be submitted.' : !cfg.products.includes(q.product) ? 'This SR service fee is not approved for revenue routing.' : locks.length ? 'SR revenue routing is not activated yet. No payment can be submitted.' : 'Treasury and destinations are re-verified before submission.' } };
 }
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 // Squads v4 governance at finalized commitment: registered multisig, threshold, members, no config authority, owner.
-// Used by checkout routing approval and by Locked Treasury top-ups (a drifted multisig can fund neither).
+// Used by checkout routing approval and by Squads-vault Treasury top-ups (a drifted multisig can fund neither).
 async function verifySquadsGovernance(ctx, cfg) {
  const reg = registry(), own = [ctx.treasuryAddress, ctx.studioAddress, ctx.revenueAddress].filter(Boolean);
- const squads = await require('./treasury-verify.cjs').verifySquads(ctx.connection, reg, { forbidden: [...own, cfg.destinations.activeRewards, cfg.destinations.communityRewards, cfg.destinations.economicReserve] });
- if (squads.status !== 'verified') fail('Locked Treasury must be the registered, finalized Squads v4 vault (' + reg.squads.threshold + '-of-' + reg.squads.members.length + ', no config authority). ' + (squads.problems || []).join(' '), 503);
+ if (!treasuryIsSquads(reg)) fail('The registered Treasury is not a Squads vault.', 409);
+ const squads = await require('./treasury-verify.cjs').verifySquads(ctx.connection, reg, { role: 'lockedTreasury', forbidden: [...own, cfg.destinations.activeRewards, cfg.destinations.communityRewards, cfg.destinations.economicReserve, ...Object.values(reg.reserveAddresses)] });
+ if (squads.status !== 'verified') fail('The Treasury must be the registered, finalized Squads v4 vault (' + reg.squads.threshold + '-of-' + reg.squads.members.length + ', no config authority). ' + (squads.problems || []).join(' '), 503);
  return squads;
 }
 async function verifyVaults(ctx, cfg) {
@@ -87,14 +92,23 @@ async function verifyVaults(ctx, cfg) {
  for (const name of FIELDS) if (cfg.destinations[name] !== reg.addresses[name]) fail('SR destinations must equal the reviewed public registry.', 409);
  const own = [ctx.treasuryAddress, ctx.studioAddress, ctx.revenueAddress].filter(Boolean);
  for (const name of FIELDS) if (own.includes(cfg.destinations[name])) fail('SR revenue destinations must be separate from the game custody, studio and legacy revenue wallets. Active Rewards now leaves custody for the registered Active Reward Pool wallet.', 409);
+ // The RYO Burn Reserve is never a revenue destination (no automatic burn allocation exists).
+ for (const name of FIELDS) if (Object.values(reg.reserveAddresses).includes(cfg.destinations[name])) fail('SR revenue must never be routed to the RYO Burn Reserve.', 409);
  await ctx.checkNetwork();
- const squads = await verifySquadsGovernance(ctx, cfg);
+ const squads = treasuryIsSquads(reg) ? await verifySquadsGovernance(ctx, cfg) : null;
+ // Owner-approved single-key Treasury (registry treasuryCustodyException): verified as a plain System wallet.
+ if (!squads) {
+  const w = await v.verifyWallet(ctx.connection, cfg.destinations.lockedTreasury);
+  if (w.status !== 'verified') fail('The Treasury could not be verified as the registered wallet. ' + (w.problems || []).join(' '), 503);
+ }
  for (const name of ['activeRewards', 'communityRewards', 'economicReserve']) {
   const w = await v.verifyWallet(ctx.connection, cfg.destinations[name]);
   if (w.status !== 'verified') fail('The ' + name + ' destination could not be verified as a plain wallet. ' + (w.problems || []).join(' '), 503);
  }
  const ata = await v.verifyTokenAccount(ctx.connection, ctx.mint, cfg.destinations.lockedTreasury, reg.srMintProgram);
- if (ata.status !== 'verified') fail('Locked Treasury token account has a delegate, invalid owner or unsupported authority.', 503);
+ if (ata.status !== 'verified') fail('Treasury token account has a delegate, invalid owner or unsupported authority.', 503);
+ if (!squads) return { kind: 'single-key-wallet', treasury: cfg.destinations.lockedTreasury, exception: reg.treasuryCustodyException?.reference || null, commitment: 'finalized', verified: true,
+   note: 'Owner-approved single-key Treasury verified as the registered System wallet with a clean token account. No multisig or timelock is claimed.' };
  return { kind: 'squads-v4', multisig: reg.squads.multisig, required: squads.threshold, members: squads.members.length, timeLockSeconds: squads.timeLockSeconds, commitment: 'finalized', verified: true,
    note: 'Squads ' + squads.threshold + '-of-' + squads.members.length + ' approval verified; no timelock or vesting schedule is claimed.' };
 }
@@ -160,10 +174,13 @@ async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
  // SR transfer evidence (owner decision 2026-11-10). Exactly one SR transferChecked in the whole transaction, in one of
  // two shapes:
  //  - direct: a top-level transfer signed by the source wallet itself (Active Reward Pool / Economic Reserve);
- //  - Squads: Locked Treasury only. An inner transfer signed by the registered vault inside a vote-approved
+ //  - Squads: a Squads-vault Treasury only. An inner transfer signed by the registered vault inside a vote-approved
  //    vault_transaction_execute of the registered Squads v4 multisig (never spending limits or other Squads calls).
  // Then: exact accounts, mint and amount; exact finalized balance changes; no other SR balance may change.
  const reg = registry(), TOKEN = program.toBase58(), owner = cfg.destinations[payload.source], amountRaw = raw(payload.amountRaw);
+ // Burn Reserve funds are never reward funding (owner rule 2026-11-12).
+ if (Object.values(reg.reserveAddresses).includes(owner)) fail('RYO Burn Reserve funds can never be recorded as a reward top-up.', 409);
+ const squadsTreasury = payload.source === 'lockedTreasury' && treasuryIsSquads(reg);
  const top = tx.transaction.message.instructions || [];
  const all = [...top.map(i => ({ i, parent: null })), ...(tx.meta.innerInstructions || []).flatMap(g => (g.instructions || []).map(i => ({ i, parent: top[g.index] || {} })))];
  const srTransfers = all.filter(x => x.i.programId?.toString() === TOKEN && x.i.parsed?.type === 'transferChecked' && x.i.parsed?.info?.mint === ctx.mint);
@@ -171,15 +188,16 @@ async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
  const squadsProblem = p => {
   if (p?.programId?.toString() !== reg.squads.programId) return 'the transfer was made inside another program, not the registered Squads program.';
   if (p.accounts?.[0]?.toString() !== reg.squads.multisig) return 'the Squads transaction belongs to a different multisig than the registered one.';
+  // A Squads vault transaction moves funds of one vault index: the transfer authority (checked below) must be the Treasury vault.
   let discriminator; try { discriminator = Buffer.from(require('bs58').decode(String(p.data || ''))).subarray(0, 8); } catch { discriminator = Buffer.alloc(0); }
   return discriminator.equals(SQUADS_VAULT_EXECUTE) ? null : 'only an approved Squads vault transaction (vault_transaction_execute) is accepted; spending limits, batches and config changes are not.';
  };
  if (!srTransfers.length) refuse('no SR transfer was found in this transaction.');
  if (srTransfers.length > 1) refuse('the transaction moves SR ' + srTransfers.length + ' times; exactly one transfer is accepted.');
  const [{ i: transfer, parent }] = srTransfers, viaSquads = parent !== null, info = transfer.parsed.info;
- if (payload.source === 'lockedTreasury') {
-  // Locked Treasury: only through Squads (an inner transfer of the vote-approved vault execution).
-  if (!viaSquads) refuse('the Locked Treasury can only send SR through an approved Squads vault transaction.');
+ if (squadsTreasury) {
+  // Squads-vault Treasury: only through Squads (an inner transfer of the vote-approved vault execution).
+  if (!viaSquads) refuse('the Treasury vault can only send SR through an approved Squads vault transaction.');
   const problem = squadsProblem(parent); if (problem) refuse(problem);
  } else if (viaSquads) refuse('the ' + payload.source + ' wallet must send SR itself, as a top-level transfer (this one was made inside another program).');
  // The signer. Squads path: the registered vault PDA as the transfer authority. Direct path: the registered wallet as the
@@ -190,7 +208,7 @@ async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
  if (signedBy !== owner || (!viaSquads && !keys.some(k => k.pubkey.toString() === owner && k.signer === true))) refuse('the transfer was not signed by the registered ' + payload.source + ' wallet.');
  // A game deposit (it carries the deposit memo) belongs to the player deposit ledger and is never a top-up.
  if (all.some(x => typeof x.i.parsed === 'string' && x.i.parsed.startsWith('shinobi-deposit'))) refuse('this is a game deposit (it carries a deposit memo), not a top-up.');
- // From here an inner (viaSquads) transfer is always the approved Squads path of the Locked Treasury.
+ // From here an inner (viaSquads) transfer is always the approved Squads path of a Squads-vault Treasury.
  if (info.source !== source || info.destination !== target || info.mint !== ctx.mint || info.tokenAmount?.amount !== payload.amountRaw || info.tokenAmount?.decimals !== 6) fail('Replenishment source, destination, token or amount does not match the approved request.', 409);
  const indexOf = ata => keys.findIndex(k => k.pubkey.toString() === ata), si = indexOf(source), ti = indexOf(target);
  if (si < 0 || ti < 0) fail('Missing replenishment account evidence.', 409);
@@ -210,6 +228,8 @@ async function verifyReplenishment(ctx, cfg, payload, c = ctx.store.pool) {
  const duplicate = (await c.query(`SELECT 1 FROM ryo_service_revenue WHERE scope=$1 AND signature=$2 UNION ALL
    SELECT 1 FROM ryo_deposits WHERE scope=$1 AND signature=$2 UNION ALL SELECT 1 FROM ryo_revenue_replenishments WHERE scope=$1 AND signature=$2
    UNION ALL SELECT 1 FROM ryo_withdrawals WHERE scope=$1 AND signature=$2 UNION ALL SELECT 1 FROM ryo_purchases WHERE scope=$1 AND signature=$2`, [ctx.store.scope, payload.signature])).rows;
+ // Nor a recorded Treasury movement (relocation / Burn Reserve funding / burn).
+ if (!duplicate.length && (await c.query("SELECT to_regclass('ryo_treasury_movements') IS NOT NULL AS t")).rows[0].t) duplicate.push(...(await c.query('SELECT 1 FROM ryo_treasury_movements WHERE scope=$1 AND signature=$2', [ctx.store.scope, payload.signature])).rows);
  if (duplicate.length) fail('This transaction is already accounted for.', 409);
  // The Squads multisig must still have its registered governance (threshold, members, no config authority) when the
  // top-up is approved; a drifted multisig can no longer fund claims. This checks the current state: the state at the
@@ -242,7 +262,9 @@ async function summary(ctx, c) {
  const locks = activationProblems(ctx);
  return { marker: MARKER, applicable:true, ratesBps: RATES, basis: 'full-service-payment', config: cfg, ready: !!cfg?.enabled && !locks.length, activation: { problems: locks }, totalsRaw: totals, transactions: Number(aggregate.count), replenished, history, replenishments,
    custody: 'The 30% Active Rewards share is sent to the registered Active Reward Pool wallet. Adventure claims are funded only by verified, independently approved top-ups into game custody.',
-   lockedTreasury: 'New checkouts require the registered Squads v4 vault to verify at finalized commitment. This is multisig approval, not a timelock or vesting guarantee.',
+   lockedTreasury: treasuryIsSquads(registry()) ? 'New checkouts require the registered Squads v4 Treasury vault to verify at finalized commitment. This is multisig approval, not a timelock or vesting guarantee.'
+    : 'The Treasury is an owner-approved single-key wallet (no on-chain spending restriction). New checkouts re-verify it as the registered wallet at finalized commitment.',
+   burnReserve: 'The RYO Burn Reserve (Squads vault) never receives SR service revenue and never funds reward top-ups.',
    exclusions: ['Sensei SOL', 'Market sale proceeds', 'Boss Hunt prizes', 'PvP', 'buybacks', 'bonus-funded purchases', 'withdrawal deductions (separate ledger)'] };
 }
-module.exports = { MARKER, VERSION, UNIT, RATES, APPROVED, REPLENISH_SOURCES, enabled, publicPolicy, splitRaw, split, validateConfig, config, activationProblems, preview, verifyVaults, instructions, settled, INCOME_SQL, LIVE_INCOME_SQL, income, validateReplenishment, verifyReplenishment, applyApproval, summary };
+module.exports = { MARKER, VERSION, UNIT, RATES, APPROVED, REPLENISH_SOURCES, treasuryIsSquads, treasuryMultisig, enabled, publicPolicy, splitRaw, split, validateConfig, config, activationProblems, preview, verifyVaults, instructions, settled, INCOME_SQL, LIVE_INCOME_SQL, income, validateReplenishment, verifyReplenishment, applyApproval, summary };

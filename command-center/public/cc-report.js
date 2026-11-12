@@ -50,7 +50,7 @@
   const PRODUCTS = ['summon', 'dojo', 'fusion', 'training'];
   const PCOLOR = { summon: '--sr-1', dojo: '--sr-2', fusion: '--sr-3', training: '--sr-4' };
   const RANKS = [['Genin', 60], ['Chunin', 25], ['Jonin', 10], ['Elite', 4], ['Legend', 1]];
-  const POTS = [['lockedTreasury', 'Locked Treasury'], ['activeRewards', 'Active Rewards'], ['communityRewards', 'Community Rewards'], ['economicReserve', 'Economic Reserve']];
+  const POTS = [['lockedTreasury', 'Treasury'], ['activeRewards', 'Active Rewards'], ['communityRewards', 'Community Rewards'], ['economicReserve', 'Economic Reserve']];
   const SOURCES = [['founder-limited', 'Founder limited summons'], ['founder-premium', 'Founder premium summons'], ['starter-activation', 'Starter Activation'], ['hero-pass', 'Hero Pass'], ['referral', 'Referral rewards'], ['prison-rescue', 'Prison rescues'], ['boss-hunt', 'Boss Hunt awards'], ['starter-pack', 'Starter Pack']];
 
   const fmt = v => Number(v || 0).toLocaleString();

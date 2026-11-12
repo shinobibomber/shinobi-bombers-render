@@ -32,14 +32,16 @@ function chainAccount(pubkey, mint, overrides = {}) {
  const key = pubkey.toBase58(), reg = registryModule().registry();
  if (key in overrides) return overrides[key];
  if (key === reg.squads.multisig) return squadsAccount();
- if (key === reg.addresses.lockedTreasury) return { owner: new PublicKey('11111111111111111111111111111111'), data: Buffer.alloc(0), lamports: squadsFixture.vault.lamports, executable: false };
- if ([reg.addresses.activeRewards, reg.addresses.communityRewards, reg.addresses.economicReserve].includes(key)) return null;
+ // Every Squads-governed vault (the RYO Burn Reserve; the Treasury too in the squadsTreasury shape) is a System-owned vault account.
+ if (Object.values(reg.squads.vaultAddresses).includes(key)) return { owner: new PublicKey('11111111111111111111111111111111'), data: Buffer.alloc(0), lamports: squadsFixture.vault.lamports, executable: false };
+ // Plain wallets (and the owner-approved single-key Treasury) are unfunded in fixtures.
+ if ([reg.addresses.activeRewards, reg.addresses.communityRewards, reg.addresses.economicReserve, ...(reg.squads.vaults.lockedTreasury === undefined ? [reg.addresses.lockedTreasury] : [])].includes(key)) return null;
  const program = reg.srMintProgram === 'token-2022' ? spl.TOKEN_2022_PROGRAM_ID : spl.TOKEN_PROGRAM_ID;
- if (mint && key === spl.getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(reg.addresses.lockedTreasury), true, program).toBase58()) return null;
+ if (mint && [reg.addresses.lockedTreasury, ...Object.values(reg.reserveAddresses)].some(o => key === spl.getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(o), true, program).toBase58())) return null;
  return undefined;
 }
 async function configure(store) {
- const cfg = { enabled: true, version: 2, destinations: destinations(), lockedTreasuryMultisig: registryModule().registry().squads.multisig, products: ['summon', 'fusion', 'dojo', 'training'], evidence: 'Isolated approved fixture policy' };
+ const cfg = { enabled: true, version: 2, destinations: destinations(), lockedTreasuryMultisig: registryModule().registry().squads.vaults.lockedTreasury !== undefined ? registryModule().registry().squads.multisig : null, products: ['summon', 'fusion', 'dojo', 'training'], evidence: 'Isolated approved fixture policy' };
  await store.pool.query("INSERT INTO ryo_admin_control(scope,config,version,installed) VALUES($1,$2,1,$3) ON CONFLICT(scope) DO UPDATE SET config=ryo_admin_control.config||$2", [store.scope, JSON.stringify({ revenueRouting: cfg }), store.now()]);
  return cfg;
 }
@@ -54,8 +56,18 @@ async function topUp(store, ryo, signature = 'fixture-topup-' + Math.random().to
 }
 /** Model an activated live registry (throw-away mint, committed approval) inside this test process only.
  * Isolated tests sign with throw-away custody keys, so the recorded game custody address is replaced (or removed). */
-function activate(mint, { custody = null, program = null } = {}) {
+/** squadsTreasury: model the Treasury as Squads vault #1 of the registered multisig (the RYO Burn Reserve stays vault #0), the
+ * protected shape the registry supports for a later move out of the owner-approved single-key Treasury. Default: committed shape. */
+function squadsTreasuryShape(raw) {
+ const v1 = require('../app/server/treasury-verify.cjs').vaultAddress(raw.squads.multisig, 1, raw.squads.programId);
+ raw.destinations[0] = { ...raw.destinations[0], address: v1, custody: 'squads-v4-vault' }; delete raw.treasuryCustodyException; raw.squads.vaults = { ryoBurnReserve: 0, lockedTreasury: 1 };
+ // A Treasury change is always a registered migration leg (here: temporary/single-key Treasury → vault #1).
+ if (raw.treasuryMigration) { const m = raw.treasuryMigration; m.legs.push({ leg: m.legs.length + 1, from: m.legs[m.legs.length - 1].to, to: v1, path: 'direct' }); }
+ return raw;
+}
+function activate(mint, { custody = null, program = null, squadsTreasury = false } = {}) {
  const raw = JSON.parse(fs.readFileSync(registryModule().FILE, 'utf8'));
+ if (squadsTreasury) squadsTreasuryShape(raw);
  if (custody) raw.gameCustody = { address: custody, purpose: 'Isolated test custody' }; else delete raw.gameCustody;
  raw.srMintProgram = program || 'spl-token';   // throw-away test mints are classic unless a test asks for Token-2022
  raw.srMintAddress = typeof mint === 'string' ? mint : mint.toBase58(); raw.activation = { approved: true, reference: 'Isolated test activation fixture' };
@@ -86,4 +98,4 @@ function token2022(base, kind, names) {
  }
  return Buffer.concat(parts);
 }
-module.exports = { stamp, multisig, squadsAccount, chainAccount, configure, budget, topUp, activate, liveEconomy, destinations, squadsFixture, owner, token2022 };
+module.exports = { squadsTreasuryShape, stamp, multisig, squadsAccount, chainAccount, configure, budget, topUp, activate, liveEconomy, destinations, squadsFixture, owner, token2022 };

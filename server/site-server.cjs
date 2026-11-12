@@ -257,6 +257,19 @@ async function treasuryClaimFunding(dir) {
     return JSON.parse(reply.body);
   } catch { return { applicable: true, status: 'unavailable', availableRyo: null, claimsOpen: false, note: 'Claim funding is temporarily unavailable. Nothing is shown as available.' }; }
 }
+// Verified RYO Burn Reserve movements and burns (live game ledger, read-only). Unavailable is reported as unavailable, never as 0.
+async function treasuryBurnReserve() {
+  const unavailable = { applicable: true, status: 'unavailable', burnedRaw: null, history: [], note: 'Burn Reserve records are temporarily unavailable. Nothing is shown as burned.' };
+  if (PRELAUNCH || !game) return { ...unavailable, status: 'not-configured', note: 'The game ledger is not installed on this server, so no Burn Reserve records exist here.' };
+  try {
+    const origin = String(process.env.RYO_SITE_ORIGIN || '').trim();
+    const reply = await Promise.race([require(path.join(GAME_DIR, 'server', 'netlify-handler.cjs')).handler({ httpMethod: 'POST', headers: { 'content-type': 'application/json', ...(origin ? { origin: new URL(origin).origin } : {}) }, body: JSON.stringify({ action: 'treasury-burn-reserve' }) }),
+      new Promise((_, reject) => setTimeout(() => reject(Error('timeout')), 8000))]);
+    if (reply.statusCode !== 200) throw Error('status ' + reply.statusCode);
+    const body = JSON.parse(reply.body);
+    return body && body.applicable ? { ...body, status: 'verified' } : unavailable;
+  } catch { return unavailable; }
+}
 async function treasuryRoute(req, res, url, name) {
   if (NET.key !== 'mainnet') return sendSite(req, res, 404, 'Not found.');
   if (!['GET', 'HEAD'].includes(req.method)) return sendSite(req, res, 405, 'GET or HEAD required.');
@@ -267,8 +280,8 @@ async function treasuryRoute(req, res, url, name) {
     try {
       const dir = path.join(GAME_DIR, 'server'), registry = require(path.join(dir, 'treasury-registry.cjs')), verify = require(path.join(dir, 'treasury-verify.cjs'));
       treasurySnapshot = treasurySnapshot || verify.cachedSnapshot(() => verify.mainnetConnection(process.env));
-      const [snap, claimFunding] = await Promise.all([treasurySnapshot(), treasuryClaimFunding(dir)]);
-      body = JSON.stringify({ marker: 'shinobi-treasury-public-v1', readOnly: true, registry: registry.publicView(), verification: verify.publicSummary(snap), claimFunding, paymentsEnabled: !PRELAUNCH && require(path.join(dir, 'launch-gates.cjs')).srRoutingEnabled(), prelaunch: PRELAUNCH });
+      const [snap, claimFunding, burnReserve] = await Promise.all([treasurySnapshot(), treasuryClaimFunding(dir), treasuryBurnReserve()]);
+      body = JSON.stringify({ marker: 'shinobi-treasury-public-v1', readOnly: true, registry: registry.publicView(), verification: verify.publicSummary(snap), claimFunding, burnReserve, paymentsEnabled: !PRELAUNCH && require(path.join(dir, 'launch-gates.cjs')).srRoutingEnabled(), prelaunch: PRELAUNCH });
     } catch { return sendSite(req, res, 503, 'The treasury registry is unavailable until the game build is installed.'); }
     res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'public, max-age=30', ...SITE_HEADERS });
     return res.end(req.method === 'HEAD' ? '' : body);

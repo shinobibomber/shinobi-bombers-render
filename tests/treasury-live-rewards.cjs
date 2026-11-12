@@ -62,12 +62,16 @@ const DAY = 86400000, UNIT = 1000000n, LIVE = () => network.NETWORKS.mainnet, BE
   }
   assert.equal(T.withdrawalPlan(100001).feeRaw, 5000050000n); assert.throws(() => T.withdrawalPlan(0), /Invalid/);
   assert.equal(T.withdrawalsAnytime(), true); assert.equal(T.withdrawalColumns(), 'treasury_fee_raw,net_raw,');
-  assert.deepEqual(T.publicConfig(), { withdrawalCooldownMs: 0, withdrawalFeeBps: 500, withdrawalFeeDestination: 'Locked Treasury', withdrawalFeeAddress: registry.addresses.lockedTreasury, claimCooldownMs: DAY, treasuryRegistry: '/treasury' });
+  assert.deepEqual(T.publicConfig(), { withdrawalCooldownMs: 0, withdrawalFeeBps: 500, withdrawalFeeDestination: 'Treasury', withdrawalFeeAddress: registry.addresses.lockedTreasury, claimCooldownMs: DAY, treasuryRegistry: '/treasury' });
   await assert.rejects(T.withdrawalSettled(store, pool, { amount: 100000, treasury_fee_raw: '5000000000', net_raw: '95000000001', treasury_fee_destination: registry.addresses.lockedTreasury }), /inconsistent/);
   // The custody signer can never be a registry wallet or Squads member; the studio wallet never a destination.
   assert.throws(() => T.assertCustody(registry.squads.members[1], address()), /custody wallet must not/);
   assert.throws(() => T.assertCustody(registry.addresses.economicReserve, address()), /custody wallet must not/);
   assert.throws(() => T.assertCustody(address(), registry.addresses.communityRewards), /studio fee wallet/);
+  // Treasury migration 2026-11-12: the 5% goes to the new Treasury GPbg…, never to the RYO Burn Reserve; custody/studio can never be the reserve.
+  assert.equal(T.withdrawalPlan(100000).treasury, 'GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE'); assert.notEqual(T.withdrawalPlan(100000).treasury, registry.reserveAddresses.ryoBurnReserve);
+  assert.throws(() => T.assertCustody(registry.reserveAddresses.ryoBurnReserve, address()), /custody wallet must not/);
+  assert.throws(() => T.assertCustody(address(), registry.reserveAddresses.ryoBurnReserve), /studio fee wallet/);
   T.assertCustody(address(), address());
   // Launch binding: RYO_TREASURY_SECRET must belong to the recorded public game custody wallet.
   { const Reg = require('../app/server/treasury-registry.cjs'), rawReg = JSON.parse(fs.readFileSync(Reg.FILE, 'utf8')), stripped = Reg.registry();
@@ -103,6 +107,6 @@ const DAY = 86400000, UNIT = 1000000n, LIVE = () => network.NETWORKS.mainnet, BE
   assert.equal((await A.adventure(beta, f, { active: false, claim: true }, CUSTODY)).credited, 5); { const row = (await pool.query('SELECT data FROM ryo_adventures WHERE scope=$1 AND wallet=$2', [beta.scope, f])).rows[0].data; row.pending = 2000; await pool.query('UPDATE ryo_adventures SET data=$3 WHERE scope=$1 AND wallet=$2', [beta.scope, f, JSON.stringify(row)]); }
   assert.equal((await A.adventure(beta, f, { active: false, claim: true }, CUSTODY)).credited, 2, 'beta keeps unlimited claim cadence without a budget');
   network.built = LIVE;
-  console.log('PASS: live Chest claims — approved budget required, per-claim max, rolling 24 h cadence with exact boundary, failed claims never consume it, concurrent claims credit once, global emission cap; live withdrawals — 5% to the Squads Treasury in exact base units; custody separation; beta unchanged.');
+  console.log('PASS: live Chest claims — approved budget required, per-claim max, rolling 24 h cadence with exact boundary, failed claims never consume it, concurrent claims credit once, global emission cap; live withdrawals — 5% to the registered Treasury (GPbg…) in exact base units; custody separation; beta unchanged.');
  } finally { await db.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
