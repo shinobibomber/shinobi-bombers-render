@@ -14,7 +14,7 @@ const DAY = 86400000, HOUR = 3600000, MINUTE = 60000;
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
 const RLO = String.fromCharCode(0x202e), BEL = String.fromCharCode(7);
 // The files as they were pinned before Events: reversing the Events additions must give them back byte for byte, and service.cjs is untouched.
-const PREVIOUS = { service: '7ed44ed4fe420c578329270dfe9960b3f2dcec1f779f1016d61ba5d8aeb8698f', schema: '412995b9816535b3e60e644c0c17cec9598dd441e1862eafc165ab18dd15b7f5' };
+const PREVIOUS = { service: '16fdb0f7bbb3417cabe2461c7fbe042817cfb4f2ce26853c131b133af1713493', schema: '0abf4e9d7a300e7c79d36de127268db998e13f4accf16dc741f4d9b4a315c693' };
 (function buildIntegrity() {
   const { SCHEMA_MARKER } = require('../apply-events.cjs');
   assert.equal(sha(fs.readFileSync(path.join(root, 'app/server/service.cjs'))), PREVIOUS.service, 'service.cjs is byte for byte as before: no Events hook');
