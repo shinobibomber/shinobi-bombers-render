@@ -129,7 +129,8 @@ const hero = (id, rank, pw) => ({ tokenId: id, rank, level: 1, name: 'Hero ' + i
     const team = await p.evaluate(() => { go(0); return V2.bossState().team.map(u => u.id); });
     assert.equal(team.length, 5);
     await p.evaluate(() => { window.__huntKills = 0; addEventListener('shinobi-enemy-defeated', () => { if (V2.isBossActive()) __huntKills++; }); });
-    await p.waitForFunction(() => __huntKills >= 2, null, { timeout: 60000 });
+    // Real-time combat on a shared CPU: two kills took more than 60 s once inside a full-suite run (it passes alone in 15-40 s), so allow 120 s.
+    await p.waitForFunction(() => __huntKills >= 2, null, { timeout: 120000 });
     const during = await p.evaluate(team => ({ active: V2.isBossActive(), away: S.h.filter(h => team.includes(h.id)).every(h => h.x < 0), others: S.h.filter(h => h.on && !team.includes(h.id)).every(h => h.x >= 0) }), team);
     assert.deepEqual(during, { active: true, away: true, others: true }, 'Adventure keeps fighting with the other heroes during the hunt');
     await p.evaluate(() => V2.retreat());
