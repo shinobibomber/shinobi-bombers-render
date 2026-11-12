@@ -166,7 +166,13 @@ plus the live single-key shape, including cutover staleness and re-approval), `t
 | 9. Live check | Five post-deploy summons (07:18–07:24 UTC, e.g. `3hBjLD6M…`) split 50/30/10/10 with **50% to `GPbg…`**; nothing new reached `5wVB…`. **The first post-deploy withdrawal (5% to `HfrrT…`) had not reached the chain yet when this record was written.** |
 | 10. Announcement | PATCH_NOTES entry added; Discord text given to the owner. |
 
-The migration stays `open` in the registry until the owner reconciles it. Closing it is a reviewed registry commit that sets `status: completed` with a `completedReference`.
+**Closed 2026-11-12 (owner decision).** The registry sets `treasuryMigration.status: completed` with a `completedReference`: leg 1 = `35T3…`,
+288,061,292.324334 RYO, no residual transfer. From that deploy on, new `treasuryRelocation` records are refused. The recorded leg stays visible on
+`/treasury` and `/admin/` permanently. Burn Reserve funding and burn recording are not affected.
+Any later change of the Treasury address is still a reviewed registry commit plus a deploy and a routing re-approval. Once the migration is completed, the
+registry no longer requires a matching migration leg for such a change (the rule only applies while a migration is open). So moving funds to a future
+Treasury can only be *recorded* as a relocation if that commit also registers a new migration entry. This is a review rule, not a code check.
+The Burn allocation policy (BURN_RESERVE_POLICY_PROPOSAL.md) is still not implemented; the owner will implement it later.
 
 ## H. Owner approvals still required
 

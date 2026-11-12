@@ -65,8 +65,10 @@ function squadsTreasuryShape(raw) {
  if (raw.treasuryMigration) { const m = raw.treasuryMigration; m.legs.push({ leg: m.legs.length + 1, from: m.legs[m.legs.length - 1].to, to: v1, path: 'direct' }); }
  return raw;
 }
-function activate(mint, { custody = null, program = null, squadsTreasury = false } = {}) {
+function activate(mint, { custody = null, program = null, squadsTreasury = false, migrationOpen = false } = {}) {
  const raw = JSON.parse(fs.readFileSync(registryModule().FILE, 'utf8'));
+ // The committed Treasury migration was closed on 2026-11-12. Tests that replay the open-migration recording reopen it here (isolated copy only).
+ if (migrationOpen && raw.treasuryMigration) { raw.treasuryMigration.status = 'open'; delete raw.treasuryMigration.completedReference; }
  if (squadsTreasury) squadsTreasuryShape(raw);
  if (custody) raw.gameCustody = { address: custody, purpose: 'Isolated test custody' }; else delete raw.gameCustody;
  raw.srMintProgram = program || 'spl-token';   // throw-away test mints are classic unless a test asks for Token-2022

@@ -5,7 +5,9 @@ const assert = require('node:assert/strict'), fs = require('node:fs');
 const web3 = require('../app/node_modules/@solana/web3.js'), spl = require('../app/node_modules/@solana/spl-token'), bs58 = require('../app/node_modules/bs58');
 const R = require('../app/server/treasury-registry.cjs'), V = require('../app/server/treasury-verify.cjs');
 const fixture = require('./fixtures/squads-treasury-multisig.json');
-const raw = () => JSON.parse(fs.readFileSync(R.FILE, 'utf8'));
+const committed = () => JSON.parse(fs.readFileSync(R.FILE, 'utf8'));
+// The committed migration was closed on 2026-11-12. Rule checks below start from a reopened copy so the open-migration rules stay covered.
+const raw = () => { const r = committed(); if (r.treasuryMigration) { r.treasuryMigration.status = 'open'; delete r.treasuryMigration.completedReference; } return r; };
 const reject = (mutate, pattern, label) => { const r = raw(); mutate(r); assert.throws(() => R.validate(r), pattern, label); };
 (async () => {
  // 1. The committed registry (v2, Treasury migration 2026-11-12): four public destinations, exact Chapter 04 rates, the owner-approved
@@ -67,7 +69,9 @@ const reject = (mutate, pattern, label) => { const r = raw(); mutate(r); assert.
  reject(r => { r.schema = 'shinobi-treasury-registry-v1'; }, /unknown schema/);
  // Treasury migration (owner decision 2026-11-12): relocations only along the registered legs, closed once completed.
  assert.deepEqual(reg.treasuryMigration.legs.map(l => [l.leg, l.from, l.to, l.path]), [[1, RESERVE, TREASURY, 'squads-vault-execute']], 'one leg: GPbg… is the Treasury until the owner asks for a change');
- const leg2 = r => (r.treasuryMigration.legs.push({ leg: 2, from: r.treasuryMigration.legs[0].to, to: null, path: 'direct' }), r.treasuryMigration.legs[1]);   // a later, hypothetical move assert.equal(reg.treasuryMigration.status, 'open');
+ const leg2 = r => (r.treasuryMigration.legs.push({ leg: 2, from: r.treasuryMigration.legs[0].to, to: null, path: 'direct' }), r.treasuryMigration.legs[1]);   // a later, hypothetical move
+ assert.equal(reg.treasuryMigration.status, 'completed', 'migration closed 2026-11-12 after leg 1 was recorded and reconciled'); assert.match(reg.treasuryMigration.completedReference, /35T3/);
+ assert.equal(R.validate(raw()).treasuryMigration.status, 'open', 'the reopened copy still validates (it was the deployed state)');
  reject(r => { r.treasuryMigration.status = 'paused'; }, /status must be/);
  reject(r => { r.treasuryMigration.status = 'completed'; }, /reconciliation reference/);
  { const r = raw(); r.treasuryMigration.status = 'completed'; r.treasuryMigration.completedReference = 'Reconciled 2026-12-01 by the owner'; assert.equal(R.validate(r).treasuryMigration.status, 'completed'); }

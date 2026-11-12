@@ -14,7 +14,9 @@ const RELOCATION_SIG = '35T3CwTrZLMsmMvkNKRTvk5SYU53H6ucnxsQsEoBPSpUGDcyWCJiiUBH
  let tail = Promise.resolve(); const lock = async () => { let release; const before = tail; tail = new Promise(r => release = r); await before; return release; };
  const pool = { async query(s, a) { const release = await lock(); try { return await db.query(s, a); } finally { release(); } }, async connect() { const release = await lock(); return { query: (s, a) => db.query(s, a), release }; } };
  const store = new Store(pool, 'movements-fixture', () => 1900000000000), custody = web3.Keypair.generate().publicKey.toBase58();
- const reg = fixture.activate(MINT, { program: 'token-2022', custody });
+ // The committed migration is closed (2026-11-12). Sections 1-9 replay the open-migration recording that ran on live, on an isolated reopened copy;
+ // section 9b checks the committed (closed) registry.
+ const reg = fixture.activate(MINT, { program: 'token-2022', custody, migrationOpen: true });
  const T22 = spl.TOKEN_2022_PROGRAM_ID.toBase58(), ata = o => spl.getAssociatedTokenAddressSync(new web3.PublicKey(MINT), new web3.PublicKey(o), true, spl.TOKEN_2022_PROGRAM_ID).toBase58();
  const rAta = ata(RESERVE), tAta = ata(TREASURY), cAta = ata(custody), aAta = ata(reg.addresses.activeRewards);
  const address = () => web3.Keypair.generate().publicKey.toBase58(), operator = address(), reviewer = address();
@@ -125,7 +127,7 @@ const RELOCATION_SIG = '35T3CwTrZLMsmMvkNKRTvk5SYU53H6ucnxsQsEoBPSpUGDcyWCJiiUBH
   { const mg = (await M.report(store)).migration; assert.equal(mg.id, 'treasury-migration-2026-11'); assert.equal(mg.recordingOpen, true);
     assert.deepEqual(mg.legs.map(l => [l.leg, l.relocatedRaw, l.transfers, l.awaitingDestination]), [[1, RELOCATED, 1, false]]); }
   // 8. Only if the owner later registers a new leg (hypothetical example: GPbg… → Squads vault #1): a direct transfer signed by GPbg….
-  const regWith = mutate => { const raw = JSON.parse(fs.readFileSync(require('../app/server/treasury-registry.cjs').FILE, 'utf8')); raw.gameCustody = { address: custody, purpose: 'Isolated test custody' }; raw.srMintProgram = 'token-2022'; raw.srMintAddress = MINT; raw.activation = { approved: true, reference: 'Isolated test activation fixture' }; mutate(raw); return require('../app/server/treasury-registry.cjs').useForIsolatedTest(raw); };
+  const regWith = mutate => { const raw = JSON.parse(fs.readFileSync(require('../app/server/treasury-registry.cjs').FILE, 'utf8')); raw.gameCustody = { address: custody, purpose: 'Isolated test custody' }; raw.srMintProgram = 'token-2022'; raw.srMintAddress = MINT; raw.activation = { approved: true, reference: 'Isolated test activation fixture' }; raw.treasuryMigration.status = 'open'; delete raw.treasuryMigration.completedReference; mutate(raw); return require('../app/server/treasury-registry.cjs').useForIsolatedTest(raw); };
   { const V = require('../app/server/treasury-verify.cjs'), v1 = V.vaultAddress(reg.squads.multisig, 1, reg.squads.programId), v1Ata = ata(v1);
     regWith(raw => { raw.destinations[0] = { ...raw.destinations[0], address: v1, custody: 'squads-v4-vault' }; delete raw.treasuryCustodyException; raw.squads.vaults = { ryoBurnReserve: 0, lockedTreasury: 1 }; raw.treasuryMigration.legs.push({ leg: 2, from: TREASURY, to: v1, path: 'direct' }); });
     const keys = [...KEYS, { pubkey: v1Ata }].map(k => k.pubkey === TREASURY ? { ...k, signer: true } : k), b = (x, y) => [{ accountIndex: keys.findIndex(k => k.pubkey === tAta), mint: MINT, owner: TREASURY, uiTokenAmount: { amount: String(x), decimals: 6 } }, { accountIndex: keys.length - 1, mint: MINT, owner: v1, uiTokenAmount: { amount: String(y), decimals: 6 } }];
@@ -140,6 +142,12 @@ const RELOCATION_SIG = '35T3CwTrZLMsmMvkNKRTvk5SYU53H6ucnxsQsEoBPSpUGDcyWCJiiUBH
     const done = (await M.report(store)).migration; assert.equal(done.recordingOpen, false); assert.equal(done.legs[1].relocatedRaw, RELOCATED, 'audit history is preserved after completion');
     assert.equal((await rows()).filter(r => r.kind === 'treasuryRelocation').length, 2);
     fixture.activate(MINT, { program: 'token-2022', custody }); }
+  // 9b. The committed registry: migration closed 2026-11-12 after leg 1 (35T3…) was recorded; no new relocation can be recorded, the history stays.
+  { const R = require('../app/server/treasury-registry.cjs').registry(); assert.equal(R.treasuryMigration.status, 'completed'); assert.match(R.treasuryMigration.completedReference, /35T3/);
+    assert.equal(R.addresses.lockedTreasury, TREASURY, 'GPbg… stays the Treasury');
+    const s8 = sig(); receipt.set(s8, tx(s8, [transferIx(rAta, tAta, RESERVE, '1')], [bal(rAta, RESERVE, 1n), bal(tAta, TREASURY, 0n)], [bal(rAta, RESERVE, 0n), bal(tAta, TREASURY, 1n)]));
+    await assert.rejects(record({ kind: 'treasuryRelocation', signature: s8, amountRaw: '1', evidence: 'leg 1 after closing' }), /completed and reconciled; relocation records are closed/);
+    const closed = (await M.report(store)).migration; assert.equal(closed.status, 'completed'); assert.equal(closed.recordingOpen, false); assert.equal(closed.legs[0].relocatedRaw, RELOCATED, 'leg 1 history is preserved'); }
 
   // 10. Beta (Devnet build): never recorded.
   { const network = require('../app/server/network.cjs'), built = network.built; network.built = () => network.NETWORKS.devnet;

@@ -54,7 +54,8 @@
   ],
   "treasuryMigration": {
     "id": "treasury-migration-2026-11",
-    "status": "open",
+    "status": "completed",
+    "completedReference": "Owner reconciled and closed 2026-11-12: leg 1 = one finalized Squads transfer 35T3… of 288,061,292.324334 RYO 5wVB… → GPbg…, recorded and server-verified. No residual transfer: the 1,930,064.65 RYO left in 5wVB… is the Burn Reserve's opening balance (owner decision).",
     "purpose": "Relocation of the Treasury holdings from the former Squads Treasury vault (now the RYO Burn Reserve) to the Treasury GPbg… (owner decision 2026-11-12: GPbg… is the Treasury until the owner asks for a change). Only this leg can be recorded as a Treasury relocation; recording ends when the migration is completed and reconciled (status completed). Relocations are never revenue and never burns. A later move needs its own reviewed migration entry.",
     "legs": [
       {
@@ -62,7 +63,7 @@
         "from": "5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn",
         "to": "GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE",
         "path": "squads-vault-execute",
-        "note": "Former Squads Treasury vault #0 → Treasury (35T3… on 2026-11-12, plus any owner-approved residual transfer)."
+        "note": "Former Squads Treasury vault #0 → Treasury (35T3… on 2026-11-12). No residual transfer (owner decision)."
       }
     ]
   },
