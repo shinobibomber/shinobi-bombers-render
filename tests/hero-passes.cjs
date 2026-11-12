@@ -46,7 +46,10 @@ const rejects = async (p, re, m) => assert.rejects(p, e => re.test(e.message), m
   assert.deepEqual((await admin('pass-campaigns')).campaigns, [], 'no campaigns yet');
   for (const bad of [{ passes: 0 }, { passes: 51 }, { passes: 2.5 }, { minPaidSummons: -1 }, { holdings: { enabled: true, minRyo: -5 } }, { name: '' }])
     await rejects(admin('pass-campaign-save', { name: 'X', config: { tiers: [{ ...P.DEFAULT_CONFIG.tiers[0], ...bad }, P.DEFAULT_CONFIG.tiers[1]] } }), /must be a whole number|name is required/, 'invalid ' + JSON.stringify(bad));
-  await rejects(admin('pass-campaign-save', { name: 'X', config: { tiers: [P.DEFAULT_CONFIG.tiers[0]] } }), /Two reward tiers/);
+  await rejects(admin('pass-campaign-save', { name: 'X', config: { tiers: [] } }), /One or two reward tiers/, 'no tiers refused');
+  await rejects(admin('pass-campaign-save', { name: 'X', config: { tiers: [...P.DEFAULT_CONFIG.tiers, P.CUSTOM_PRESET.tiers[0]] } }), /One or two reward tiers/, 'three tiers refused');
+  await rejects(admin('pass-campaign-save', { name: 'X', config: { tiers: [{ ...P.CUSTOM_PRESET.tiers[0], passes: null }] } }), /pass quantity must be a whole number/, 'custom reward needs a pass quantity');
+  assert.equal(await count('ryo_pass_campaigns'), 0, 'refused rules create nothing');
   const made = (await admin('pass-campaign-save', { name: 'Loyalty Rewards', config: P.DEFAULT_CONFIG })).campaign;
   assert.deepEqual([made.status, made.version], ['draft', 1]);
   await rejects(admin('pass-campaign-save', { campaignId: made.id, version: 7, name: 'Loyalty Rewards', config: P.DEFAULT_CONFIG }), /changed elsewhere/, 'stale version refused');
@@ -129,6 +132,39 @@ const rejects = async (p, re, m) => assert.rejects(p, e => re.test(e.message), m
   const hist = await admin('pass-history', { campaignId: made.id });
   assert.deepEqual([hist.summary.claimed, hist.summary.claimedPasses, hist.summary.pending, hist.summary.failed], [2, 13, 3, 0], 'history counts');
 
+  /* ---------- Custom reward (owner request 2026-11-12): one tier, 15+ paid summons all time, no holdings, repeatable ---------- */
+  assert.deepEqual((await admin('pass-campaigns')).presets.custom, P.CUSTOM_PRESET, 'the custom preset is offered to the admin UI');
+  assert.deepEqual([P.CUSTOM_PRESET.tiers.length, P.CUSTOM_PRESET.tiers[0].minPaidSummons, P.CUSTOM_PRESET.tiers[0].holdings.enabled], [1, 15, false]);
+  const gift = async (passes, name) => {
+    const g = (await admin('pass-campaign-save', { name, config: { tiers: [{ ...P.CUSTOM_PRESET.tiers[0], passes }] } })).campaign;
+    assert.deepEqual([g.status, g.config.tiers.length, g.config.tiers[0].passes], ['draft', 1, passes], 'single-tier custom campaign saved');
+    return g;
+  };
+  const g1 = await gift(2, 'Shinobi Appreciation Gift 2026-11-12');
+  const gScan = await admin('pass-scan', { campaignId: g1.id });
+  assert.deepEqual(gScan.counts, { tier1: 5, tier2: 0, total: 5, passes: 10 }, 'A, B, C, F, pending: 15+ paid summons, holdings ignored');
+  const gPrev = await admin('pass-preview', { campaignId: g1.id, page: 0 }), gBy = Object.fromEntries(gPrev.rows.map(r => [r.wallet, r]));
+  assert(gBy[C] && gBy[B] && gBy[A], 'no deposits (C) and withdrawn holdings (B) still qualify; a later zero balance (A) too');
+  assert(gPrev.rows.every(r => r.tier === 1 && r.passes === 2 && r.tierName === 'Shinobi Appreciation Gift'), 'one tier, the chosen quantity');
+  assert(!gBy[D] && !gBy[E] && !gBy[G], 'starter-Ryo, refunded and no-summon accounts are still excluded (G has 500,000 holdings)');
+  const ryoBefore = (await pool.query('SELECT wallet,balance FROM ryo_accounts WHERE scope=$1 ORDER BY wallet', [store.scope])).rows;
+  const g1Sent = await admin('pass-send', { campaignId: g1.id, version: g1.version, confirm: 'SEND', expectedTotal: 5 });
+  assert.deepEqual([g1Sent.assigned, g1Sent.missing, g1Sent.campaign.status], [5, 0, 'done']);
+  // Sending again later = a new campaign; the same players receive it again (one entitlement per campaign per account).
+  const g2 = await gift(4, 'Shinobi Appreciation Gift 2026-11-19');
+  const g2Sent = await admin('pass-send', { campaignId: g2.id, version: g2.version, confirm: 'SEND', expectedTotal: 5 });
+  assert.deepEqual([g2Sent.assigned, g2Sent.missing], [5, 0], 'the repeat gift reaches the same 5 accounts');
+  const perC = (await pool.query("SELECT campaign_id,passes,status FROM ryo_pass_entitlements WHERE scope=$1 AND wallet=$2 AND campaign_id IN ($3,$4) ORDER BY passes", [store.scope, C, g1.id, g2.id])).rows;
+  assert.deepEqual(perC.map(r => [Number(r.passes), r.status]), [[2, 'pending'], [4, 'pending']], 'one pending reward per gift');
+  assert.deepEqual((await pool.query('SELECT wallet,balance FROM ryo_accounts WHERE scope=$1 ORDER BY wallet', [store.scope])).rows, ryoBefore, 'custom gifts change no Ryo');
+  assert.equal((await P.playerState(store, C)).passes, 0, 'no usable pass before a claim');
+  await P.claim(store, C, { campaignId: g1.id, requestId: rid() }); await P.claim(store, C, { campaignId: g2.id, requestId: rid() });
+  const cState = await P.playerState(store, C);
+  assert.equal(cState.passes, 6, 'both gifts claimed: 2 + 4 passes');
+  assert(cState.history.some(e => e.campaign === 'Shinobi Appreciation Gift 2026-11-12' && e.tierName === 'Shinobi Appreciation Gift'), 'player history shows the gift');
+  const gHist = await admin('pass-history', { campaignId: g2.id });
+  assert.deepEqual([gHist.summary.tier1, gHist.summary.tier2, gHist.summary.claimed, gHist.summary.pending, gHist.summary.failed], [5, 0, 1, 4, 0], 'custom history');
+
   await db.close(); for (const k of Object.keys(process.env)) if (!(k in env)) delete process.env[k]; Object.assign(process.env, env);
-  console.log('PASS: Hero Passes — rules validated/versioned/locked, eligibility (paid summons by quantity incl. Chest-paid; starter Ryo/refunds excluded; holdings = min(balance, deposits - withdrawals)), Tier 1 first and never both, scan/preview read-only, Send creates only pending rewards (no passes, Ryo or heroes), re-send refused, retry resumes without duplicates, rewards stay reserved, switches, claim exactly once (replay, other tab, two instances, wrong wallet, server quantity), pass use (bound Shrine-odds heroes, no pity/Ryo change, replay, limits, pending purchase), fusion keeps the binding, history.');
+  console.log('PASS: Hero Passes — rules validated/versioned/locked, eligibility (paid summons by quantity incl. Chest-paid; starter Ryo/refunds excluded; holdings = min(balance, deposits - withdrawals)), Tier 1 first and never both, scan/preview read-only, Send creates only pending rewards (no passes, Ryo or heroes), re-send refused, retry resumes without duplicates, rewards stay reserved, switches, claim exactly once (replay, other tab, two instances, wrong wallet, server quantity), pass use (bound Shrine-odds heroes, no pity/Ryo change, replay, limits, pending purchase), fusion keeps the binding, history; custom single-tier reward (15+ paid summons, holdings ignored, chosen quantity, repeat gifts reach the same accounts, no Ryo change, claims add up).');
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -1,5 +1,13 @@
 # Shinobi Bombers patch notes
 
+## November 12, 2026 — Shinobi Appreciation Gifts for loyal summoners
+
+- **Free Standard Hero Passes for our summoners.** From time to time the team will send a **Shinobi Appreciation Gift** to every account with **at least 15 paid Shrine summons** since the game opened.
+- **Every gift counts again.** Each gift is sent separately, so if you qualify, you receive every new gift, not just the first one.
+- **What counts:** confirmed Shrine summons paid with Ryo, including Chest-paid summons. Summons paid with free starter Ryo and refunded summons don't count. No holdings are required.
+- **How to get it:** when a gift arrives, tap **CLAIM** in the main menu, then use your passes in **Hero Passes**. Each pass recruits one in-game hero at normal Shrine odds.
+- Gift passes are account-bound (they can't be sold on the Market) and never change your Ryo, Chest or rewards.
+
 ## November 12, 2026 — Contact Support from inside the game
 
 - **Send a ticket without leaving the game.** Open the Reward Center, tap **Help & Support**, then **Contact Support**. Pick what it is about, write what happened, and send.

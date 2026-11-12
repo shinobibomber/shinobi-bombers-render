@@ -32,6 +32,12 @@ const DEFAULT_CONFIG = Object.freeze({ tiers: [
   { name: 'Investor Appreciation Reward', passes: 5, minPaidSummons: 15, holdings: { enabled: true, minRyo: 50000 } },
   { name: 'Community Appreciation Reward', passes: 3, minPaidSummons: 15, holdings: { enabled: false, minRyo: 0 } },
 ] });
+/* Custom reward preset (owner request 2026-11-12): one tier, every account with 15+ paid Shrine summons (all time, the same
+ * count as the scan), no holdings rule. The admin enters the pass quantity before each send; every send is a new campaign,
+ * so the same players can receive it again. */
+const CUSTOM_PRESET = Object.freeze({ tiers: [
+  { name: 'Shinobi Appreciation Gift', passes: 1, minPaidSummons: 15, holdings: { enabled: false, minRyo: 0 } },
+] });
 
 function fail(message, status = 400) { throw Object.assign(Error(message), { status }); }
 const on = key => require('./feature-switches.cjs').effective(key);
@@ -40,16 +46,16 @@ const requestId = v => typeof v === 'string' && /^[-a-zA-Z0-9_]{16,80}$/.test(v)
 const text = (v, max, label) => typeof v === 'string' && v.trim() && v.trim().length <= max ? v.trim() : fail(label + ' is required (up to ' + max + ' characters).');
 const whole = (v, min, max, label) => Number.isSafeInteger(v) && v >= min && v <= max ? v : fail(label + ' must be a whole number between ' + min + ' and ' + max + '.');
 
-/** Server-side rule validation (two tiers; positive pass quantities within the admin safety limit; non-negative thresholds). */
+/** Server-side rule validation (one or two tiers; positive pass quantities within the admin safety limit; non-negative thresholds). */
 function validateConfig(c) {
-  if (!c || !Array.isArray(c.tiers) || c.tiers.length !== 2) fail('Two reward tiers are required.');
+  if (!c || !Array.isArray(c.tiers) || c.tiers.length < 1 || c.tiers.length > 2) fail('One or two reward tiers are required.');
   return { tiers: c.tiers.map((t, i) => {
     const n = 'Tier ' + (i + 1) + ' ';
     return { name: text(t?.name, 80, n + 'name'), passes: whole(t.passes, 1, MAX_PASSES, n + 'pass quantity'), minPaidSummons: whole(t.minPaidSummons, 0, 100000, n + 'minimum paid summons'),
       holdings: { enabled: t.holdings?.enabled === true, minRyo: whole(t.holdings?.minRyo ?? 0, 0, 1e12, n + 'minimum deposited holdings') } };
   }) };
 }
-/** Tier for one account's evidence: Tier 1 first, else Tier 2, else none. Never both. */
+/** Tier for one account's evidence: Tier 1 first, else Tier 2 (when the campaign has one), else none. Never both. */
 function tierFor(config, e) {
   for (let i = 0; i < config.tiers.length; i++) {
     const t = config.tiers[i];
@@ -90,7 +96,7 @@ async function admin(store, actor, body, audit) {
   need('heroPassAdmin', 'Hero Pass administration');
   if (op === 'pass-campaigns') {
     const list = (await store.pool.query('SELECT * FROM ryo_pass_campaigns WHERE scope=$1 ORDER BY created DESC LIMIT 20', [store.scope])).rows.map(view);
-    return { campaigns: list, defaults: DEFAULT_CONFIG, switches: { admin: true, distribution: on('heroPassDistribution'), claimUi: on('heroPassClaimUi'), claims: on('heroPassClaims') } };
+    return { campaigns: list, defaults: DEFAULT_CONFIG, presets: { custom: CUSTOM_PRESET }, switches: { admin: true, distribution: on('heroPassDistribution'), claimUi: on('heroPassClaimUi'), claims: on('heroPassClaims') } };
   }
   if (op === 'pass-campaign-save') {
     const name = text(body.name, 80, 'Campaign name'), config = validateConfig(body.config), now = store.now();
@@ -230,4 +236,4 @@ async function redeem(store, wallet, body) {
   });
 }
 
-module.exports = { SCHEMA, DEFAULT_CONFIG, MAX_PASSES, validateConfig, tierFor, scan, admin, distribute, playerState, claim, redeem };
+module.exports = { SCHEMA, DEFAULT_CONFIG, CUSTOM_PRESET, MAX_PASSES, validateConfig, tierFor, scan, admin, distribute, playerState, claim, redeem };

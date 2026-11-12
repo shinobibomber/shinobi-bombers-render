@@ -150,6 +150,32 @@ async function fixture(p, f, account, snapshot) {
      assert.equal((await store.pool.query("SELECT status FROM ryo_pass_entitlements WHERE scope=$1 AND wallet=$2", [store.scope, uiFan])).rows[0]?.status, 'pending', 'a pending reward for the eligible player');
      assert.match(await p.locator('[data-hp-result="history"]').innerText(), /pending 1 \(3 passes\)/);
      assert.equal(await p.locator('[data-form="hp-rules"] [data-hp="edit"]').count(), 0, 'rules locked after Send');
+     // Owner request 2026-11-12: custom reward for every account with 15+ paid summons; the pass quantity is chosen each time.
+     await p.locator('[data-hp="custom"]').click();
+     assert.equal(await p.locator('[data-form="hp-rules"] fieldset').count(), 1, 'one reward tier');
+     assert.equal(await p.locator('[data-form="hp-rules"] [name="t1passes"]').count(), 0, 'no Tier 2 fields');
+     assert.equal(await p.locator('[data-form="hp-rules"] [name="t0passes"]').inputValue(), '', 'the pass quantity starts empty');
+     assert.equal(await p.locator('[data-form="hp-rules"] [name="t0passes"]').evaluate(i => i.required && i.min === '1' && i.max === '50'), true, 'quantity required, 1-50');
+     assert.deepEqual([await p.locator('[data-form="hp-rules"] [name="t0summons"]').inputValue(), await p.locator('[data-form="hp-rules"] [name="t0hold"]').isChecked()], ['15', false], '15+ paid summons, no holdings rule');
+     assert.match(await p.locator('[data-form="hp-rules"] [name="name"]').inputValue(), /^Shinobi Appreciation Gift \d{4}-\d{2}-\d{2}$/);
+     await p.locator('[data-form="hp-rules"] [name="t0passes"]').fill('2');
+     await p.locator('[data-form="hp-rules"] [name="reason"]').fill('Fixture: custom appreciation gift');
+     await p.locator('[data-form="hp-rules"] button', { hasText: 'SAVE REWARD RULES' }).click();
+     await p.waitForFunction(() => /Reward rules saved \(v1\)/.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || '') && document.querySelector('[data-hp="scan"]'), null, { timeout: 15000 });
+     const custom = (await store.pool.query("SELECT config FROM ryo_pass_campaigns WHERE scope=$1 AND name LIKE 'Shinobi Appreciation Gift %'", [store.scope])).rows[0].config;
+     assert.deepEqual(custom, { tiers: [{ name: 'Shinobi Appreciation Gift', passes: 2, minPaidSummons: 15, holdings: { enabled: false, minRyo: 0 } }] }, 'one tier saved on the server');
+     await p.locator('[data-hp="scan"]').click();
+     await p.waitForFunction(() => /^Scan \(read-only\): Total accounts: 1 · Total passes: 2$/.test(document.querySelector('[data-hp-result="scan"]')?.textContent.trim() || ''), null, { timeout: 15000 });
+     await p.locator('[data-hp="preview"]').click();
+     await p.waitForFunction(() => document.querySelector('[data-hp-result="preview"] tbody tr td.cp-wallet'));
+     await p.locator('[data-hp="send"]').click();
+     assert.match(await p.locator('dialog.cp-modal p').innerText(), /: 1 eligible account, 2 Standard Hero Passes in total/);
+     await p.locator('dialog.cp-modal [name="reason"]').fill('Fixture: send the custom gift');
+     await p.locator('dialog.cp-modal button[value="confirm"]').click();
+     await p.waitForFunction(() => /Sent: 1 of 1 rewards assigned\./.test(document.querySelector('#creatorsPanel .cp-notice')?.textContent || ''), null, { timeout: 15000 });
+     assert.equal((await store.pool.query("SELECT COUNT(*) AS n FROM ryo_pass_entitlements WHERE scope=$1 AND wallet=$2 AND status='pending'", [store.scope, uiFan])).rows[0].n * 1, 2, 'the same player also has the custom gift pending');
+     assert.doesNotMatch(await p.locator('[data-hp-result="history"]').innerText(), /Tier 2/, 'single-tier history hides Tier 2');
+     assert.match(await p.locator('[data-hp-result="history"]').innerText(), /pending 1 \(2 passes\)/);
      delete process.env.HERO_PASS_ADMIN_ENABLED; delete process.env.HERO_PASS_DISTRIBUTION_ENABLED;
      // Owner request 2026-11-11: Starter Activation launch schedule (next 12:00 PM PHT), audited, cancellable before launch.
      await p.locator('[data-admin="starter-activation"] summary').click();
