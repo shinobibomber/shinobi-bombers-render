@@ -9,11 +9,12 @@
  * Flow (staff side is in command-center/server.cjs, always through its write(): row lock, re-checked role, idempotent request ID,
  * 30 writes a minute, hash-chained audit record cc.event.*):
  *   propose  one wallet (Owner, Game Operator or Moderator) submits the event. It waits as `pending`; its text can no longer change.
- *   review   a DIFFERENT wallet (Owner or Game Operator) approves or rejects it. Approving needs the exact version and content hash
+ *   review   a DIFFERENT wallet (Owner or Game Operator) approves or rejects it (one wallet may review its own event only while ADMIN_SELF_APPROVAL is on). Approving needs the exact version and content hash
  *            the reviewer looked at, and the start time must still be in the future. A proposal expires after 7 days.
  *   publish  an approved event is visible to players from approval until it ends. Its schedule decides upcoming, live or ended.
  *   unpublish  Owner or Game Operator withdraw an approved event that has not ended; the record stays.
- * The proposer can never review their own event, whatever ADMIN_SELF_APPROVAL says (that setting belongs to the economic dashboard).
+ * Owner decision 2026-11-12: live runs one-wallet approval (ADMIN_SELF_APPROVAL=on, the switch the economic dashboard already uses), so there the
+ * proposer may approve their own event; the audit record then carries selfReviewed. With the switch off the proposer can never review their own event.
  *
  * Player read (`cc-events-upcoming`, any signed-in wallet): live and upcoming approved events only, in the requested language
  * (Portuguese falls back to English when the event has no PT text). It never returns a wallet, a reason or a hash.
@@ -113,10 +114,12 @@ async function propose(c, { scope, wallet, now, p, why }) {
   return { id: Number(row.id) };
 }
 /** Approve or reject. The caller has already authorized event.review. Returns { id, status, proposer, title, sha, from }. */
-async function review(c, { scope, wallet, now, id, approve, expected, sha, why }) {
+async function review(c, { scope, wallet, now, id, approve, expected, sha, why, allowSelf = false }) {
   const e = (await c.query('SELECT * FROM ryo_cc_events WHERE scope=$1 AND id=$2 FOR UPDATE', [scope, id])).rows[0];
   if (!e || e.status !== 'pending') fail('That event is unavailable or already reviewed.', 409);
-  if (e.proposer === wallet) fail('A different authorized wallet must review this event.', 403);
+  // One wallet may review its own event only when the owner has switched one-wallet approval on (ADMIN_SELF_APPROVAL, the same switch the
+  // economic dashboard uses). Otherwise the reviewer must be a different wallet.
+  if (e.proposer === wallet && !allowSelf) fail('A different authorized wallet must review this event.', 403);
   if (Number(e.version) !== expected) fail('This event changed. Refresh before reviewing.', 409);
   // Recomputed from the stored row, so the binding stays true even if an edit path is ever added; then compared with what the reviewer saw.
   const stored = contentHash({ kind: e.kind, titleEn: e.title_en, bodyEn: e.body_en, titlePt: e.title_pt, bodyPt: e.body_pt, startsAt: Number(e.starts_at), endsAt: Number(e.ends_at) });
@@ -129,7 +132,7 @@ async function review(c, { scope, wallet, now, id, approve, expected, sha, why }
   }
   const status = approve ? 'approved' : 'rejected';
   await c.query('UPDATE ryo_cc_events SET status=$3,version=version+1,reviewer=$4,review_reason=$5,reviewed=$6 WHERE scope=$1 AND id=$2', [scope, id, status, wallet, why, now]);
-  return { id, status, proposer: e.proposer, title: e.title_en, kind: e.kind, startsAt: Number(e.starts_at), endsAt: Number(e.ends_at), sha: e.content_sha256, version: expected + 1 };
+  return { id, status, proposer: e.proposer, selfReviewed: e.proposer === wallet, title: e.title_en, kind: e.kind, startsAt: Number(e.starts_at), endsAt: Number(e.ends_at), sha: e.content_sha256, version: expected + 1 };
 }
 async function unpublish(c, { scope, wallet, now, id, expected, why }) {
   const e = (await c.query('SELECT * FROM ryo_cc_events WHERE scope=$1 AND id=$2 FOR UPDATE', [scope, id])).rows[0];
@@ -142,10 +145,10 @@ async function unpublish(c, { scope, wallet, now, id, expected, why }) {
 
 const phase = (r, now) => (r.status === 'approved' ? (now < Number(r.starts_at) ? 'upcoming' : now < Number(r.ends_at) ? 'live' : 'ended')
   : r.status === 'pending' ? (now - Number(r.created) > LIMITS.proposalTtlMs || Number(r.starts_at) <= now ? 'stale' : 'waiting') : r.status);
-async function staffList(store, wallet) {
+async function staffList(store, wallet, allowSelf = false) {
   const now = store.now();
   const rows = (await store.pool.query("SELECT * FROM ryo_cc_events WHERE scope=$1 ORDER BY (status='pending' AND created>$3 AND starts_at>$2) DESC, (status='approved' AND ends_at>$2) DESC, starts_at DESC, id DESC LIMIT 100", [store.scope, now, now - LIMITS.proposalTtlMs])).rows;
-  return { limits: LIMITS, kinds: KINDS, events: rows.map(r => ({
+  return { limits: LIMITS, kinds: KINDS, selfApproval: !!allowSelf, events: rows.map(r => ({
     id: Number(r.id), kind: r.kind, status: r.status, phase: phase(r, now), version: Number(r.version), contentSha256: r.content_sha256,
     titleEn: r.title_en, bodyEn: r.body_en, titlePt: r.title_pt, bodyPt: r.body_pt, startsAt: Number(r.starts_at), endsAt: Number(r.ends_at),
     proposer: short(r.proposer), mine: r.proposer === wallet, reason: r.reason, created: Number(r.created),

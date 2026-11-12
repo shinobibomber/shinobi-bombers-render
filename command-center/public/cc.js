@@ -562,8 +562,8 @@
           ev.unpublishedBy ? h('div', { class: 'muted' }, h('span', { class: 'mono', text: ev.unpublishedBy }), ' · ', when(ev.unpublished)) : null),
         h('td', {}, can('event.review') ? h('div', { class: 'row-actions' },
           ev.phase === 'waiting' || ev.phase === 'stale' ? [
-            h('button', { class: 'small primary', type: 'button', disabled: ev.mine || ev.phase === 'stale', title: ev.mine ? t('ev.mineHint') : null, text: t('ev.approve'), onclick: () => decide(ev, true) }),
-            h('button', { class: 'small danger', type: 'button', disabled: ev.mine, title: ev.mine ? t('ev.mineHint') : null, text: t('ev.reject'), onclick: () => decide(ev, false) })] : null,
+            h('button', { class: 'small primary', type: 'button', disabled: (ev.mine && !d.selfApproval) || ev.phase === 'stale', title: ev.mine && !d.selfApproval ? t('ev.mineHint') : null, text: t('ev.approve'), onclick: () => decide(ev, true) }),
+            h('button', { class: 'small danger', type: 'button', disabled: ev.mine && !d.selfApproval, title: ev.mine && !d.selfApproval ? t('ev.mineHint') : null, text: t('ev.reject'), onclick: () => decide(ev, false) })] : null,
           ev.phase === 'upcoming' || ev.phase === 'live' ? h('button', { class: 'small danger', type: 'button', text: t('ev.unpublish'), onclick: () => unpublish(ev) }) : null) : null)));
       parts.push(card(h('h3', { text: t('ev.list') }), scroll('table-wide', ['ev.colEvent', 'ev.colContent', 'ev.colSchedule', 'ev.colProposed', 'ev.colReviewed', 'ev.colActions'].map(k => t(k)), rows.length ? rows : empty(6, t('ev.none')))));
       fill(view, ...parts);

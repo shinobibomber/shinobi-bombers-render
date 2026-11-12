@@ -1,6 +1,6 @@
 'use strict';
 /* Command Center Events through the real service dispatcher, Store and schema on PGlite (isolated fixtures only).
-   Staff: role matrix, propose then a DIFFERENT wallet reviews (also with ADMIN_SELF_APPROVAL on), version and content-hash binding,
+   Staff: role matrix, propose then a DIFFERENT wallet reviews (or the same one only while ADMIN_SELF_APPROVAL is on, as on live), version and content-hash binding,
    idempotency, text rules (EN required, PT pair, no links, no reward words in either language), schedule rules (10-minute lead,
    180 days ahead, 5 minutes to 30 days long), 7-day proposal expiry, caps, unpublish, audit (title and hash, never the text).
    Player: the read action shows only approved events that are live or upcoming, in the requested language, with no wallet, reason or
@@ -124,11 +124,30 @@ const PREVIOUS = { service: '94995dca6f7b7e827a8091a4fd07a927d27e5d3b6d285976030
   // ---- Two-person review ----
   quiet();
   const owned = await propose('owner', { titleEn: 'Owner proposal' }), opProp = await propose('operator', { titleEn: 'Operator proposal' });
-  process.env.ADMIN_SELF_APPROVAL = 'on';   // the economic dashboard's switch must never let a proposer approve an event
-  await assert.rejects(decide('owner', owned.id, true), because(403, /different authorized wallet/), 'the Owner cannot approve their own event');
-  await assert.rejects(decide('owner', owned.id, false), because(403, /different authorized wallet/), 'nor reject it');
-  await assert.rejects(decide('operator', opProp.id, true), because(403, /different authorized wallet/), 'the Operator cannot approve their own event');
+  // One-wallet approval OFF (unset, or any falsy value): the proposer can never review their own event.
+  for (const off of [undefined, 'off', '0', 'false', '']) {
+    if (off === undefined) delete process.env.ADMIN_SELF_APPROVAL; else process.env.ADMIN_SELF_APPROVAL = off;
+    await assert.rejects(decide('owner', owned.id, true), because(403, /different authorized wallet/), 'the Owner cannot approve their own event (' + off + ')');
+    await assert.rejects(decide('owner', owned.id, false), because(403, /different authorized wallet/), 'nor reject it');
+    await assert.rejects(decide('operator', opProp.id, true), because(403, /different authorized wallet/), 'the Operator cannot approve their own event');
+  }
+  assert.equal((await call('owner', 'cc-events')).data.selfApproval, false, 'the staff list says one-wallet approval is off');
   delete process.env.ADMIN_SELF_APPROVAL;
+  // One-wallet approval ON (owner decision 2026-11-12, how live runs): the proposer may review their own event. Every other rule still applies.
+  process.env.ADMIN_SELF_APPROVAL = 'on';
+  assert.equal((await call('owner', 'cc-events')).data.selfApproval, true, 'the staff list says one-wallet approval is on');
+  quiet(); const solo = await propose('owner', { titleEn: 'Solo owner event' }), soloRej = await propose('operator', { titleEn: 'Solo reject event' });
+  const soloEv = await find(solo.id);
+  await assert.rejects(staff('owner', 'cc-event-review', { id: solo.id, approve: true, expectedVersion: soloEv.version, contentSha256: soloEv.contentSha256, reason: 'No attestation on purpose' }), /promises no reward/, 'the no-reward confirmation is still required');
+  await assert.rejects(staff('owner', 'cc-event-review', { id: solo.id, approve: true, expectedVersion: soloEv.version, contentSha256: '0'.repeat(64), noRewards: true, reason: 'Wrong hash on purpose' }), because(409, /not what you reviewed/), 'the content hash is still bound');
+  await assert.rejects(staff('owner', 'cc-event-review', { id: solo.id, approve: true, expectedVersion: 9, contentSha256: soloEv.contentSha256, noRewards: true, reason: 'Wrong version on purpose' }), because(409, /changed/), 'and so is the version');
+  assert.equal((await decide('owner', solo.id, true)).status, 'approved', 'the Owner approves their own event');
+  assert.equal((await decide('operator', soloRej.id, false)).status, 'rejected', 'the Operator rejects their own event');
+  await assert.rejects(decide('operator', soloRej.id, true), because(409, /already reviewed/), 'a rejected event still cannot be approved');
+  assert.equal((await upcoming('alice')).events.some(e => e.title === 'Solo owner event'), true, 'a self-approved event is shown to players');
+  await staff('operator', 'cc-event-unpublish', { id: solo.id, expectedVersion: 1, reason: 'Solo test event, withdrawn' });
+  delete process.env.ADMIN_SELF_APPROVAL;
+  await assert.rejects(decide('owner', owned.id, true), because(403, /different authorized wallet/), 'switching it off restores the two-wallet rule');
   const ev = await find(first.id);
   await assert.rejects(staff('owner', 'cc-event-review', { id: first.id, approve: true, expectedVersion: 7, contentSha256: ev.contentSha256, noRewards: true, reason: 'Wrong version on purpose' }), because(409, /changed/));
   await assert.rejects(staff('owner', 'cc-event-review', { id: first.id, approve: true, expectedVersion: 0, contentSha256: '0'.repeat(64), noRewards: true, reason: 'Wrong hash on purpose' }), because(409, /not what you reviewed/));
@@ -234,6 +253,8 @@ const PREVIOUS = { service: '94995dca6f7b7e827a8091a4fd07a927d27e5d3b6d285976030
   assert(audit.every(e => e.hashValid), 'every record verifies');
   const approvedRec = audit.find(e => e.action === 'cc.event.approved' && e.data.titleEn === 'Ninja Night');
   assert.equal(approvedRec.data.contentSha256, ev.contentSha256); assert.equal(approvedRec.data.proposer, W.moderator); assert.equal(approvedRec.actor, W.owner);
+  const selfRecs = audit.filter(e => e.data.selfReviewed === true); assert.equal(selfRecs.length, 2, 'self-reviews are marked in the audit chain'); assert(selfRecs.every(e => e.actor === e.data.proposer), 'and the reviewer is the proposer');
+  assert.equal(audit.filter(e => e.action !== 'cc.event.proposed' && e.data.selfReviewed === undefined && e.data.proposer === e.actor).length, 0, 'no other review by the proposer exists');
   const auditText = JSON.stringify(audit); for (const body of ['community evening', 'Encontre-nos', 'Line one']) assert.equal(auditText.includes(body), false, 'the body text never enters the audit chain: ' + body);
   assert.deepEqual(Object.keys((await call('owner', 'cc-session')).data).includes('permissions'), true);
   const perms = (await call('moderator', 'cc-session')).data.permissions; assert(perms.includes('event.propose') && perms.includes('event.read') && !perms.includes('event.review'));

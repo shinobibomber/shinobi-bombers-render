@@ -162,7 +162,7 @@ Help & Support, shipped ON, two-way replies, ticket text kept 30 days after the 
 ## Batch B: Events
 
 Scheduled in-game notices with English and Portuguese (PT-BR) text. Owner request 2026-11-12: one wallet proposes, a **different** wallet
-approves, and events carry **no rewards**. The rules live in `events/server.cjs` (copied to `app/server/events.cjs` by `apply-events.cjs`).
+(or the same one while one-wallet approval is on) approves, and events carry **no rewards**. The rules live in `events/server.cjs` (copied to `app/server/events.cjs` by `apply-events.cjs`).
 An event is information only: a kind (event, maintenance, boss challenge, tournament, community), a title and text in EN (required) and PT-BR
 (optional, title and text together), and a start and end in UTC. It has no reward, prize, audience, eligibility or banner field, nothing in the
 game reads it except the player list below, and `tests/events-server.cjs` proves the ledger is unchanged and the table has no reward column.
@@ -171,11 +171,12 @@ game reads it except the player list below, and `tests/events-server.cjs` proves
 |---|---|---|---|
 | Staff read | `cc-events` | `event.read` (Owner, Game Operator, Moderator, Viewer; never Approver) | Newest 100 with phase: awaiting review, stale, upcoming, live, ended, rejected, unpublished. Wallets are shortened. |
 | Propose | `cc-event-propose` | `event.propose` (Owner, Game Operator, Moderator) | Needs a reason (8-500 characters) and the explicit confirmation `noRewards: true`. The text cannot change after it is submitted. |
-| Review | `cc-event-review`, `cc-event-unpublish` | `event.review` (Owner, Game Operator) | Approve or reject with the exact `expectedVersion` and `contentSha256` the reviewer saw. Unpublish withdraws an approved event that has not ended. |
+| Review | `cc-event-review`, `cc-event-unpublish` | `event.review` (Owner, Game Operator) | Approve or reject (a different wallet, or the same one while `ADMIN_SELF_APPROVAL` is on) with the exact `expectedVersion` and `contentSha256` the reviewer saw. Unpublish withdraws an approved event that has not ended. |
 | Player read | `cc-events-upcoming` | any signed-in wallet, behind the `eventsBoard` switch (default ON) | Approved events that are live or start within 60 days, at most 20, in the requested language (`lang: 'pt'`, falling back to English when the event has no PT text). It never returns a wallet, a reason or a hash. |
 
-- **Second wallet, always.** The reviewer must be a different wallet from the proposer. `ADMIN_SELF_APPROVAL` belongs to the economic dashboard and
-  has no effect here (the test turns it on and the Owner still cannot approve their own event). Approval is bound to the version and the SHA-256
+- **Second wallet, unless one-wallet approval is on.** The reviewer must be a different wallet from the proposer, except while `ADMIN_SELF_APPROVAL` is on
+  (the switch the economic dashboard already uses; owner decision 2026-11-12, so live runs with one wallet). Then the proposer may approve or reject their own
+  event, and the audit record says `selfReviewed`. The no-reward confirmation, the version and content-hash binding and every other rule still apply. Approval is bound to the version and the SHA-256
   of the content the reviewer read, so a changed proposal can never be approved by mistake. A proposal expires after 7 days, and an event whose start
   time has passed cannot be approved (a stale proposal can still be rejected to clear the queue).
 - **Schedule.** Times are entered and stored in UTC (the console shows the staff member's local time on hover; players see their own time zone).

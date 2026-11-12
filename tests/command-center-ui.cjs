@@ -240,6 +240,10 @@ const { Store, hash } = require('../app/server/store.cjs'), { createService, GEN
     assert.equal(await mine.getByRole('button', { name: 'Reject' }).isDisabled(), true);
     const own = (await call('owner', 'cc-events')).data.events.find(e => e.titleEn === 'Dojo Night');
     await assert.rejects(w('owner', 'cc-event-review', { id: own.id, approve: true, expectedVersion: own.version, contentSha256: own.contentSha256, noRewards: true, reason: 'Trying my own proposal' }), e => e.status === 403, 'and the server refuses it too');
+    // One-wallet approval ON (how live runs): the proposer's own buttons are enabled; OFF again restores the two-wallet rule.
+    const ownDisabled = want => p.waitForFunction(w => { const b = [...document.querySelectorAll('#view tr')].find(r => /Dojo Night/.test(r.textContent))?.querySelector('button.primary'); return !!b && b.disabled === w; }, want);
+    process.env.ADMIN_SELF_APPROVAL = 'on'; await p.getByRole('button', { name: 'Refresh' }).click(); await ownDisabled(false);
+    delete process.env.ADMIN_SELF_APPROVAL; await p.getByRole('button', { name: 'Refresh' }).click(); await ownDisabled(true);
     await shot(p, "events-proposed");
     // A second wallet rejects it, and unpublish withdraws the approved event.
     await w('operator', 'cc-event-review', { id: own.id, approve: false, expectedVersion: own.version, contentSha256: own.contentSha256, reason: 'Rejected in the UI test' });

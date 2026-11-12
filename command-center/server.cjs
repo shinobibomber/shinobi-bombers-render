@@ -526,7 +526,7 @@ async function supportWrite(ctx, wallet, action, body, kind) {
 }
 
 /* ---------- Events: staff writes (events/server.cjs holds the rules) ----------
- * propose -> a DIFFERENT wallet approves or rejects (never the proposer, whatever ADMIN_SELF_APPROVAL says) -> unpublish. An event is
+ * propose -> a DIFFERENT wallet approves or rejects -> unpublish. The proposer may review their own event only while ADMIN_SELF_APPROVAL is on (owner decision 2026-11-12, one-wallet live); the audit record then says selfReviewed. An event is
  * a dated notice with EN (and optional PT-BR) text: it has no reward, audience or eligibility, and nothing here touches balances, Chest,
  * Hero Passes, purchases, withdrawals, wallets or NFTs. Each write runs through write() and lands on the audit chain as cc.event.*,
  * with the title and a SHA-256 of the exact content (the body text itself stays out of the chain). */
@@ -546,8 +546,8 @@ async function reviewEvent(ctx, wallet, body) {
   if (typeof body.contentSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(body.contentSha256)) fail('contentSha256 is required. Refresh and try again.');
   if (body.approve) noRewardsAttested(body.noRewards);
   return write(ctx, wallet, 'cc-event-review', body, 'event.review', async (c, { now }) => {
-    const r = await E.review(c, { scope: ctx.store.scope, wallet, now, id, approve: body.approve, expected, sha: body.contentSha256, why });
-    return { result: { id, status: r.status, version: r.version }, audit: 'event.' + r.status, data: { id, proposer: r.proposer, kind: r.kind, titleEn: r.title, startsAt: r.startsAt, endsAt: r.endsAt, contentSha256: r.sha, reason: why, ...(body.approve ? { noRewardsConfirmed: true } : {}), versionBefore: expected, versionAfter: r.version } };
+    const r = await E.review(c, { scope: ctx.store.scope, wallet, now, id, approve: body.approve, expected, sha: body.contentSha256, why, allowSelf: require('./economic-dashboard.cjs').selfApproval() });
+    return { result: { id, status: r.status, version: r.version }, audit: 'event.' + r.status, data: { id, proposer: r.proposer, kind: r.kind, titleEn: r.title, startsAt: r.startsAt, endsAt: r.endsAt, contentSha256: r.sha, reason: why, ...(body.approve ? { noRewardsConfirmed: true } : {}), ...(r.selfReviewed ? { selfReviewed: true } : {}), versionBefore: expected, versionAfter: r.version } };
   });
 }
 async function unpublishEvent(ctx, wallet, body) {
@@ -656,7 +656,7 @@ async function handle(ctx, wallet, action, body = {}) {
     case 'cc-support-reply': need(roles, 'support.write'); return supportWrite(ctx, wallet, 'cc-support-reply', body, 'reply');
     case 'cc-support-note': need(roles, 'support.write'); return supportWrite(ctx, wallet, 'cc-support-note', body, 'note');
     case 'cc-support-update': need(roles, 'support.write'); return supportWrite(ctx, wallet, 'cc-support-update', body, 'update');
-    case 'cc-events': need(roles, 'event.read', 'event.propose', 'event.review'); return envelope(store, await require('./events.cjs').staffList(store, wallet));
+    case 'cc-events': need(roles, 'event.read', 'event.propose', 'event.review'); return envelope(store, await require('./events.cjs').staffList(store, wallet, require('./economic-dashboard.cjs').selfApproval()));
     case 'cc-event-propose': need(roles, 'event.propose'); return proposeEvent(ctx, wallet, body);
     case 'cc-event-review': need(roles, 'event.review'); return reviewEvent(ctx, wallet, body);
     case 'cc-event-unpublish': need(roles, 'event.review'); return unpublishEvent(ctx, wallet, body);
