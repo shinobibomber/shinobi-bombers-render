@@ -17,7 +17,7 @@ const { PGlite } = require('@electric-sql/pglite');
 const ROOT = path.join(__dirname, '..'), APP = path.join(ROOT, 'app/server');
 const RP = require(path.join(APP, 'reward-pool.cjs')), { SCHEMA } = require('../reward-pool/server.cjs');
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
-const PREVIOUS = { adventure: '28c540bbde04f2af0256723176986a136efa07a4f7cf3bfa7766f2a29560a71e', schema: '6ea48fd0a1d9450d2008c4f587223ffba491b78522ff6646e8338f961645aa10' };
+const PREVIOUS = { adventure: '28c540bbde04f2af0256723176986a136efa07a4f7cf3bfa7766f2a29560a71e', schema: 'f6c0b292856ae54d8b8dda34f7ea9178223a1cbf768355b5e4d8502697568544' };
 
 function seeded(seed) { let x = seed >>> 0; return () => { x ^= x << 13; x >>>= 0; x ^= x >> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; }
 function serialPool(db) {

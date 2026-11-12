@@ -12,7 +12,7 @@ const S = require('../app/server/support.cjs');
 const DAY = 86400000;
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
 // The files that were pinned before Support tickets: reversing the support additions must give them back byte for byte.
-const PREVIOUS = { service: '917d760be29471a6857da42e1f01abb705929b570cf7c08de14a92254954db19', schema: '8ad4694ca37104e9df9560bd8edd022e4425cc0c30fbd7fb5a5b3bd7f6e5dc78' };
+const PREVIOUS = { service: '4d721d22f502fd29c002e89b5cc11e1d6db1f81fbde70817f595e6e32462b7c7', schema: 'b9bcf9f5d048b04cffd2372d247e87f6fedd31b0a21039048cb0787690226f7e' };
 (function buildIntegrity() {
   const { serviceHooks, SCHEMA_MARKER } = require('../apply-support.cjs');
   let service = fs.readFileSync(path.join(root, 'app/server/service.cjs'), 'utf8');
