@@ -152,6 +152,22 @@ plus the live single-key shape, including cutover staleness and re-approval), `t
    (5% lands in `HfrrT…`), and Expedition or Boss Hunt if open.
 10. Only then publish the announcement (draft below) and the PATCH_NOTES entry.
 
+### Cutover record (2026-11-12, executed)
+
+| Step | Result |
+|---|---|
+| 1. Approval | Owner approved commit and push to `live`. |
+| 2–3. Pause | Owner paused `purchases` and `withdrawals` and confirmed nothing was pending. |
+| 4. Deploy | `f7eba3c..51b2070` pushed to `live` (fast-forward). Render deploy `dep-dbqmas49v7es73dqqpc0` went live at 07:08 UTC. The schema migration was applied, with no errors in the logs. `/treasury-registry.json` serves schema v2: Treasury `GPbg…` verified (single-key), Burn Reserve `5wVB…` verified (Squads 2-of-3, vault #0), no alerts. |
+| 5. Routing | Owner re-approved `revenueRouting`: `lockedTreasury = GPbg…`, `lockedTreasuryMultisig: null`. |
+| 6. Relocation | `35T3…` recorded and verified by the server as leg 1: 288,061,292.324334 RYO, slot 468336333, finalized. It is recorded as a relocation, not as revenue or a burn. |
+| 7. Residual | **Owner decision (b): keep it as the Burn Reserve's opening balance.** By the pause, the residual was **1,930,064.65 RYO**, not the 1,417,500 measured earlier: ordinary 50% Treasury shares and 5% withdrawal deductions kept arriving at the old address until the pause. It cannot be recorded as `burnReserveFunding`, because that kind only accepts transfers from the Treasury and these tokens came from Game Custody payouts. They are shown as **Reserved**, never as Burned. Their original revenue and fee records are unchanged. |
+| 8. Resume | Owner resumed `purchases` and `withdrawals`. |
+| 9. Live check | Five post-deploy summons (07:18–07:24 UTC, e.g. `3hBjLD6M…`) split 50/30/10/10 with **50% to `GPbg…`**; nothing new reached `5wVB…`. **The first post-deploy withdrawal (5% to `HfrrT…`) had not reached the chain yet when this record was written.** |
+| 10. Announcement | PATCH_NOTES entry added; Discord text given to the owner. |
+
+The migration stays `open` in the registry until the owner reconciles it. Closing it is a reviewed registry commit that sets `status: completed` with a `completedReference`.
+
 ## H. Owner approvals still required
 
 Commit; push or merge to `live`; deploy; the pre-checks in step 0; each pause and resume; the routing re-approval; recording the relocation;

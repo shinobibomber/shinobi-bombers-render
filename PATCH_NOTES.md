@@ -1,5 +1,14 @@
 # Shinobi Bombers patch notes
 
+## November 12, 2026 — New Treasury wallet and the RYO Burn Reserve
+
+- **New Treasury wallet.** The Treasury's share of game revenue now goes to the Shinobi Bombers Treasury `GPbgpbtxEiZtsWnjxq3MKbk9gaoqFNEbpTRqn8t7htjE`: 50% of Shrine, Fusion, Dojo and Training payments, 30% of Expedition early returns, the Boss Hunt Treasury share and the 5% withdrawal deduction. It is a single-key wallet, and the Treasury page says so.
+- **The old Treasury is now the RYO Burn Reserve.** Its address (`5wVBdFkQFLtu8qhZ1pg6RoD1LjWGUYL1erBVGBu11aGn`) and its 2-of-3 Squads multisig are unchanged. It holds RYO set aside for possible future burns.
+- **Reserved is not burned.** RYO in the Burn Reserve still exists and has not reduced supply. Nothing is burned automatically. A burn only counts once a verified, finalized Token-2022 burn transaction is recorded, and the Treasury page shows **Reserved RYO** and **Burned RYO** as separate figures.
+- **Treasury move on record.** The 288,061,292.32 RYO moved from the old Treasury to the new one is listed on the Treasury page as an internal transfer, with its transaction link. It is not counted as revenue or as a burn.
+- **New Treasury page sections:** Treasury · Reward Pool · RYO Burn Reserve, with live on-chain balances and explorer links.
+- **Nothing else changed.** The 50/30/10/10 split, reward pools, Chest rewards, withdrawals, game custody and your balances are all exactly as before.
+
 ## November 12, 2026 — Marketplace upgrade: Make Offer, new prices, fairer fees
 
 - **Only Jonin, Elite and Legend heroes trade now.** Minimum prices: **Jonin 150,000 · Elite 400,000 · Legend 1,000,000 Ryo**. You can always ask more, and offers can't go below the minimum.
